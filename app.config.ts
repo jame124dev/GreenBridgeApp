@@ -45,10 +45,14 @@ export default (): ExpoConfig => ({
       },
     ],
   ],
+  projectId: '57cd3db7-90b1-4b57-a723-679bfe81ef69',
   experiments: {
     typedRoutes: true,
   },
   extra: {
+    eas: {
+      projectId: '57cd3db7-90b1-4b57-a723-679bfe81ef69',
+    },
     GREENBIDZ_API_URL: process.env.GREENBIDZ_API_URL,
     QUIPPY_API_URL: process.env.QUIPPY_API_URL,
     X_SYSTEM_KEY: process.env.X_SYSTEM_KEY,
