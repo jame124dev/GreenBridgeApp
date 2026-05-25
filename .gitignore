@@ -42,3 +42,47 @@ example
 # generated native folders
 /ios
 /android
+
+# EAS / signing — DO NOT COMMIT
+# credentials.json holds iOS provisioning + Android keystore refs
+credentials.json
+*.keystore
+
+# Firebase / Google services — contain API keys
+google-services.json
+GoogleService-Info.plist
+
+# Sentry CLI auth token
+.sentryclirc
+
+# Editor / IDE
+# Keep shared VS Code defaults (extensions + on-save settings) tracked,
+# ignore everyone's personal launch/tasks/etc.
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+.cursor/
+.zed/
+*.swp
+*.swo
+*~
+
+# Windows
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# Test coverage
+/coverage
+*.lcov
+.nyc_output/
+
+# npm pack artefacts
+*.tgz
+
+# generic temp / logs
+*.log
+tmp/
+.tmp/
+temp/
