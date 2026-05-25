@@ -6,14 +6,32 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "GREENBIDZ_API_URL": "https://api.101recycle.greenbidz.com/api/v1",
+        "QUIPPY_API_URL": "https://quippy-staging.example.com",
+        "X_SYSTEM_KEY": "fa39812fec",
+        "SITE_TYPE": "LabGreenbidz"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "GREENBIDZ_API_URL": "https://api.101recycle.greenbidz.com/api/v1",
+        "QUIPPY_API_URL": "https://quippy-staging.example.com",
+        "X_SYSTEM_KEY": "fa39812fec",
+        "SITE_TYPE": "LabGreenbidz"
+      }
     },
     "production": {
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "GREENBIDZ_API_URL": "https://api.101recycle.greenbidz.com/api/v1",
+        "QUIPPY_API_URL": "https://quippy-staging.example.com",
+        "X_SYSTEM_KEY": "fa39812fec",
+        "SITE_TYPE": "LabGreenbidz"
+      }
     }
   },
   "submit": {
