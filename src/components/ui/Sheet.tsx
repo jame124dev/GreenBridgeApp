@@ -1,79 +1,91 @@
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Dimensions, Pressable, ScrollView, View } from 'react-native';
 import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
-import { X } from 'lucide-react-native';
-
-import { cx } from '@/lib/cx';
-import { colors, fonts, fontSize, radius, spacing } from '@/theme';
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  type BottomSheetBackdropProps,
+} from '@gorhom/bottom-sheet';
+import { Check } from 'lucide-react-native';
+import { Text } from './Text';
+import { colors, spacing, radius } from '@/constants/theme';
 
 type SheetProps = {
   visible: boolean;
   onClose: () => void;
   title?: string;
-  /** Render a close (×) button in the header. Default true when title is set. */
-  closable?: boolean;
-  /** Max height the inner scroll area can grow to. Default 460. */
-  maxHeight?: number;
-  /** Wrap children in a ScrollView. Default true. */
-  scrollable?: boolean;
+  snapTo?: string;
   children: React.ReactNode;
-  contentStyle?: StyleProp<ViewStyle>;
 };
 
-// Bottom-sheet modal built on RN <Modal>. Cross-platform (works on Expo Web,
-// unlike @gorhom/bottom-sheet). Backdrop tap dismisses; Esc / Android back
-// dismisses via onRequestClose.
-//
-//   <Sheet visible={open} onClose={close} title="Language">
-//     <SheetOption label="English" active onPress={…} />
-//     <SheetOption label="中文" onPress={…} />
-//   </Sheet>
+export function Sheet({ visible, onClose, title, snapTo = '60%', children }: SheetProps) {
+  const ref = useRef<BottomSheetModal>(null);
+  const windowHeight = Dimensions.get('window').height;
+  const snapPoints = useMemo(
+    () => [snapTo.endsWith('%') ? Math.round(windowHeight * (parseFloat(snapTo) / 100)) : Number(snapTo)],
+    [snapTo, windowHeight],
+  );
 
-export function Sheet({
-  visible,
-  onClose,
-  title,
-  closable,
-  maxHeight = 460,
-  scrollable = true,
-  children,
-  contentStyle,
-}: SheetProps) {
-  const showClose = closable ?? !!title;
-  const body = scrollable ? (
-    <ScrollView style={{ maxHeight }} showsVerticalScrollIndicator={false}>
-      {children}
-    </ScrollView>
-  ) : (
-    <View>{children}</View>
+  useEffect(() => {
+    if (visible) {
+      ref.current?.present();
+    } else {
+      ref.current?.dismiss();
+    }
+  }, [visible]);
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.45}
+        pressBehavior="close"
+      />
+    ),
+    [],
   );
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Dismiss" />
-      <View style={styles.sheet} pointerEvents="box-none">
-        <View style={cx<ViewStyle>(styles.sheetInner, contentStyle)}>
-          {title ? (
-            <View style={styles.headerRow}>
-              <Text style={styles.title}>{title}</Text>
-              {showClose ? (
-                <Pressable onPress={onClose} hitSlop={8} accessibilityLabel="Close">
-                  <X color={colors.textMuted} size={20} />
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
-          {body}
-        </View>
+    <BottomSheetModal
+      ref={ref}
+      snapPoints={snapPoints}
+      enableDynamicSizing={false}
+      animateOnMount={false}
+      backdropComponent={renderBackdrop}
+      onDismiss={onClose}
+      enablePanDownToClose
+      handleIndicatorStyle={{
+        backgroundColor: colors.light.borderStrong,
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+      }}
+      backgroundStyle={{
+        backgroundColor: colors.light.surface,
+        borderTopLeftRadius: radius['2xl'],
+        borderTopRightRadius: radius['2xl'],
+      }}
+    >
+      <View style={{ flex: 1 }}>
+        {title ? (
+          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+            <Text variant="subtitle" tone="primary" className="font-bold">
+              {title}
+            </Text>
+          </View>
+        ) : null}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: spacing.lg,
+            paddingBottom: spacing.xl,
+          }}
+        >
+          {children}
+        </ScrollView>
       </View>
-    </Modal>
+    </BottomSheetModal>
   );
 }
 
@@ -86,8 +98,6 @@ type SheetOptionProps = {
   onPress: () => void;
 };
 
-// Single row inside a Sheet — typed checkmark + label + optional description.
-
 Sheet.Option = function SheetOption({
   label,
   description,
@@ -99,90 +109,44 @@ Sheet.Option = function SheetOption({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) =>
-        cx<ViewStyle>(
-          styles.option,
-          indent && styles.optionIndent,
-          active && styles.optionActive,
-          pressed && styles.optionPressed,
-        )
-      }
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        minHeight: 48,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        paddingLeft: indent ? spacing['2xl'] : spacing.sm,
+        marginBottom: 2,
+        borderRadius: radius.md,
+        gap: spacing.sm,
+        backgroundColor: active
+          ? colors.primary[50]
+          : pressed
+            ? colors.light.surfaceAlt
+            : 'transparent',
+      })}
     >
-      <View style={styles.optionBody}>
+      <View style={{ flex: 1 }}>
         <Text
-          style={[styles.optionLabel, active && styles.optionLabelActive]}
+          variant="body"
+          tone={active ? 'brand' : 'primary'}
+          className={active ? 'font-semi' : 'font-sans'}
           numberOfLines={1}
         >
           {label}
         </Text>
         {description ? (
-          <Text style={styles.optionDescription} numberOfLines={2}>
+          <Text variant="caption" tone="tertiary" style={{ marginTop: 2 }} numberOfLines={2}>
             {description}
           </Text>
         ) : null}
       </View>
-      {rightAdornment ?? (active ? <Text style={styles.check}>✓</Text> : null)}
+      {rightAdornment ?? (
+        active ? <Check size={18} color={colors.primary[500]} strokeWidth={2.5} /> : null
+      )}
     </Pressable>
   );
 };
-
-const styles = StyleSheet.create({
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.backdrop,
-  },
-  sheet: { flex: 1, justifyContent: 'flex-end' },
-  sheetInner: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius['4xl'],
-    borderTopRightRadius: radius['4xl'],
-    paddingHorizontal: spacing['3xl'],
-    paddingTop: spacing['3xl'],
-    paddingBottom: spacing['7xl'],
-    maxWidth: 460,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xl,
-  },
-  title: { fontFamily: fonts.heading, fontSize: fontSize['2xl'], color: colors.inkSlate },
-
-  // Option row
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.xl,
-    borderRadius: radius.md,
-    marginBottom: spacing.xxs,
-    gap: spacing.lg,
-  },
-  optionIndent: { paddingLeft: spacing['7xl'] },
-  optionActive: { backgroundColor: colors.primarySurface },
-  optionPressed: { opacity: 0.8 },
-  optionBody: { flex: 1 },
-  optionLabel: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.lg,
-    color: colors.inkSlate,
-  },
-  optionLabelActive: { fontFamily: fonts.semibold, color: colors.primary },
-  optionDescription: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  check: { fontFamily: fonts.bold, fontSize: fontSize.lg, color: colors.primary },
-});

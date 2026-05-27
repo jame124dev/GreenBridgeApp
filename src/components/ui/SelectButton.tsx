@@ -1,75 +1,55 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { colors, fonts, fontSize, radius, sizes, spacing } from '@/theme';
+import { Text } from './Text';
+import { colors, motion } from '@/constants/theme';
 
 type Props = {
   value: string;
-  /** Render `value` in the placeholder color (when no real value chosen yet). */
   placeholder?: boolean;
   onPress: () => void;
   disabled?: boolean;
   leftIcon?: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
 };
 
-// Button that visually mimics an Input but opens a Sheet on tap. Used for
-// industry / language / timezone / currency / interests pickers.
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function SelectButton({ value, placeholder, onPress, disabled, leftIcon, style }: Props) {
-  const [pressed, setPressed] = useState(false);
+export function SelectButton({ value, placeholder, onPress, disabled, leftIcon }: Props) {
+  const [focused, setFocused] = useState(false);
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const combinedStyle = StyleSheet.flatten([
-    styles.base,
-    pressed && !disabled && styles.pressed,
-    disabled && styles.disabled,
-    style,
-  ]);
+  const borderClass = focused ? 'border-primary-500 bg-surface' : 'border-border bg-neutral-50';
 
   return (
-    <Pressable
+    <AnimatedPressable
+      onPressIn={() => {
+        if (disabled) return;
+        setFocused(true);
+        scale.value = withTiming(0.98, { duration: motion.tap });
+      }}
+      onPressOut={() => {
+        setFocused(false);
+        scale.value = withTiming(1, { duration: motion.tap });
+      }}
       onPress={onPress}
-      onPressIn={() => !disabled && setPressed(true)}
-      onPressOut={() => setPressed(false)}
       disabled={disabled}
       accessibilityRole="button"
-      style={combinedStyle}
+      style={animStyle}
+      className={`flex-row items-center h-14 px-xl rounded-xl border gap-sm ${borderClass} ${disabled ? 'opacity-50' : ''}`}
     >
-      {leftIcon ? <View style={styles.leftIcon}>{leftIcon}</View> : null}
+      {leftIcon ? <View>{leftIcon}</View> : null}
       <Text
-        style={[styles.value, placeholder ? styles.placeholder : null]}
+        variant="body"
+        tone={placeholder ? 'tertiary' : 'primary'}
+        className="flex-1"
         numberOfLines={1}
       >
         {value}
       </Text>
-      <ChevronDown color={colors.textSubtle} size={16} />
-    </Pressable>
+      <ChevronDown color={colors.neutral[400]} size={16} />
+    </AnimatedPressable>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    minHeight: sizes.controlHeight,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.lg,
-  },
-  pressed: { opacity: 0.8 },
-  disabled: { opacity: 0.5 },
-  leftIcon: { marginRight: spacing.xs },
-  value: {
-    flex: 1,
-    fontFamily: fonts.regular,
-    fontSize: fontSize.lg,
-    color: colors.inkSlate,
-  },
-  placeholder: { color: colors.placeholder },
-});

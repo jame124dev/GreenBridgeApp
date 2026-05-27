@@ -4,6 +4,7 @@ import '@/i18n';
 import { useEffect, type ReactNode } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -100,17 +101,19 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <KeyboardProvider>
-        <SafeAreaProvider>
-          <StatusBar style="dark" />
-          <QueryClientProvider client={queryClient}>
-            <AuthGuard>
-              <Stack screenOptions={{ headerShown: false }} />
-            </AuthGuard>
-          </QueryClientProvider>
-          <Toaster />
-        </SafeAreaProvider>
-      </KeyboardProvider>
+      <BottomSheetModalProvider>
+        <KeyboardProvider>
+          <SafeAreaProvider>
+            <StatusBar style="dark" />
+            <QueryClientProvider client={queryClient}>
+              <AuthGuard>
+                <Stack screenOptions={{ headerShown: false }} />
+              </AuthGuard>
+            </QueryClientProvider>
+            <Toaster />
+          </SafeAreaProvider>
+        </KeyboardProvider>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }

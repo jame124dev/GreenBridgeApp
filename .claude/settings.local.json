@@ -1,0 +1,63 @@
+{
+  "skipDangerousModePermissionPrompt": true,
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -Command \"Start-Sleep 4; $adb = '$env:LOCALAPPDATA\\Android\\Sdk\\platform-tools\\adb.exe'; $out = 'C:\\Users\\abhay\\OneDrive\\Desktop\\GreenBridge\\GreenBridgeApp\\.claude\\last-screen.png'; if (Test-Path $adb) { & $adb shell screencap /sdcard/last-screen.png; & $adb pull /sdcard/last-screen.png $out }\"",
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash(*)",
+      "PowerShell(*)",
+      "Bash(adb devices *)",
+      "PowerShell(adb devices)",
+      "PowerShell(Get-ChildItem \"$env:USERPROFILE\\\\AppData\\\\Local\\\\Android\" -ErrorAction SilentlyContinue)",
+      "PowerShell(npx expo --version 2>$null)",
+      "PowerShell(node --version)",
+      "PowerShell(ls \"$env:USERPROFILE\\\\.android\")",
+      "PowerShell($env:ANDROID_HOME; $env:ANDROID_SDK_ROOT; $env:PATH -split ';' | Where-Object { $_ -match -join\\('android','|','sdk','|','platform'\\) })",
+      "PowerShell(java -version 2>&1)",
+      "PowerShell(winget --version 2>$null)",
+      "PowerShell(if \\($LASTEXITCODE -ne 0\\) { \"winget not found\" })",
+      "PowerShell(Get-ChildItem -Path \"$env:USERPROFILE\", \"C:\\\\Program Files\", \"C:\\\\Program Files \\(x86\\)\" -Filter \"adb.exe\" -Recurse -ErrorAction SilentlyContinue -Depth 8 | Select-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"$env:USERPROFILE\" -Filter \"adb.exe\" -Recurse -ErrorAction SilentlyContinue -Depth 8 | Select-Object FullName)",
+      "PowerShell(cmd /c where adb 2>&1)",
+      "PowerShell(cmd /c \"dir /s /b C:\\\\Users\\\\abhay\\\\AppData\\\\Local\\\\adb.exe 2>nul\")",
+      "PowerShell(cmd /c \"dir /s /b C:\\\\Users\\\\abhay\\\\Downloads\\\\adb.exe 2>nul\")",
+      "PowerShell(cmd /c \"dir /s /b C:\\\\Users\\\\abhay\\\\adb.exe 2>nul\")",
+      "PowerShell(cmd /c \"dir /s /b C:\\\\adb.exe 2>nul\")",
+      "PowerShell(cmd /c \"dir /s /b D:\\\\adb.exe 2>nul\")",
+      "PowerShell(winget search \"platform-tools\" 2>&1)",
+      "PowerShell(winget install --id Google.PlatformTools --accept-source-agreements --accept-package-agreements 2>&1)",
+      "PowerShell(winget install --id Google.AndroidStudio --accept-source-agreements --accept-package-agreements 2>&1)",
+      "PowerShell(cmd /c \"dir /s /b `\"C:\\\\Program Files\\\\Android\\\\Android Studio`\"\\\\sdkmanager.bat 2>nul\")",
+      "PowerShell(cmd /c \"dir /s /b `\"C:\\\\Program Files\\\\Android\\\\Android Studio`\"\\\\sdkmanager.exe 2>nul\")",
+      "PowerShell(ls \"$env:LOCALAPPDATA\\\\Android\" -ErrorAction SilentlyContinue -Recurse -Depth 3 | Where-Object { $_.Name -match \"sdkmanager|cmdline\" })",
+      "PowerShell(ls \"$env:LOCALAPPDATA\\\\Android\" -ErrorAction SilentlyContinue)",
+      "Bash(ls -la /mnt/c/Users/abhay/OneDrive/Desktop/GreenBridge/GreenBridgeApp/.env 2>/dev/null || echo \"no .env file\")",
+      "Read(//mnt/c/Users/abhay/OneDrive/Desktop/GreenBridge/GreenBridgeApp/**)",
+      "Bash(cat > *)",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\abhay\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-abhay-OneDrive-Desktop-GreenBridge-GreenBridgeApp\\\\45438718-c55a-4ae6-803a-1026a31d5449\\\\tasks\\\\bcqum2ves.output\" -Tail 8\\) -join \"`n\")",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\abhay\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-abhay-OneDrive-Desktop-GreenBridge-GreenBridgeApp\\\\45438718-c55a-4ae6-803a-1026a31d5449\\\\tasks\\\\bwvwx028o.output\" -Tail 5\\) -join \"`n\")",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\abhay\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-abhay-OneDrive-Desktop-GreenBridge-GreenBridgeApp\\\\45438718-c55a-4ae6-803a-1026a31d5449\\\\tasks\\\\bqhvvhyau.output\"\\) -join \"`n\")",
+      "PowerShell(node -e \"console.log\\(require\\('./node_modules/@gorhom/bottom-sheet/package.json'\\).version\\)\" 2>&1)",
+      "Bash(npx tsc *)",
+      "PowerShell(adb devices 2>&1)",
+      "PowerShell($env:PATH += \";$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\"; adb devices)",
+      "PowerShell($env:PATH += \";$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\"; adb shell input keyevent 82)"
+    ],
+    "additionalDirectories": [
+      "\\mnt\\c\\Users\\abhay\\OneDrive\\Desktop\\GreenBridge\\GreenBridgeApp"
+    ]
+  }
+}
