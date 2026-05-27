@@ -543,5 +543,5 @@ Phase A is the demo Jerry needs by mid next week (per meeting doc §16). Phase B
 - Web AI extraction (the only thing we wire that's "AI"): [UploadMethod.tsx:923-1012](../../101lab-2/src/pages/dashboard/UploadMethod.tsx#L923-L1012)
 - Web RTK slices: [101lab-2/src/rtk/slices/productSlice.ts](../../101lab-2/src/rtk/slices/productSlice.ts)
 - Stitch project: `projects/10427403178230899557` ("Smart Scan AI Product Lister")
-- Companion docs: [STARTER_KIT.md](./STARTER_KIT.md), [AUTH.md](./AUTH.md)
+- Companion docs: [STARTER_KIT.md](./STARTER_KIT.md), [AUTH.md](./AUTH.md), [LOCALIZATION.md](./LOCALIZATION.md), [DESIGN_DELTA_v7.md](./DESIGN_DELTA_v7.md), [CAMERA_WHATSAPP_REDESIGN.md](./CAMERA_WHATSAPP_REDESIGN.md), [SMART_DETECTION_FLOW.md](./SMART_DETECTION_FLOW.md)
 - Meeting context: [../../meeting_discuss/sop_mobile_app_scan_disscuss.md](../../meeting_discuss/sop_mobile_app_scan_disscuss.md), [../../meeting_discuss/SOP_AI_INTEGRATION_PLAN.md](../../meeting_discuss/SOP_AI_INTEGRATION_PLAN.md)

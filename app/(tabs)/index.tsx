@@ -1,185 +1,94 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Alert,
-  ScrollView,
-  Animated,
-  Platform,
-} from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScanLine, FileText, CheckCircle2, History } from 'lucide-react-native';
-import NetInfo from '@react-native-community/netinfo';
+import { Camera, MapPin, Globe } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
+import { cssInterop } from 'react-native-css-interop';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { toast } from 'sonner-native';
 
+cssInterop(LinearGradient, {
+  className: 'style',
+});
+
+import { Screen, Text, LanguageSheet } from '@/components/ui';
 import { RecentSubmissionsList } from '@/components/scanner/RecentSubmissionsList';
-import { getScanResumeRoute } from '@/lib/scanResume';
-import { routes } from '@/lib/routes';
-import { verifyScanSessionFiles } from '@/services/upload/persistPhotos';
+import { haptics } from '@/lib/haptics';
+import { SMART_DETECT_ENABLED } from '@/lib/flags';
 import { useAuth } from '@/stores/authStore';
 import { useScanDraft } from '@/stores/scanDraftStore';
-import { getBranding } from '@/theme/branding';
-import { useRecentSubmissions } from '@/features/scanner/useRecentSubmissions';
+import { useSellerLocation } from '@/features/location/useSellerLocation';
+import { routes } from '@/lib/routes';
+
+const LANG_LABELS: Record<string, string> = { en: 'EN', zh: 'ZH', ja: 'JA', th: 'TH' };
 
 export default function ScanHomeScreen() {
   const profile = useAuth((s) => s.profile);
   const hydrate = useScanDraft((s) => s.hydrate);
   const hydrated = useScanDraft((s) => s.hydrated);
-  const hasDraft = useScanDraft((s) => s.hasDraft);
-  const reset = useScanDraft((s) => s.reset);
 
-  const draft = useScanDraft((s) => s.current);
-  const queuedItems = useScanDraft((s) => s.queuedItems);
+  const { t, i18n } = useTranslation();
+  const langLabel = LANG_LABELS[i18n.language] ?? i18n.language.toUpperCase();
+  const [langSheetOpen, setLangSheetOpen] = useState(false);
 
-  const draftCount = queuedItems.length + (draft ? 1 : 0);
+  const { location, detecting, detect } = useSellerLocation();
 
-  const recentSubmissionsQuery = useRecentSubmissions();
-  const submissionsCount = recentSubmissionsQuery.data?.length ?? 0;
+  const onLocationPress = async () => {
+    haptics.tap();
+    const res = await detect();
+    if (!res.ok && res.reason === 'denied') {
+      toast.error(
+        t('mobile.home.locationDeniedBody', {
+          defaultValue: 'Enable location access in Settings so we can show your area.',
+        })
+      );
+    }
+  };
 
-  const { logoLabel } = getBranding();
-  const scrollViewRef = useRef<ScrollView>(null);
-
-  const [isOnline, setIsOnline] = useState<boolean | null>(null);
-
-  // Animation values
-  const pulseAnim = useMemo(() => new Animated.Value(0.4), []);
-  const ringAnim = useMemo(() => new Animated.Value(0), []);
+  const scale = useSharedValue(1);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
 
-  // Monitor NetInfo
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      setIsOnline(state.isInternetReachable);
-    });
-    return () => unsubscribe();
-  }, []);
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.08, { duration: 1200 }),
+        withTiming(1, { duration: 1200 })
+      ),
+      -1,
+      true
+    );
+  }, [scale]);
 
-  // Online dot pulse animation
-  useEffect(() => {
-    if (isOnline === true) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 0.4,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    } else {
-      pulseAnim.setValue(0.4);
-    }
-  }, [isOnline, pulseAnim]);
-
-  // Giant scan button ring loop
-  useEffect(() => {
-    Animated.loop(
-      Animated.timing(ringAnim, {
-        toValue: 1,
-        duration: 2000,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, [ringAnim]);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
   const startScan = () => {
-    if (hasDraft()) {
-      Alert.alert(
-        'Resume scan?',
-        'You have an in-progress listing. Continue where you left off or start fresh?',
-        [
-          {
-            text: 'Start fresh',
-            style: 'destructive',
-            onPress: () => {
-              reset();
-              router.push(routes.scanListingMethod);
-            },
-          },
-          {
-            text: 'Resume',
-            onPress: async () => {
-              const state = useScanDraft.getState();
-              const ok = await verifyScanSessionFiles({
-                current: state.current,
-                queuedItems: state.queuedItems,
-                pendingPhotos: state.pendingPhotos,
-              });
-              if (!ok) {
-                Alert.alert(
-                  'Draft expired',
-                  'Saved photos or documents are no longer on this device. Start a new scan.',
-                  [{ text: 'OK', onPress: () => reset() }],
-                );
-                return;
-              }
-              router.push(
-                getScanResumeRoute({
-                  mode: state.mode,
-                  queuedItems: state.queuedItems,
-                  current: state.current,
-                }),
-              );
-            },
-          },
-          { text: 'Cancel', style: 'cancel' },
-        ],
-      );
+    haptics.tap();
+    if (SMART_DETECT_ENABLED) {
+      useScanDraft.getState().reset();
+      router.push(routes.scanCamera);
       return;
     }
     router.push(routes.scanListingMethod);
   };
 
-  const handleDraftCardPress = async () => {
-    if (draftCount === 0) {
-      Alert.alert(
-        'No drafts',
-        'You have no saved drafts at the moment. Tap the scan button to start a new listing.'
-      );
-      return;
-    }
-    const state = useScanDraft.getState();
-    const ok = await verifyScanSessionFiles({
-      current: state.current,
-      queuedItems: state.queuedItems,
-      pendingPhotos: state.pendingPhotos,
-    });
-    if (!ok) {
-      Alert.alert(
-        'Draft expired',
-        'Saved photos or documents are no longer on this device. Start a new scan.',
-        [{ text: 'OK', onPress: () => reset() }],
-      );
-      return;
-    }
-    router.push(
-      getScanResumeRoute({
-        mode: state.mode,
-        queuedItems: state.queuedItems,
-        current: state.current,
-      }),
-    );
-  };
-
-  const scrollToSubmissions = () => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+  const startManualGrouped = () => {
+    haptics.tap();
+    const store = useScanDraft.getState();
+    store.reset();
+    store.setListingMode('grouped');
+    router.push(routes.scanCamera);
   };
 
   const getInitials = (name: string) => {
@@ -188,433 +97,139 @@ export default function ScanHomeScreen() {
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-    return name.slice(0, 2).toUpperCase();
+    return name.slice(0, 1).toUpperCase();
   };
 
-  if (!hydrated) return null;
-  if (!profile) return null;
+  if (!hydrated || !profile) return null;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <Screen padded={false} scroll={false} edges={['top']}>
       {/* App Bar Header */}
-      <View style={styles.header}>
-        <Text style={styles.logoText}>{logoLabel}</Text>
-        <View style={styles.headerActions}>
+      <View className="px-lg pt-sm pb-md bg-white border-b border-neutral-100 shadow-sm gap-md">
+        <View className="flex-row items-center justify-between gap-sm">
+          {/* Current location */}
           <Pressable
-            onPress={() => router.push(routes.activityHistory)}
-            hitSlop={10}
+            onPress={onLocationPress}
+            disabled={detecting}
+            className="flex-1 gap-[1px] active:opacity-70"
             accessibilityRole="button"
-            accessibilityLabel="Activity history"
+            accessibilityLabel={t('mobile.home.locationA11y', {
+              defaultValue: 'Your location, tap to update',
+            })}
           >
-            <History color="#0a4a2f" size={22} />
+            <View className="flex-row items-center gap-xs">
+              <MapPin size={18} color="#10B981" />
+              <Text variant="bodyMd" tone="primary" className="font-bold flex-shrink" numberOfLines={1}>
+                {location?.label || t('mobile.home.locationSet', { defaultValue: 'Set location' })}
+              </Text>
+              {detecting && (
+                <View className="ml-xs">
+                  <ActivityIndicator size="small" color="#10B981" />
+                </View>
+              )}
+            </View>
+            <Text variant="caption" tone="tertiary" className="ml-[21px]" numberOfLines={1}>
+              {location?.address ||
+                location?.country ||
+                t('mobile.home.locationTapHint', { defaultValue: 'Tap to detect your area' })}
+            </Text>
           </Pressable>
-          <Pressable
-            style={styles.avatarContainer}
-            onPress={() => router.push(routes.profile)}
-          accessibilityRole="button"
-          accessibilityLabel={`Profile, ${profile.name}`}
-        >
-            <Text style={styles.avatarText}>{getInitials(profile.name)}</Text>
-          </Pressable>
+
+          {/* Header Actions */}
+          <View className="flex-row items-center gap-sm flex-shrink-0">
+            <Pressable
+              onPress={() => setLangSheetOpen(true)}
+              className="bg-neutral-100 border border-neutral-200 rounded-xl px-md py-xs flex-row items-center gap-xs active:bg-neutral-200"
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('mobile.home.languageTitle')}, ${langLabel}`}
+            >
+              <Globe size={14} color="#4B5563" />
+              <Text variant="bodySm" tone="secondary" className="font-semibold">
+                {langLabel}
+              </Text>
+            </Pressable>
+            <Pressable
+              className="w-9 h-9 rounded-full bg-primary-900 justify-center items-center border border-neutral-200 shadow-sm active:opacity-80"
+              onPress={() => router.push(routes.profile)}
+              accessibilityRole="button"
+              accessibilityLabel={`Profile, ${profile.name}`}
+            >
+              <Text variant="caption" tone="inverse" className="font-semibold text-[13px]">
+                {getInitials(profile.name)}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Greeting Row */}
+        <View className="flex-row items-center gap-xs">
+          <View className="bg-neutral-100 px-sm py-[2px] rounded">
+            <Text variant="caption" tone="secondary" className="font-bold tracking-wider text-[10px]">
+              STAFF
+            </Text>
+          </View>
+          <Text variant="caption" tone="brand" className="font-bold tracking-wider text-[10px] text-primary-800">
+            M{String(profile.id).padStart(3, '0')}
+          </Text>
+          <Text variant="body" tone="secondary" className="flex-shrink" numberOfLines={1}>
+            Hi,{' '}
+            <Text variant="body" className="font-bold text-neutral-900">
+              {profile.name.split(' ')[0]}
+            </Text>
+            .
+          </Text>
         </View>
       </View>
 
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scroll}>
-        {/* Welcome Text */}
-        <View style={styles.welcomeContainer}>
-          <Text style={styles.greeting}>
-            {getGreeting()}, {profile.name.split(' ')[0]}
-          </Text>
-          <Text style={styles.subtitle}>Industrial Equipment Capture</Text>
-        </View>
-
-        {/* Network Status indicator */}
-        {isOnline !== null ? (
-          <View style={styles.statusContainer}>
-            <View style={styles.dotContainer}>
-              <View style={[styles.statusDot, isOnline ? styles.dotOnline : styles.dotOffline]} />
-              {isOnline && (
-                <Animated.View
-                  style={[
-                    styles.statusDotPulse,
-                    {
-                      opacity: pulseAnim.interpolate({
-                        inputRange: [0.4, 1],
-                        outputRange: [0.6, 0],
-                      }),
-                      transform: [
-                        {
-                          scale: pulseAnim.interpolate({
-                            inputRange: [0.4, 1],
-                            outputRange: [1, 2.5],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                />
-              )}
-            </View>
-            <Text style={styles.statusText}>{isOnline ? 'Online' : 'Offline'}</Text>
-          </View>
-        ) : null}
-
-        {/* Giant Pulsing Scan Button */}
-        <View style={styles.scanSection}>
-          <View style={styles.scanButtonWrapper}>
+      <ScrollView contentContainerClassName="px-xl pt-md pb-2xl">
+        {/* Compact Vertical Scan Card */}
+        <Pressable
+          onPress={startScan}
+          accessibilityRole="button"
+          accessibilityLabel="Scan and upload equipment"
+          className="mt-xs rounded-2xl overflow-hidden shadow-md active:scale-[0.985] active:opacity-95"
+        >
+          <LinearGradient
+            colors={['#14452f', '#236b48']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="py-2xl px-xl items-center"
+          >
             <Animated.View
-              style={[
-                styles.scanRing,
-                {
-                  opacity: ringAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.35, 0],
-                  }),
-                  transform: [
-                    {
-                      scale: ringAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [1, 1.45],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-              accessibilityElementsHidden={true}
-              importantForAccessibility="no"
-            />
-            <Animated.View
-              style={[
-                styles.scanRing,
-                {
-                  opacity: ringAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.15, 0],
-                  }),
-                  transform: [
-                    {
-                      scale: ringAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [1, 1.85],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-              accessibilityElementsHidden={true}
-              importantForAccessibility="no"
-            />
-            <Pressable
-              style={styles.giantScanButton}
-              onPress={startScan}
-              accessibilityRole="button"
-              accessibilityLabel="Scan equipment"
+              style={animatedStyle}
+              className="w-14 h-14 rounded-2xl bg-white/10 items-center justify-center mb-md border border-white/20"
             >
-              <ScanLine color="#ffffff" size={48} />
-              <Text style={styles.scanButtonText}>TAP TO SCAN</Text>
-            </Pressable>
-          </View>
-          <Text style={styles.hint}>
-            Take nameplate & equipment photos — AI handles specs listing details.
-          </Text>
-        </View>
+              <Camera color="#ffffff" size={26} strokeWidth={2} />
+            </Animated.View>
+            <Text variant="title" tone="inverse" className="font-bold tracking-tight">
+              {t('mobile.home.scanTitle')}
+            </Text>
+            <Text variant="bodySm" tone="inverse" className="mt-xs text-center opacity-90 px-lg">
+              {t('mobile.home.scanSubtitle')}
+            </Text>
+          </LinearGradient>
+        </Pressable>
 
-        {/* Bento Grid */}
-        <View style={styles.bentoGrid}>
+        {/* Manual grouped fallback */}
+        {SMART_DETECT_ENABLED && (
           <Pressable
-            style={styles.bentoCard}
-            onPress={handleDraftCardPress}
+            onPress={startManualGrouped}
+            hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={`Saved Drafts, ${draftCount} items pending`}
+            className="self-center py-md mt-xs active:opacity-80"
           >
-            <View style={styles.bentoCardHeader}>
-              <View style={styles.bentoIconBackground}>
-                <FileText color="#0a4a2f" size={22} />
-              </View>
-              {draftCount > 0 ? (
-                <View style={styles.badgePending}>
-                  <Text style={styles.badgePendingText}>PENDING</Text>
-                </View>
-              ) : null}
-            </View>
-            <Text style={styles.bentoVal}>{draftCount}</Text>
-            <Text style={styles.bentoLabel}>Saved Drafts</Text>
+            <Text variant="bodySm" tone="brand" className="font-semibold text-center">
+              {t('mobile.home.scanOneByOne')}
+            </Text>
           </Pressable>
-
-          <Pressable
-            style={styles.bentoCard}
-            onPress={scrollToSubmissions}
-            accessibilityRole="button"
-            accessibilityLabel={`Recent Batches, ${submissionsCount} items submitted`}
-          >
-            <View style={styles.bentoCardHeader}>
-              <View style={styles.bentoIconBackground}>
-                <CheckCircle2 color="#0a4a2f" size={22} />
-              </View>
-              <View style={styles.badgeSubmitted}>
-                <Text style={styles.badgeSubmittedText}>SUBMITTED</Text>
-              </View>
-            </View>
-            <Text style={styles.bentoVal}>{submissionsCount}</Text>
-            <Text style={styles.bentoLabel}>Recent Batches</Text>
-          </Pressable>
-        </View>
+        )}
 
         {/* Recent Submissions List Feed */}
-        <RecentSubmissionsList query={recentSubmissionsQuery} />
+        <RecentSubmissionsList />
       </ScrollView>
-    </SafeAreaView>
+
+      <LanguageSheet visible={langSheetOpen} onClose={() => setLangSheetOpen(false)} />
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.03,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-      },
-    }),
-  },
-  logoText: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 20,
-    color: '#0f172a',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  avatarContainer: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#0a4a2f',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
-    color: '#ffffff',
-    fontWeight: '600',
-  },
-  scroll: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 40,
-  },
-  welcomeContainer: {
-    marginBottom: 8,
-  },
-  greeting: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 24,
-    color: '#0f172a',
-  },
-  subtitle: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    color: '#64748b',
-    marginTop: 4,
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginTop: 12,
-    marginBottom: 28,
-  },
-  dotContainer: {
-    width: 8,
-    height: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-    position: 'relative',
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusDotPulse: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10b981',
-  },
-  dotOnline: {
-    backgroundColor: '#10b981',
-  },
-  dotOffline: {
-    backgroundColor: '#f59e0b',
-  },
-  statusText: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 12,
-    color: '#475569',
-    fontWeight: '500',
-  },
-  scanSection: {
-    alignItems: 'center',
-    marginVertical: 12,
-  },
-  scanButtonWrapper: {
-    width: 200,
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    marginBottom: 20,
-  },
-  scanRing: {
-    position: 'absolute',
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    borderWidth: 3,
-    borderColor: '#0a4a2f',
-    backgroundColor: 'transparent',
-  },
-  giantScanButton: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: '#0a4a2f',
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#0a4a2f',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0 10px 25px rgba(10, 74, 47, 0.25)',
-      },
-    }),
-  },
-  scanButtonText: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 13,
-    color: '#ffffff',
-    marginTop: 10,
-    letterSpacing: 1.5,
-  },
-  hint: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 18,
-    paddingHorizontal: 20,
-  },
-  bentoGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 32,
-    gap: 12,
-  },
-  bentoCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#0f172a',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 4px rgba(15, 23, 42, 0.03)',
-      },
-    }),
-  },
-  bentoCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  bentoIconBackground: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#f0fdf4',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  badgePending: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#fffbeb',
-  },
-  badgePendingText: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 9,
-    color: '#b45309',
-  },
-  badgeSubmitted: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#f0fdf4',
-  },
-  badgeSubmittedText: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 9,
-    color: '#15803d',
-  },
-  bentoVal: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 28,
-    color: '#0f172a',
-  },
-  bentoLabel: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
-    color: '#475569',
-    marginTop: 4,
-  },
-});

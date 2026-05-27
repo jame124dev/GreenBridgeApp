@@ -1,10 +1,17 @@
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { Home, ScanLine, History, User } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fonts } from '@/theme/typography';
+import { Home, History, User } from 'lucide-react-native';
 
 import { colors } from '@/theme/colors';
 
 export default function TabsLayout() {
+  // Respect the Android system nav (gesture pill / 3-button bar) so the tab
+  // bar doesn't merge into it. iOS home-indicator inset is also covered.
+  const insets = useSafeAreaInsets();
+  const bottomInset = insets.bottom;
+
   return (
     <Tabs
       screenOptions={{
@@ -13,8 +20,8 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: '#ffffff',
           borderTopColor: '#f1f5f9',
-          height: 68,
-          paddingBottom: 6,
+          height: 68 + bottomInset,
+          paddingBottom: 6 + bottomInset,
           paddingTop: 6,
           ...Platform.select({
             ios: {
@@ -51,22 +58,15 @@ export default function TabsLayout() {
           ),
         }}
       />
+      {/* Scan tab temporarily hidden from the bottom bar — the camera screen
+          crashes on mount (intermittent Fabric "addViewAt: child already has a
+          parent" race, see app/scan/camera.tsx). href:null keeps the /scan/camera
+          route reachable while we sort the crash; re-add the tabBarIcon block to
+          restore it. */}
       <Tabs.Screen
         name="scan"
         options={{
-          tabBarIcon: ({ focused }) => (
-            focused ? (
-              <View style={styles.activeCapsule}>
-                <ScanLine color="#ffffff" size={20} />
-                <Text style={styles.activeText}>Scan</Text>
-              </View>
-            ) : (
-              <View style={styles.inactiveTab}>
-                <ScanLine color="#64748b" size={20} />
-                <Text style={styles.inactiveText}>Scan</Text>
-              </View>
-            )
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   activeText: {
     color: '#ffffff',
     fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: fonts.semibold,
     fontWeight: '600',
   },
   inactiveTab: {

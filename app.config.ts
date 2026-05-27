@@ -34,6 +34,18 @@ export default (): ExpoConfig => ({
     'expo-secure-store',
     'expo-notifications',
     'expo-localization',
+    'expo-image',
+    [
+      'expo-location',
+      {
+        // Foreground only — used to auto-fill the listing's pickup address.
+        locationAlwaysAndWhenInUsePermission:
+          'Allow GreenBridge to use your location to auto-fill the pickup address of a listing.',
+        locationWhenInUsePermission:
+          'Allow GreenBridge to use your location to auto-fill the pickup address of a listing.',
+        isAndroidBackgroundLocationEnabled: false,
+      },
+    ],
     [
       'expo-splash-screen',
       {
@@ -45,7 +57,6 @@ export default (): ExpoConfig => ({
       },
     ],
   ],
-  projectId: '57cd3db7-90b1-4b57-a723-679bfe81ef69',
   experiments: {
     typedRoutes: true,
   },
