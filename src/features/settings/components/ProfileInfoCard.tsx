@@ -10,11 +10,11 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
+import { PickerSelect } from '@/components/ui/PickerSelect';
 import { SelectButton } from '@/components/ui/SelectButton';
-import { Sheet } from '@/components/ui/Sheet';
 import { useUpdateUserSettings } from '@/features/auth/useUserProfile';
 import { haptics } from '@/lib/haptics';
-import { colors } from '@/theme';
+import { brand, colors } from '@/constants/theme';
 import type { UserProfile } from '@/services/auth/userProfile';
 
 import { INDUSTRY_OPTIONS } from '../constants';
@@ -29,7 +29,6 @@ interface Props {
 export function ProfileInfoCard({ profile }: Props) {
   const { t } = useTranslation();
   const update = useUpdateUserSettings();
-  const [industrySheetOpen, setIndustrySheetOpen] = useState(false);
   const [interestsSheetOpen, setInterestsSheetOpen] = useState(false);
 
   const raw = profile.personalInfo.industry || '';
@@ -75,8 +74,8 @@ export function ProfileInfoCard({ profile }: Props) {
     <>
       <Card>
         <Card.Header
-          icon={<UserIcon color={colors.primary} size={18} />}
-          iconBg={colors.primarySurface}
+          icon={<UserIcon color={brand.primary} size={18} />}
+          iconBg={brand.primarySurface}
           title={t('mobile.settings.profileInformation')}
           description={t('mobile.settings.profileDesc')}
         />
@@ -123,10 +122,14 @@ export function ProfileInfoCard({ profile }: Props) {
           </Field>
 
           <Field label={t('mobile.settings.industry')}>
-            <SelectButton
-              value={industry || t('mobile.settings.industryPlaceholder')}
-              placeholder={!industry}
-              onPress={() => setIndustrySheetOpen(true)}
+            <PickerSelect
+              value={industry}
+              placeholder={t('mobile.settings.industryPlaceholder')}
+              options={INDUSTRY_OPTIONS.map((opt) => ({ label: opt, value: opt }))}
+              onChange={(v) => {
+                setValue('industry', v);
+                if (v !== 'Other') setValue('industryOther', '');
+              }}
             />
             {industry === 'Other' ? (
               <Controller
@@ -165,26 +168,11 @@ export function ProfileInfoCard({ profile }: Props) {
             label={update.isPending ? t('mobile.settings.saving') : t('mobile.settings.save')}
             onPress={handleSubmit(onSubmit)}
             loading={update.isPending || isSubmitting}
-            leftIcon={<Save color={colors.white} size={16} />}
+            leftIcon={<Save color={colors.neutral[0]} size={16} />}
             fullWidth
           />
         </Card.Body>
       </Card>
-
-      <Sheet visible={industrySheetOpen} onClose={() => setIndustrySheetOpen(false)} title={t('mobile.settings.industry')}>
-        {INDUSTRY_OPTIONS.map((opt) => (
-          <Sheet.Option
-            key={opt}
-            label={opt}
-            active={opt === industry}
-            onPress={() => {
-              setValue('industry', opt);
-              if (opt !== 'Other') setValue('industryOther', '');
-              setIndustrySheetOpen(false);
-            }}
-          />
-        ))}
-      </Sheet>
 
       <InterestsSheet
         visible={interestsSheetOpen}

@@ -1,7 +1,23 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-import type { DraftItem, Photo } from '@/stores/scanDraftStore';
+import { appendSpecsToDescription } from '@/features/scanner/appendSpecsToDescription';
+import { operationStatusForInstallation } from '@/features/scanner/constants';
+import type { DraftItem, MarketplaceKey, Photo } from '@/stores/scanDraftStore';
+
+/**
+ * Web parity — mirrors `marketplaceToAllowedSite` in
+ * `GreenBridgeSeller/src/pages/new-submission-upload/utils/buildProductFormData.ts:13-19`.
+ * Some marketplaces use short slugs in `allowed_sites[]` even when the env
+ * site_type uses a longer name. Exported so the grouped-submit pipeline
+ * (`submitGroupedListings.ts`) can derive the same value per product.
+ */
+export function marketplaceToAllowedSite(marketplace: MarketplaceKey): string {
+  if (marketplace === '101machine') return 'machines';
+  if (marketplace === '101recycle') return 'recycle';
+  if (marketplace === '101it') return '101it';
+  return 'LabGreenbidz';
+}
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -69,23 +85,47 @@ export async function buildSmartDetectionFormData(
   return fd;
 }
 
+export type ProductGcsRefs = {
+  /** Session id returned by /gcs/upload — round-tripped to create-product-direct. */
+  sessionId: string;
+  /** Permanent GCS object paths in `photos[]` order. */
+  objectNames: string[];
+};
+
 export async function buildProductFormData(
   item: DraftItem,
   photos: Photo[],
   opts: { sellerId: number; sellerName: string; siteType: string },
+  gcs?: ProductGcsRefs,
 ) {
   const fd = new FormData();
 
-  for (let i = 0; i < photos.length; i++) {
-    await appendFile(fd, 'images', photos[i], i);
+  if (gcs) {
+    // GCS path: photos were pushed to /gcs/upload already; backend reads
+    // bytes from cloud storage when these refs are present. Bypasses
+    // Wordfence's 9+ image 403 — see Docs/GCS_UPLOAD_INTEGRATION_PLAN.md.
+    for (const objectName of gcs.objectNames) {
+      fd.append('gcs_image_paths[]', objectName);
+    }
+    fd.append('gcs_session_id', gcs.sessionId);
+  } else {
+    // Legacy path — inline image bytes. Still works server-side; used
+    // when no GCS upload happened (e.g. older drafts, fallback paths).
+    for (let i = 0; i < photos.length; i++) {
+      await appendFile(fd, 'images', photos[i], i);
+    }
   }
 
+  // Documents stay inline regardless — Wordfence 403 only hits image counts.
   for (let i = 0; i < item.documents.length; i++) {
     await appendDocument(fd, 'documents', item.documents[i], i);
   }
 
   fd.append('product_title', item.title);
-  fd.append('product_content', item.description || '');
+  // S1: fold brand/model/year/weight/dimensions/CO2 into the description
+  // body (web parity — see buildProductFormData.ts on web). Backend treats
+  // product_content as opaque text.
+  fd.append('product_content', appendSpecsToDescription(item));
   fd.append('product_type', 'simple');
   if (item.categoryId) {
     fd.append('product_category_ids', item.categoryId);
@@ -101,11 +141,26 @@ export async function buildProductFormData(
   fd.append('sellerVisible', String(item.sellerVisible));
 
   item.condition.forEach((c) => fd.append('item_condition[]', c));
-  item.operationStatus.forEach((s) => fd.append('operation_status[]', s));
 
-  if (item.location) {
-    fd.append('location[]', item.location.address);
-    fd.append('country', item.location.country);
+  // S5.1: installation IS the canonical operation status. Web parity —
+  // ReviewSubmitScreen.tsx:149 overrides `operation_status[]` at submit time
+  // based on the user's installation choice. "installed" → ["needDeinstall"]
+  // (buyer needs to deinstall before shipping); "deinstalled" → ["deinstalled"]
+  // (ready-to-ship). The AI-extracted `item.operationStatus` is ignored at
+  // submit; the picker in LocationCard is the single source of truth.
+  operationStatusForInstallation(item.installation).forEach((s) =>
+    fd.append('operation_status[]', s),
+  );
+
+  // S5.2: multi-location. Send one `location[]` entry per array row;
+  // backend takes a single `country` form key (web parity — uses the first
+  // entry from `locationCountries[]`). Empty rows are pre-filtered by the
+  // schema's superRefine so this loop never emits a blank `location[]`.
+  item.locations.forEach((addr) => {
+    if (addr.trim().length > 0) fd.append('location[]', addr.trim());
+  });
+  if (item.locationCountries[0]) {
+    fd.append('country', item.locationCountries[0]);
   }
 
   const enableBuyNow = item.priceFormat === 'buyNow';
@@ -115,12 +170,82 @@ export async function buildProductFormData(
   fd.append('price_per_unit', enableBuyNow ? item.pricePerUnit : '');
 
   fd.append('replacement_cost_per_unit', '');
-  fd.append('weight_per_unit', '');
+  // S1: previously hard-coded to ''. Backend takes float and stores as meta.
+  fd.append('weight_per_unit', item.weight || '');
 
-  const sites = item.allowedSites.length ? item.allowedSites : [opts.siteType];
-  sites.forEach((site) => fd.append('allowed_sites[]', site));
+  // S1: item_grade lands in backend `grade` meta (controller/wordPressV2.js:339).
+  fd.append('item_grade', item.grade);
+
+  // S1: serial_number is silently dropped by backend today (not in the
+  // destructured field list in wordPressV2.js) but web sends it too — keep
+  // parity so when the backend adds the slot, mobile records are populated.
+  const serial = item.serialNumber?.trim();
+  if (serial) fd.append('serial_number', serial);
+
+  // S5.1: marketplace picker is the single source of truth for `allowed_sites[]`,
+  // matching web's `buildProductFormData.ts` (which only reads `form.marketplace`).
+  // Falls back to env siteType only when marketplaceToAllowedSite returns empty,
+  // which shouldn't happen for the 4 known marketplace values.
+  const allowedSite = marketplaceToAllowedSite(item.marketplace) || opts.siteType;
+  fd.append('allowed_sites[]', allowedSite);
 
   return fd;
+}
+
+/**
+ * W1 (scan_v3) — plain-object equivalent of the per-product field set used by
+ * `buildProductFormData`. Returned as a JSON-serializable Record so the
+ * grouped-submit endpoint can carry N products in a single `products_json`
+ * payload (mirrors web's `productMetaFromForm` in
+ * `GreenBridgeSeller/.../utils/buildProductFormData.ts:88-133`). Single-listing
+ * submit keeps using the FormData builder above (the backend route for that
+ * path expects individual form keys, not a JSON blob).
+ *
+ * Files/documents are NOT included here — the grouped pipeline appends them
+ * to FormData as `images_${i}` / `documents_${i}` separately.
+ */
+export function productMetaFromItem(
+  item: DraftItem,
+  opts: { sellerId: number; sellerName: string },
+): Record<string, string | string[]> {
+  const enableBuyNow = item.priceFormat === 'buyNow';
+  const meta: Record<string, string | string[]> = {
+    product_title: item.title,
+    product_content: appendSpecsToDescription(item),
+    product_type: 'simple',
+    seller_name: opts.sellerName,
+    post_author_id: String(opts.sellerId),
+    steps: '1',
+    quantity: String(item.quantity),
+    sellerVisible: String(item.sellerVisible),
+    price_now_enabled: enableBuyNow ? '1' : '0',
+    price_format: item.priceFormat,
+    price_currency: item.priceCurrency,
+    price_per_unit: enableBuyNow ? item.pricePerUnit : '',
+    replacement_cost_per_unit: '',
+    weight_per_unit: item.weight || '',
+    item_grade: item.grade,
+    item_condition: item.condition,
+    operation_status: operationStatusForInstallation(item.installation),
+    allowed_sites: [marketplaceToAllowedSite(item.marketplace)],
+  };
+
+  if (item.categoryId) meta.product_category_ids = item.categoryId;
+  if (item.categoryName) meta.category_name = item.categoryName;
+
+  const serial = item.serialNumber?.trim();
+  if (serial) meta.serial_number = serial;
+
+  const locations = item.locations
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  if (locations.length) meta.location = locations;
+
+  if (item.locationCountries[0]) {
+    meta.country = item.locationCountries[0];
+  }
+
+  return meta;
 }
 
 export function getSiteType(): string {

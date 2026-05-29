@@ -2,6 +2,7 @@ import type { Href } from 'expo-router';
 
 import { SMART_DETECT_ENABLED } from '@/lib/flags';
 import { routes } from '@/lib/routes';
+import type { MappedSmartDetection } from '@/features/scanner/smartDetectionTypes';
 import type { DraftItem, ListingMode } from '@/stores/scanDraftStore';
 
 // Fresh-scan entry: smart-detection opens the camera directly (the AI picks
@@ -27,11 +28,26 @@ function resumeRouteForItem(draft: DraftItem): Href {
   return routes.scanProcessing;
 }
 
-export function getScanResumeRoute(state: {
+export type ScanResumeState = {
   mode: ListingMode;
   queuedItems: DraftItem[];
   current: DraftItem | null;
-}): Href {
+  // Memory-only handshake from processing → detection. Only set during the
+  // session that ran AI; lost on cold start. When present, the user was
+  // mid-detection and we route them straight back to that screen.
+  pendingDetection?: MappedSmartDetection | null;
+};
+
+// Resume decisions live here as a single tree. Evaluated top to bottom so
+// the most specific in-progress state wins. The staged screen was removed
+// per product call — capture now flows camera → processing directly, so
+// `pendingPhotos` no longer carries an active resume target.
+export function getScanResumeRoute(state: ScanResumeState): Href {
+  // 1. Warm resume: user was on the detection screen this session.
+  //    Only reachable when pendingDetection survived in memory.
+  if (state.pendingDetection) return routes.scanDetection;
+
+  // 2. Grouped session: existing behavior, queue and current draft as before.
   if (state.mode === 'grouped') {
     if (state.queuedItems.length > 0 && !state.current) {
       return routes.scanGroupedReview;
@@ -42,6 +58,8 @@ export function getScanResumeRoute(state: {
     return freshScanRoute;
   }
 
-  if (!state.current) return freshScanRoute;
-  return resumeRouteForItem(state.current);
+  // 3. Single-mode draft: continue editing where the user left off.
+  if (state.current) return resumeRouteForItem(state.current);
+
+  return freshScanRoute;
 }

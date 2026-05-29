@@ -1,40 +1,113 @@
-import { useEffect } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
-import { AlertTriangle, ChevronLeft, ChevronRight, Sparkles, Trash2 } from 'lucide-react-native';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
-import { AppImage, Badge, Button, HStack, Screen, Stack } from '@/components/ui';
+import { AppImage, HStack, Screen, Stack } from '@/components/ui';
+import {
+  getDraftRequiredStatus,
+  type RequiredRowKey,
+} from '@/features/scanner/requiredStatus';
 import { useSubmitGroupedListing } from '@/features/scanner/useSubmitGroupedListing';
 import { haptics } from '@/lib/haptics';
 import { routes } from '@/lib/routes';
 import { safeBack } from '@/lib/safeBack';
 import { useScanDraft, type DraftItem } from '@/stores/scanDraftStore';
-import { colors, fonts, fontSize, radius, spacing } from '@/theme';
+import { brand } from '@/constants/theme';
 
-// How many trailing photos to show as thumbnails under the hero before
-// collapsing the rest into a "+N" overlay on the last tile.
-const MAX_THUMBS = 4;
-
-export default function GroupedReviewScreen() {
+/**
+ * Round 2 R1 — review LIST hub (replaces the Round-1 linear wizard).
+ *
+ * One row per `queuedItems[i]` with a live completion badge. Tapping a row
+ * opens the per-item editor (R2 route `routes.scanGroupedEdit(index)`); when
+ * the editor's Save & Return lands, the hub re-renders from the live
+ * `queuedItems` store and the badge flips to "Ready ✓".
+ *
+ * Submit is pinned at the bottom and DISABLED until every row passes the
+ * Ready predicate (note R-3: `getDraftRequiredStatus(item).allComplete` AND
+ * `item.photos.length > 0`). A helper line shows "{ready} of {total} ready"
+ * so the gate is never a mystery.
+ *
+ * Note R-2 honored: all per-item writes go through `patchQueuedItem(index, …)`
+ * from the editor; the hub itself never touches `editQueuedItem` /
+ * `current` / `editingGroupedItem`.
+ * Note R-4 honored: smart-detection low-confidence nudge and the "it's
+ * actually one product" pill (which leaves the wizard for the single-product
+ * `detail.tsx` editor) live at the top of the hub. Empty-queue redirect
+ * to `routes.scanHome` preserved.
+ */
+export default function GroupedReviewHub() {
   const { t } = useTranslation();
   const queuedItems = useScanDraft((s) => s.queuedItems);
+  const reset = useScanDraft((s) => s.reset);
   const sessionVisibility = useScanDraft((s) => s.sessionVisibility);
   const networkSellers = useScanDraft((s) => s.networkSellers);
-  const removeQueuedItem = useScanDraft((s) => s.removeQueuedItem);
-  const editQueuedItem = useScanDraft((s) => s.editQueuedItem);
   const submitGrouped = useSubmitGroupedListing();
-  const reset = useScanDraft((s) => s.reset);
 
-  // Smart-detection meta — only populated when this screen was reached via the
-  // auto single-vs-multiple flow (Docs/SMART_DETECTION_FLOW.md). Empty otherwise.
+  // Smart-detection handoff state (note R-4).
   const detectionSummary = useScanDraft((s) => s.detectionSummary);
   const detectionConfidence = useScanDraft((s) => s.detectionConfidence);
   const mergedSingle = useScanDraft((s) => s.mergedSingle);
   const collapseToSingle = useScanDraft((s) => s.collapseToSingleFromSmartDetection);
 
+  // Bounce to home when the queue empties — BUT NOT while a submit is in
+  // flight or has just succeeded. onSuccess calls reset() (emptying the queue)
+  // immediately before navigating to the Success screen; without this guard the
+  // empty-queue redirect races and overrides that nav, dumping the user on Home
+  // instead of Success (and making it look like nothing was submitted).
+  useEffect(() => {
+    if (submitGrouped.isPending || submitGrouped.isSuccess) return;
+    if (queuedItems.length === 0) router.replace(routes.scanHome);
+  }, [queuedItems.length, submitGrouped.isPending, submitGrouped.isSuccess]);
+
+  // Per-row + aggregate readiness. Single source of truth: the same
+  // `getDraftRequiredStatus` predicate Submit will enforce (note R-3).
+  // D3 (note D-3): also surface the missing-row keys so the badge can preview
+  // them ("Missing: price, condition") — derived from the SAME `rows` object
+  // the predicate already builds; no parallel field-derivation path.
+  const rowStatuses = useMemo(
+    () =>
+      queuedItems.map((item) => {
+        const status = getDraftRequiredStatus(item);
+        const hasPhotos = (item.photos?.length ?? 0) > 0;
+        const ready = status.allComplete && hasPhotos;
+        const missingKeys = (Object.keys(status.rows) as RequiredRowKey[]).filter(
+          (k) => !status.rows[k],
+        );
+        const missingCount = missingKeys.length;
+        return { ready, missingCount, missingKeys };
+      }),
+    [queuedItems],
+  );
+
+  const total = queuedItems.length;
+  const readyCount = rowStatuses.filter((r) => r.ready).length;
+  const allReady = total > 0 && readyCount === total;
+
+  if (queuedItems.length === 0) return null;
+
   const fromDetection = !!detectionSummary;
   const isLowConfidence = fromDetection && detectionConfidence < 0.7;
+  const showCollapsePill = fromDetection && mergedSingle;
+
+  const onRowTap = (index: number) => {
+    haptics.tap();
+    router.push(routes.scanGroupedEdit(index));
+  };
 
   const useAsSingleProduct = async () => {
     haptics.impact();
@@ -42,316 +115,554 @@ export default function GroupedReviewScreen() {
     router.replace(routes.scanDetail);
   };
 
-  const editItem = (id: string) => {
-    editQueuedItem(id);
-    router.push(routes.scanDetail);
-  };
+  // R3: gated Submit. The Button's `disabled={!allReady || isPending}` already
+  // prevents the typical not-ready tap, but we re-sweep here as defense in
+  // depth — if any item somehow fails the Ready predicate at submit time
+  // (e.g. a store-side race), name the broken row, jump the user there,
+  // never let a partial-data POST reach the backend (whose grouped endpoint
+  // would otherwise 400).
+  const onSubmitAll = () => {
+    if (submitGrouped.isPending) return;
 
-  useEffect(() => {
-    if (queuedItems.length === 0) router.replace(routes.scanHome);
-  }, [queuedItems.length]);
+    // Pre-flight sweep over the live store queue (not the React snapshot).
+    const liveItems = useScanDraft.getState().queuedItems;
+    for (let i = 0; i < liveItems.length; i++) {
+      const it = liveItems[i];
+      if (!it) continue;
+      const ok =
+        getDraftRequiredStatus(it).allComplete && (it.photos?.length ?? 0) > 0;
+      if (!ok) {
+        haptics.error();
+        Alert.alert(
+          t('mobile.reviewHub.finalValidationTitle', {
+            defaultValue: 'A product needs info',
+          }),
+          t('mobile.reviewHub.finalValidationBody', {
+            defaultValue:
+              'Product {{index}} is missing required fields. Open it to fix.',
+            index: i + 1,
+          }),
+          [
+            { text: t('mobile.common.cancel'), style: 'cancel' },
+            {
+              text: t('mobile.reviewHub.openProduct', {
+                defaultValue: 'Open product {{index}}',
+                index: i + 1,
+              }),
+              onPress: () => router.push(routes.scanGroupedEdit(i)),
+            },
+          ],
+        );
+        return;
+      }
+    }
 
-  const onSubmit = () => {
-    const items = useScanDraft.getState().queuedItems;
     haptics.impact();
     submitGrouped.mutate(
-      { items, visibility: sessionVisibility, networkSellers },
       {
-        onSuccess: ({ batchPk, batchNumber, itemCount }) => {
+        items: liveItems,
+        visibility: sessionVisibility,
+        networkSellers,
+      },
+      {
+        onSuccess: ({ batchPk, batchNumber, itemCount, groupId }) => {
           haptics.success();
           reset();
-          router.replace(routes.scanSuccess(batchPk, batchNumber, itemCount));
+          router.replace(
+            routes.scanSuccess(batchPk, batchNumber, itemCount, groupId),
+          );
         },
         onError: (err) => {
           haptics.error();
-          const saved = useScanDraft.getState().queuedItems.filter((i) => i.productId).length;
-          const base = (err as Error).message ?? t('mobile.detail.submitFailedBodyDefault');
-          const message =
-            saved > 0
-              ? `${base}\n\n${t('mobile.groupedReview.partialProgress', { saved, count: saved })}`
-              : base;
-          Alert.alert(t('mobile.groupedReview.submitFailedTitle'), message);
+          Alert.alert(
+            t('mobile.reviewWizard.submitFailedTitle', {
+              defaultValue: 'Submission failed',
+            }),
+            (err as Error).message ??
+              t('mobile.detail.submitFailedBodyDefault'),
+          );
         },
       },
     );
   };
 
-  const addAnother = () => router.push(routes.scanCamera);
-
-  if (queuedItems.length === 0) return null;
-
-  const count = queuedItems.length;
-
   return (
     <Screen padded={false}>
-      <HStack align="center" justify="space-between" style={styles.header}>
-        <Pressable onPress={() => safeBack()} hitSlop={12}>
-          <ChevronLeft color={colors.foreground} size={24} />
+      {/* Stitch "Review Inventory" redesign: left-aligned bold header with a
+          hairline rule, instead of the old centered title + right spacer. */}
+      <HStack
+        align="center"
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: 8,
+          paddingBottom: 12,
+          gap: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: brand.divider,
+        }}
+      >
+        <Pressable
+          onPress={() => safeBack()}
+          hitSlop={12}
+          disabled={submitGrouped.isPending}
+          accessibilityRole="button"
+          accessibilityLabel={t('mobile.common.back', { defaultValue: 'Back' })}
+          style={{ opacity: submitGrouped.isPending ? 0.4 : 1 }}
+        >
+          <ChevronLeft color={brand.foreground} size={24} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('mobile.groupedReview.heading')}</Text>
-        <View style={{ width: 24 }} />
+        <Text
+          className="font-heading text-5xl text-brand-foreground"
+          style={{ lineHeight: 30 }}
+        >
+          {t('mobile.reviewHub.heading', {
+            defaultValue: 'Review {{count}} products',
+            count: total,
+          })}
+        </Text>
       </HStack>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Title block — "We found N products" framing when the AI proposed the
-            split; plain count otherwise (manual grouped path). */}
-        <Text style={styles.bigTitle}>
-          {fromDetection
-            ? t('mobile.itemReview.foundProducts', { count })
-            : t('mobile.groupedReview.heading')}
-        </Text>
-        <Text style={styles.bigSubtitle}>
-          {fromDetection
-            ? t('mobile.itemReview.checkGroups')
-            : t('mobile.groupedReview.subtitle', { count })}
-        </Text>
-
-        {/* Low-confidence nudge + "it's actually one product" override. */}
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+          flexGrow: 1,
+        }}
+      >
+        {/* Smart-detection low-confidence nudge (R-4 preserved). */}
         {isLowConfidence ? (
-          <View style={styles.hintRow}>
-            <Sparkles color={colors.primary} size={16} />
-            <Text style={styles.hintText}>{t('mobile.itemReview.lowConfidenceHint')}</Text>
+          <View
+            className="flex-row items-start gap-1.5 bg-brand-primary-surface rounded-sm p-2.5 mt-md"
+          >
+            <Sparkles color={brand.primary} size={16} />
+            <Text
+              className="flex-1 font-sans text-md text-brand-foreground"
+              style={{ lineHeight: 18 }}
+            >
+              {t('mobile.itemReview.lowConfidenceHint')}
+            </Text>
           </View>
         ) : null}
-        {fromDetection && mergedSingle ? (
-          <Pressable onPress={useAsSingleProduct} hitSlop={8} style={styles.override}>
-            <Text style={styles.overrideText}>{t('mobile.itemReview.itsOneProduct')}</Text>
+
+        {/* "It's actually one product" handoff to detail.tsx (R-4 preserved).
+            D5 (F10): demoted to neutral muted surface + hairline border so
+            brand-green stays reserved for the primary path. */}
+        {showCollapsePill ? (
+          <Pressable
+            onPress={useAsSingleProduct}
+            hitSlop={8}
+            className="self-start mt-2.5 px-md rounded-pill border border-brand-border bg-brand-surface-muted"
+            style={{ paddingVertical: 6 }}
+            accessibilityRole="button"
+            accessibilityLabel={t('mobile.itemReview.itsOneProduct')}
+          >
+            <Text className="font-semi text-base text-brand-muted-foreground">
+              {t('mobile.itemReview.itsOneProduct')}
+            </Text>
           </Pressable>
         ) : null}
 
-        <Stack gap="xl" style={styles.cards}>
-          {queuedItems.map((item) => (
-            <ProductCard
-              key={item.id}
-              item={item}
-              canRemove={count > 1}
-              onEdit={() => editItem(item.id)}
-              onRemove={() => removeQueuedItem(item.id)}
-            />
-          ))}
+        <Text
+          className="font-sans text-base text-brand-text-muted"
+          style={{ lineHeight: 22, marginTop: 20, marginBottom: 16 }}
+        >
+          {t('mobile.reviewHub.subtitle', {
+            defaultValue:
+              'Tap a product to fill in its details. Submit unlocks when every product is ready.',
+          })}
+        </Text>
+
+        <Stack gap="lg">
+          {queuedItems.map((item, index) => {
+            const { ready, missingCount, missingKeys } = rowStatuses[index] ?? {
+              ready: false,
+              missingCount: 1,
+              missingKeys: [] as RequiredRowKey[],
+            };
+            return (
+              <HubRow
+                key={item.id}
+                index={index}
+                item={item}
+                ready={ready}
+                missingCount={missingCount}
+                missingKeys={missingKeys}
+                onPress={() => onRowTap(index)}
+                disabled={submitGrouped.isPending}
+              />
+            );
+          })}
         </Stack>
 
-        <Pressable style={styles.addAnother} onPress={addAnother}>
-          <Text style={styles.addAnotherText}>{t('mobile.groupedReview.addAnother')}</Text>
-        </Pressable>
+        {/* D5 (F6 / round-3): `marginTop:'auto'` consumes all the slack the
+            `flexGrow:1` content container creates, pushing this anchor note to
+            the BOTTOM of the scroll area (just above the pinned footer) instead
+            of leaving the rows top-aligned over a dead white band. With a short
+            1–2 product list the note now sits low and the void is gone; with a
+            long list that overflows, `marginTop:'auto'` collapses to 0 and the
+            note simply trails the rows as normal scrollable content. */}
+        <Text
+          className="font-sans text-base text-brand-text-muted text-center"
+          style={{
+            lineHeight: 20,
+            marginTop: 'auto',
+            paddingTop: 40,
+            fontStyle: 'italic',
+          }}
+        >
+          {t('mobile.reviewHub.scanFootnote', {
+            defaultValue:
+              'Detected from your scan — tap any product to review.',
+          })}
+        </Text>
+      </ScrollView>
 
-        <View style={styles.submit}>
-          <Button
-            label={t('mobile.groupedReview.submitN', { count })}
-            onPress={onSubmit}
-            loading={submitGrouped.isPending}
-            fullWidth
+      {/* Pinned footer: progress bar + caps ready-counter + gated Submit
+          (Stitch "Review Inventory" redesign — brand forest-green fill). */}
+      <View
+        className="bg-brand-background"
+        style={{ borderTopWidth: 1, borderTopColor: brand.border }}
+      >
+        {/* Thin progress track: fills forest-green as products become ready. */}
+        <View style={{ height: 4, backgroundColor: brand.divider }}>
+          <View
+            style={{
+              height: 4,
+              width: `${total > 0 ? Math.round((readyCount / total) * 100) : 0}%`,
+              backgroundColor: brand.primaryDim,
+            }}
           />
         </View>
-      </ScrollView>
+
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingTop: 12,
+            paddingBottom: 16,
+            gap: 12,
+          }}
+        >
+          {/* Caps "{ready} OF {total} PRODUCTS READY" + trailing divider rule.
+              Numerator emphasised in brand foreground (carried over from the
+              D2/F9 split-counter intent). */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Text
+              className="font-medium"
+              style={{
+                fontSize: 12,
+                letterSpacing: 1,
+                color: brand.textMuted,
+                textTransform: 'uppercase',
+              }}
+            >
+              <Text style={{ color: brand.foreground }}>
+                {t('mobile.reviewHub.readyCounterFraction', {
+                  defaultValue: '{{ready}} of {{total}}',
+                  ready: readyCount,
+                  total,
+                })}
+              </Text>
+              {' '}
+              {t('mobile.reviewHub.readyCounterSuffix', {
+                defaultValue: 'products ready',
+              })}
+            </Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: brand.divider }} />
+          </View>
+
+          {/* D2 (F2 + note D-1): local override — DO NOT modify the shared
+              Button primitive (would rebrand the whole app). Brand forest
+              #14452f enabled, FLAT neutral when disabled (no opacity-50). */}
+          <CtaSubmitButton
+            label={t('mobile.reviewHub.submitAll', {
+              defaultValue: 'Submit all',
+            })}
+            onPress={onSubmitAll}
+            loading={submitGrouped.isPending}
+            disabled={!allReady || submitGrouped.isPending}
+          />
+        </View>
+      </View>
     </Screen>
   );
 }
 
-// One detected product — hero photo + trailing-thumbnail strip + photo-count
-// badge + a Ready/Details-needed status chip. The whole card opens the item in
-// Detail; a low-key trash affordance removes it. Mirrors the Stitch
-// "Smart Detection" card, themed with the app's tokens.
-function ProductCard({
-  item,
-  canRemove,
-  onEdit,
-  onRemove,
+// ── Brand CTA (D2 / note D-1) ─────────────────────────────────────────────────
+// Local override only — keeps the shared Button primitive untouched so we don't
+// silently rebrand every primary button in the app. Disabled state is a FLAT
+// neutral fill (not opacity-50), so the label stays readable.
+function CtaSubmitButton({
+  label,
+  onPress,
+  loading,
+  disabled,
 }: {
-  item: DraftItem;
-  canRemove: boolean;
-  onEdit: () => void;
-  onRemove: () => void;
+  label: string;
+  onPress: () => void;
+  loading: boolean;
+  disabled: boolean;
 }) {
-  const { t } = useTranslation();
-  const photoCount = item.photos.length;
-  const hero = item.photos[0]?.uri;
-  const rest = item.photos.slice(1, MAX_THUMBS + 1);
-  const overflow = photoCount - 1 - rest.length;
-  // "Needs attention" when the AI couldn't title or categorise the group.
-  const needsAttention = !item.title?.trim() || !item.categoryName?.trim();
-
+  // The button's fill + padding live on an explicit inner <View>, NOT on the
+  // Pressable's functional `style`. On this RN/Hermes + NativeWind build, a
+  // functional style on an interop'd Pressable silently DROPS layout props
+  // (minHeight/padding/alignItems) — which made the button shrink to hug its
+  // text and read as floating, background-less text. A plain View is immune.
   return (
     <Pressable
-      onPress={onEdit}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
+      accessibilityState={{ disabled, busy: loading }}
+      accessibilityLabel={label}
     >
-      <HStack align="center" justify="space-between" style={styles.cardHead}>
-        <Text style={styles.cardTitle} numberOfLines={1}>
-          {item.title?.trim() || t('mobile.groupedReview.untitled')}
-        </Text>
-        <Badge variant="neutral" label={t('mobile.itemReview.photos', { count: photoCount })} />
-      </HStack>
-
-      {hero ? (
-        <View style={styles.heroWrap}>
-          <AppImage source={{ uri: hero }} style={styles.hero} contentFit="contain" />
+      {({ pressed }) => (
+        <View
+          style={{
+            // Disabled = a CLEARLY VISIBLE neutral-gray button (matching the
+            // Stitch "Review Inventory" mock), NOT the near-white surfaceMuted
+            // that vanished into the page background. Enabled = forest #14452f.
+            backgroundColor: disabled
+              ? '#d4d8df'
+              : pressed
+                ? brand.primaryDim
+                : brand.primary,
+            borderRadius: 12,
+            minHeight: 52,
+            paddingVertical: 16,
+            paddingHorizontal: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: disabled ? 1 : 0,
+            borderColor: brand.borderStrong,
+          }}
+        >
+          {loading ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text
+              className="font-bold"
+              style={{
+                fontSize: 16,
+                color: disabled ? brand.mutedForeground : '#ffffff',
+              }}
+            >
+              {label}
+            </Text>
+          )}
         </View>
-      ) : null}
-
-      {rest.length > 0 ? (
-        <HStack gap="sm" style={styles.thumbStrip}>
-          {rest.map((p, i) => {
-            const isLast = i === rest.length - 1;
-            return (
-              <View key={p.uri} style={styles.thumbWrap}>
-                <AppImage source={{ uri: p.uri }} style={styles.thumb} contentFit="contain" />
-                {isLast && overflow > 0 ? (
-                  <View style={styles.thumbOverlay}>
-                    <Text style={styles.thumbOverlayText}>+{overflow}</Text>
-                  </View>
-                ) : null}
-              </View>
-            );
-          })}
-        </HStack>
-      ) : null}
-
-      <HStack align="center" justify="space-between" style={styles.cardFoot}>
-        {needsAttention ? (
-          <Badge
-            variant="review"
-            dot
-            label={t('mobile.itemReview.detailsNeeded')}
-            leftIcon={<AlertTriangle color={colors.warningText} size={12} />}
-          />
-        ) : (
-          <Badge variant="neutral" label={(item.categoryName ?? '').trim()} />
-        )}
-        <HStack align="center" gap="lg">
-          {canRemove ? (
-            <Pressable onPress={onRemove} hitSlop={10}>
-              <Trash2 color={colors.destructive} size={18} />
-            </Pressable>
-          ) : null}
-          <ChevronRight color={colors.mutedForeground} size={18} />
-        </HStack>
-      </HStack>
+      )}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: spacing['5xl'],
-    paddingTop: spacing.md,
-  },
-  headerTitle: { fontFamily: fonts.heading, fontSize: fontSize['3xl'], color: colors.foreground },
-  scroll: { paddingHorizontal: spacing['5xl'], paddingBottom: spacing['9xl'] },
+// ── Hub row ──────────────────────────────────────────────────────────────────
 
-  bigTitle: {
-    fontFamily: fonts.heading,
-    fontSize: fontSize['5xl'],
-    color: colors.foreground,
-    marginTop: spacing['3xl'],
-  },
-  bigSubtitle: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.lg,
-    color: colors.mutedForeground,
-    marginTop: spacing.sm,
-    lineHeight: 22,
-  },
+function HubRow({
+  index,
+  item,
+  ready,
+  missingCount,
+  missingKeys,
+  onPress,
+  disabled,
+}: {
+  index: number;
+  item: DraftItem;
+  ready: boolean;
+  missingCount: number;
+  missingKeys: RequiredRowKey[];
+  onPress: () => void;
+  disabled: boolean;
+}) {
+  const { t } = useTranslation();
+  const hero = item.photos[0]?.uri;
+  const title =
+    item.title?.trim() ||
+    t('mobile.reviewHub.untitled', {
+      defaultValue: 'Product {{index}}',
+      index: index + 1,
+    });
 
-  // Low-confidence hint + override
-  hintRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    backgroundColor: colors.primarySurface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.xl,
-  },
-  hintText: {
-    flex: 1,
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.foreground,
-    lineHeight: 18,
-  },
-  override: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySurface,
-  },
-  overrideText: { fontFamily: fonts.semibold, fontSize: fontSize.base, color: colors.primary },
+  // D1: composed accessibility label includes completion status.
+  const a11yLabel = ready
+    ? t('mobile.reviewHub.rowA11yReady', {
+        defaultValue: '{{title}}, ready',
+        title,
+      })
+    : t('mobile.reviewHub.rowA11yNeedsInfo', {
+        defaultValue: '{{title}}, needs info, {{count}} fields missing',
+        title,
+        count: missingCount,
+      });
 
-  cards: { marginTop: spacing['3xl'] },
+  // D3 (F7 + note D-3): build a missing-fields preview from the SAME
+  // `getDraftRequiredStatus` rows the predicate uses (no parallel derivation).
+  // Translate row keys via the existing `mobile.detail.section*` keys (which
+  // ship UPPERCASE in en.json) then lowercase to keep the chip sentence-case.
+  // Cap at 2 names + "+N more" when longer.
+  const missingLabel = (() => {
+    const labelForKey = (k: RequiredRowKey): string => {
+      switch (k) {
+        case 'photos':
+          return t('mobile.detail.colPhotos', { defaultValue: 'Photos' });
+        case 'title':
+          return t('mobile.detail.sectionTitle', { defaultValue: 'Title' });
+        case 'description':
+          return t('mobile.detail.sectionDescription', {
+            defaultValue: 'Description',
+          });
+        case 'category':
+          return t('mobile.detail.sectionCategory', {
+            defaultValue: 'Category',
+          });
+        case 'condition':
+          return t('mobile.detail.sectionCondition', {
+            defaultValue: 'Condition',
+          });
+        case 'price':
+          return t('mobile.detail.sectionPrice', { defaultValue: 'Price' });
+        case 'location':
+          return t('mobile.detail.sectionLocation', {
+            defaultValue: 'Location',
+          });
+      }
+    };
+    const names = missingKeys.map((k) => labelForKey(k).toLowerCase());
+    const head = names.slice(0, 2).join(', ');
+    const extra = names.length - 2;
+    const preview = extra > 0 ? `${head} +${extra} more` : head;
+    return t('mobile.reviewHub.statusMissing', {
+      defaultValue: 'Missing: {{preview}}',
+      preview: preview || 'details',
+    });
+  })();
 
-  // Rich product card (hero + thumbnails + chips)
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.xl,
-    gap: spacing.lg,
-  },
-  cardPressed: { opacity: 0.92 },
-  cardHead: {},
-  cardTitle: {
-    flex: 1,
-    fontFamily: fonts.semibold,
-    fontSize: fontSize.xl,
-    color: colors.foreground,
-    marginRight: spacing.md,
-  },
-  // Product-on-white tile (marketplace style) — clean backdrop for cutout PNGs
-  // and letterboxed photos alike; `contain` keeps the whole product visible.
-  heroWrap: {
-    width: '100%',
-    height: 172,
-    borderRadius: radius.lg,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    overflow: 'hidden',
-  },
-  hero: { width: '100%', height: '100%' },
-  thumbStrip: { flexWrap: 'nowrap' },
-  thumbWrap: { flex: 1, position: 'relative' },
-  thumb: {
-    width: '100%',
-    height: 56,
-    borderRadius: radius.md,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  thumbOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  thumbOverlayText: { fontFamily: fonts.bold, fontSize: fontSize.lg, color: '#fff' },
-  cardFoot: { paddingHorizontal: spacing.xs },
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      accessibilityLabel={a11yLabel}
+      style={({ pressed }) => ({
+        opacity: disabled ? 0.5 : pressed ? 0.92 : 1,
+        backgroundColor: brand.surface,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: brand.borderStrong,
+        padding: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        minHeight: 80,
+        // Light card elevation so rows read as tappable cards on the near-
+        // white page background (D1 fix for F3).
+        shadowColor: '#000',
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 2,
+      })}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 16,
+          flexGrow: 1,
+          flexShrink: 1,
+        }}
+      >
+      {hero ? (
+        <AppImage
+          source={{ uri: hero }}
+          style={{
+            width: 96,
+            height: 96,
+            borderRadius: 8,
+            backgroundColor: '#f4f7f6',
+          }}
+          contentFit="cover"
+        />
+      ) : (
+        <View
+          style={{
+            width: 96,
+            height: 96,
+            borderRadius: 8,
+            backgroundColor: '#f4f7f6',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text className="font-bold text-brand-foreground text-base">
+            {index + 1}
+          </Text>
+        </View>
+      )}
 
-  // Add another (dashed CTA)
-  addAnother: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderStyle: 'dashed',
-    borderRadius: radius.lg,
-    padding: spacing['2xl'],
-    alignItems: 'center',
-    marginTop: spacing['3xl'],
-    marginBottom: spacing['3xl'],
-  },
-  addAnotherText: { fontFamily: fonts.semibold, fontSize: fontSize.xl, color: colors.primary },
+      {/* Middle column: flex:1 + minWidth:0 prevents the chevron from
+          wrapping below long titles (D1 fix for F1). */}
+      <View style={{ flex: 1, minWidth: 0, gap: 8 }}>
+        <Text
+          className="font-bold text-brand-foreground"
+          numberOfLines={2}
+          style={{ fontSize: 16, lineHeight: 21 }}
+        >
+          {title}
+        </Text>
+        {/* D3 (F5/F7/F8): inline status chips — call-site overrides so we don't
+            touch the shared Badge primitive (which hard-codes `font-bold
+            uppercase` on its inner Text and would have app-wide blast radius).
+            Ready = brand-green success chip; Needs-info = amber with the
+            missing-fields preview, sentence-case, no redundant dot. */}
+        {ready ? (
+          <View
+            className="flex-row items-center self-start rounded-lg px-2 py-1 gap-xs"
+            style={{
+              backgroundColor: brand.successBg,
+              borderColor: brand.successBorder,
+              borderWidth: 1,
+            }}
+          >
+            <CheckCircle2 color={brand.primary} size={14} />
+            <Text
+              className="font-medium"
+              style={{
+                color: brand.primary,
+                fontSize: 11,
+                letterSpacing: 0.5,
+                textTransform: 'uppercase',
+              }}
+              numberOfLines={1}
+            >
+              {t('mobile.reviewHub.statusReady', { defaultValue: 'Ready' })}
+            </Text>
+          </View>
+        ) : (
+          <View
+            className="flex-row items-center self-start rounded-lg bg-amber-50 border border-amber-200 px-2 py-1 gap-xs"
+          >
+            <AlertTriangle color={brand.warningText} size={14} />
+            <Text
+              className="font-medium text-neutral-700"
+              style={{
+                fontSize: 11,
+                letterSpacing: 0.5,
+                textTransform: 'uppercase',
+              }}
+              numberOfLines={1}
+            >
+              {missingLabel}
+            </Text>
+          </View>
+        )}
+      </View>
 
-  submit: { marginTop: spacing.md },
-});
+      {/* Right-anchored chevron with a fixed-width box so it never wraps. */}
+      <View style={{ width: 24, alignItems: 'center', justifyContent: 'center' }}>
+        <ChevronRight color={brand.textMuted} size={24} />
+      </View>
+      </View>
+    </Pressable>
+  );
+}

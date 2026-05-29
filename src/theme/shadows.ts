@@ -1,4 +1,8 @@
-import { Platform, type ViewStyle } from 'react-native';
+// Combined value-style import (no inline `type` modifier, no separate
+// `import type` line) — the bundled sucrase used by tailwindcss/jiti when
+// loading the NativeWind config doesn't accept either TS-4.5+ form here.
+// RN's `ViewStyle` is type-only at runtime; sucrase strips it on transform.
+import { Platform, ViewStyle } from 'react-native';
 
 import { colors } from './colors';
 

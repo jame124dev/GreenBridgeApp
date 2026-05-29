@@ -202,7 +202,10 @@ export async function fetchBatchDetail(batchPk: number): Promise<BatchDetail> {
   const siteType = getSiteType();
 
   const productsRes = await greenbidz.get(`/batch/${batchPk}/products`, {
-    params: { type: siteType, page: 1, pageSize: 20 },
+    // `marketplace: 'all'` lets the detail load regardless of which marketplace
+    // the batch was created under (else the single-site `type` filter can hide
+    // a cross-marketplace listing). `type` kept for backward-compat.
+    params: { type: siteType, page: 1, pageSize: 20, marketplace: 'all' },
     timeout: 60_000,
   });
 

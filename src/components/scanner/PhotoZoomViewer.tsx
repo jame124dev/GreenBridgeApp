@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
@@ -9,8 +9,6 @@ import {
   fitContainer,
   useImageResolution,
 } from 'react-native-zoom-toolkit';
-
-import { fonts } from '@/theme';
 
 /**
  * Full-screen, pinch/double-tap-zoomable photo viewer opened by tapping a photo
@@ -25,6 +23,11 @@ import { fonts } from '@/theme';
  * Rendered inside a RN <Modal>, which on Android lives in its own view
  * hierarchy, so the app-root GestureHandlerRootView does NOT reach it — we wrap
  * a fresh GestureHandlerRootView here or the gallery's gestures silently no-op.
+ *
+ * S6.2.a — StyleSheet block converted to NativeWind classes. The
+ * `GestureHandlerRootView` and `SafeAreaView` accept `style` (not className),
+ * so the inline `style={{ flex: 1, ... }}` form stays for them; everything
+ * else inside renders via className.
  */
 export function PhotoZoomViewer({
   visible,
@@ -48,8 +51,6 @@ export function PhotoZoomViewer({
     }
   }
 
-  // Don't render Modal contents at all when closed — keeps the native modal
-  // window torn down cleanly and prevents the Gallery from holding views.
   if (!visible) return null;
 
   return (
@@ -60,7 +61,7 @@ export function PhotoZoomViewer({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <GestureHandlerRootView style={styles.root}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
         <Gallery
           data={uris}
           keyExtractor={(uri, i) => `${uri}-${i}`}
@@ -69,19 +70,33 @@ export function PhotoZoomViewer({
           renderItem={(uri) => <ZoomImage uri={uri} />}
         />
 
-        <SafeAreaView style={styles.topBar} pointerEvents="box-none">
-          {uris.length > 1 ? (
-            <View style={styles.counter}>
-              <Text style={styles.counterText}>
-                {index + 1}/{uris.length}
-              </Text>
-            </View>
-          ) : (
-            <View />
-          )}
-          <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
-            <X color="#fff" size={22} />
-          </Pressable>
+        <SafeAreaView
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+          }}
+          pointerEvents="box-none"
+        >
+          <View className="flex-row items-center justify-between px-lg">
+            {uris.length > 1 ? (
+              <View className="bg-neutral-900/60 rounded-full px-md py-xs">
+                <Text className="font-semi text-bodySm text-white">
+                  {index + 1}/{uris.length}
+                </Text>
+              </View>
+            ) : (
+              <View />
+            )}
+            <Pressable
+              className="w-10 h-10 rounded-full items-center justify-center bg-neutral-900/60"
+              onPress={onClose}
+              hitSlop={12}
+            >
+              <X color="#fff" size={22} />
+            </Pressable>
+          </View>
         </SafeAreaView>
       </GestureHandlerRootView>
     </Modal>
@@ -98,32 +113,3 @@ function ZoomImage({ uri }: { uri: string }) {
 
   return <Image source={{ uri }} style={size} contentFit="cover" />;
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-  },
-  counter: {
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  counterText: { fontFamily: fonts.semibold, fontSize: 13, color: '#fff' },
-  closeBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-  },
-});

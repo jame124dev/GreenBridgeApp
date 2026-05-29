@@ -1,3 +1,5 @@
+import type { DraftItem } from '@/stores/scanDraftStore';
+
 import { detailSchema, type DetailFormInput } from './schema';
 
 // Single source of truth for the Detail screen's "what's still required" state.
@@ -49,12 +51,57 @@ function rowForPath(path: PropertyKey[]): RequiredRowKey | null {
       return 'condition';
     case 'pricePerUnit':
       return 'price';
-    case 'address':
-    case 'country':
+    // S5.2: multi-location. Both array fields + any per-index issue collapse
+    // to the single visible "location" row in the bar.
+    case 'locations':
+    case 'locationCountries':
       return 'location';
     default:
       return null;
   }
+}
+
+/**
+ * W6 (scan_v3) — DraftItem → DetailFormInput projection so the same required-
+ * status engine can be queried from the grouped-review summary (which works
+ * with `DraftItem[]`) without duplicating the schema's validation logic. Keeps
+ * `getRequiredStatus` as the single source of truth.
+ */
+function draftToFormInput(draft: DraftItem): DetailFormInput {
+  return {
+    title: draft.title,
+    description: draft.description,
+    categoryId: draft.categoryId ?? '',
+    categoryName: draft.categoryName ?? '',
+    condition: draft.condition,
+    operationStatus: draft.operationStatus,
+    priceFormat: draft.priceFormat,
+    pricePerUnit: draft.pricePerUnit,
+    priceCurrency: draft.priceCurrency,
+    quantity: draft.quantity,
+    locations: draft.locations,
+    locationCountries: draft.locationCountries,
+    brand: draft.brand,
+    model: draft.model,
+    year: draft.year,
+    weight: draft.weight,
+    dimensions: draft.dimensions,
+    co2Emissions: draft.co2Emissions,
+    grade: draft.grade,
+    serialNumber: draft.serialNumber,
+    marketplace: draft.marketplace,
+    installation: draft.installation,
+    listingDurationDays: draft.listingDurationDays,
+  };
+}
+
+/**
+ * W6 (scan_v3) — convenience wrapper that runs `getRequiredStatus` against a
+ * persisted DraftItem. Used by the grouped-review summary screen to compute
+ * per-item `quickStatus: 'verified' | 'has_issues'` badges + the submit gate.
+ */
+export function getDraftRequiredStatus(draft: DraftItem): RequiredStatus {
+  return getRequiredStatus(draftToFormInput(draft), draft.photos?.length ?? 0);
 }
 
 export function getRequiredStatus(

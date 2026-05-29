@@ -4,40 +4,54 @@ function Bone({ className }: { className: string }) {
   return <View className={`bg-neutral-200 rounded-lg animate-pulse ${className}`} />;
 }
 
+// Mirrors the post-W3 layout: hero → quick-actions strip → 3 section groups
+// (Account, Preferences, Security). Each group is a small-caps header bone
+// followed by 1–2 card bones. Section counts intentionally match the live
+// composition so the layout shift on data-ready is minimal.
 export function ProfileSkeleton() {
   return (
     <View>
-      {/* Hero skeleton */}
-      <View className="items-center py-16 px-14 bg-neutral-200" style={{ borderBottomLeftRadius: 40, borderBottomRightRadius: 40 }}>
+      {/* Hero */}
+      <View className="items-center py-16 px-14 bg-neutral-200 rounded-b-hero">
         <Bone className="w-[76px] h-[76px] rounded-full mb-5" />
         <Bone className="w-40 h-5 mb-2" />
         <Bone className="w-56 h-4 mb-4" />
         <Bone className="w-20 h-6 rounded-full" />
       </View>
 
-      {/* Title block skeleton */}
-      <View className="px-14 pt-14 pb-1">
-        <Bone className="w-32 h-7 mb-2" />
-        <Bone className="w-48 h-4" />
+      {/* Quick-actions strip */}
+      <View className="mx-lg -mt-2xl bg-white rounded-2xl border border-neutral-200 h-20 flex-row items-center px-md gap-md">
+        <Bone className="flex-1 h-10 rounded-lg" />
+        <Bone className="flex-1 h-10 rounded-lg" />
+        <Bone className="flex-1 h-10 rounded-lg" />
+        <Bone className="flex-1 h-10 rounded-lg" />
       </View>
 
-      {/* Card skeleton */}
-      <View className="mx-8 mt-6 rounded-2xl overflow-hidden border border-border bg-white">
-        <View className="flex-row items-center gap-5 px-6 py-5 border-b border-border">
-          <Bone className="w-9 h-9 rounded-lg" />
-          <View className="flex-1 gap-2">
-            <Bone className="w-40 h-5" />
-            <Bone className="w-56 h-3" />
-          </View>
+      {/* Account — 3 cards (Verification + ProfileInfo + Address) */}
+      <View className="mx-8">
+        <Bone className="w-24 h-3 mt-8 mb-3" />
+        <View className="gap-6">
+          <Bone className="w-full h-44 rounded-2xl" />
+          <Bone className="w-full h-56 rounded-2xl" />
+          <Bone className="w-full h-48 rounded-2xl" />
         </View>
-        <View className="p-6 gap-5">
-          {[1, 2, 3, 4].map((i) => (
-            <View key={i} className="gap-2">
-              <Bone className="w-24 h-4" />
-              <Bone className="w-full h-14 rounded-xl" />
-            </View>
-          ))}
-          <Bone className="w-full h-14 rounded-2xl mt-2" />
+      </View>
+
+      {/* Preferences — 2 cards (LanguageRegion + Notifications) */}
+      <View className="mx-8">
+        <Bone className="w-28 h-3 mt-8 mb-3" />
+        <View className="gap-6">
+          <Bone className="w-full h-44 rounded-2xl" />
+          <Bone className="w-full h-44 rounded-2xl" />
+        </View>
+      </View>
+
+      {/* Security — 1 card + danger button */}
+      <View className="mx-8">
+        <Bone className="w-24 h-3 mt-8 mb-3" />
+        <View className="gap-6">
+          <Bone className="w-full h-44 rounded-2xl" />
+          <Bone className="w-full h-12 rounded-2xl" />
         </View>
       </View>
     </View>

@@ -3557,10 +3557,23 @@
       "savePhotosFailedTitle": "Could not save photos",
       "savePhotosFailedBody": "Please try again."
     },
+    "detection": {
+      "title": "How should we list these?",
+      "summary": "We found {{count}} distinct products across {{photos}} photos.",
+      "confidence": "Confidence {{pct}}%",
+      "singleTitle": "Single product",
+      "singleDesc": "One batch, all photos pooled.",
+      "multiTitle": "Multiple products ({{count}})",
+      "multiDesc": "{{count}} separate listings, one per detected product.",
+      "truncatedNote": "Showing the first {{shown}} of {{total}}.",
+      "continue": "Continue",
+      "back": "Back"
+    },
     "processing": {
       "aiWorking": "AI WORKING",
       "heading": "Reading your photos…",
       "subtitle": "5–10 seconds",
+      "timeEstimate": "5–10 seconds",
       "subStatus_detect": "Detecting equipment…",
       "subStatus_ocr": "Reading nameplate text…",
       "subStatus_draft": "Drafting title & description…",
@@ -3604,16 +3617,25 @@
         "demolitionRemoval": "Demolition / removal"
       },
       "required": {
-        "header_inprogress": "REQUIRED: {{done}} OF 3 DONE",
+        "header_inprogress": "REQUIRED: {{done}} OF {{total}} DONE",
         "header_complete": "✓ ALL REQUIRED COMPLETE",
         "photos": "Photos",
+        "title": "Title",
+        "description": "Description",
+        "category": "Category",
         "condition": "Condition",
         "price": "Price",
+        "location": "Location",
+        "done": "Done",
         "photosDetail_some": "{{count}} added",
         "photosDetail_empty": "tap shutter to add",
+        "titleDetail_empty": "give it a name",
+        "descriptionDetail_empty": "describe the item",
+        "categoryDetail_empty": "pick a category",
         "conditionDetail_empty": "pick one",
         "priceDetail_offer": "make offer",
-        "priceDetail_empty": "enter amount or make offer"
+        "priceDetail_empty": "enter amount or make offer",
+        "locationDetail_empty": "add an address"
       },
       "submitListing": "Submit listing →",
       "addAnother": "Save & scan another item",
@@ -3628,6 +3650,7 @@
     "success": {
       "heading": "Item submitted",
       "caption": "Sent to GreenBidz for review. Goes live within 24h after approval.",
+      "rowGroup": "GROUP #",
       "rowBatch": "BATCH #",
       "rowPhotos": "PHOTOS",
       "rowCondition": "CONDITION",
@@ -3669,6 +3692,10 @@
       "submitN_one": "Submit {{count}} item",
       "submitN_other": "Submit {{count}} items",
       "submitFailedTitle": "Submit failed",
+      "statusVerified": "Verified",
+      "statusHasIssues_one": "Needs review · {{count}}",
+      "statusHasIssues_other": "Needs review · {{count}}",
+      "submitGateBlocked": "Fix the items marked “Needs review” before submitting.",
       "partialProgress_one": "{{saved}} product was already created on the server. Fix any issues and tap Submit again to finish the batch (already-created products will not be duplicated).",
       "partialProgress_other": "{{saved}} products were already created on the server. Fix any issues and tap Submit again to finish the batch (already-created products will not be duplicated)."
     },

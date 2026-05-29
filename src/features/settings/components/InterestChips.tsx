@@ -1,8 +1,9 @@
 import { Pressable, View } from 'react-native';
 import { X } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
 import { useLabCategories } from '@/features/scanner/useLabCategories';
-import { colors } from '@/theme';
+import { brand } from '@/constants/theme';
 
 interface Props {
   selected: string[];
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function InterestChips({ selected, onRemove }: Props) {
+  const { t } = useTranslation();
   const { data } = useLabCategories();
 
   const labelFor = (slug: string) => {
@@ -29,24 +31,28 @@ export function InterestChips({ selected, onRemove }: Props) {
       {selected.map((slug) => (
         <View
           key={slug}
-          className="flex-row items-center gap-sm rounded-full px-lg py-xs"
-          style={{
-            backgroundColor: colors.primarySurface,
-            borderWidth: 1,
-            borderColor: colors.primaryBorder,
-            maxWidth: '100%',
-          }}
+          className="flex-row items-center gap-sm rounded-full px-lg py-xs max-w-full bg-brand-primary-surface border border-brand-primary-border"
         >
-          <Text variant="bodySm" tone="brand" className="font-semi" numberOfLines={1} style={{ maxWidth: 180 }}>
+          <Text
+            variant="bodySm"
+            tone="brand"
+            className="font-semi max-w-[180px]"
+            numberOfLines={1}
+          >
             {labelFor(slug)}
           </Text>
           <Pressable
             onPress={() => onRemove(slug)}
             hitSlop={6}
             accessibilityRole="button"
-            accessibilityLabel={`Remove ${labelFor(slug)}`}
+            accessibilityLabel={t('mobile.settings.removeInterest', {
+              name: labelFor(slug),
+              defaultValue: 'Remove {{name}}',
+            })}
           >
-            <X color={colors.primary} size={12} />
+            {/* `X` is a native SVG — color must come through the `color` prop,
+                not a className. brand.primary preserves the deep-forest brand. */}
+            <X color={brand.primary} size={12} />
           </Pressable>
         </View>
       ))}

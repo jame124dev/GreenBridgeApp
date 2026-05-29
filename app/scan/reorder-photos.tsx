@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, GripVertical } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -8,11 +8,11 @@ import ReorderableList, {
   type ReorderableListReorderEvent,
 } from 'react-native-reorderable-list';
 
-import { AppImage, Button, HStack, Screen } from '@/components/ui';
+import { AppImage, Button, HStack, Screen, Text } from '@/components/ui';
 import { routes } from '@/lib/routes';
 import { safeBack } from '@/lib/safeBack';
 import { useScanDraft, type Photo } from '@/stores/scanDraftStore';
-import { colors, fonts, fontSize, radius, spacing } from '@/theme';
+import { brand } from '@/constants/theme';
 
 function moveItem<T>(arr: T[], from: number, to: number): T[] {
   if (to < 0 || to >= arr.length) return arr;
@@ -22,6 +22,12 @@ function moveItem<T>(arr: T[], from: number, to: number): T[] {
   return next;
 }
 
+/**
+ * S6.2.b1 — StyleSheet block removed. `ReorderableList` is a 3rd-party
+ * component that requires `style` + `contentContainerStyle` props (not
+ * className); kept as inline objects for those two slots. Everything else
+ * (header, subtitle, row, drag handle) renders via NativeWind classes.
+ */
 export default function ReorderPhotosScreen() {
   const { t } = useTranslation();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
@@ -73,23 +79,34 @@ export default function ReorderPhotosScreen() {
   if (!ordered.length) return null;
 
   return (
-    <Screen scroll={false} contentContainerStyle={styles.screen}>
-      <HStack align="center" justify="space-between" style={styles.header}>
-        <Pressable onPress={() => safeBack()} hitSlop={12}>
-          <ChevronLeft color={colors.foreground} size={24} />
-        </Pressable>
-        <Text style={styles.title}>{t('mobile.reorder.heading')}</Text>
-        <View style={{ width: 24 }} />
-      </HStack>
+    <Screen scroll={false} contentContainerStyle={{ flex: 1, paddingBottom: 16 }}>
+      <View className="pt-sm mb-sm">
+        <HStack align="center" justify="space-between">
+          <Pressable
+            onPress={() => safeBack()}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t('mobile.common.back', { defaultValue: 'Back' })}
+          >
+            <ChevronLeft color={brand.foreground} size={24} />
+          </Pressable>
+          <Text variant="subtitle" className="font-bold">
+            {t('mobile.reorder.heading')}
+          </Text>
+          <View style={{ width: 24 }} />
+        </HStack>
+      </View>
 
-      <Text style={styles.subtitle}>{t('mobile.reorder.dragToReorder')}</Text>
+      <Text variant="bodyMd" tone="tertiary" className="mb-md">
+        {t('mobile.reorder.dragToReorder')}
+      </Text>
 
       <ReorderableList
         data={ordered}
         onReorder={onReorder}
         keyExtractor={(p) => p.uri}
-        contentContainerStyle={styles.listContent}
-        style={styles.list}
+        contentContainerStyle={{ gap: 10, paddingBottom: 10 }}
+        style={{ flex: 1 }}
         renderItem={({ item, index }) => (
           <PhotoRow
             photo={item}
@@ -99,7 +116,7 @@ export default function ReorderPhotosScreen() {
         )}
       />
 
-      <View style={styles.confirm}>
+      <View className="mt-sm">
         <Button
           label={isEdit ? t('mobile.reorder.saveOrder') : t('mobile.reorder.continueBtn')}
           onPress={onConfirm}
@@ -119,52 +136,33 @@ export default function ReorderPhotosScreen() {
 function PhotoRow({ photo, index, label }: { photo: Photo; index: number; label: string }) {
   const drag = useReorderableDrag();
   return (
-    <Pressable onLongPress={drag} delayLongPress={180} style={styles.row}>
+    <Pressable
+      onLongPress={drag}
+      delayLongPress={180}
+      className="bg-brand-surface rounded-lg border border-brand-border p-md"
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint="Long press to reorder"
+    >
       <HStack gap="xl" align="center">
-        <AppImage source={{ uri: photo.uri }} style={styles.thumb} />
-        <Text style={[styles.indexLabel, index === 0 && styles.coverLabel]}>{label}</Text>
-        <Pressable onLongPress={drag} delayLongPress={180} hitSlop={12} style={styles.dragHandle}>
-          <GripVertical color={colors.mutedForeground} size={22} />
+        <AppImage source={{ uri: photo.uri }} style={{ width: 64, height: 64, borderRadius: 8 }} />
+        <Text
+          variant="bodyMd"
+          className={`flex-1 font-semi ${index === 0 ? 'text-brand-primary' : 'text-neutral-900'}`}
+        >
+          {label}
+        </Text>
+        <Pressable
+          onLongPress={drag}
+          delayLongPress={180}
+          hitSlop={12}
+          className="w-10 h-10 rounded-lg bg-brand-primary-surface items-center justify-center"
+          accessibilityRole="button"
+          accessibilityLabel="Drag handle"
+        >
+          <GripVertical color={brand.mutedForeground} size={22} />
         </Pressable>
       </HStack>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, paddingBottom: spacing['3xl'] },
-  header: { paddingTop: spacing.md, marginBottom: spacing.md },
-  title: { fontFamily: fonts.heading, fontSize: fontSize['3xl'], color: colors.foreground },
-  subtitle: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.lg,
-    color: colors.mutedForeground,
-    marginBottom: spacing['3xl'],
-  },
-  list: { flex: 1 },
-  listContent: { gap: spacing.lg, paddingBottom: spacing.lg },
-  row: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-  },
-  thumb: { width: 64, height: 64, borderRadius: radius.md },
-  indexLabel: {
-    flex: 1,
-    fontFamily: fonts.semibold,
-    fontSize: fontSize.lg,
-    color: colors.foreground,
-  },
-  coverLabel: { color: colors.primary },
-  dragHandle: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.primarySurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confirm: { marginTop: spacing.lg },
-});

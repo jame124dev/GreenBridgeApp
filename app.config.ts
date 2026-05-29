@@ -2,7 +2,7 @@ import 'dotenv/config';
 import type { ExpoConfig } from 'expo/config';
 
 export default (): ExpoConfig => ({
-  name: 'GreenBridge',
+  name: 'GreenBidz Seller',
   slug: 'greenbridge',
   scheme: 'greenbridge',
   version: '0.1.0',
@@ -16,9 +16,8 @@ export default (): ExpoConfig => ({
   android: {
     package: 'com.greenbidz.bridge',
     adaptiveIcon: {
-      backgroundColor: '#0a4a2f',
+      backgroundColor: '#FFFFFF',
       foregroundImage: './assets/images/android-icon-foreground.png',
-      backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
   },
@@ -49,11 +48,10 @@ export default (): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#0a4a2f',
-        android: {
-          image: './assets/images/splash-icon.png',
-          imageWidth: 76,
-        },
+        backgroundColor: '#002855',
+        image: './assets/images/greenbidz_logo.png',
+        imageWidth: 220,
+        resizeMode: 'contain',
       },
     ],
   ],

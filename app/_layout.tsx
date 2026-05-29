@@ -29,6 +29,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Toaster } from 'sonner-native';
 
 import { setUnauthorizedHandler } from '@/api/interceptors';
+import { AppSplash } from '@/components/AppSplash';
 import { warnMissingEnvInDev } from '@/lib/env';
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/stores/authStore';
@@ -94,10 +95,10 @@ export default function RootLayout() {
   }, [hydrate, reset, router]);
 
   useEffect(() => {
-    if (fontsLoaded && hydrated) SplashScreen.hideAsync();
-  }, [fontsLoaded, hydrated]);
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
 
-  if (!fontsLoaded || !hydrated) return null;
+  if (!fontsLoaded || !hydrated) return <AppSplash />;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

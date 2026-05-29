@@ -16,7 +16,7 @@ const brandingBySite: Record<
   { appName: string; logoLabel: string; logo: ImageSourcePropType; logoWidth: number; logoHeight: number }
 > = {
   labgreenbidz: {
-    appName: 'GreenBridge',
+    appName: 'GreenBidz Seller',
     logoLabel: 'GreenBidz',
     logo: logos.greenbidz,
     logoWidth: 168,

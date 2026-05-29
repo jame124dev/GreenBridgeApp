@@ -11,7 +11,7 @@ import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { useUpdateUserSettings } from '@/features/auth/useUserProfile';
 import { haptics } from '@/lib/haptics';
-import { colors } from '@/theme';
+import { brand, colors } from '@/constants/theme';
 import type { UserProfile } from '@/services/auth/userProfile';
 
 import { addressSchema, type AddressValues } from '../schemas';
@@ -55,8 +55,8 @@ export function AddressCard({ profile }: Props) {
   return (
     <Card>
       <Card.Header
-        icon={<MapPin color={colors.primary} size={18} />}
-        iconBg={colors.primarySurface}
+        icon={<MapPin color={brand.primary} size={18} />}
+        iconBg={brand.primarySurface}
         title={t('mobile.settings.addressInformation')}
         description={t('mobile.settings.addressDesc')}
       />
@@ -122,7 +122,7 @@ export function AddressCard({ profile }: Props) {
           label={update.isPending ? t('mobile.settings.saving') : t('mobile.settings.save')}
           onPress={handleSubmit(onSubmit)}
           loading={update.isPending || isSubmitting}
-          leftIcon={<Save color={colors.white} size={16} />}
+          leftIcon={<Save color={colors.neutral[0]} size={16} />}
           fullWidth
         />
       </Card.Body>

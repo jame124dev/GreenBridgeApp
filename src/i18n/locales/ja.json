@@ -3476,10 +3476,23 @@
       "savePhotosFailedTitle": "写真を保存できませんでした",
       "savePhotosFailedBody": "もう一度お試しください。"
     },
+    "detection": {
+      "title": "どのように出品しますか？",
+      "summary": "{{photos}} 枚の写真から {{count}} 件の異なる製品を検出しました。",
+      "confidence": "信頼度 {{pct}}%",
+      "singleTitle": "単一の製品",
+      "singleDesc": "1 つのバッチに、すべての写真をまとめます。",
+      "multiTitle": "複数の製品（{{count}}）",
+      "multiDesc": "検出された製品ごとに {{count}} 件の個別出品。",
+      "truncatedNote": "最初の {{shown}} 件（全 {{total}} 件中）を表示。",
+      "continue": "続ける",
+      "back": "戻る"
+    },
     "processing": {
       "aiWorking": "AI 処理中",
       "heading": "写真を読み取っています…",
       "subtitle": "5〜10 秒",
+      "timeEstimate": "5〜10 秒",
       "subStatus_detect": "機器を検出中…",
       "subStatus_ocr": "銘板の文字を読み取り中…",
       "subStatus_draft": "タイトルと説明を作成中…",
@@ -3523,16 +3536,25 @@
         "demolitionRemoval": "解体 / 撤去"
       },
       "required": {
-        "header_inprogress": "必須：{{done}} / 3 完了",
+        "header_inprogress": "必須：{{done}} / {{total}} 完了",
         "header_complete": "✓ すべての必須項目が完了しました",
         "photos": "写真",
+        "title": "タイトル",
+        "description": "説明",
+        "category": "カテゴリ",
         "condition": "状態",
         "price": "価格",
+        "location": "所在地",
+        "done": "完了",
         "photosDetail_some": "{{count}} 枚追加",
         "photosDetail_empty": "シャッターで追加",
+        "titleDetail_empty": "名前を入力",
+        "descriptionDetail_empty": "商品の説明を入力",
+        "categoryDetail_empty": "カテゴリを選択",
         "conditionDetail_empty": "選択してください",
         "priceDetail_offer": "オファー",
-        "priceDetail_empty": "金額を入力またはオファー"
+        "priceDetail_empty": "金額を入力またはオファー",
+        "locationDetail_empty": "住所を追加"
       },
       "submitListing": "出品を送信 →",
       "addAnother": "保存して次をスキャン",

@@ -192,6 +192,30 @@ describe('mapSmartDetection', () => {
     expect(mapSmartDetection(many, 'LabGreenbidz').products).toHaveLength(10);
   });
 
+  it('surfaces raw suggestedMode + productCount on meta (for skip predicate)', () => {
+    const single = mapSmartDetection(SINGLE, 'LabGreenbidz');
+    expect(single.meta.suggestedMode).toBe('single');
+    expect(single.meta.productCount).toBe(1);
+
+    const multi = mapSmartDetection(MULTIPLE, 'LabGreenbidz');
+    expect(multi.meta.suggestedMode).toBe('multiple');
+    expect(multi.meta.productCount).toBe(2);
+  });
+
+  it('productCount reflects raw count even when client mode collapses to single', () => {
+    // suggested_mode='multiple' but a single product → client mode 'single'.
+    // productCount must still report the raw 1.
+    const collapsed: SmartDetectionResponse = {
+      ...MULTIPLE,
+      detection: { ...MULTIPLE.detection, suggested_mode: 'multiple' },
+      products: [MULTIPLE.products[0]],
+    };
+    const m = mapSmartDetection(collapsed, 'LabGreenbidz');
+    expect(m.mode).toBe('single');
+    expect(m.meta.suggestedMode).toBe('multiple');
+    expect(m.meta.productCount).toBe(1);
+  });
+
   it('empty products array → mode single with zero products (apply must reject)', () => {
     const empty: SmartDetectionResponse = {
       ...SINGLE,

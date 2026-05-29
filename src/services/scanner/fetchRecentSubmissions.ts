@@ -49,7 +49,12 @@ export async function fetchRecentSubmissions(
   limit = 10,
 ): Promise<SellerBatch[]> {
   const res = await greenbidz.get(`/batch/seller/${sellerId}`, {
-    params: { page: 1, limit, type: siteType },
+    // `marketplace: 'all'` is a forward-compat signal: once the backend honors
+    // it, this endpoint returns the seller's listings across EVERY marketplace
+    // in one call (today's `type` filter only returns the current site, which
+    // hides listings created under a different marketplace pill). `type` is
+    // kept so behavior is unchanged until the backend implements `all`.
+    params: { page: 1, limit, type: siteType, marketplace: 'all' },
   });
 
   const payload = res.data?.data;

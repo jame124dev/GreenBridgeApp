@@ -3541,10 +3541,23 @@
       "savePhotosFailedTitle": "無法儲存照片",
       "savePhotosFailedBody": "請再試一次。"
     },
+    "detection": {
+      "title": "您希望如何刊登？",
+      "summary": "在 {{photos}} 張照片中找到 {{count}} 件不同產品。",
+      "confidence": "信心度 {{pct}}%",
+      "singleTitle": "單一產品",
+      "singleDesc": "一個批次，所有照片合併。",
+      "multiTitle": "多個產品（{{count}}）",
+      "multiDesc": "{{count}} 個獨立刊登，每個偵測到的產品各一筆。",
+      "truncatedNote": "顯示前 {{shown}} 個（共 {{total}} 個）。",
+      "continue": "繼續",
+      "back": "返回"
+    },
     "processing": {
       "aiWorking": "AI 處理中",
       "heading": "正在讀取您的照片…",
       "subtitle": "約 5–10 秒",
+      "timeEstimate": "約 5–10 秒",
       "subStatus_detect": "辨識設備中…",
       "subStatus_ocr": "讀取銘牌文字…",
       "subStatus_draft": "產生標題與描述…",
@@ -3588,16 +3601,25 @@
         "demolitionRemoval": "拆除 / 移除"
       },
       "required": {
-        "header_inprogress": "必填：已完成 {{done}} / 3",
+        "header_inprogress": "必填：已完成 {{done}} / {{total}}",
         "header_complete": "✓ 所有必填已完成",
         "photos": "照片",
+        "title": "標題",
+        "description": "描述",
+        "category": "類別",
         "condition": "狀態",
         "price": "價格",
+        "location": "地點",
+        "done": "完成",
         "photosDetail_some": "已加入 {{count}}",
         "photosDetail_empty": "點擊快門新增",
+        "titleDetail_empty": "為物品命名",
+        "descriptionDetail_empty": "描述此物品",
+        "categoryDetail_empty": "選擇類別",
         "conditionDetail_empty": "請選擇",
         "priceDetail_offer": "出價模式",
-        "priceDetail_empty": "輸入金額或選擇出價"
+        "priceDetail_empty": "輸入金額或選擇出價",
+        "locationDetail_empty": "新增地址"
       },
       "submitListing": "提交刊登 →",
       "addAnother": "儲存並掃描下一件",

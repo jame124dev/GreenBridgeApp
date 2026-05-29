@@ -1,8 +1,12 @@
 import { useMemo } from 'react';
 import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { cssInterop } from 'react-native-css-interop';
+
 import { Text } from '@/components/ui/Text';
-import { gradients } from '@/theme';
+import { gradients } from '@/constants/theme';
+
+cssInterop(LinearGradient, { className: 'style' });
 
 interface Props {
   firstName: string;
@@ -19,41 +23,17 @@ function getInitials(name: string): string {
 }
 
 export function ProfileHero({ firstName, email, name, role }: Props) {
-  const initials  = useMemo(() => getInitials(firstName || name || ''), [firstName, name]);
-  const roleLabel = role ? role.charAt(0).toUpperCase() + role.slice(1) : '—';
+  const initials    = useMemo(() => getInitials(firstName || name || ''), [firstName, name]);
+  const roleLabel   = role ? role.charAt(0).toUpperCase() + role.slice(1) : '—';
   const displayName = firstName || name || '—';
 
   return (
     <LinearGradient
       colors={[...gradients.hero]}
-      style={{
-        paddingTop: 72,
-        paddingBottom: 56,
-        paddingHorizontal: 56,
-        alignItems: 'center',
-        borderBottomLeftRadius: 40,
-        borderBottomRightRadius: 40,
-      }}
+      className="pt-6xl pb-5xl px-5xl items-center rounded-b-hero"
     >
-      <View
-        style={{
-          width: 76,
-          height: 76,
-          borderRadius: 38,
-          backgroundColor: 'rgba(255,255,255,0.15)',
-          borderWidth: 2,
-          borderColor: 'rgba(255,255,255,0.25)',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 20,
-        }}
-      >
-        <Text
-          variant="title"
-          tone="inverse"
-          className="font-bold"
-          style={{ fontSize: 26 }}
-        >
+      <View className="w-20 h-20 rounded-full bg-white/15 border-2 border-white/25 items-center justify-center mb-xl">
+        <Text variant="title" tone="inverse" className="font-bold">
           {initials}
         </Text>
       </View>
@@ -66,21 +46,12 @@ export function ProfileHero({ firstName, email, name, role }: Props) {
         variant="bodySm"
         tone="inverse"
         numberOfLines={1}
-        className="mt-xs"
-        style={{ opacity: 0.8 }}
+        className="mt-xs opacity-80"
       >
         {email}
       </Text>
 
-      <View
-        style={{
-          backgroundColor: 'rgba(255,255,255,0.15)',
-          borderRadius: 9999,
-          paddingHorizontal: 16,
-          paddingVertical: 4,
-          marginTop: 16,
-        }}
-      >
+      <View className="bg-white/15 rounded-full px-lg py-xs mt-lg">
         <Text
           variant="caption"
           tone="inverse"

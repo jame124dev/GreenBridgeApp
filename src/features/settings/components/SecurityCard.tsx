@@ -10,7 +10,7 @@ import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { useUpdateUserSettings } from '@/features/auth/useUserProfile';
 import { haptics } from '@/lib/haptics';
-import { colors } from '@/theme';
+import { brand, colors } from '@/constants/theme';
 
 import { securitySchema, type SecurityValues } from '../schemas';
 
@@ -44,8 +44,8 @@ export function SecurityCard() {
   return (
     <Card>
       <Card.Header
-        icon={<Shield color={colors.destructiveStrong} size={18} />}
-        iconBg={colors.destructiveBg}
+        icon={<Shield color={brand.destructiveStrong} size={18} />}
+        iconBg={brand.destructiveBg}
         title={t('mobile.settings.securitySettings')}
         description={t('mobile.settings.securityDesc')}
       />
@@ -102,7 +102,7 @@ export function SecurityCard() {
           label={update.isPending ? t('mobile.settings.saving') : t('mobile.settings.updatePassword')}
           onPress={handleSubmit(onSubmit)}
           loading={update.isPending || isSubmitting}
-          leftIcon={<Save color={colors.white} size={16} />}
+          leftIcon={<Save color={colors.neutral[0]} size={16} />}
           fullWidth
         />
       </Card.Body>

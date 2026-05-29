@@ -3460,10 +3460,23 @@
       "savePhotosFailedTitle": "บันทึกภาพไม่ได้",
       "savePhotosFailedBody": "กรุณาลองอีกครั้ง"
     },
+    "detection": {
+      "title": "คุณต้องการลงประกาศแบบไหน?",
+      "summary": "พบสินค้า {{count}} รายการที่แตกต่างกันใน {{photos}} รูป",
+      "confidence": "ความเชื่อมั่น {{pct}}%",
+      "singleTitle": "สินค้าเดียว",
+      "singleDesc": "หนึ่งชุดประกาศ รวมทุกรูป",
+      "multiTitle": "สินค้าหลายรายการ ({{count}})",
+      "multiDesc": "{{count}} ประกาศแยก แต่ละสินค้าที่ตรวจพบ",
+      "truncatedNote": "แสดง {{shown}} รายการแรกจาก {{total}} รายการ",
+      "continue": "ดำเนินการต่อ",
+      "back": "กลับ"
+    },
     "processing": {
       "aiWorking": "AI กำลังทำงาน",
       "heading": "กำลังอ่านภาพของคุณ…",
       "subtitle": "5–10 วินาที",
+      "timeEstimate": "5–10 วินาที",
       "subStatus_detect": "กำลังตรวจจับอุปกรณ์…",
       "subStatus_ocr": "กำลังอ่านข้อความบนป้าย…",
       "subStatus_draft": "กำลังร่างหัวข้อและคำอธิบาย…",
@@ -3507,16 +3520,25 @@
         "demolitionRemoval": "รื้อถอน / นำออก"
       },
       "required": {
-        "header_inprogress": "ต้องระบุ: {{done}} / 3 เสร็จ",
+        "header_inprogress": "ต้องระบุ: {{done}} / {{total}} เสร็จ",
         "header_complete": "✓ ครบถ้วนทั้งหมด",
         "photos": "รูปภาพ",
+        "title": "ชื่อ",
+        "description": "คำอธิบาย",
+        "category": "หมวดหมู่",
         "condition": "สภาพ",
         "price": "ราคา",
+        "location": "ที่ตั้ง",
+        "done": "เสร็จ",
         "photosDetail_some": "เพิ่มแล้ว {{count}}",
         "photosDetail_empty": "แตะชัตเตอร์เพื่อเพิ่ม",
+        "titleDetail_empty": "ตั้งชื่อ",
+        "descriptionDetail_empty": "อธิบายรายการ",
+        "categoryDetail_empty": "เลือกหมวดหมู่",
         "conditionDetail_empty": "เลือกหนึ่ง",
         "priceDetail_offer": "เสนอราคา",
-        "priceDetail_empty": "ใส่จำนวนหรือเลือกเสนอราคา"
+        "priceDetail_empty": "ใส่จำนวนหรือเลือกเสนอราคา",
+        "locationDetail_empty": "เพิ่มที่อยู่"
       },
       "submitListing": "ส่งประกาศ →",
       "addAnother": "บันทึกและสแกนรายการถัดไป",

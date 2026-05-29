@@ -6,19 +6,40 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
+import { Text } from '@/components/ui/Text';
 import { useLogout } from '@/features/auth/useLogout';
 import { useUserProfile } from '@/features/auth/useUserProfile';
 import {
   AddressCard,
   LanguageRegionCard,
+  NotificationPreferencesCard,
   ProfileHero,
   ProfileInfoCard,
   ProfileSkeleton,
+  QuickActionsStrip,
   SecurityCard,
+  VerificationCard,
 } from '@/features/settings';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/stores/authStore';
-import { colors, spacing } from '@/theme';
+import { brand, spacing } from '@/constants/theme';
+
+// Small-caps group label between section cards. Local helper because the
+// global `SectionLabel` primitive is scanner-form-specific (carries `required`
+// + AI badge + legacy `@/theme` imports) and reusing it would drag scanner
+// concerns into the settings tree. Settings section headers are visually a
+// different role anyway — a navigation header, not a form label.
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <Text
+      variant="caption"
+      tone="tertiary"
+      className="mt-3xl mb-md font-bold tracking-widest uppercase"
+    >
+      {label}
+    </Text>
+  );
+}
 
 export default function SettingsScreen() {
   const { t }        = useTranslation();
@@ -35,7 +56,7 @@ export default function SettingsScreen() {
 
   return (
     <BottomSheetModalProvider>
-    <Screen padded={false} scroll edges={['top']} contentContainerStyle={{ paddingBottom: spacing['9xl'] }}>
+    <Screen padded={false} scroll edges={['top']} contentContainerStyle={{ paddingBottom: spacing['4xl'] }}>
       <ProfileHero
         firstName={profileQuery.data?.personalInfo.firstName || profile?.name || ''}
         email={profileQuery.data?.email || profile?.email || ''}
@@ -43,26 +64,44 @@ export default function SettingsScreen() {
         role={profile?.role}
       />
 
+      <QuickActionsStrip
+        onSignOut={handleSignOut}
+        signingOut={logoutMut.isPending}
+      />
+
       {profileQuery.isLoading ? (
         <ProfileSkeleton />
       ) : profileQuery.data ? (
-        <>
-          <View className="mx-8 mt-6 gap-6">
+        <View className="mx-8">
+          {/* Account — Verification card leads so the trust signal sits above the fold */}
+          <SectionHeader label={t('mobile.profile.sectionAccount', { defaultValue: 'Account' })} />
+          <View className="gap-6">
+            <VerificationCard profile={profileQuery.data} />
             <ProfileInfoCard profile={profileQuery.data} />
             <AddressCard profile={profileQuery.data} />
-            <SecurityCard />
-            <LanguageRegionCard profile={profileQuery.data} />
+          </View>
 
+          {/* Preferences */}
+          <SectionHeader label={t('mobile.profile.sectionPreferences', { defaultValue: 'Preferences' })} />
+          <View className="gap-6">
+            <LanguageRegionCard profile={profileQuery.data} />
+            <NotificationPreferencesCard />
+          </View>
+
+          {/* Security — sign-out is the destructive end of this group, not a floating final action */}
+          <SectionHeader label={t('mobile.profile.sectionSecurity', { defaultValue: 'Security' })} />
+          <View className="gap-6">
+            <SecurityCard />
             <Button
               label={logoutMut.isPending ? t('mobile.profile.signingOut') : t('mobile.profile.signOut')}
               onPress={handleSignOut}
               variant="danger"
               loading={logoutMut.isPending}
-              leftIcon={<LogOut color={colors.destructiveStrong} size={18} />}
+              leftIcon={<LogOut color={brand.destructiveStrong} size={18} />}
               fullWidth
             />
           </View>
-        </>
+        </View>
       ) : null}
     </Screen>
     </BottomSheetModalProvider>

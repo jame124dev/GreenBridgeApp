@@ -1,4 +1,8 @@
-import { DEFAULT_OPERATION_STATUS, defaultCurrencyForSite } from './constants';
+import {
+  DEFAULT_OPERATION_STATUS,
+  defaultCurrencyForSite,
+  marketplaceFromSiteType,
+} from './constants';
 import { normalizeCondition, normalizeOperationStatus } from './normalize';
 import type {
   MappedProduct,
@@ -7,7 +11,23 @@ import type {
   SmartItemFields,
   SmartProductData,
 } from './smartDetectionTypes';
-import type { ListingMode } from '@/stores/scanDraftStore';
+import type { ItemGrade, ListingMode } from '@/stores/scanDraftStore';
+
+// Local helpers — mirrored from `mapAnalyze.ts` so the smart-detect and
+// analyze paths produce structurally identical AiResult bundles. AI may return
+// `year: 1914` (number) — `.trim()` on that would throw.
+function coerceTrimmed(value: unknown): string {
+  if (value == null || value === '') return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' && !Number.isNaN(value)) return String(value);
+  return String(value).trim();
+}
+
+function normalizeGrade(value: unknown): ItemGrade {
+  const raw = coerceTrimmed(value).toUpperCase();
+  if (raw === 'A' || raw === 'B' || raw === 'C' || raw === 'D') return raw;
+  return 'A';
+}
 
 // Pure mapper: smart-detection response → field bundles the store can assemble
 // into DraftItems. No store / filesystem / network dependency — unit-tested
@@ -61,8 +81,12 @@ function taxonomyId(ref: SmartProductData['product_cat']): string | null {
 
 /**
  * Map one AI product `data` block to the DraftItem fields the AI fills.
- * Location is intentionally NOT mapped — `item_location`/`auc-location` is a
- * taxonomy, not the Detail form's free-text address/country (see plan §3.1).
+ * Location is intentionally NOT mapped here — the listing's pickup location is
+ * NOT a backend/AI value; it comes from the DEVICE's location permission
+ * (getDeviceLocation → pickupStore). The store seeds it onto each draft at
+ * `draftFromSmartFields` time, and `LocationCard` lets the seller adjust it.
+ * (The AI's `item_location`/`auc-location` is an unreliable taxonomy guess and
+ * is deliberately ignored.)
  * Currency overrides the server's hardcoded "USD" with the site default.
  */
 export function mapProductData(data: SmartProductData, siteType: string): SmartItemFields {
@@ -78,6 +102,22 @@ export function mapProductData(data: SmartProductData, siteType: string): SmartI
   const name = String(data.name ?? '');
   const description = String(data.equipment_description ?? '');
 
+  // S4: extract spec fields from smart-detect product data (same shape as
+  // analyze-process-images). Previously silently dropped — now plumbed
+  // through SmartItemFields → DraftItem so the detail-form cards populate.
+  const brand        = coerceTrimmed(data.brand);
+  const model        = coerceTrimmed(data.model);
+  const year         = coerceTrimmed(data.year);
+  const weight       = coerceTrimmed(data.weight);
+  const dimensions   = coerceTrimmed(data.dimensions);
+  const co2Emissions = coerceTrimmed(data.co2_emissions);
+  const grade        = normalizeGrade((data as Record<string, unknown>).grade);
+
+  // W2 (scan_v3): backend AI now returns site_type for the smart-detect path
+  // too (B3). Project to a MarketplaceKey when recognized; null otherwise
+  // so the store's apply layer falls back to env-default.
+  const suggestedMarketplace = marketplaceFromSiteType(data.site_type);
+
   return {
     title: name,
     description,
@@ -88,6 +128,14 @@ export function mapProductData(data: SmartProductData, siteType: string): SmartI
     pricePerUnit: price ?? '',
     priceFormat: price ? 'buyNow' : 'offer',
     priceCurrency: currency,
+    brand,
+    model,
+    year,
+    weight,
+    dimensions,
+    co2Emissions,
+    grade,
+    suggestedMarketplace,
     ai: {
       name,
       description,
@@ -95,6 +143,14 @@ export function mapProductData(data: SmartProductData, siteType: string): SmartI
       operationStatus,
       suggestedPrice: price,
       currency,
+      brand,
+      model,
+      year,
+      weight,
+      dimensions,
+      co2Emissions,
+      grade,
+      suggestedMarketplace,
     },
   };
 }
@@ -131,6 +187,11 @@ export function mapSmartDetection(
     meta: {
       summary: typeof res.detection?.summary === 'string' ? res.detection.summary : '',
       confidence,
+      // Raw AI verdict + raw count (BEFORE MAX_PRODUCTS cap and BEFORE the
+      // single-mode slice). The skip predicate relies on these to match web.
+      suggestedMode:
+        res.detection?.suggested_mode === 'multiple' ? 'multiple' : 'single',
+      productCount: rawProducts.length,
     },
     // Single mode ⇒ keep just the first product (canonical source per §3).
     products: mode === 'single' ? products.slice(0, 1) : products,

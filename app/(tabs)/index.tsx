@@ -75,8 +75,13 @@ export default function ScanHomeScreen() {
 
   const startScan = () => {
     haptics.tap();
+    // Flush-always: each Scan tap is a fresh session. Any in-progress draft,
+    // queued grouped items, and warm `pendingDetection` are reset. The dedicated
+    // drafts surface (planned) will be the only way to resume saved work — for
+    // now, Scan = new scan, no resume. `getScanResumeRoute` is kept in
+    // `scanResume.ts` so the drafts surface can reuse the precedence tree.
+    useScanDraft.getState().reset();
     if (SMART_DETECT_ENABLED) {
-      useScanDraft.getState().reset();
       router.push(routes.scanCamera);
       return;
     }
