@@ -15,6 +15,7 @@ export { LocationCard } from './LocationCard';
 export { MarketplaceCard } from './MarketplaceCard';
 export { PhotosCard } from './PhotosCard';
 export { PricingCard } from './PricingCard';
+export { ProfitIntelligenceCard } from './ProfitIntelligenceCard';
 export { RequiredChecklist } from './RequiredChecklist';
 export { SpecsCard } from './SpecsCard';
 export { VisibilityCard } from './VisibilityCard';

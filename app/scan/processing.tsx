@@ -283,6 +283,10 @@ export default function ProcessingScreen() {
               // useful" — preserve whatever marketplace is already on the
               // draft (env default from emptyDraft).
               ...(ai.suggestedMarketplace ? { marketplace: ai.suggestedMarketplace } : {}),
+              // ProfitIntelligenceCard tier prices. Only patch when the AI
+              // returned them — null would clobber a prior value if the user
+              // navigated back into a finished draft.
+              ...(ai.prices ? { aiPrices: ai.prices } : {}),
               ...(ai.locations && ai.locations.length > 0
                 ? {
                     locations: ai.locations,

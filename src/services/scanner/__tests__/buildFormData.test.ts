@@ -71,6 +71,7 @@ function fakeDraft(overrides: Partial<DraftItem> = {}): DraftItem {
     marketplace: '101lab',
     installation: 'deinstalled',
     listingDurationDays: 90,
+    aiPrices: null,
     ...overrides,
   };
 }

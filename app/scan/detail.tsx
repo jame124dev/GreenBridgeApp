@@ -16,6 +16,7 @@ import {
   MarketplaceCard,
   PhotosCard,
   PricingCard,
+  ProfitIntelligenceCard,
   RequiredChecklist,
   SpecsCard,
   useDetailController,
@@ -69,6 +70,7 @@ export default function DetailScreen() {
           <DescriptionCard />
           <MarketplaceCard />
           <CategoryConditionCard />
+          <ProfitIntelligenceCard aiPrices={draft.aiPrices} />
           <PricingCard />
           <SpecsCard />
           <DocumentsCard draft={draft} />

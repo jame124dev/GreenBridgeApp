@@ -35,11 +35,9 @@ export const TIMEZONE_OPTIONS = [
   { value: 'UTC', label: 'UTC' },
 ] as const;
 
+// Currency narrowed to the two markets the app actively sells in. Adding more
+// currencies needs FX_RATE updates in PricingCard.tsx alongside this list.
 export const CURRENCY_OPTIONS = [
   { value: 'USD', label: 'USD ($)' },
   { value: 'TWD', label: 'TWD (NT$)' },
-  { value: 'HKD', label: 'HKD (HK$)' },
-  { value: 'CNY', label: 'CNY (¥)' },
-  { value: 'JPY', label: 'JPY (¥)' },
-  { value: 'THB', label: 'THB (฿)' },
 ] as const;

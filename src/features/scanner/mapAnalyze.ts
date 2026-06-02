@@ -1,6 +1,7 @@
 import { normalizeCondition, normalizeOperationStatus } from './normalize';
 import { DEFAULT_OPERATION_STATUS, marketplaceFromSiteType } from './constants';
-import { pickPrice } from './mapSmartDetection';
+import { pickAiPrices, pickPrice } from './mapSmartDetection';
+import type { SmartProductData } from './smartDetectionTypes';
 import type { AiResult, ItemGrade } from '@/stores/scanDraftStore';
 
 /**
@@ -51,6 +52,14 @@ export function mapAnalyzeResponse(data: Record<string, unknown>): AiResult {
   const siteTypeRaw = coerceTrimmed(data.site_type);
   const suggestedMarketplace = marketplaceFromSiteType(siteTypeRaw);
 
+  // ProfitIntelligenceCard tier prices (scrap/used/new). The analyze endpoint
+  // returns the same shape as smart-detect, so share the parser. Null when
+  // the AI didn't include `prices` — the card falls back to its static stub.
+  const aiPrices = pickAiPrices(
+    (data as SmartProductData).prices,
+    currencyRaw,
+  );
+
   return {
     name: String(data.name ?? ''),
     description: String(data.equipment_description ?? ''),
@@ -74,6 +83,7 @@ export function mapAnalyzeResponse(data: Record<string, unknown>): AiResult {
     locations:    extractLocations(data.locations),
     country:      coerceTrimmed(data.country),
     suggestedMarketplace,
+    prices:       aiPrices,
   };
 }
 

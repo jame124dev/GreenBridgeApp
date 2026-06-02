@@ -17,6 +17,7 @@ import {
   MarketplaceCard,
   PhotosCard,
   PricingCard,
+  ProfitIntelligenceCard,
   RequiredChecklist,
   SpecsCard,
 } from '@/features/scanner/components/detail';
@@ -224,6 +225,7 @@ export default function GroupedEditScreen() {
           <DescriptionCard />
           <MarketplaceCard />
           <CategoryConditionCard />
+          <ProfitIntelligenceCard aiPrices={item.aiPrices} />
           <PricingCard />
           <SpecsCard />
           <DocumentsCard

@@ -5,6 +5,7 @@ import {
 } from './constants';
 import { normalizeCondition, normalizeOperationStatus } from './normalize';
 import type {
+  AiPrices,
   MappedProduct,
   MappedSmartDetection,
   SmartDetectionResponse,
@@ -73,6 +74,44 @@ export function pickPrice(price: unknown): string | null {
   return null;
 }
 
+/**
+ * Coerce a single tier-price value to a positive number, or null when the AI
+ * skipped it. Tolerates the backend's string-prices ("20000") and bare
+ * numbers; everything else returns null so the consumer falls back to the
+ * static stub. Zero is also treated as "no value" — a $0 scrap price is more
+ * likely an upstream serialization bug than a real datapoint.
+ */
+function coerceTierPrice(value: unknown): number | null {
+  if (value == null || value === '') return null;
+  const n = typeof value === 'number' ? value : Number(String(value).trim());
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
+
+/**
+ * Build the AiPrices bundle that powers ProfitIntelligenceCard. Returns null
+ * when the AI didn't return any tier so the card can fall back to its static
+ * stub (rather than render a half-empty insight). Currency falls back to USD
+ * since the backend default is USD; only "TWD" is accepted as an override.
+ */
+export function pickAiPrices(
+  prices: SmartProductData['prices'],
+  currencyRaw: string | undefined,
+): AiPrices | null {
+  if (!prices || typeof prices !== 'object') return null;
+  const scrap = coerceTierPrice(prices.scrap);
+  const used = coerceTierPrice(prices.used);
+  const newP = coerceTierPrice(prices.new);
+  if (scrap == null && used == null && newP == null) return null;
+  const currency: 'USD' | 'TWD' = currencyRaw === 'TWD' ? 'TWD' : 'USD';
+  return {
+    ...(scrap != null && { scrap }),
+    ...(used != null && { used }),
+    ...(newP != null && { new: newP }),
+    currency,
+  };
+}
+
 function taxonomyId(ref: SmartProductData['product_cat']): string | null {
   if (!ref) return null;
   const id = String(ref.id ?? '');
@@ -118,6 +157,8 @@ export function mapProductData(data: SmartProductData, siteType: string): SmartI
   // so the store's apply layer falls back to env-default.
   const suggestedMarketplace = marketplaceFromSiteType(data.site_type);
 
+  const aiPrices = pickAiPrices(data.prices, data.currency);
+
   return {
     title: name,
     description,
@@ -136,6 +177,7 @@ export function mapProductData(data: SmartProductData, siteType: string): SmartI
     co2Emissions,
     grade,
     suggestedMarketplace,
+    aiPrices,
     ai: {
       name,
       description,
@@ -151,6 +193,7 @@ export function mapProductData(data: SmartProductData, siteType: string): SmartI
       co2Emissions,
       grade,
       suggestedMarketplace,
+      prices: aiPrices,
     },
   };
 }

@@ -5,15 +5,15 @@ import { z } from 'zod';
 // model, year, etc.) are optional strings — they fold into product_content via
 // appendSpecsToDescription rather than going through their own backend slots.
 //
-// `priceCurrency` is widened from the locked `USD|TWD` union to the 6-item set
-// that the rest of the app already uses (see `src/features/settings/constants.ts`
-// CURRENCY_OPTIONS). Backend treats it as an opaque string
-// (controller/wordPressV2.js:360 just forwards to `_product_currency` meta)
-// so the constraint is mobile-side only — guarding against typos, not a real
-// server-side enum. If broader currency support is needed later this is the
-// single line to update.
+// `priceCurrency` is locked to the two markets the seller app ships in (USD
+// for the global lab/recycle marketplaces, TWD for 101IT). Backend treats it
+// as an opaque string (controller/wordPressV2.js:360 just forwards to
+// `_product_currency` meta) so the constraint is mobile-side only — guarding
+// against typos, not a real server-side enum. Mirror any extension here in
+// `src/features/settings/constants.ts` (CURRENCY_OPTIONS) and the FX_RATE map
+// in `PricingCard.tsx`.
 
-const SUPPORTED_CURRENCIES = ['USD', 'TWD', 'HKD', 'CNY', 'JPY', 'THB'] as const;
+const SUPPORTED_CURRENCIES = ['USD', 'TWD'] as const;
 
 export const detailSchema = z.object({
   title: z.string().min(1, 'Title is required'),

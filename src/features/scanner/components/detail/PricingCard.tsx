@@ -5,20 +5,12 @@ import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { CURRENCY_OPTIONS } from '@/features/settings/constants';
+import { CURRENCY_PREFIX, convertPrice } from '@/features/scanner/currencyFx';
 import type { DetailFormInput } from '@/features/scanner/schema';
 import type { SupportedCurrency } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
 
 import { FieldLabel } from './FieldLabel';
-
-const CURRENCY_PREFIX: Record<SupportedCurrency, string> = {
-  USD: '$',
-  TWD: 'NT$',
-  HKD: 'HK$',
-  CNY: '¥',
-  JPY: '¥',
-  THB: '฿',
-};
 
 /**
  * Pricing + quantity. Buy-now / make-offer toggle drives whether the price
@@ -27,10 +19,21 @@ const CURRENCY_PREFIX: Record<SupportedCurrency, string> = {
  */
 export function PricingCard() {
   const { t } = useTranslation();
-  const { control, watch, setValue } = useFormContext<DetailFormInput>();
+  const { control, watch, setValue, getValues } = useFormContext<DetailFormInput>();
   const priceFormat = watch('priceFormat');
   const priceCurrency = watch('priceCurrency');
   const currencyPrefix = `${CURRENCY_PREFIX[priceCurrency] ?? '$'} `;
+
+  const handleCurrencyChange = (next: SupportedCurrency) => {
+    if (next === priceCurrency) return;
+    const raw = getValues('pricePerUnit');
+    const numeric = raw ? Number(raw) : NaN;
+    if (Number.isFinite(numeric) && numeric > 0) {
+      const converted = convertPrice(numeric, priceCurrency, next);
+      setValue('pricePerUnit', String(converted), { shouldValidate: true });
+    }
+    setValue('priceCurrency', next, { shouldValidate: true });
+  };
 
   return (
     <View className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl gap-sm">
@@ -135,7 +138,7 @@ export function PricingCard() {
                       ? 'bg-brand-primary border-brand-primary'
                       : 'bg-brand-surface border-brand-border-strong'
                   }`}
-                  onPress={() => setValue('priceCurrency', opt.value, { shouldValidate: true })}
+                  onPress={() => handleCurrencyChange(opt.value)}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: active }}
                   accessibilityLabel={opt.label}

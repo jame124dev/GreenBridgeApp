@@ -13,7 +13,7 @@ import {
   SmartDetectionApplyError,
   validateMappedDetection,
 } from '@/features/scanner/applySmartDetection';
-import type { MappedSmartDetection, SmartItemFields } from '@/features/scanner/smartDetectionTypes';
+import type { AiPrices, MappedSmartDetection, SmartItemFields } from '@/features/scanner/smartDetectionTypes';
 import { persistPhotosForDraft } from '@/services/upload/persistPhotos';
 import type { BatchVisibility } from '@/types/batch';
 
@@ -58,6 +58,12 @@ export type AiResult = {
   // the AI verdict instead of always defaulting to env. Null = AI said
   // nothing useful; caller falls back to env default.
   suggestedMarketplace?: MarketplaceKey | null;
+  /**
+   * AI-derived market-tier prices (scrap / used / new) — backs the Profit
+   * Intelligence card on the detail screen. Optional because not every AI
+   * response includes them.
+   */
+  prices?: AiPrices | null;
 };
 
 export type ScanFlowStep = 'processing' | 'review' | 'detail';
@@ -77,9 +83,10 @@ export type ListingMode = 'single' | 'grouped';
 export type ItemGrade = 'A' | 'B' | 'C' | 'D';
 
 // Currency: backend treats `price_currency` as opaque string (controller/
-// wordPressV2.js:360 just forwards it to meta). Mobile uses the same 6-list
-// the settings module surfaces; widen later only if the backend constrains.
-export type SupportedCurrency = 'USD' | 'TWD' | 'HKD' | 'CNY' | 'JPY' | 'THB';
+// wordPressV2.js:360 just forwards it to meta). Mobile sells in USD + TWD
+// only — see `CURRENCY_OPTIONS` and `SUPPORTED_CURRENCIES`. Legacy persisted
+// drafts with HKD/CNY/JPY/THB are coerced to USD in `migrateDraft`.
+export type SupportedCurrency = 'USD' | 'TWD';
 
 // Drives `allowed_sites[]` at submit (matches web's `marketplaceToAllowedSite`).
 export type MarketplaceKey = '101lab' | '101machine' | '101recycle' | '101it';
@@ -129,6 +136,12 @@ export type DraftItem = {
   installation: InstallationMode;
   /** No backend field today — S5 will hide the picker until backend lands. */
   listingDurationDays: number;
+  /**
+   * AI-derived tier prices (scrap floor / used baseline / new ceiling). Powers
+   * the Profit Intelligence card; null when the AI didn't return them and the
+   * card falls back to its static stub.
+   */
+  aiPrices: AiPrices | null;
 };
 
 /**
@@ -210,6 +223,7 @@ function emptyDraft(photos: Photo[]): DraftItem {
     marketplace: marketplaceFromSiteType(siteType),
     installation: 'deinstalled',
     listingDurationDays: 90,
+    aiPrices: null,
   };
 }
 
@@ -231,8 +245,18 @@ function migrateDraft(d: DraftItem): DraftItem {
   const locationCountries =
     legacy.locationCountries ?? (legacyAddress ? [legacyCountry] : []);
 
+  // Coerce legacy currency values (HKD/CNY/JPY/THB persisted before the
+  // currency list was narrowed) back to the supported two. USD is the safe
+  // default everywhere except 101it. We don't try to convert the priced
+  // amount — old listings were saved in that unit; the seller can re-key.
+  const coercedCurrency: SupportedCurrency =
+    d.priceCurrency === 'USD' || d.priceCurrency === 'TWD'
+      ? d.priceCurrency
+      : defaultCurrencyForSite(siteType);
+
   return {
     ...d,
+    priceCurrency: coercedCurrency,
     visibility: d.visibility ?? 'PUBLIC',
     networkSellers: d.networkSellers ?? [],
     // S1 backfill — older drafts persisted before these fields existed need
@@ -248,6 +272,7 @@ function migrateDraft(d: DraftItem): DraftItem {
     marketplace: d.marketplace ?? marketplaceFromSiteType(siteType),
     installation: d.installation ?? 'deinstalled',
     listingDurationDays: d.listingDurationDays ?? 90,
+    aiPrices: d.aiPrices ?? null,
     // S5.2 backfill
     locations,
     locationCountries,
@@ -311,6 +336,7 @@ function draftFromSmartFields(
     // emptyDraft already supplied env-default via base.marketplace; only
     // override when the AI gave a recognized value (non-null).
     marketplace: fields.suggestedMarketplace ?? base.marketplace,
+    aiPrices: fields.aiPrices,
     ai: fields.ai,
     aiSkipped: false,
     lastStep: 'detail',

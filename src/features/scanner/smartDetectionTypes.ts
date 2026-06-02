@@ -19,6 +19,17 @@ export type SmartProductData = {
   currency?: string;
   /** AI-shaped: number | string | nested object — normalize via pickPrice(). */
   price?: unknown;
+  /**
+   * AI-derived market-tier prices powering the Profit Intelligence card.
+   * Backend returns strings ("20000") but tolerate numbers too. All three
+   * fields are optional — the AI may emit just `scrap`, just `used`, etc.
+   * Interpreted in the same currency as `currency` above.
+   */
+  prices?: {
+    new?: string | number;
+    used?: string | number;
+    scrap?: string | number;
+  };
   condition?: string | string[];
   operation_status?: string | string[];
   // W2 (scan_v3): backend prompt now asks the AI to also return site_type,
@@ -81,8 +92,27 @@ export type SmartItemFields = {
   // MarketplaceKey when recognizable. Null means the AI didn't say or said
   // something off-list — the store falls back to env default in that case.
   suggestedMarketplace: '101lab' | '101machine' | '101recycle' | '101it' | null;
+  /**
+   * AI-derived market-tier prices for ProfitIntelligenceCard. Stored as
+   * numbers in `currency` units (USD for now per backend default). Null when
+   * the AI didn't return them — the card falls back to a static stub.
+   */
+  aiPrices: AiPrices | null;
   /** Cosmetic mirror that drives the "✨ AI" badges on Detail. */
   ai: AiResult;
+}
+
+/**
+ * Tier prices the AI returns per product (scrap floor, used baseline, new
+ * ceiling). At least one tier is expected when present; consumers must
+ * tolerate missing tiers (e.g. scrap-only or used-only). `currency` ties the
+ * tiers to a unit so currency toggles in the UI can convert via the FX helper.
+ */
+export type AiPrices = {
+  scrap?: number;
+  used?: number;
+  new?: number;
+  currency: 'USD' | 'TWD';
 };
 
 export type MappedProduct = {
