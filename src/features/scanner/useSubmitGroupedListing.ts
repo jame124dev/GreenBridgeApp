@@ -29,10 +29,17 @@ type SubmitGroupedResult = {
    * Surfaced for compatibility with the success screen, which historically
    * received a single batchPk + batchNumber. We surface the FIRST batch as
    * the canonical "open this from the success screen" target. The full list
-   * lives on `batchIds`.
+   * lives on `batchIds` and the richer per-item rows on `items`.
    */
   batchPk: number;
   batchNumber: number;
+  /**
+   * One row per submitted product. Used by the multi-product success screen
+   * to render a tappable list instead of just the first batch. `title` is
+   * taken from the draft we passed in (the backend echoes it but a draft
+   * with an empty AI title would otherwise show up blank on the success row).
+   */
+  items: { title: string; batchPk: number; batchNumber?: number }[];
 };
 
 /**
@@ -65,6 +72,17 @@ export function useSubmitGroupedListing() {
       const firstBatch = result.batchIds[0];
       const firstBatchNumber = result.products[0]?.batch_number ?? firstBatch;
 
+      // Pair each draft with the batch the backend created for it. The
+      // backend's `products` array carries `{ index, product_id, batch_id,
+      // batch_number, title }`; we trust `items[index].title` over
+      // `products[i].title` because the draft is the seller's source of truth
+      // (the backend title can be empty when AI failed to extract one).
+      const perItem = result.products.map((p) => ({
+        title: items[p.index]?.title?.trim() || p.title || `Product ${p.index + 1}`,
+        batchPk: p.batch_id,
+        batchNumber: p.batch_number,
+      }));
+
       return {
         groupId: result.groupId,
         batchIds: result.batchIds,
@@ -72,6 +90,7 @@ export function useSubmitGroupedListing() {
         itemCount: items.length,
         batchPk: firstBatch,
         batchNumber: Number(firstBatchNumber),
+        items: perItem,
       };
     },
     onSuccess: () => {

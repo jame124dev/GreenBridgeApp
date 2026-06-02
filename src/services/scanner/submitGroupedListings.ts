@@ -69,6 +69,15 @@ export async function submitGroupedListings(
     throw new Error('Cannot submit an empty group');
   }
 
+  // ── DIAG: multi-submit debugging — see grouped-review.tsx for context ────
+  console.log('[multi-submit] submitGroupedListings entry', {
+    itemCount: input.items.length,
+    sellerId: input.sellerId,
+    language: input.language,
+    visibility: input.visibility,
+  });
+  // ── /DIAG ─────────────────────────────────────────────────────────────────
+
   const fd = new FormData();
 
   const productsMeta = input.items.map((item) =>
@@ -78,6 +87,14 @@ export async function submitGroupedListings(
     }),
   );
   fd.append('products_json', JSON.stringify(productsMeta));
+
+  // ── DIAG: products_json shape — confirms backend sees N entries ──────────
+  console.log('[multi-submit] products_json built', {
+    count: productsMeta.length,
+    titles: productsMeta.map((m) => String(m.product_title ?? '')),
+    json_len: JSON.stringify(productsMeta).length,
+  });
+  // ── /DIAG ─────────────────────────────────────────────────────────────────
 
   // Group-level country: take from the first item's first locationCountry.
   // Web does the same (`submitSmartBatch.ts:50-57`).
@@ -92,6 +109,8 @@ export async function submitGroupedListings(
 
   // Per-product files — `images_${i}` + `documents_${i}` (matches the field
   // names `services/groupedListingSubmitService.js` parses).
+  // DIAG: collect per-index file counts for logging at the end of the loop.
+  const fileTally: { index: number; images: number; documents: number }[] = [];
   for (let i = 0; i < input.items.length; i++) {
     const item = input.items[i];
     for (let p = 0; p < item.photos.length; p++) {
@@ -114,7 +133,16 @@ export async function submitGroupedListings(
         doc.mimeType || 'application/octet-stream',
       );
     }
+    fileTally.push({
+      index: i,
+      images: item.photos.length,
+      documents: item.documents.length,
+    });
   }
+
+  // ── DIAG: per-product file counts about to be wired into multipart ───────
+  console.log('[multi-submit] per-product files', fileTally);
+  // ── /DIAG ─────────────────────────────────────────────────────────────────
 
   // ?type= sourced from the first item's marketplace. All items in a single
   // grouped submit are assumed to share a marketplace (the grouped-review UI
@@ -123,15 +151,40 @@ export async function submitGroupedListings(
   // constants.ts; falls back to env site type if the marketplace doesn't map
   // (defensive — all 4 known marketplaces map cleanly).
   const platform = marketplaceToPlatform(input.items[0]?.marketplace) ?? getSiteType();
+  const url = `/wp/create-grouped-listings?lang=${encodeURIComponent(input.language)}&type=${encodeURIComponent(platform)}`;
+
+  // ── DIAG: about to POST ──────────────────────────────────────────────────
+  console.log('[multi-submit] POST start', { url, platform, country: groupCountry });
+  // ── /DIAG ─────────────────────────────────────────────────────────────────
 
   const res = await greenbidz.post(
-    `/wp/create-grouped-listings?lang=${encodeURIComponent(input.language)}&type=${encodeURIComponent(platform)}`,
+    url,
     fd,
     {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 300_000,
     },
   );
+
+  // ── DIAG: server response shape ──────────────────────────────────────────
+  // `success` flag + counts of product/batch ids backend reports. If counts
+  // are smaller than what we sent, the bug is on the server side; if equal,
+  // the bug is downstream (UI or recent-uploads invalidation).
+  console.log('[multi-submit] POST response', {
+    success: res.data?.success,
+    message: res.data?.message,
+    productIdCount: Array.isArray(res.data?.data?.product_ids)
+      ? res.data.data.product_ids.length
+      : null,
+    batchIdCount: Array.isArray(res.data?.data?.batch_ids)
+      ? res.data.data.batch_ids.length
+      : null,
+    productsRowsCount: Array.isArray(res.data?.data?.products)
+      ? res.data.data.products.length
+      : null,
+    groupId: res.data?.data?.auction_group?.group_id,
+  });
+  // ── /DIAG ─────────────────────────────────────────────────────────────────
 
   const result = res.data;
   if (!result?.success) {

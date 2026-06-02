@@ -31,6 +31,13 @@ export const routes = {
     batchNumber: number,
     itemCount?: number,
     groupId?: number,
+    /**
+     * Per-item rows for the success screen list (multi-product submissions).
+     * Each entry carries the data we already have from the backend's
+     * grouped-listing response; the success screen renders one row per item
+     * and lets the user tap into any of them, not just the first.
+     */
+    items?: { title: string; batchPk: number; batchNumber?: number }[],
   ) =>
     ({
       pathname: '/scan/success',
@@ -42,6 +49,9 @@ export const routes = {
         // success screen surfaces it alongside the canonical batch number.
         // Singles call this without the arg, so the param is conditional.
         groupId: groupId != null ? String(groupId) : undefined,
+        // JSON-encoded compact items list. Capped at a few hundred bytes per
+        // submission (≤10 products × ~50 char title) — well under URL limits.
+        items: items && items.length ? JSON.stringify(items) : undefined,
       },
     }) as unknown as Href,
 };

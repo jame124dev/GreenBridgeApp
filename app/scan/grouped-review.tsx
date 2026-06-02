@@ -158,6 +158,29 @@ export default function GroupedReviewHub() {
     }
 
     haptics.impact();
+
+    // ── DIAG: multi-submit debugging ─────────────────────────────────────────
+    // Logs the live items handed to the mutation so we can see, on-device,
+    // whether the queue actually has N items or only 1 by the time the user
+    // taps Submit. Filter with `adb logcat | grep multi-submit`. Remove
+    // once the multi-product submit bug is closed.
+    console.log('[multi-submit] onSubmitAll fired', {
+      count: liveItems.length,
+      items: liveItems.map((it, i) => ({
+        idx: i,
+        id: it.id,
+        title: it.title || '(no title)',
+        photos: it.photos?.length ?? 0,
+        firstPhotoUri: it.photos?.[0]?.uri?.slice(-40) ?? null,
+        documents: it.documents?.length ?? 0,
+        categoryId: it.categoryId,
+        marketplace: it.marketplace,
+      })),
+      visibility: sessionVisibility,
+      networkSellers,
+    });
+    // ── /DIAG ─────────────────────────────────────────────────────────────────
+
     submitGrouped.mutate(
       {
         items: liveItems,
@@ -165,11 +188,11 @@ export default function GroupedReviewHub() {
         networkSellers,
       },
       {
-        onSuccess: ({ batchPk, batchNumber, itemCount, groupId }) => {
+        onSuccess: ({ batchPk, batchNumber, itemCount, groupId, items }) => {
           haptics.success();
           reset();
           router.replace(
-            routes.scanSuccess(batchPk, batchNumber, itemCount, groupId),
+            routes.scanSuccess(batchPk, batchNumber, itemCount, groupId, items),
           );
         },
         onError: (err) => {
