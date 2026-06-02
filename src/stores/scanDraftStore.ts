@@ -227,6 +227,42 @@ function emptyDraft(photos: Photo[]): DraftItem {
   };
 }
 
+/**
+ * Lift legacy `aiPrices.scrap = 5000` shape (or any partial bag from a
+ * persisted draft) up to the new `{ min, max }` tier shape. Anything we
+ * can't recognize → null, and the Profit Intelligence card falls back to
+ * its static stub for that draft.
+ */
+function migrateAiPrices(raw: unknown): AiPrices | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const src = raw as Record<string, unknown>;
+  const liftTier = (v: unknown) => {
+    if (v == null) return undefined;
+    if (typeof v === 'number' && Number.isFinite(v) && v > 0) {
+      return { min: v, max: v };
+    }
+    if (typeof v === 'object') {
+      const o = v as Record<string, unknown>;
+      const min = typeof o.min === 'number' ? o.min : NaN;
+      const max = typeof o.max === 'number' ? o.max : NaN;
+      if (Number.isFinite(min) && Number.isFinite(max) && min > 0 && max > 0) {
+        return { min: Math.min(min, max), max: Math.max(min, max) };
+      }
+    }
+    return undefined;
+  };
+  const scrap = liftTier(src.scrap);
+  const used = liftTier(src.used);
+  const newP = liftTier(src.new);
+  if (!scrap && !used && !newP) return null;
+  return {
+    ...(scrap && { scrap }),
+    ...(used && { used }),
+    ...(newP && { new: newP }),
+    currency: src.currency === 'TWD' ? 'TWD' : 'USD',
+  };
+}
+
 function migrateDraft(d: DraftItem): DraftItem {
   const siteType = getSiteType();
 
@@ -254,6 +290,12 @@ function migrateDraft(d: DraftItem): DraftItem {
       ? d.priceCurrency
       : defaultCurrencyForSite(siteType);
 
+  // `aiPrices` shape changed from `{ scrap: 5000 }` to `{ scrap: { min, max } }`
+  // when the backend started returning range strings. Lift any legacy
+  // point-number persistence to the tier shape, and null out anything we
+  // can't recognize so the card cleanly falls back to its static stub.
+  const aiPrices = migrateAiPrices(d.aiPrices);
+
   return {
     ...d,
     priceCurrency: coercedCurrency,
@@ -272,7 +314,7 @@ function migrateDraft(d: DraftItem): DraftItem {
     marketplace: d.marketplace ?? marketplaceFromSiteType(siteType),
     installation: d.installation ?? 'deinstalled',
     listingDurationDays: d.listingDurationDays ?? 90,
-    aiPrices: d.aiPrices ?? null,
+    aiPrices,
     // S5.2 backfill
     locations,
     locationCountries,

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronLeft, Edit3, Sparkles } from 'lucide-react-native';
+import { ChevronLeft, Edit3, Sparkles, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
 import { AppImage, Button, Screen, Text } from '@/components/ui';
@@ -105,6 +105,46 @@ export default function DetectionScreen() {
     });
   };
 
+  /**
+   * Remove a photo from its product group entirely. We don't mutate
+   * `sourcePhotos` itself (that would shift every higher index) — just drop
+   * the index from `editedProducts`. Anything not referenced by a product's
+   * imageIndexes never enters `buildPhotoSlices` at submit time, so the
+   * photo is effectively excluded from the listing. If the product ends up
+   * with 0 photos, drop the whole product (same cleanup as `movePhoto`).
+   */
+  const deletePhoto = (fromIdx: number, imageIdx: number) => {
+    setEditedProducts((prev) => {
+      const next = prev.map((p, i) =>
+        i === fromIdx
+          ? { ...p, imageIndexes: p.imageIndexes.filter((idx) => idx !== imageIdx) }
+          : p,
+      );
+      return next.filter((p) => p.imageIndexes.length > 0);
+    });
+  };
+
+  /** Confirm with the native dialog before destroying the photo. */
+  const confirmDeletePhoto = (productIdx: number, imageIdx: number) => {
+    Alert.alert(
+      t('mobile.detection.deletePhotoTitle', { defaultValue: 'Delete photo?' }),
+      t('mobile.detection.deletePhotoBody', {
+        defaultValue: "This photo won't be included in the listing.",
+      }),
+      [
+        { text: t('mobile.common.cancel'), style: 'cancel' },
+        {
+          text: t('mobile.common.delete', { defaultValue: 'Delete' }),
+          style: 'destructive',
+          onPress: () => {
+            haptics.tap();
+            deletePhoto(productIdx, imageIdx);
+          },
+        },
+      ],
+    );
+  };
+
   // Per-group thumb strips for the listing-step radio card. Recomputes
   // whenever editedProducts changes so the user sees their regrouping
   // reflected in the multi-card preview on step 2.
@@ -193,7 +233,7 @@ export default function DetectionScreen() {
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <Screen padded={false} scroll={false}>
+    <Screen padded={false} scroll={false} edges={['top', 'bottom']}>
       <View className="flex-row items-center px-md pt-sm pb-xs">
         <Pressable
           onPress={onBack}
@@ -230,6 +270,7 @@ export default function DetectionScreen() {
             onTapPhoto={(productIdx, imageIdx) =>
               setMovingPhoto({ productIdx, imageIdx })
             }
+            onDeletePhoto={confirmDeletePhoto}
           />
         ) : (
           <ListingStep
@@ -298,12 +339,14 @@ function CaptureStep({
   confidencePct,
   onIdentify,
   onTapPhoto,
+  onDeletePhoto,
 }: {
   editedProducts: MappedProduct[];
   sourcePhotos: Photo[];
   confidencePct: number;
   onIdentify: (productIdx: number) => void;
   onTapPhoto: (productIdx: number, imageIdx: number) => void;
+  onDeletePhoto: (productIdx: number, imageIdx: number) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -336,6 +379,7 @@ function CaptureStep({
             photos={sourcePhotos}
             onIdentify={() => onIdentify(index)}
             onTapPhoto={(imageIdx) => onTapPhoto(index, imageIdx)}
+            onDeletePhoto={(imageIdx) => onDeletePhoto(index, imageIdx)}
           />
         ))}
       </View>
@@ -410,12 +454,14 @@ function ProductGroupEditor({
   photos,
   onIdentify,
   onTapPhoto,
+  onDeletePhoto,
 }: {
   index: number;
   product: MappedProduct;
   photos: Photo[];
   onIdentify: () => void;
   onTapPhoto: (imageIdx: number) => void;
+  onDeletePhoto: (imageIdx: number) => void;
 }) {
   const { t } = useTranslation();
   const f = product.fields;
@@ -488,32 +534,59 @@ function ProductGroupEditor({
         )}
       </View>
 
-      {/* Photo strip — tap to move to another group */}
+      {/* Photo strip — tap photo to move to another group, tap × to delete */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 6, paddingVertical: 2 }}
+        // paddingTop=8 leaves clearance for the × badge that sits at top: -6.
+        contentContainerStyle={{ gap: 10, paddingTop: 8, paddingBottom: 2 }}
       >
         {product.imageIndexes.map((imageIdx) => {
           const photo = photos[imageIdx];
           if (!photo) return null;
           return (
-            <Pressable
-              key={`img-${imageIdx}`}
-              onPress={() => onTapPhoto(imageIdx)}
-              accessibilityRole="button"
-              accessibilityLabel={t('mobile.detection.movePhoto', {
-                defaultValue: 'Move this photo to another group',
-              })}
-              className="rounded-xs overflow-hidden border border-brand-border-strong"
-              style={{ width: 64, height: 64 }}
-            >
-              <AppImage
-                source={{ uri: photo.uri }}
-                style={{ width: '100%', height: '100%' }}
-                contentFit="cover"
-              />
-            </Pressable>
+            <View key={`img-${imageIdx}`} style={{ width: 64, height: 64 }}>
+              <Pressable
+                onPress={() => onTapPhoto(imageIdx)}
+                accessibilityRole="button"
+                accessibilityLabel={t('mobile.detection.movePhoto', {
+                  defaultValue: 'Move this photo to another group',
+                })}
+                className="rounded-xs overflow-hidden border border-brand-border-strong"
+                style={{ width: 64, height: 64 }}
+              >
+                <AppImage
+                  source={{ uri: photo.uri }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
+                />
+              </Pressable>
+              {/* × delete badge — sits over the top-right corner. Larger
+                  hitSlop so the 18px target is comfortable to tap. */}
+              <Pressable
+                onPress={() => onDeletePhoto(imageIdx)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t('mobile.detection.removePhoto', {
+                  defaultValue: 'Remove this photo',
+                })}
+                style={{
+                  position: 'absolute',
+                  top: -6,
+                  right: -6,
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  backgroundColor: '#111827',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1.5,
+                  borderColor: '#FFFFFF',
+                }}
+              >
+                <X color="#FFFFFF" size={12} strokeWidth={3} />
+              </Pressable>
+            </View>
           );
         })}
       </ScrollView>

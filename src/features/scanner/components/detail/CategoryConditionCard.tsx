@@ -10,7 +10,11 @@ import {
   type ConditionKey,
 } from '@/features/scanner/constants';
 import type { DetailFormInput } from '@/features/scanner/schema';
-import { useLabCategories } from '@/features/scanner/useLabCategories';
+import {
+  useEnLabCategories,
+  useLabCategories,
+} from '@/features/scanner/useLabCategories';
+import { bridgeCategoryId } from '@/services/scanner/fetchCategories';
 import type { ItemGrade } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
 
@@ -31,10 +35,13 @@ const GRADES: ItemGrade[] = ['A', 'B', 'C', 'D'];
  * when flat) so the submit-time wiring stays unchanged.
  */
 export function CategoryConditionCard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { control, watch, setValue, getValues } = useFormContext<DetailFormInput>();
   const marketplace = watch('marketplace');
   const categories = useLabCategories(marketplace);
+  // EN reference tree — used by the cross-locale bridge below. Cheap (cached
+  // 5 min, no fetch when the app's already in EN).
+  const enCategories = useEnLabCategories(marketplace);
   const selectedConditions = watch('condition');
   const categoryId = watch('categoryId');
 
@@ -70,13 +77,48 @@ export function CategoryConditionCard() {
   // is no longer present in the new tree. `categoryName` doesn't need its own
   // clear: it's not on the form — `useDetailController.buildUpdated` derives
   // it from `categoryId` at submit time, so clearing the id alone is enough.
+  //
+  // Cross-locale bridge: the smart-detect AI returns category ids from the EN
+  // tree even when the seller is in zh/ja/th. Before clearing, try to bridge
+  // the EN id over to the user's locale id via `bridgeCategoryId` (sorted
+  // position match). Only clears when no bridge is possible — preserves the
+  // AI's pick across locales. See `fetchCategories.ts#bridgeCategoryId`.
+  //
+  // RACE-CONDITION GATE: the locale tree and the EN tree are independent
+  // React Query fetches; the locale tree often arrives first. Without this
+  // gate, the effect would clear the AI's id before the EN tree shows up to
+  // bridge it. We wait until either we don't need the bridge (already in EN)
+  // OR the bridge has settled (success/error) before deciding.
+  const isAlreadyEn =
+    i18n.language === 'en' || i18n.language.startsWith('en');
+  const enBridgeSettled =
+    isAlreadyEn || enCategories.isSuccess || enCategories.isError;
   useEffect(() => {
     if (!categories.data) return;
+    if (!enBridgeSettled) return;
     const id = getValues('categoryId');
     if (!id) return;
     const stillValid = categories.data.options.some((o) => o.id === id);
-    if (!stillValid) setValue('categoryId', '', { shouldValidate: false });
-  }, [categories.data, getValues, setValue]);
+    if (stillValid) return;
+    if (enCategories.data) {
+      const bridged = bridgeCategoryId(
+        id,
+        enCategories.data,
+        categories.data.categories,
+      );
+      if (bridged && categories.data.options.some((o) => o.id === bridged)) {
+        setValue('categoryId', bridged, { shouldValidate: false });
+        return;
+      }
+    }
+    setValue('categoryId', '', { shouldValidate: false });
+  }, [
+    categories.data,
+    enCategories.data,
+    enBridgeSettled,
+    getValues,
+    setValue,
+  ]);
 
   const toggleCondition = (key: ConditionKey) => {
     const next = selectedConditions.includes(key)

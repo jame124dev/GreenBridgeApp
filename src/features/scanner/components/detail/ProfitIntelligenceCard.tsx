@@ -7,7 +7,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { MARKETPLACE_OPTIONS } from '@/features/scanner/constants';
 import { convertPrice, formatCurrency } from '@/features/scanner/currencyFx';
 import type { DetailFormInput } from '@/features/scanner/schema';
-import type { AiPrices } from '@/features/scanner/smartDetectionTypes';
+import type { AiPriceTier, AiPrices } from '@/features/scanner/smartDetectionTypes';
+import type { SupportedCurrency } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
 
 // Static fallbacks for the case where the AI didn't return tier prices. Both
@@ -37,33 +38,59 @@ type Props = {
 };
 
 type DerivedFigures = {
-  /** Canonical USD scrap value used for display + conversion. */
-  scrapUsd: number;
-  /** Canonical USD potential-profit value (sell-on-marketplace − scrap). */
-  profitUsd: number;
-  /** Integer percent uplift over scrap; never exceeds 999 for display sanity. */
+  /** Canonical USD scrap-value range for display. min===max for point values. */
+  scrapUsd: AiPriceTier;
+  /** Canonical USD potential-profit range (sell-on-marketplace − scrap). */
+  profitUsd: AiPriceTier;
+  /** Integer percent uplift over scrap (midpoint-based). Capped at 999. */
   percent: number;
   /** Marks the card with the "AI" badge in the header. */
   fromAi: boolean;
 };
 
+/** Midpoint of a price tier — used for percent calculations. */
+function midpoint(t: AiPriceTier): number {
+  return (t.min + t.max) / 2;
+}
+
 /**
  * Compute the USD-canonical figures the card displays. Pulls from the AI
- * bundle when available; falls back to the static stub. The percent uplift
- * always tracks the live scrap/profit pair so a hand-edited future API spec
- * can drift without us re-syncing copy.
+ * bundle when available; falls back to the static stub. Ranges are preserved
+ * end-to-end so the card shows "$5,000 – $10,000" when the AI is uncertain,
+ * and collapses to a single figure when the AI returns a point estimate. The
+ * percent uplift uses midpoints to keep the insight sentence tidy (one
+ * number rather than a range).
  */
 function deriveFigures(aiPrices: AiPrices | null | undefined): DerivedFigures {
   // Require BOTH scrap and used to derive — used-only or scrap-only can't
   // power a "you'd make N% more" claim. Fall back to static stub otherwise.
   if (aiPrices && aiPrices.scrap != null && aiPrices.used != null) {
-    // Normalize whatever currency the AI returned back to USD canonical so
-    // the rest of the card (which formats through the current pill) stays
-    // consistent regardless of AI source unit.
-    const scrapUsd = convertPrice(aiPrices.scrap, aiPrices.currency, 'USD');
-    const usedUsd = convertPrice(aiPrices.used, aiPrices.currency, 'USD');
-    const profitUsd = Math.max(0, usedUsd - scrapUsd);
-    const rawPct = scrapUsd > 0 ? Math.round((profitUsd / scrapUsd) * 100) : 0;
+    const scrapSrc = aiPrices.scrap;
+    const usedSrc = aiPrices.used;
+    // Normalize the source currency to USD canonical so the rest of the card
+    // (which formats through the current pill) stays consistent regardless
+    // of AI source unit.
+    const scrapUsd: AiPriceTier = {
+      min: convertPrice(scrapSrc.min, aiPrices.currency, 'USD'),
+      max: convertPrice(scrapSrc.max, aiPrices.currency, 'USD'),
+    };
+    const usedUsd: AiPriceTier = {
+      min: convertPrice(usedSrc.min, aiPrices.currency, 'USD'),
+      max: convertPrice(usedSrc.max, aiPrices.currency, 'USD'),
+    };
+    // Profit range bounds: lowest possible profit is `used.min - scrap.max`
+    // (worst-case marketplace, best-case scrap); highest possible profit is
+    // `used.max - scrap.min`. Floor at 0 so the bottom never reads negative
+    // — a "potential profit" can't be a loss in the card's framing.
+    const profitUsd: AiPriceTier = {
+      min: Math.max(0, usedUsd.min - scrapUsd.max),
+      max: Math.max(0, usedUsd.max - scrapUsd.min),
+    };
+    // Midpoint percent — one number for the insight copy, ignoring the
+    // range so the sentence reads naturally.
+    const scrapMid = midpoint(scrapUsd);
+    const profitMid = midpoint(profitUsd);
+    const rawPct = scrapMid > 0 ? Math.round((profitMid / scrapMid) * 100) : 0;
     return {
       scrapUsd,
       profitUsd,
@@ -71,12 +98,38 @@ function deriveFigures(aiPrices: AiPrices | null | undefined): DerivedFigures {
       fromAi: true,
     };
   }
+  // Static stub — wrap the point values in a tier so the formatting helper
+  // doesn't need to branch on shape.
+  const stubScrap: AiPriceTier = {
+    min: STATIC_SCRAP_BASELINE_USD,
+    max: STATIC_SCRAP_BASELINE_USD,
+  };
+  const stubProfit: AiPriceTier = {
+    min: STATIC_POTENTIAL_PROFIT_USD,
+    max: STATIC_POTENTIAL_PROFIT_USD,
+  };
   return {
-    scrapUsd: STATIC_SCRAP_BASELINE_USD,
-    profitUsd: STATIC_POTENTIAL_PROFIT_USD,
+    scrapUsd: stubScrap,
+    profitUsd: stubProfit,
     percent: STATIC_PROFIT_PERCENT,
     fromAi: false,
   };
+}
+
+/**
+ * Format a USD-canonical price tier for display in the user's currency. A
+ * point tier (min === max) renders as a single figure; a true range renders
+ * with an en-dash and the prefix on both ends ("$5,000 – $10,000").
+ */
+function formatTier(
+  tier: AiPriceTier,
+  currency: SupportedCurrency,
+  opts?: { signed?: boolean },
+): string {
+  const lo = formatCurrency(convertPrice(tier.min, 'USD', currency), currency, opts);
+  if (tier.min === tier.max) return lo;
+  const hi = formatCurrency(convertPrice(tier.max, 'USD', currency), currency, opts);
+  return `${lo} – ${hi}`;
 }
 
 /**
@@ -94,15 +147,8 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
 
   const { scrapUsd, profitUsd, percent, fromAi } = deriveFigures(aiPrices);
 
-  const scrapDisplay = formatCurrency(
-    convertPrice(scrapUsd, 'USD', priceCurrency),
-    priceCurrency,
-  );
-  const profitDisplay = formatCurrency(
-    convertPrice(profitUsd, 'USD', priceCurrency),
-    priceCurrency,
-    { signed: true },
-  );
+  const scrapDisplay = formatTier(scrapUsd, priceCurrency);
+  const profitDisplay = formatTier(profitUsd, priceCurrency, { signed: true });
 
   // Prefer the seller's current marketplace selection over the static
   // suggestion — the card stays in sync as they tap a different pill.
@@ -183,7 +229,9 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
               lineHeight: 28,
               color: brand.foreground,
             }}
-            numberOfLines={1}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
           >
             {scrapDisplay}
           </Text>
@@ -215,13 +263,15 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
           <View className="flex-row items-center" style={{ gap: 6 }}>
             <TrendingUp size={20} color={ECO_TEAL} strokeWidth={2.5} />
             <Text
-              className="font-bold"
+              className="font-bold flex-1"
               style={{
                 fontSize: 22,
                 lineHeight: 28,
                 color: ECO_TEAL,
               }}
-              numberOfLines={1}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
             >
               {profitDisplay}
             </Text>

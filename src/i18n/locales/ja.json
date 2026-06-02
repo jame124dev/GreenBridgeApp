@@ -3453,7 +3453,8 @@
       "loading": "読み込み中…",
       "itemsLabel": "件",
       "bidsLabel": "入札",
-      "couldNotLoad": "読み込めませんでした — タップして再試行"
+      "couldNotLoad": "読み込めませんでした — タップして再試行",
+      "delete": "削除"
     },
     "camera": {
       "titleBar": "撮影",
@@ -3509,7 +3510,10 @@
       "unknownProduct": "不明な商品",
       "photosCount": "{{count}} 枚の写真",
       "stepOf": "ステップ {{current}} / 2",
-      "untitledProduct": "商品 #{{n}}"
+      "untitledProduct": "商品 #{{n}}",
+      "deletePhotoTitle": "写真を削除しますか？",
+      "deletePhotoBody": "この写真は商品に含まれません。",
+      "removePhoto": "この写真を削除"
     },
     "processing": {
       "aiWorking": "AI 処理中",

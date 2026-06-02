@@ -5,6 +5,7 @@ import {
 } from './constants';
 import { normalizeCondition, normalizeOperationStatus } from './normalize';
 import type {
+  AiPriceTier,
   AiPrices,
   MappedProduct,
   MappedSmartDetection,
@@ -75,17 +76,37 @@ export function pickPrice(price: unknown): string | null {
 }
 
 /**
- * Coerce a single tier-price value to a positive number, or null when the AI
- * skipped it. Tolerates the backend's string-prices ("20000") and bare
- * numbers; everything else returns null so the consumer falls back to the
- * static stub. Zero is also treated as "no value" — a $0 scrap price is more
- * likely an upstream serialization bug than a real datapoint.
+ * Coerce a tier-price value to `{ min, max }`, or null when the AI skipped
+ * it. Accepts three shapes the backend may return:
+ *   - point number  `5000`          → `{ min: 5000, max: 5000 }`
+ *   - point string  `"5000"`        → `{ min: 5000, max: 5000 }`
+ *   - range string  `"5000-10000"`  → `{ min: 5000, max: 10000 }`
+ *
+ * Both bounds must be positive and finite — zero is treated as "no value"
+ * (a $0 tier is more likely an upstream serialization bug than real data).
+ * Reversed ranges (e.g. `"10000-5000"`) are normalized so `min <= max`.
  */
-function coerceTierPrice(value: unknown): number | null {
+function coerceTierPrice(value: unknown): AiPriceTier | null {
   if (value == null || value === '') return null;
-  const n = typeof value === 'number' ? value : Number(String(value).trim());
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || value <= 0) return null;
+    return { min: value, max: value };
+  }
+  const str = String(value).trim();
+  if (!str) return null;
+  // Range form: "5000-10000" (whitespace around the dash tolerated).
+  const rangeMatch = str.match(/^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$/);
+  if (rangeMatch) {
+    const a = Number(rangeMatch[1]);
+    const b = Number(rangeMatch[2]);
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) {
+      return null;
+    }
+    return { min: Math.min(a, b), max: Math.max(a, b) };
+  }
+  const n = Number(str);
   if (!Number.isFinite(n) || n <= 0) return null;
-  return n;
+  return { min: n, max: n };
 }
 
 /**
@@ -135,8 +156,17 @@ export function mapProductData(data: SmartProductData, siteType: string): SmartI
   const operationStatus = opStatusRaw.length ? opStatusRaw : [...DEFAULT_OPERATION_STATUS];
   const currency = defaultCurrencyForSite(siteType);
 
-  const categoryId = taxonomyId(data.product_cat);
-  const categoryName = categoryId ? (data.product_cat?.name ?? null) : null;
+  // Prefer the AI's subcategory id when present — it's the more specific
+  // leaf and is the value the detail form expects. Fall back to the parent
+  // category id (still valid for flat-leaf marketplaces like /machines after
+  // the `flattenCategoryOptions` fix). The legacy behavior used `product_cat`
+  // exclusively, which silently dropped any subcategory the AI picked.
+  const subId = taxonomyId(data.subcategory);
+  const subName = subId ? (data.subcategory?.name ?? null) : null;
+  const parentId = taxonomyId(data.product_cat);
+  const parentName = parentId ? (data.product_cat?.name ?? null) : null;
+  const categoryId = subId ?? parentId;
+  const categoryName = subId ? subName : parentName;
 
   const name = String(data.name ?? '');
   const description = String(data.equipment_description ?? '');

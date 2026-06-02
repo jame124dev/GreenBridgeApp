@@ -40,10 +40,88 @@ export async function fetchLabCategories(
   return (res.data?.data ?? []) as LabCategory[];
 }
 
+/**
+ * Bridge an English-tree category id over to the user's locale-tree id.
+ *
+ * Background — WordPress creates a separate term row per language (WPML /
+ * Polylang behaviour), so the same category has different ids across
+ * locales: "Boring & Drilling Machines" is id 5300 in `/machines?language=en`
+ * but id 5308 in `/machines?language=zh-hant`. The smart-detect AI returns
+ * ids from the EN tree even when the seller's app is set to Chinese, so
+ * `CategoryConditionCard` thinks the id is invalid and clears it.
+ *
+ * Mitigation — sort BOTH trees by id; the position in each tree corresponds
+ * to the same logical category (verified across en/zh-hant for /machines).
+ * Match the EN-tree position over to the locale tree by index, both at the
+ * parent and subcategory level. Returns null if no match (e.g. the EN tree
+ * is missing or the position is out of bounds) so the caller can fall back
+ * to clearing the field.
+ *
+ * This is a workaround for a backend issue — the right long-term fix is
+ * stable cross-locale ids (or a `term_translation_id` field on the API).
+ */
+export function bridgeCategoryId(
+  enCategoryId: string,
+  enTree: LabCategory[],
+  localeTree: LabCategory[],
+): string | null {
+  if (!enTree.length || !localeTree.length) return null;
+
+  const enSorted = [...enTree].sort((a, b) => a.id - b.id);
+  const localeSorted = [...localeTree].sort((a, b) => a.id - b.id);
+
+  // Parent-level match
+  const parentIdx = enSorted.findIndex((c) => String(c.id) === enCategoryId);
+  if (parentIdx !== -1) {
+    const localeMatch = localeSorted[parentIdx];
+    if (localeMatch) return String(localeMatch.id);
+  }
+
+  // Subcategory-level match: find the parent that owns the EN sub id, then
+  // find the same sub position inside the locale parent at the same index.
+  for (let i = 0; i < enSorted.length; i++) {
+    const enParent = enSorted[i];
+    const enSubs = [...(enParent.subcategories ?? [])].sort(
+      (a, b) => a.id - b.id,
+    );
+    const subIdx = enSubs.findIndex((s) => String(s.id) === enCategoryId);
+    if (subIdx === -1) continue;
+    const localeParent = localeSorted[i];
+    if (!localeParent) return null;
+    const localeSubs = [...(localeParent.subcategories ?? [])].sort(
+      (a, b) => a.id - b.id,
+    );
+    const localeSub = localeSubs[subIdx];
+    return localeSub ? String(localeSub.id) : null;
+  }
+
+  return null;
+}
+
+/**
+ * Flatten the category tree to the set of selectable leaves. A leaf is:
+ *   - a subcategory (nested marketplaces, e.g. /lab), OR
+ *   - a parent that has NO subcategories (flat marketplaces, e.g. /machines).
+ *
+ * The "no children → parent is the leaf" branch is critical: without it, an
+ * AI-supplied category id pointing at a flat-leaf parent was treated as
+ * invalid on hydrate by CategoryConditionCard's stillValid check, which then
+ * cleared the field — so the seller saw an empty Category after AI fill even
+ * though the AI's pick was perfectly valid.
+ */
 export function flattenCategoryOptions(categories: LabCategory[]) {
   const options: { id: string; name: string; label: string }[] = [];
   for (const cat of categories) {
-    for (const sub of cat.subcategories ?? []) {
+    const subs = cat.subcategories ?? [];
+    if (subs.length === 0) {
+      options.push({
+        id: String(cat.id),
+        name: cat.name,
+        label: cat.name,
+      });
+      continue;
+    }
+    for (const sub of subs) {
       options.push({
         id: String(sub.id),
         name: sub.name,

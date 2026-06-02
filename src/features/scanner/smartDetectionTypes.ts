@@ -103,15 +103,23 @@ export type SmartItemFields = {
 }
 
 /**
+ * A single AI-priced tier. The backend may return either a point estimate
+ * (`5000`) or a range (`"5000-10000"`); both flow into `{ min, max }`. Point
+ * estimates become `min === max` so the rest of the card renders them as a
+ * single figure rather than a degenerate "$5,000 – $5,000" range.
+ */
+export type AiPriceTier = { min: number; max: number };
+
+/**
  * Tier prices the AI returns per product (scrap floor, used baseline, new
  * ceiling). At least one tier is expected when present; consumers must
  * tolerate missing tiers (e.g. scrap-only or used-only). `currency` ties the
  * tiers to a unit so currency toggles in the UI can convert via the FX helper.
  */
 export type AiPrices = {
-  scrap?: number;
-  used?: number;
-  new?: number;
+  scrap?: AiPriceTier;
+  used?: AiPriceTier;
+  new?: AiPriceTier;
   currency: 'USD' | 'TWD';
 };
 

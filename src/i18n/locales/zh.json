@@ -3518,7 +3518,8 @@
       "loading": "載入中…",
       "itemsLabel": "件",
       "bidsLabel": "出價",
-      "couldNotLoad": "無法載入 — 輕觸重試"
+      "couldNotLoad": "無法載入 — 輕觸重試",
+      "delete": "刪除"
     },
     "camera": {
       "titleBar": "拍攝",
@@ -3574,7 +3575,10 @@
       "unknownProduct": "未知商品",
       "photosCount": "{{count}} 張照片",
       "stepOf": "步驟 {{current}} / 2",
-      "untitledProduct": "商品 #{{n}}"
+      "untitledProduct": "商品 #{{n}}",
+      "deletePhotoTitle": "刪除照片？",
+      "deletePhotoBody": "此照片將不會包含在商品中。",
+      "removePhoto": "移除此照片"
     },
     "processing": {
       "aiWorking": "AI 處理中",

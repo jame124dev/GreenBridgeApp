@@ -182,7 +182,7 @@ export default function GroupedEditScreen() {
   };
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'bottom']}>
       <HStack
         align="center"
         justify="space-between"

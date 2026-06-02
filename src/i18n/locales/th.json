@@ -3437,7 +3437,8 @@
       "loading": "กำลังโหลด…",
       "itemsLabel": "รายการ",
       "bidsLabel": "การประมูล",
-      "couldNotLoad": "โหลดไม่ได้ — แตะเพื่อลองอีกครั้ง"
+      "couldNotLoad": "โหลดไม่ได้ — แตะเพื่อลองอีกครั้ง",
+      "delete": "ลบ"
     },
     "camera": {
       "titleBar": "ถ่ายภาพ",
@@ -3493,7 +3494,10 @@
       "unknownProduct": "สินค้าที่ไม่ระบุ",
       "photosCount": "{{count}} รูป",
       "stepOf": "ขั้นตอน {{current}} / 2",
-      "untitledProduct": "สินค้า #{{n}}"
+      "untitledProduct": "สินค้า #{{n}}",
+      "deletePhotoTitle": "ลบรูปภาพ?",
+      "deletePhotoBody": "รูปนี้จะไม่ถูกรวมในรายการสินค้า",
+      "removePhoto": "ลบรูปนี้"
     },
     "processing": {
       "aiWorking": "AI กำลังทำงาน",

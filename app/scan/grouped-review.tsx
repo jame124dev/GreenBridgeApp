@@ -210,7 +210,7 @@ export default function GroupedReviewHub() {
   };
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'bottom']}>
       {/* Stitch "Review Inventory" redesign: left-aligned bold header with a
           hairline rule, instead of the old centered title + right spacer. */}
       <HStack

@@ -3534,7 +3534,8 @@
       "loading": "Loading…",
       "itemsLabel": "items",
       "bidsLabel": "bids",
-      "couldNotLoad": "Could not load — tap to retry"
+      "couldNotLoad": "Could not load — tap to retry",
+      "delete": "Delete"
     },
     "camera": {
       "titleBar": "Capture",
@@ -3590,7 +3591,10 @@
       "unknownProduct": "Unknown product",
       "photosCount": "{{count}} photo(s)",
       "stepOf": "STEP {{current}} OF 2",
-      "untitledProduct": "Product #{{n}}"
+      "untitledProduct": "Product #{{n}}",
+      "deletePhotoTitle": "Delete photo?",
+      "deletePhotoBody": "This photo won't be included in the listing.",
+      "removePhoto": "Remove this photo"
     },
     "processing": {
       "aiWorking": "AI WORKING",
