@@ -34,6 +34,7 @@ export default (): ExpoConfig => ({
     'expo-notifications',
     'expo-localization',
     'expo-image',
+    'expo-web-browser',
     [
       'expo-location',
       {
