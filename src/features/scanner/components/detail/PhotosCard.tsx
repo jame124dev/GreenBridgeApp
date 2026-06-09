@@ -8,7 +8,7 @@ import { PhotoZoomViewer } from '@/components/scanner/PhotoZoomViewer';
 import { brand } from '@/constants/theme';
 
 interface Props {
-  photos: { uri: string }[];
+  photos: { uri: string; sourceLabel?: string }[];
   rearrangeLabel: string;
   onRearrange: () => void;
   onAddMore: () => void;
@@ -49,12 +49,23 @@ export function PhotosCard({ photos, rearrangeLabel, onRearrange, onAddMore }: P
           <AppImage source={{ uri: photos[activeIdx].uri }} style={{ width: '100%', height: heroH }} />
         </Pressable>
         <View
-          className="absolute top-2.5 left-2.5 rounded-pill px-sm"
-          style={{ backgroundColor: 'rgba(18, 28, 40, 0.6)', paddingVertical: 2 }}
+          className="absolute top-2.5 left-2.5 rounded-pill px-sm flex-row items-center"
+          style={{ backgroundColor: 'rgba(18, 28, 40, 0.6)', paddingVertical: 2, gap: 6 }}
         >
           <Text className="font-label-medium text-base text-white">
             {activeIdx + 1}/{photos.length}
           </Text>
+          {/* P4 — office-doc origin caption (e.g. "sheet 仁義廠", "slide 3").
+              Hidden for camera captures and PDF pages (sourceLabel undefined). */}
+          {photos[activeIdx]?.sourceLabel ? (
+            <Text
+              className="font-label-medium text-base text-white"
+              style={{ opacity: 0.85, maxWidth: 180 }}
+              numberOfLines={1}
+            >
+              · {photos[activeIdx].sourceLabel}
+            </Text>
+          ) : null}
         </View>
         <Pressable
           className="absolute top-2.5 right-2.5 flex-row items-center gap-xs bg-brand-surface border border-brand-border-strong rounded-xs px-sm"
@@ -88,6 +99,10 @@ export function PhotosCard({ photos, rearrangeLabel, onRearrange, onAddMore }: P
               defaultValue: 'Select photo {{idx}}',
               idx: i + 1,
             })}
+            // P4 polish — office-doc origin label for screen readers browsing
+            // the thumb strip (96×54 too small for visible caption; hero overlay
+            // shows the visible version when this thumb becomes active).
+            accessibilityHint={p.sourceLabel}
           >
             <AppImage source={{ uri: p.uri }} style={{ width: '100%', height: '100%' }} />
           </Pressable>

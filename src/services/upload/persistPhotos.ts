@@ -11,6 +11,18 @@ const IS_WEB = Platform.OS === 'web';
 
 const SCAN_DIR = `${FileSystem.documentDirectory ?? ''}scan-drafts/`;
 
+/**
+ * A photo URI is "remote" when it's an https URL we got back from the
+ * smart-detect API (e.g. a page-image extracted from a PDF the seller
+ * uploaded). FileSystem.copyAsync can't read remote URIs — it throws
+ * `IOException: Location ... isn't readable`. Skip local persistence for
+ * these; the URL is already durable on GCS and any consumer (display,
+ * submit) handles http(s) URIs uniformly.
+ */
+function isRemoteUri(uri: string): boolean {
+  return /^https?:\/\//i.test(uri);
+}
+
 export type DraftDocument = DraftItem['documents'][number];
 
 async function ensureScanDir() {
@@ -39,6 +51,12 @@ export async function persistPhotosForDraft(
   const persisted: Photo[] = [];
   for (let i = 0; i < photos.length; i++) {
     const photo = photos[i];
+    if (isRemoteUri(photo.uri)) {
+      // PDF-page or other remote-origin photo — already durable on GCS,
+      // and copyAsync would throw on https URIs. Keep as-is.
+      persisted.push(photo);
+      continue;
+    }
     const dest = `${SCAN_DIR}${draftId}-${i}.jpg`;
     const existing = await FileSystem.getInfoAsync(dest);
     if (existing.exists && photo.uri === dest) {
@@ -82,6 +100,7 @@ export async function verifyDraftPhotos(photos: Photo[]): Promise<boolean> {
   if (!photos.length) return false;
   if (IS_WEB) return true; // in-memory blob URIs — assume valid for the session
   for (const photo of photos) {
+    if (isRemoteUri(photo.uri)) continue; // remote URI — trust it; getInfoAsync would throw
     const info = await FileSystem.getInfoAsync(photo.uri);
     if (!info.exists) return false;
   }

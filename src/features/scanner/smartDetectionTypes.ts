@@ -49,6 +49,28 @@ export type SmartProduct = {
   data: SmartProductData;
 };
 
+/**
+ * One entry per page-image the backend extracted from a document the seller
+ * uploaded (PDF, DOCX, PPTX, XLSX, CSV — Phase 2 added office-doc support).
+ * `index` lines up with `SmartDetectionResponse.image_urls` so a product's
+ * `image_indexes` can be resolved to a page-image URL. `page` is the 1-based
+ * page number within the source document.
+ */
+export type DocumentPageRef = {
+  index: number;
+  page: number;
+  objectName?: string;
+  gcsUri?: string;
+  url: string;
+  width: number;
+  height: number;
+  /** Phase 2 — original filename, e.g. "inventory.xlsx". May be set for PDF-derived pages too. */
+  sourceName?: string;
+  /** Phase 2 — coarse origin label, e.g. "sheet 仁義廠" | "slide 3" | "embedded". NOT row-level.
+   *  Office-derived only; PDF-derived pages have this undefined. */
+  sourceLabel?: string;
+};
+
 export type SmartDetectionResponse = {
   success: boolean;
   language: string;
@@ -60,6 +82,15 @@ export type SmartDetectionResponse = {
   merged_single: SmartProductData;
   products: SmartProduct[];
   suggested_terms: Record<string, string[]>;
+  /**
+   * Canonical image stream the backend ran the AI against. Equals the
+   * input `image_urls` for a photo-only scan; for PDF or mixed scans
+   * the backend appends each extracted PDF page as its own URL here.
+   * Product `image_indexes` index into this array — NOT the input.
+   */
+  image_urls?: string[];
+  /** Page-image metadata for any PDFs the backend extracted. */
+  document_pages?: DocumentPageRef[];
 };
 
 // ── Mapped (client) shape ────────────────────────────────────────────────────
@@ -126,6 +157,13 @@ export type AiPrices = {
 export type MappedProduct = {
   /** Global indexes into the uploaded files[] (images-only ⇒ line up with Photo[]). */
   imageIndexes: number[];
+  /**
+   * Global indexes into the uploaded documents[]. Populated when the AI's
+   * smart-detect tied this product to one or more PDFs the user picked.
+   * Indexes line up with `documents[]` order at upload time. Empty array
+   * when the product is photo-only (the normal case).
+   */
+  documentIndexes: number[];
   fields: SmartItemFields;
 };
 
@@ -151,4 +189,15 @@ export type MappedSmartDetection = {
   products: MappedProduct[];
   /** Fields for the "it's actually one product" override. */
   mergedSingleFields: SmartItemFields;
+  /**
+   * Canonical image stream the backend ran the AI against — equals the
+   * raw response's top-level `image_urls`. For PDF-derived flows it
+   * includes URLs the seller never uploaded directly (extracted pages).
+   * Call sites (processing.tsx) use this together with `documentPages`
+   * to synthesize Photo objects so `image_indexes` resolves correctly
+   * even when the seller didn't supply any photos themselves.
+   */
+  responseImageUrls: string[];
+  /** Page-image metadata mirrored from the response (width/height). */
+  documentPages: DocumentPageRef[];
 };

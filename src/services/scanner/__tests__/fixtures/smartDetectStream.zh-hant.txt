@@ -1,0 +1,30 @@
+event: stage
+data: {"phase":"validating","message":"OK","ts":1780559757387}
+
+event: stage
+data: {"phase":"preparing_pdfs","total":1}
+
+event: stage
+data: {"phase":"ai_running","message":"uploading + detecting"}
+
+event: pdf_pages
+data: {"documentIndex":0,"pages":[{"index":0,"page":1,"objectName":"sellers/574/2026/06/pdf-1780559758322/pdf-page-1.png","gcsUri":"gs://greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-1.png","url":"https://storage.googleapis.com/greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-1.png","width":1162,"height":784},{"index":1,"page":1,"objectName":"sellers/574/2026/06/pdf-1780559758322/pdf-page-2.png","gcsUri":"gs://greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-2.png","url":"https://storage.googleapis.com/greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-2.png","width":823,"height":818},{"index":2,"page":2,"objectName":"sellers/574/2026/06/pdf-1780559758322/pdf-page-3.png","gcsUri":"gs://greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-3.png","url":"https://storage.googleapis.com/greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-3.png","width":725,"height":671}]}
+
+event: detection
+data: {"suggested_mode":"multiple","confidence":0.9,"summary":"包含三個獨立的設備/產品。","product_count":2}
+
+event: stage
+data: {"phase":"extracting_products","total":2}
+
+event: product
+data: {"index":1,"id":2,"image_indexes":[1],"document_indexes":[],"data":{"name":"SULICK","brand":"SULICK","model":"未知","equipment_description":"這是一台 SULICK 設備","co2_emissions":"0 kg","weight":"未知","dimensions":"未知","condition":"usedFunctional","grade":"B","operation_status":"未知","year":"","currency":"USD","price":"1500","prices":{"new":"2000-3000","used":"1000-2000","scrap":"300-500"},"site_type":"machines","product_cat":{"id":5300,"name":"Boring & Drilling Machines"},"subcategory":{"id":"","name":""},"auc-location":{"id":"","name":""},"auction_group":{"id":"","name":""}}}
+
+event: product
+data: {"index":0,"id":1,"image_indexes":[0,2],"document_indexes":[],"data":{"name":"多功能夾具","brand":"未知","model":"未知","equipment_description":"這是一個多功能夾具","co2_emissions":"0 kg","weight":"50 kg","dimensions":"30 x 30 x 20 cm","condition":"usedFunctional","grade":"B","operation_status":"可用","year":"","currency":"USD","price":"300","prices":{"new":"500-700","used":"200-400","scrap":"50-100"},"site_type":"machines","product_cat":{"id":5300,"name":"Boring & Drilling Machines"},"subcategory":{"id":"","name":""},"auc-location":{"id":"","name":""},"auction_group":{"id":"","name":""}}}
+
+event: stage
+data: {"phase":"done","message":"took 32821ms"}
+
+event: result
+data: {"success":true,"language":"zh","detection":{"suggested_mode":"multiple","confidence":0.9,"summary":"包含三個獨立的設備/產品。"},"merged_single":{"name":"多功能夾具","brand":"未知","model":"未知","equipment_description":"這是一個多功能夾具","co2_emissions":"0 kg","weight":"50 kg","dimensions":"30 x 30 x 20 cm","condition":"usedFunctional","grade":"B","operation_status":"可用","year":"","currency":"USD","price":"300","prices":{"new":"500-700","used":"200-400","scrap":"50-100"},"site_type":"machines","product_cat":{"id":5300,"name":"Boring & Drilling Machines"},"subcategory":{"id":"","name":""},"auc-location":{"id":"","name":""},"auction_group":{"id":"","name":""}},"products":[{"id":1,"image_indexes":[0,2],"document_indexes":[],"data":{"name":"多功能夾具","brand":"未知","model":"未知","equipment_description":"這是一個多功能夾具","co2_emissions":"0 kg","weight":"50 kg","dimensions":"30 x 30 x 20 cm","condition":"usedFunctional","grade":"B","operation_status":"可用","year":"","currency":"USD","price":"300","prices":{"new":"500-700","used":"200-400","scrap":"50-100"},"site_type":"machines","product_cat":{"id":5300,"name":"Boring & Drilling Machines"},"subcategory":{"id":"","name":""},"auc-location":{"id":"","name":""},"auction_group":{"id":"","name":""}}},{"id":2,"image_indexes":[1],"document_indexes":[],"data":{"name":"SULICK","brand":"SULICK","model":"未知","equipment_description":"這是一台 SULICK 設備","co2_emissions":"0 kg","weight":"未知","dimensions":"未知","condition":"usedFunctional","grade":"B","operation_status":"未知","year":"","currency":"USD","price":"1500","prices":{"new":"2000-3000","used":"1000-2000","scrap":"300-500"},"site_type":"machines","product_cat":{"id":5300,"name":"Boring & Drilling Machines"},"subcategory":{"id":"","name":""},"auc-location":{"id":"","name":""},"auction_group":{"id":"","name":""}}}],"suggested_terms":{"year":["未知"],"subcategory":["Welding Equipment"],"auc-location":["未知","工廠內部"],"auction_group":["未知","機械設備"]},"image_urls":["https://storage.googleapis.com/greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-1.png","https://storage.googleapis.com/greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-2.png","https://storage.googleapis.com/greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-3.png"],"document_pages":[{"index":0,"page":1,"objectName":"sellers/574/2026/06/pdf-1780559758322/pdf-page-1.png","gcsUri":"gs://greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-1.png","url":"https://storage.googleapis.com/greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-1.png","width":1162,"height":784},{"index":1,"page":1,"objectName":"sellers/574/2026/06/pdf-1780559758322/pdf-page-2.png","gcsUri":"gs://greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-2.png","url":"https://storage.googleapis.com/greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-2.png","width":823,"height":818},{"index":2,"page":2,"objectName":"sellers/574/2026/06/pdf-1780559758322/pdf-page-3.png","gcsUri":"gs://greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-3.png","url":"https://storage.googleapis.com/greenbidz/sellers/574/2026/06/pdf-1780559758322/pdf-page-3.png","width":725,"height":671}]}
+

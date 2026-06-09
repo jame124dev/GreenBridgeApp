@@ -23,6 +23,7 @@ export const routes = {
   scanReorderPhotosEdit: () =>
     ({ pathname: '/scan/reorder-photos', params: { mode: 'edit' } }) as unknown as Href,
   scanProcessing: '/scan/processing' as Href,
+  scanProcessingV2: '/scan/processing-v2' as Href,
   activityHistory: '/activity/history' as Href,
   scanDetail: '/scan/detail' as Href,
   listingDetail: (batchPk: number) => `/listing/${batchPk}` as Href,

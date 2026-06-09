@@ -3475,7 +3475,17 @@
       "captureFailedTitle": "撮影に失敗しました",
       "captureFailedBody": "写真を撮影できませんでした。もう一度お試しください。",
       "savePhotosFailedTitle": "写真を保存できませんでした",
-      "savePhotosFailedBody": "もう一度お試しください。"
+      "savePhotosFailedBody": "もう一度お試しください。",
+      "pickFiles": "ファイルを追加",
+      "pickFilesHint": "PDF、DOCX、PPTX、XLSX、CSV — DOCX/PPTX は最大 25 MB、その他は最大 50 MB",
+      "removeDoc": "文書を削除",
+      "pickFailedTitle": "ファイルを追加できませんでした",
+      "pickFailedBody": "選択したファイルを処理できませんでした。",
+      "docTooLargeTitle": "ファイルが大きすぎます",
+      "docTooLargeBody": "{{name}} は {{size}} で、この形式の上限 {{limit}} を超えています。サイズを小さくしてから再度お試しください。",
+      "docMultipleTooLargeBody": "{{count}} 件のファイルがサイズ上限を超えたためスキップされました。最大上限は 50 MB(DOCX/PPTX は 25 MB)です。",
+      "flip": "反転",
+      "needPhotoHint": "少なくとも1枚の写真を追加して続行してください"
     },
     "detection": {
       "title": "どのように出品しますか？",
@@ -3517,9 +3527,9 @@
     },
     "processing": {
       "aiWorking": "AI 処理中",
-      "heading": "写真を読み取っています…",
+      "heading": "アイテムを分析中…",
       "subtitle": "5〜10 秒",
-      "timeEstimate": "5〜10 秒",
+      "timeEstimate": "予想時間：5〜10 秒",
       "subStatus_detect": "機器を検出中…",
       "subStatus_ocr": "銘板の文字を読み取り中…",
       "subStatus_draft": "タイトルと説明を作成中…",
@@ -3528,7 +3538,8 @@
       "retake": "撮り直す",
       "continueWithoutAi": "AI を使わずに進む",
       "subStatus_specs": "モデル仕様を検索中…",
-      "errorTitle": "写真を読み取れませんでした"
+      "errorTitle": "写真を読み取れませんでした",
+      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2"
     },
     "review": {
       "heading": "AI 結果を確認",

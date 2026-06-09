@@ -18,20 +18,35 @@ type GcsUrlInput = {
 
 /**
  * Build the public URL that the smart-detect vision API will use to fetch a
- * GCS object. Defaults to the `/gcs/serve` proxy (backend 302's to a fresh
- * signed URL — works regardless of bucket-level public-read).
+ * GCS object.
  *
- * Dev escape hatch: set `EXPO_PUBLIC_GCS_USE_RAW_URL=1` in `.env` to send the
- * raw `storage.googleapis.com/...` URL instead. Useful when running against a
- * dev backend with a publicly-readable bucket.
+ * Strategy: prefer the **raw** `storage.googleapis.com/...` URL the backend
+ * returns in the upload response. The GreenBridgeSeller web client uses raw
+ * URLs end-to-end and they work against the production bucket. The /gcs/serve
+ * proxy is kept as a fallback for cases where the backend didn't supply a
+ * direct URL (e.g. older `/gcs/upload` responses).
+ *
+ * Why this matters — the backend's `objectName` field is already URL-encoded
+ * (e.g. `WALDRICH%20COBURG.pdf`). When we re-encode it via
+ * `encodeURIComponent` to build a `/gcs/serve?path=…` query, the `%20`
+ * becomes `%2520` and the proxy returns 404 → "could not read the photos".
+ * The raw URL is pre-built by the backend correctly and dodges the
+ * double-encoding hazard entirely.
+ *
+ * Dev escape hatch: set `EXPO_PUBLIC_GCS_USE_PROXY_URL=1` in `.env` to force
+ * the proxy path (useful when running against a non-public dev bucket).
  */
 export function gcsUrlForAnalyze(file: GcsUrlInput): string {
-  if (process.env.EXPO_PUBLIC_GCS_USE_RAW_URL === '1' && file.url) {
+  const forceProxy = process.env.EXPO_PUBLIC_GCS_USE_PROXY_URL === '1';
+  if (!forceProxy && file.url && /^https?:\/\//i.test(file.url)) {
     return file.url;
   }
   const extra = Constants.expoConfig?.extra ?? {};
   const base = String(extra.GREENBIDZ_API_URL ?? '').replace(/\/+$/, '');
-  return `${base}/gcs/serve?path=${encodeURIComponent(file.objectName)}`;
+  // Decode-then-encode pass: if the backend already URL-encoded the object
+  // name (spaces → `%20` etc.), we'd double-encode without this step.
+  const safeObjectName = decodeURIComponent(file.objectName);
+  return `${base}/gcs/serve?path=${encodeURIComponent(safeObjectName)}`;
 }
 
 type GcsLookup = {

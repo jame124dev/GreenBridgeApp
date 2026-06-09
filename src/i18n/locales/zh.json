@@ -3540,7 +3540,17 @@
       "captureFailedTitle": "拍攝失敗",
       "captureFailedBody": "無法拍攝照片，請再試一次。",
       "savePhotosFailedTitle": "無法儲存照片",
-      "savePhotosFailedBody": "請再試一次。"
+      "savePhotosFailedBody": "請再試一次。",
+      "pickFiles": "新增檔案",
+      "pickFilesHint": "PDF、DOCX、PPTX、XLSX、CSV — DOCX/PPTX 上限 25 MB,其他上限 50 MB",
+      "removeDoc": "移除文件",
+      "pickFailedTitle": "無法新增檔案",
+      "pickFailedBody": "無法處理所選的檔案。",
+      "docTooLargeTitle": "檔案太大",
+      "docTooLargeBody": "{{name}} 為 {{size}} — 超過此格式的 {{limit}} 上限。請另存為較小的檔案後再試。",
+      "docMultipleTooLargeBody": "{{count}} 個檔案超過大小上限已略過。最大上限為 50 MB(DOCX/PPTX 為 25 MB)。",
+      "flip": "翻轉",
+      "needPhotoHint": "請新增至少一張照片以繼續"
     },
     "detection": {
       "title": "您希望如何刊登？",
@@ -3582,9 +3592,9 @@
     },
     "processing": {
       "aiWorking": "AI 處理中",
-      "heading": "正在讀取您的照片…",
+      "heading": "正在分析您的物品…",
       "subtitle": "約 5–10 秒",
-      "timeEstimate": "約 5–10 秒",
+      "timeEstimate": "預估時間：5–10 秒",
       "subStatus_detect": "辨識設備中…",
       "subStatus_ocr": "讀取銘牌文字…",
       "subStatus_draft": "產生標題與描述…",
@@ -3593,7 +3603,8 @@
       "retake": "重新拍攝",
       "continueWithoutAi": "不使用 AI 繼續",
       "subStatus_specs": "查詢型號規格…",
-      "errorTitle": "無法讀取您的照片"
+      "errorTitle": "無法讀取您的照片",
+      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2"
     },
     "review": {
       "heading": "檢視 AI 結果",

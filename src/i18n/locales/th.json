@@ -3459,7 +3459,17 @@
       "captureFailedTitle": "ถ่ายภาพไม่สำเร็จ",
       "captureFailedBody": "ถ่ายภาพไม่ได้ ลองอีกครั้ง",
       "savePhotosFailedTitle": "บันทึกภาพไม่ได้",
-      "savePhotosFailedBody": "กรุณาลองอีกครั้ง"
+      "savePhotosFailedBody": "กรุณาลองอีกครั้ง",
+      "pickFiles": "เพิ่มไฟล์",
+      "pickFilesHint": "PDF, DOCX, PPTX, XLSX, CSV — DOCX/PPTX สูงสุด 25 MB ส่วนอื่น ๆ สูงสุด 50 MB",
+      "removeDoc": "ลบเอกสาร",
+      "pickFailedTitle": "เพิ่มไฟล์ไม่ได้",
+      "pickFailedBody": "ไม่สามารถประมวลผลไฟล์ที่เลือกได้",
+      "docTooLargeTitle": "ไฟล์ใหญ่เกินไป",
+      "docTooLargeBody": "{{name}} มีขนาด {{size}} — เกินขีดจำกัด {{limit}} สำหรับรูปแบบนี้ กรุณาบันทึกเป็นไฟล์ที่เล็กลงและลองใหม่",
+      "docMultipleTooLargeBody": "ข้ามไฟล์ {{count}} รายการที่เกินขีดจำกัด ขนาดสูงสุดคือ 50 MB (DOCX/PPTX คือ 25 MB)",
+      "flip": "พลิก",
+      "needPhotoHint": "เพิ่มภาพอย่างน้อยหนึ่งภาพเพื่อดำเนินการต่อ"
     },
     "detection": {
       "title": "คุณต้องการลงประกาศแบบไหน?",
@@ -3501,9 +3511,9 @@
     },
     "processing": {
       "aiWorking": "AI กำลังทำงาน",
-      "heading": "กำลังอ่านภาพของคุณ…",
+      "heading": "กำลังวิเคราะห์รายการของคุณ…",
       "subtitle": "5–10 วินาที",
-      "timeEstimate": "5–10 วินาที",
+      "timeEstimate": "เวลาโดยประมาณ: 5–10 วินาที",
       "subStatus_detect": "กำลังตรวจจับอุปกรณ์…",
       "subStatus_ocr": "กำลังอ่านข้อความบนป้าย…",
       "subStatus_draft": "กำลังร่างหัวข้อและคำอธิบาย…",
@@ -3512,7 +3522,8 @@
       "retake": "ถ่ายใหม่",
       "continueWithoutAi": "ทำต่อโดยไม่ใช้ AI",
       "subStatus_specs": "กำลังค้นหาข้อมูลจำเพาะของรุ่น…",
-      "errorTitle": "เราไม่สามารถอ่านภาพของคุณได้"
+      "errorTitle": "เราไม่สามารถอ่านภาพของคุณได้",
+      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2"
     },
     "review": {
       "heading": "ตรวจสอบผลลัพธ์ของ AI",

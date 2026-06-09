@@ -60,6 +60,21 @@ export function mapAnalyzeResponse(data: Record<string, unknown>): AiResult {
     currencyRaw,
   );
 
+  // Category id — mirror mapSmartDetection.mapProductData: prefer the AI's
+  // subcategory id (more specific leaf), fall back to the parent category id.
+  // The cross-locale bridge in CategoryConditionCard maps EN ids to the
+  // seller's locale tree at hydrate time, so we don't have to do that here.
+  const subRef = (data as SmartProductData).subcategory;
+  const subIdRaw = subRef ? String(subRef.id ?? '') : '';
+  const subId = subIdRaw.length ? subIdRaw : null;
+  const subName = subId ? (subRef?.name ?? null) : null;
+  const parentRef = (data as SmartProductData).product_cat;
+  const parentIdRaw = parentRef ? String(parentRef.id ?? '') : '';
+  const parentId = parentIdRaw.length ? parentIdRaw : null;
+  const parentName = parentId ? (parentRef?.name ?? null) : null;
+  const categoryId = subId ?? parentId;
+  const categoryName = subId ? subName : parentName;
+
   return {
     name: String(data.name ?? ''),
     description: String(data.equipment_description ?? ''),
@@ -84,6 +99,8 @@ export function mapAnalyzeResponse(data: Record<string, unknown>): AiResult {
     country:      coerceTrimmed(data.country),
     suggestedMarketplace,
     prices:       aiPrices,
+    categoryId,
+    categoryName,
   };
 }
 

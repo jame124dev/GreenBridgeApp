@@ -238,6 +238,15 @@ export function mapSmartDetection(
     imageIndexes: (Array.isArray(p.image_indexes) ? p.image_indexes : []).filter(
       (i) => Number.isInteger(i) && i >= 0,
     ),
+    // PDF-derived images: backend may attribute a product to one or more
+    // documents (each PDF can yield 3 page-images). We keep these indexes
+    // around for any future UI that wants to surface "from page 2 of
+    // manual.pdf" — the buildPhotoSlices pipeline already merges PDF-page
+    // URLs into the image stream, so we don't have to thread them in for
+    // submit purposes.
+    documentIndexes: (Array.isArray(p.document_indexes) ? p.document_indexes : []).filter(
+      (i) => Number.isInteger(i) && i >= 0,
+    ),
     fields: mapProductData(p.data ?? {}, siteType),
   }));
 
@@ -269,5 +278,9 @@ export function mapSmartDetection(
     // Single mode ⇒ keep just the first product (canonical source per §3).
     products: mode === 'single' ? products.slice(0, 1) : products,
     mergedSingleFields,
+    // Pass-throughs so the call site can synthesize remote Photo objects
+    // for PDF-extracted page images. Empty arrays for photo-only flows.
+    responseImageUrls: Array.isArray(res.image_urls) ? res.image_urls : [],
+    documentPages: Array.isArray(res.document_pages) ? res.document_pages : [],
   };
 }

@@ -11,3 +11,20 @@
  * legacy listing-method flow.
  */
 export const SMART_DETECT_ENABLED = process.env.EXPO_PUBLIC_SMART_DETECT !== '0';
+
+/**
+ * Smart-detection v2 — SSE streaming transport
+ * (Docs/SMART_DETECT_V2_SSE_INTEGRATION_PLAN.md). Orthogonal to
+ * `SMART_DETECT_ENABLED`: that one decides *whether* smart-detect runs at all,
+ * this one decides *which transport* it uses once it does.
+ *
+ *   SMART_DETECT_ENABLED=0                        → neither (legacy flow)
+ *   SMART_DETECT_ENABLED=1 && this=0 (default)    → v1 blocking POST
+ *   SMART_DETECT_ENABLED=1 && this=1              → v2 SSE stream
+ *
+ * **Opt-in, default OFF.** Set `EXPO_PUBLIC_SMART_DETECT_V2=1` in `.env` and
+ * restart Metro. Mirrors the backend's `SMART_DETECT_V2_ENABLED` rollout gate.
+ * v1 stays the instant-rollback fallback. (Web always falls back to v1 — the
+ * SSE client is native-only; see `smartDetectV2Enabled`.)
+ */
+export const SMART_DETECT_V2_ENABLED = process.env.EXPO_PUBLIC_SMART_DETECT_V2 === '1';

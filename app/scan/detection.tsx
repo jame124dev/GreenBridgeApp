@@ -552,6 +552,10 @@ function ProductGroupEditor({
                 accessibilityLabel={t('mobile.detection.movePhoto', {
                   defaultValue: 'Move this photo to another group',
                 })}
+                // P4 — office-doc origin label exposed to screen readers only
+                // (64×64 thumb has no room for a visible caption; the hero
+                // image in PhotosCard.tsx gets the visible version).
+                accessibilityHint={photo.sourceLabel}
                 className="rounded-xs overflow-hidden border border-brand-border-strong"
                 style={{ width: 64, height: 64 }}
               >

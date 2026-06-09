@@ -3556,7 +3556,17 @@
       "captureFailedTitle": "Capture failed",
       "captureFailedBody": "Could not take photo. Try again.",
       "savePhotosFailedTitle": "Could not save photos",
-      "savePhotosFailedBody": "Please try again."
+      "savePhotosFailedBody": "Please try again.",
+      "pickFiles": "Add files",
+      "pickFilesHint": "PDF, DOCX, PPTX, XLSX, CSV — DOCX/PPTX up to 25 MB, others up to 50 MB",
+      "removeDoc": "Remove document",
+      "pickFailedTitle": "Could not add files",
+      "pickFailedBody": "The selected files could not be processed.",
+      "docTooLargeTitle": "File too large",
+      "docTooLargeBody": "{{name}} is {{size}} — over the {{limit}} limit for this format. Save as a smaller file and try again.",
+      "docMultipleTooLargeBody": "{{count}} files were over their size limit and were skipped. The largest cap is 50 MB (DOCX/PPTX is 25 MB).",
+      "flip": "Flip",
+      "needPhotoHint": "Add at least one photo to continue"
     },
     "detection": {
       "title": "How should we list these?",
@@ -3598,9 +3608,9 @@
     },
     "processing": {
       "aiWorking": "AI WORKING",
-      "heading": "Reading your photos…",
+      "heading": "Analyzing your items…",
       "subtitle": "5–10 seconds",
-      "timeEstimate": "5–10 seconds",
+      "timeEstimate": "Estimated time: 5–10 seconds",
       "subStatus_detect": "Detecting equipment…",
       "subStatus_ocr": "Reading nameplate text…",
       "subStatus_draft": "Drafting title & description…",
@@ -3609,7 +3619,8 @@
       "retake": "Retake photos",
       "continueWithoutAi": "Continue without AI",
       "subStatus_specs": "Looking up model specs…",
-      "errorTitle": "We couldn't read your photos"
+      "errorTitle": "We couldn't read your photos",
+      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2"
     },
     "review": {
       "heading": "Review AI results",

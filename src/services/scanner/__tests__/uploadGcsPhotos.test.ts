@@ -18,22 +18,11 @@ jest.mock('expo-constants', () => ({
 }));
 
 afterEach(() => {
-  delete process.env.EXPO_PUBLIC_GCS_USE_RAW_URL;
+  delete process.env.EXPO_PUBLIC_GCS_USE_PROXY_URL;
 });
 
 describe('gcsUrlForAnalyze', () => {
-  it('builds the /gcs/serve proxy URL by default', () => {
-    const url = gcsUrlForAnalyze({
-      objectName: 'sellers/574/2026/05/abc/0-photo.jpg',
-      url: 'https://storage.googleapis.com/bucket/sellers/574/2026/05/abc/0-photo.jpg',
-    });
-    expect(url).toBe(
-      'https://api.example.com/api/v1/gcs/serve?path=sellers%2F574%2F2026%2F05%2Fabc%2F0-photo.jpg',
-    );
-  });
-
-  it('returns the raw url when EXPO_PUBLIC_GCS_USE_RAW_URL=1 is set', () => {
-    process.env.EXPO_PUBLIC_GCS_USE_RAW_URL = '1';
+  it('returns the raw url by default (matches web client behavior)', () => {
     const raw = 'https://storage.googleapis.com/bucket/sellers/574/2026/05/abc/0-photo.jpg';
     const url = gcsUrlForAnalyze({
       objectName: 'sellers/574/2026/05/abc/0-photo.jpg',
@@ -42,13 +31,38 @@ describe('gcsUrlForAnalyze', () => {
     expect(url).toBe(raw);
   });
 
-  it('falls back to the proxy URL when raw flag is set but url is empty', () => {
-    process.env.EXPO_PUBLIC_GCS_USE_RAW_URL = '1';
+  it('falls back to /gcs/serve proxy when raw url is missing', () => {
     const url = gcsUrlForAnalyze({
       objectName: 'sellers/574/2026/05/abc/0-photo.jpg',
       url: '',
     });
+    expect(url).toBe(
+      'https://api.example.com/api/v1/gcs/serve?path=sellers%2F574%2F2026%2F05%2Fabc%2F0-photo.jpg',
+    );
+  });
+
+  it('forces /gcs/serve proxy when EXPO_PUBLIC_GCS_USE_PROXY_URL=1 is set', () => {
+    process.env.EXPO_PUBLIC_GCS_USE_PROXY_URL = '1';
+    const raw = 'https://storage.googleapis.com/bucket/sellers/574/2026/05/abc/0-photo.jpg';
+    const url = gcsUrlForAnalyze({
+      objectName: 'sellers/574/2026/05/abc/0-photo.jpg',
+      url: raw,
+    });
     expect(url).toContain('/gcs/serve?path=');
+    expect(url).not.toBe(raw);
+  });
+
+  it('avoids double-encoding object names that already contain %20', () => {
+    // Regression: backend's upload response returns object names with
+    // spaces URL-encoded (e.g. `WALDRICH%20COBURG.pdf`). Re-encoding the
+    // whole path used to produce `%2520` and the proxy returned 404.
+    process.env.EXPO_PUBLIC_GCS_USE_PROXY_URL = '1';
+    const url = gcsUrlForAnalyze({
+      objectName: 'sellers/574/2026/06/xyz/WALDRICH%20COBURG.pdf',
+      url: '',
+    });
+    expect(url).toContain('WALDRICH%20COBURG.pdf');
+    expect(url).not.toContain('%2520');
   });
 
   // ─── getGcsRefsForItem (W5) ──────────────────────────────────────────────

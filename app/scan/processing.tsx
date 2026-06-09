@@ -1,7 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, ScrollView, Text, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
-import { AlertCircle, Check } from 'lucide-react-native';
+import RNAnimated, {
+  Easing as RNEasing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+import { AlertCircle, Check, Cog } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +18,11 @@ import { routes } from '@/lib/routes';
 import { SMART_DETECT_ENABLED } from '@/lib/flags';
 import { useAnalyzeImages } from '@/features/scanner/useAnalyzeImages';
 import { useSmartDetect } from '@/features/scanner/useSmartDetect';
+import { smartDetectV2Enabled } from '@/features/scanner/smartDetectV2Enabled';
+import type {
+  SmartStreamEvent,
+  StagePhase,
+} from '@/features/scanner/smartDetectStreamTypes';
 import { shouldSkipDetectionChoice } from '@/features/scanner/smartDetectionRouting';
 import { haptics } from '@/lib/haptics';
 import { useScanDraft } from '@/stores/scanDraftStore';
@@ -28,6 +40,20 @@ const checkCircleBase = {
   height: 22,
   borderRadius: 11,
   marginRight: 8,
+};
+
+// Maps the backend's 5-phase SSE enum onto the existing 4 step rows. Static —
+// module scope so it isn't a churning effect dependency.
+// Phase 2 (office docs): `preparing_documents` is the canonical name, replacing
+// `preparing_pdfs` (kept as a deprecated alias for one release). Both map to
+// the same step. Remove `preparing_pdfs` after the backend drops emitting it.
+const PHASE_TO_STEP: Record<StagePhase, number> = {
+  validating: 0,
+  preparing_documents: 0,
+  preparing_pdfs: 0,
+  ai_running: 1,
+  extracting_products: 2,
+  done: 3,
 };
 
 export default function ProcessingScreen() {
@@ -63,10 +89,68 @@ export default function ProcessingScreen() {
 
   const activeDotOpacity = useMemo(() => new Animated.Value(0.4), []);
   const bgPulse = useMemo(() => new Animated.Value(0), []);
+  // Scanner frame gear — rotates continuously. Driven by reanimated (not RN's
+  // legacy Animated) because RN Web's Animated.timing + useNativeDriver path
+  // intermittently failed to apply the rotate transform; reanimated produces
+  // a real CSS animation on web and a native worklet on iOS/Android.
+  const gearAngle = useSharedValue(0);
 
   const useSmart = SMART_DETECT_ENABLED && mode === 'single';
   const isPending = useSmart ? smart.isPending : analyze.isPending;
   const isSuccess = useSmart ? smart.isSuccess : analyze.isSuccess;
+
+  // v2 SSE path drives the step indicator from REAL stream events instead of
+  // the fake mount timer below. Only when the smart path is active AND the v2
+  // flag/platform predicate says so.
+  const useV2Stream = useSmart && smartDetectV2Enabled();
+  const [streamPhase, setStreamPhase] = useState<StagePhase | undefined>();
+  const [productProgress, setProductProgress] = useState<{ done: number; total?: number }>({
+    done: 0,
+  });
+
+  // Per-file non-fatal rejections from the SSE `error` stream (Phase 2 office
+  // docs). The flag-off fallback rarely runs (v2 redirects v1 before mutating),
+  // but we keep parity so a future SMART_DETECT_V2_ENABLED=0 cohort still gets
+  // useful feedback. Backend already localizes `message` — render directly.
+  const [nonFatalRejections, setNonFatalRejections] = useState<{
+    name?: string;
+    code: string;
+    message: string;
+    key: string;
+  }[]>([]);
+
+  // SSE progress sink (passed into the v2 mutation). Heartbeats never reach
+  // here (the transport consumes them for its watchdog), so this only fires on
+  // real progress. Pure state updates — safe to call from the transport.
+  const handleStreamEvent = useCallback((e: SmartStreamEvent) => {
+    if (e.type === 'stage') {
+      // Collapse the legacy `preparing_pdfs` alias to canonical `preparing_documents`
+      // so this fallback path stays consistent with `processing-v2.tsx`. Safe today
+      // (PHASE_TO_STEP maps both keys to step 0) but better for any future code
+      // that branches on streamPhase. Drop the conditional once backend stops
+      // emitting the alias.
+      const phase: StagePhase =
+        e.data.phase === 'preparing_pdfs' ? 'preparing_documents' : e.data.phase;
+      setStreamPhase(phase);
+    } else if (e.type === 'detection') {
+      setProductProgress({ done: 0, total: e.data.product_count });
+    } else if (e.type === 'product') {
+      setProductProgress((p) => ({ ...p, done: p.done + 1 }));
+    } else if (e.type === 'error' && !e.data.fatal) {
+      const ctx = e.data.context as { name?: string } | undefined;
+      setNonFatalRejections((prev) => [
+        ...prev,
+        {
+          name: ctx?.name,
+          code: e.data.code,
+          message: e.data.message,
+          key: `${e.data.code}-${prev.length}`,
+        },
+      ]);
+      // TODO(telemetry): scan_doc_rejected — see plan §7.
+    }
+    // pdf_pages / fatal error: no step change in this pass.
+  }, []);
 
   const reducedMotion = useReducedMotion();
 
@@ -119,6 +203,30 @@ export default function ProcessingScreen() {
     };
   }, [isPending, reducedMotion, rowEntrance1, rowEntrance2, rowEntrance3, rowEntrance4, activeDotOpacity, bgPulse]);
 
+  // Gear spin — reanimated `withRepeat` runs as a CSS animation on web and a
+  // worklet on native, both of which actually drive the transform (the
+  // legacy RN Animated.timing + useNativeDriver path was silently dropping
+  // the transform on RN Web). Started once on mount; `withRepeat(-1)`
+  // keeps it spinning until unmount.
+  //
+  // We deliberately IGNORE `prefers-reduced-motion` for this animation:
+  // the gear is a loading indicator (the same exception spec'd for spinners
+  // and progress bars in WCAG 2.3.3), not decorative parallax. Other
+  // animations on this screen (active-dot pulse, row entrance) still honour
+  // the preference.
+  useEffect(() => {
+    gearAngle.value = 0;
+    gearAngle.value = withRepeat(
+      withTiming(360, { duration: 4000, easing: RNEasing.linear }),
+      -1,
+      false,
+    );
+  }, [gearAngle]);
+
+  const gearAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${gearAngle.value}deg` }],
+  }));
+
   useEffect(() => {
     if (!isPending) return;
     if (reducedMotion) {
@@ -147,6 +255,8 @@ export default function ProcessingScreen() {
   // it "active" until the screen navigates away. Real completion (all four
   // checks) is claimed in the success effect below.
   useEffect(() => {
+    // v2 drives steps from real SSE events (effect below) — skip the fake walk.
+    if (useV2Stream) return;
     const checkScales = [checkScale1, checkScale2, checkScale3, checkScale4];
     const complete = (val: Animated.Value) => {
       if (reducedMotion) {
@@ -176,7 +286,21 @@ export default function ProcessingScreen() {
     }, 1800);
 
     return () => clearInterval(interval);
-  }, [reducedMotion, checkScale1, checkScale2, checkScale3, checkScale4]);
+  }, [useV2Stream, reducedMotion, checkScale1, checkScale2, checkScale3, checkScale4]);
+
+  // v2: advance the step indicator from real stream phases, and pop the
+  // checkmarks for every step the backend has already passed. Steps only
+  // advance on real events — no timer — so the screen reflects truth. The
+  // active row keeps its pulse/laser animation (and an "Analyzing…" sub-label
+  // for the extracting step) so it never looks frozen between sparse events.
+  useEffect(() => {
+    if (!useV2Stream || streamPhase == null) return;
+    const step = PHASE_TO_STEP[streamPhase];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentStep(step);
+    const checkScales = [checkScale1, checkScale2, checkScale3, checkScale4];
+    for (let i = 0; i < step; i++) checkScales[i].setValue(1);
+  }, [useV2Stream, streamPhase, checkScale1, checkScale2, checkScale3, checkScale4]);
 
   // On a real result, fill in every check and mark the final step done just
   // before the screen navigates away.
@@ -205,12 +329,24 @@ export default function ProcessingScreen() {
   useEffect(() => {
     const draftId = draft?.id;
     if (isNavigating) return;
-    if (!draft?.photos?.length) {
+    // Allow either photos OR documents to bring the seller here. Backend
+    // smart-detect can analyze PDFs by extracting page-images; a docs-only
+    // scan is a valid path. Bounce only when literally nothing was picked.
+    const photoCount = draft?.photos?.length ?? 0;
+    const docCount = draft?.documents?.length ?? 0;
+    if (photoCount === 0 && docCount === 0) {
       router.replace(routes.scanCamera);
       return;
     }
-    if (draft.ai) {
+    if (draft?.ai) {
       router.replace(routes.scanDetail);
+      return;
+    }
+    // v2 streaming has its own screen (richer live UI). Hand off BEFORE starting
+    // the mutation here so it isn't run twice. Catches every entry point —
+    // camera / reorder-photos / scan-resume all land on this screen first.
+    if (useV2Stream) {
+      router.replace(routes.scanProcessingV2);
       return;
     }
     if (!draftId || startedForDraftRef.current === draftId) return;
@@ -219,25 +355,67 @@ export default function ProcessingScreen() {
     const controller = new AbortController();
     const slowTimer = setTimeout(() => setSlowMsg(true), 30_000);
     const photos = draft.photos;
+    const documents = draft.documents;
     setApplyError(null);
 
     if (useSmart) {
       smartRef.current.mutate(
-        { photos, language: langRef.current, signal: controller.signal },
+        {
+          photos,
+          documents,
+          language: langRef.current,
+          signal: controller.signal,
+          // v2 only — the hook ignores this on the v1 path. Stable (useCallback).
+          onEvent: handleStreamEvent,
+        },
         {
           onSuccess: async (mapped) => {
             try {
-              const skip = shouldSkipDetectionChoice(mapped, photos.length);
+              // Augment the local photos array with any PDF-derived page
+              // images the backend extracted (`mapped.responseImageUrls`
+              // > `photos.length` ⇒ the extras are page-images sourced
+              // from the seller's PDFs). Without this, product
+              // `image_indexes` referencing PDF pages can't be resolved
+              // to local files and `validateMappedDetection` throws
+              // "No photos to apply smart detection to" on a docs-only
+              // scan. The synthetic Photos use the GCS page-image URL
+              // as their `uri` — AppImage handles http/file uniformly.
+              const augmentedPhotos =
+                mapped.responseImageUrls.length > photos.length
+                  ? [
+                      ...photos,
+                      ...mapped.responseImageUrls.slice(photos.length).map((url, i) => {
+                        const docPage = mapped.documentPages.find(
+                          (p) => p.url === url || p.index === photos.length + i,
+                        );
+                        return {
+                          uri: url,
+                          width: docPage?.width ?? 0,
+                          height: docPage?.height ?? 0,
+                          // P4 — thread office-doc origin label so PhotosCard /
+                          // detection thumbnails can show "sheet 仁義廠" etc.
+                          sourceLabel: docPage?.sourceLabel,
+                        };
+                      }),
+                    ]
+                  : photos;
+              const skip = shouldSkipDetectionChoice(mapped, augmentedPhotos.length);
               if (skip) {
                 const mode = await useScanDraft
                   .getState()
-                  .applySmartDetection(mapped, photos);
+                  .applySmartDetection(mapped, augmentedPhotos);
                 setApplyError(null);
                 setIsNavigating(true);
                 router.replace(
                   mode === 'single' ? routes.scanDetail : routes.scanGroupedReview,
                 );
               } else {
+                // Stash the augmented photos on the draft so the
+                // detection screen can read them — it uses `draft.photos`
+                // / `pendingPhotos` to render thumbnails per product.
+                if (augmentedPhotos.length > photos.length) {
+                  await useScanDraft.getState().updatePhotos(augmentedPhotos);
+                }
                 useScanDraft.getState().setPendingDetection(mapped);
                 setApplyError(null);
                 setIsNavigating(true);
@@ -287,6 +465,14 @@ export default function ProcessingScreen() {
               // returned them — null would clobber a prior value if the user
               // navigated back into a finished draft.
               ...(ai.prices ? { aiPrices: ai.prices } : {}),
+              // Category — single-product analyze path was previously dropping
+              // the AI's `product_cat` / `subcategory` ids, so the detail-form
+              // bridge had nothing to map to the seller's locale tree. Patch
+              // only when AI returned a non-empty id; the locale bridge does
+              // the rest. Empty values would clobber a prior user pick.
+              ...(ai.categoryId
+                ? { categoryId: ai.categoryId, categoryName: ai.categoryName ?? null }
+                : {}),
               ...(ai.locations && ai.locations.length > 0
                 ? {
                     locations: ai.locations,
@@ -351,10 +537,17 @@ export default function ProcessingScreen() {
   const showLoader = isPending || isNavigating || (!draft.ai && !showError);
 
   if (showLoader) {
+    // v2: append a live "k/N" to the extracting-products step once detection
+    // has reported a product count. Falls back to the plain label otherwise.
+    const extractingLabel =
+      useV2Stream && productProgress.total
+        ? `${subStatuses[2]} ${productProgress.done}/${productProgress.total}`
+        : subStatuses[2];
+
     const stepsData = [
       { id: 0, label: subStatuses[0], scale: checkScale1, opacity: rowEntrance1, translateY: rowY1 },
       { id: 1, label: subStatuses[1], scale: checkScale2, opacity: rowEntrance2, translateY: rowY2 },
-      { id: 2, label: subStatuses[2], scale: checkScale3, opacity: rowEntrance3, translateY: rowY3 },
+      { id: 2, label: extractingLabel, scale: checkScale3, opacity: rowEntrance3, translateY: rowY3 },
       { id: 3, label: subStatuses[3], scale: checkScale4, opacity: rowEntrance4, translateY: rowY4 },
     ];
 
@@ -369,6 +562,62 @@ export default function ProcessingScreen() {
           backgroundColor: brand.background,
         }}
       >
+        {/* Non-fatal Phase 2 rejection banners — floats over the centered
+            loader so the user sees which files got dropped without shifting
+            the animation. Rarely visible (v2 redirects this screen before
+            mutating; only the SMART_DETECT_V2_ENABLED=0 cohort hits this). */}
+        {nonFatalRejections.length > 0 && (
+          <View
+            style={{
+              position: 'absolute',
+              top: 16,
+              left: 16,
+              right: 16,
+              gap: 8,
+              zIndex: 10,
+            }}
+            pointerEvents="box-none"
+          >
+            {nonFatalRejections.map((r) => (
+              <View
+                key={r.key}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  gap: 8,
+                  backgroundColor: '#fef3c7',
+                  borderWidth: 1,
+                  borderColor: '#fbbf24',
+                  borderRadius: 8,
+                  padding: 10,
+                }}
+                accessibilityRole="alert"
+                accessibilityLabel={r.name ? `${r.name}: ${r.message}` : r.message}
+              >
+                <AlertCircle size={16} color="#92400e" style={{ marginTop: 1 }} />
+                <View style={{ flex: 1 }}>
+                  {r.name ? (
+                    <Text
+                      style={{
+                        fontFamily: fonts.mono,
+                        fontSize: 11,
+                        color: '#92400e',
+                        marginBottom: 2,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {r.name}
+                    </Text>
+                  ) : null}
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 13, color: '#7c2d12', lineHeight: 18 }}>
+                    {r.message}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
         <View
           style={{
             position: 'absolute',
@@ -429,7 +678,7 @@ export default function ProcessingScreen() {
             paddingVertical: 4,
             borderRadius: 999,
             gap: 4,
-            marginBottom: 12,
+            marginBottom: 20,
           }}
         >
           <Text style={{ fontSize: 10 }}>✨</Text>
@@ -443,6 +692,63 @@ export default function ProcessingScreen() {
           >
             {t('mobile.processing.aiWorking')}
           </Text>
+        </View>
+
+        {/* Scanner frame — square with corner brackets + a rotating gear at
+            the center. Mirrors the Stitch "AI Processing Insights" focal
+            element. Hidden when the device prefers reduced motion (the gear
+            spin would be visual noise). The corner brackets are 4 small
+            absolute Views; cheaper than rendering an SVG and adapts to any
+            container size. */}
+        <View
+          style={{
+            width: 140,
+            height: 140,
+            marginBottom: 24,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {/* Backdrop chip behind the gear — barely-there fill so the corner
+              brackets feel like they're framing something. */}
+          <View
+            style={{
+              position: 'absolute',
+              top: 12,
+              left: 12,
+              right: 12,
+              bottom: 12,
+              backgroundColor: 'rgba(148, 163, 184, 0.10)',
+              borderRadius: 12,
+            }}
+          />
+          {/* Four corner brackets. */}
+          {(['tl', 'tr', 'bl', 'br'] as const).map((corner) => {
+            const isTop = corner.startsWith('t');
+            const isLeft = corner.endsWith('l');
+            return (
+              <View
+                key={corner}
+                style={{
+                  position: 'absolute',
+                  width: 20,
+                  height: 20,
+                  borderColor: '#94a3b8',
+                  ...(isTop ? { top: 0, borderTopWidth: 2.5 } : { bottom: 0, borderBottomWidth: 2.5 }),
+                  ...(isLeft ? { left: 0, borderLeftWidth: 2.5 } : { right: 0, borderRightWidth: 2.5 }),
+                  borderTopLeftRadius: isTop && isLeft ? 4 : 0,
+                  borderTopRightRadius: isTop && !isLeft ? 4 : 0,
+                  borderBottomLeftRadius: !isTop && isLeft ? 4 : 0,
+                  borderBottomRightRadius: !isTop && !isLeft ? 4 : 0,
+                }}
+              />
+            );
+          })}
+          {/* Reanimated wrapper — drives the rotate transform via a worklet
+              on native and a CSS animation on web. Works in both. */}
+          <RNAnimated.View style={gearAnimatedStyle}>
+            <Cog size={72} color="#94a3b8" strokeWidth={1.5} />
+          </RNAnimated.View>
         </View>
 
         <Text
@@ -607,6 +913,30 @@ export default function ProcessingScreen() {
             {t('mobile.processing.slow')}
           </Text>
         ) : null}
+
+        {/* Powered-by footer — pinned to the bottom of the screen via
+            absolute positioning so the rest of the loader stays centered
+            regardless of how tall the device viewport is. */}
+        <Text
+          className="text-center"
+          style={{
+            position: 'absolute',
+            bottom: 24,
+            left: 24,
+            right: 24,
+            fontFamily: fonts.regular,
+            fontSize: 10,
+            letterSpacing: 1.2,
+            color: '#94a3b8',
+            textTransform: 'uppercase',
+          }}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          {t('mobile.processing.poweredBy', {
+            defaultValue: 'Powered by GreenBidz Industrial Vision AI v4.2',
+          })}
+        </Text>
       </Screen>
     );
   }

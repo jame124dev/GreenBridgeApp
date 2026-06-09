@@ -15,7 +15,8 @@ import { router } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { X, Zap, ZapOff, SwitchCamera, Images } from 'lucide-react-native';
+import { X, Zap, ZapOff, SwitchCamera, FolderOpen, FileText } from 'lucide-react-native';
+import * as DocumentPicker from 'expo-document-picker';
 import { useTranslation } from 'react-i18next';
 
 import { AppImage } from '@/components/ui';
@@ -36,6 +37,70 @@ import type { Photo } from '@/stores/scanDraftStore';
  * adds value (flex utilities, brand-* colors, simple spacing); inline `style`
  * carries the rest. Reusable values are pulled to top-level `const` objects.
  */
+/**
+ * Document picked from the device — anything that isn't an image (PDFs,
+ * Word, Excel, .txt, etc.). Shape matches `DraftItem.documents` in the
+ * scan-draft store so the array can be patched in directly at submit time.
+ */
+type DraftDoc = { uri: string; name: string; mimeType: string };
+
+/**
+ * Pre-emptively flatten a picked document's filename to an ASCII-safe form.
+ *
+ * Why: RN's native multipart FormData on Android URL-encodes the filename
+ * in the `Content-Disposition` header (e.g. space → `%20`, `(` → `%28`).
+ * The backend's parser then stores that *encoded* string as the literal GCS
+ * object name. When we later send the returned `url` to smart-detect, GCS
+ * unescapes `%20` back to a space and 404s because the stored object has
+ * the literal three-character `%20` in its name. Stripping non-safe chars
+ * before upload makes the round-trip identity, no encoding involved.
+ *
+ * Real example: `"TRENNJAEGER (1).pdf"` → `"TRENNJAEGER_1.pdf"`.
+ */
+function safeDocumentName(rawName: string): string {
+  let s = (rawName || '').trim();
+  try {
+    // If the picker already gave us a URL-encoded name (some Android
+    // ContentResolvers do), decode first so we don't double-mangle.
+    s = decodeURIComponent(s);
+  } catch {
+    // Malformed % sequence — keep the original string.
+  }
+  let safe = s.replace(/[^A-Za-z0-9._-]/g, '_').replace(/_+/g, '_');
+  const dot = safe.lastIndexOf('.');
+  if (dot <= 0) return safe || 'document';
+  const base = safe.slice(0, dot).replace(/^_+|_+$/g, '') || 'document';
+  return base + safe.slice(dot);
+}
+
+/**
+ * P3 — per-mime size cap (bytes). Mirrors backend per-mime caps in
+ * `controller/wordPressSmart.js:2534-2548` and `services/officeDocs.js`.
+ * Returns `null` for unknown extensions so the picker doesn't second-guess
+ * — server-side classification handles those.
+ */
+const CAP_BY_EXT: Record<string, number> = {
+  '.docx': 25 * 1024 * 1024,
+  '.pptx': 25 * 1024 * 1024,
+  '.xlsx': 50 * 1024 * 1024,
+  '.csv': 50 * 1024 * 1024,
+  '.pdf': 50 * 1024 * 1024,
+};
+
+function capForFile(name: string | undefined, _size: number | undefined): number | null {
+  if (!name) return null;
+  const dot = name.lastIndexOf('.');
+  if (dot < 0) return null;
+  const ext = name.slice(dot).toLowerCase();
+  return CAP_BY_EXT[ext] ?? null;
+}
+
+function humanBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 const iconBtnStyle = {
   width: 44,
   height: 44,
@@ -53,12 +118,19 @@ const bracketBase = {
 };
 
 export default function CameraScreen() {
+  console.log('Rendering CameraScreen');
   const { t } = useTranslation();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [flash, setFlash] = useState(false);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  // Documents picked from the device (PDFs, Word, Excel, etc.). Carried into
+  // the draft at submit time so they ship alongside the listing's photos.
+  // Images selected via the same picker are compressed and merged into
+  // `photos` instead — same flow as the camera-captured ones.
+  const [docs, setDocs] = useState<DraftDoc[]>([]);
+  const [picking, setPicking] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [starting, setStarting] = useState(false);
   const [zoom, setZoom] = useState(0);
@@ -220,11 +292,135 @@ export default function CameraScreen() {
     setPhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
+  /**
+   * Open the system file picker (DocumentPicker) — accepts any file type
+   * since the user asked for "all document files and images". Images get
+   * routed into `photos` (same compressed shape as camera captures) so the
+   * AI pipeline sees them just like a captured shot. Anything else lands in
+   * `docs` and ships as a draft document attachment.
+   *
+   * `multiple: true` so the user can grab a batch in one trip; cancellations
+   * and per-file failures are swallowed silently except for a "nothing
+   * picked" path that posts a brief Alert.
+   */
+  const pickFiles = async () => {
+    if (picking) return;
+    setPicking(true);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        multiple: true,
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.length) return;
+
+      const newPhotos: Photo[] = [];
+      const newDocs: DraftDoc[] = [];
+      const oversize: { name: string; size: number; limit: number }[] = [];
+
+      for (const asset of result.assets) {
+        const isImage =
+          (asset.mimeType ?? '').toLowerCase().startsWith('image/') ||
+          /\.(jpe?g|png|webp|heic|heif|bmp|gif)$/i.test(asset.name ?? '');
+        if (isImage) {
+          try {
+            const compressed = await compressPhoto(asset.uri);
+            newPhotos.push({
+              uri: compressed.uri,
+              width: compressed.width,
+              height: compressed.height,
+              sizeBytes: compressed.sizeBytes,
+            });
+          } catch {
+            // Skip files that fail compression — the picker can return
+            // odd content URIs that ImageManipulator chokes on. Other
+            // picks in the same batch should still go through.
+          }
+        } else {
+          // P3 — mime-aware client-side size pre-flight (Phase 2 office docs).
+          // Mirrors backend per-mime caps at
+          // `controller/wordPressSmart.js:2534-2548` so users get a fast local
+          // rejection instead of waiting through an upload + non-fatal SSE.
+          // Server is still authoritative; this is a UX optimization, not a
+          // security boundary.
+          const limit = capForFile(asset.name, asset.size);
+          if (limit != null && typeof asset.size === 'number' && asset.size > limit) {
+            oversize.push({ name: asset.name || 'document', size: asset.size, limit });
+            continue;
+          }
+          newDocs.push({
+            uri: asset.uri,
+            name: safeDocumentName(asset.name || 'document'),
+            mimeType: asset.mimeType || 'application/octet-stream',
+          });
+        }
+      }
+
+      if (newPhotos.length) {
+        setPhotos((prev) => [...prev, ...newPhotos]);
+        popChip();
+      }
+      if (newDocs.length) {
+        setDocs((prev) => [...prev, ...newDocs]);
+      }
+      if (oversize.length === 1) {
+        const o = oversize[0];
+        Alert.alert(
+          t('mobile.camera.docTooLargeTitle', { defaultValue: 'File too large' }),
+          t('mobile.camera.docTooLargeBody', {
+            name: o.name,
+            size: humanBytes(o.size),
+            limit: humanBytes(o.limit),
+            defaultValue: `${o.name} is ${humanBytes(o.size)} — over the ${humanBytes(o.limit)} limit for this format. Save as a smaller file and try again.`,
+          }),
+        );
+      } else if (oversize.length > 1) {
+        Alert.alert(
+          t('mobile.camera.docTooLargeTitle', { defaultValue: 'File too large' }),
+          t('mobile.camera.docMultipleTooLargeBody', {
+            count: oversize.length,
+            defaultValue: `${oversize.length} files were over their size limit and were skipped. The largest cap is 50 MB (DOCX/PPTX is 25 MB).`,
+          }),
+        );
+      } else if (!newPhotos.length && !newDocs.length) {
+        Alert.alert(
+          t('mobile.camera.pickFailedTitle', { defaultValue: 'Could not add files' }),
+          t('mobile.camera.pickFailedBody', {
+            defaultValue: 'The selected files could not be processed.',
+          }),
+        );
+      }
+    } catch {
+      haptics.error();
+      Alert.alert(
+        t('mobile.camera.pickFailedTitle', { defaultValue: 'Could not add files' }),
+        t('mobile.camera.pickFailedBody', {
+          defaultValue: 'The selected files could not be processed.',
+        }),
+      );
+    } finally {
+      setPicking(false);
+    }
+  };
+
+  const removeDoc = (index: number) => {
+    setDocs((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const onNext = async () => {
-    if (photos.length === 0 || starting) return;
+    // Photos OR documents (or both) can proceed — backend smart-detect now
+    // analyzes PDF page-images alongside captured photos. Docs-only is no
+    // longer a manual-entry shortcut: processing.tsx + useSmartDetect
+    // handle the docs-only path by uploading PDFs to GCS and passing
+    // `document_urls` to /wp/analyze-smart-detection (mirrors web).
+    if (starting) return;
+    if (photos.length === 0 && docs.length === 0) return;
     setStarting(true);
     try {
       await useScanDraft.getState().start(photos);
+      if (docs.length > 0) {
+        useScanDraft.getState().patch({ documents: docs });
+      }
       router.push(routes.scanProcessing);
     } catch {
       Alert.alert(t('mobile.camera.savePhotosFailedTitle'), t('mobile.camera.savePhotosFailedBody'));
@@ -371,34 +567,50 @@ export default function CameraScreen() {
             }}
           />
 
+          {/* TIP pill — rides the TOP edge of the bracket rectangle so it
+              reads as a label for the focus area rather than floating in
+              the middle. JetBrains Mono caps for the technical feel that
+              matches the rest of the brand. Only shows when no photos. */}
           {photos.length === 0 ? (
             <View
               className="flex-row items-center"
               style={{
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                backgroundColor: 'rgba(0,0,0,0.65)',
-                borderRadius: 20,
-                maxWidth: '90%',
+                position: 'absolute',
+                top: -14,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                backgroundColor: 'rgba(0,0,0,0.75)',
+                borderRadius: 999,
+                maxWidth: '95%',
               }}
             >
-              <Text style={{ color: '#fff', fontFamily: fonts.bold, fontSize: 12 }}>
-                {t('mobile.camera.tipStrong')}
-              </Text>
               <Text
-                style={{ color: 'rgba(255,255,255,0.85)', fontFamily: fonts.regular, fontSize: 12 }}
+                style={{
+                  color: '#fff',
+                  fontFamily: 'JetBrainsMono_400Regular',
+                  fontSize: 10,
+                  letterSpacing: 0.8,
+                }}
+                numberOfLines={1}
               >
-                {t('mobile.camera.tipText')}
+                {`${t('mobile.camera.tipStrong').toUpperCase()} ${t('mobile.camera.tipText').toUpperCase().trim()}`}
               </Text>
             </View>
           ) : null}
         </View>
 
         <View style={{ paddingBottom: 24, paddingHorizontal: 20, gap: 12 }}>
-          {photos.length > 0 ? (
+          {/* Unified attachments strip — photo thumbnails AND document chips
+              live in ONE horizontal scroll, with the emerald NEXT button
+              pinned to the right edge. Previously this was two separate
+              strips (docs above, photos below) which felt noisy; combining
+              them communicates "this is your captured stack" with a single
+              visual unit. Only renders when there's something to show OR
+              when zero — falls back to the zeroHint text. */}
+          {photos.length > 0 || docs.length > 0 ? (
             <View
               style={{
-                backgroundColor: 'rgba(0,0,0,0.5)',
+                backgroundColor: 'rgba(0,0,0,0.55)',
                 borderRadius: 16,
                 paddingVertical: 10,
                 paddingHorizontal: 12,
@@ -409,49 +621,113 @@ export default function CameraScreen() {
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   style={{ flex: 1 }}
-                  contentContainerStyle={{ gap: 8 }}
+                  contentContainerStyle={{ gap: 8, alignItems: 'center' }}
                 >
+                  {/* Photos first — thumbnails with a small × overlay. */}
                   {photos.map((p, i) => (
                     <View key={p.uri} style={{ position: 'relative' }}>
                       <AppImage
                         source={{ uri: p.uri }}
-                        style={{ width: 64, height: 64, borderRadius: 8 }}
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          borderColor: 'rgba(255,255,255,0.6)',
+                        }}
                       />
                       <Pressable
                         style={{
                           position: 'absolute',
-                          top: 4,
-                          right: 4,
-                          backgroundColor: 'rgba(0,0,0,0.6)',
-                          borderRadius: 10,
-                          padding: 2,
+                          top: -4,
+                          right: -4,
+                          width: 18,
+                          height: 18,
+                          borderRadius: 9,
+                          backgroundColor: 'rgba(0,0,0,0.8)',
+                          borderWidth: 1,
+                          borderColor: 'rgba(255,255,255,0.5)',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
                         onPress={() => removePhoto(i)}
                         hitSlop={6}
                         accessibilityRole="button"
                         accessibilityLabel={t('mobile.common.remove', { defaultValue: 'Remove photo' })}
                       >
-                        <X color="#fff" size={14} />
+                        <X color="#fff" size={11} strokeWidth={2.5} />
+                      </Pressable>
+                    </View>
+                  ))}
+
+                  {/* Documents after — file chips inline with the thumbs. */}
+                  {docs.map((d, i) => (
+                    <View
+                      key={`${d.uri}-${i}`}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        height: 56,
+                        paddingLeft: 10,
+                        paddingRight: 6,
+                        backgroundColor: 'rgba(255,255,255,0.12)',
+                        borderRadius: 10,
+                        maxWidth: 160,
+                      }}
+                    >
+                      <FileText color="#fff" size={16} />
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          color: '#fff',
+                          fontFamily: fonts.semibold,
+                          fontSize: 12,
+                          flexShrink: 1,
+                        }}
+                      >
+                        {d.name}
+                      </Text>
+                      <Pressable
+                        onPress={() => removeDoc(i)}
+                        hitSlop={6}
+                        style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: 9,
+                          backgroundColor: 'rgba(0,0,0,0.6)',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('mobile.camera.removeDoc', {
+                          defaultValue: 'Remove document',
+                        })}
+                      >
+                        <X color="#fff" size={11} strokeWidth={2.5} />
                       </Pressable>
                     </View>
                   ))}
                 </ScrollView>
+
+                {/* Primary forward action — emerald capsule. Only enabled
+                    when we have at least one photo (AI flow requires it). */}
                 <Pressable
                   style={{
                     flexShrink: 0,
-                    minWidth: 84,
-                    backgroundColor: '#14452f',
+                    minWidth: 88,
+                    backgroundColor: '#00B289',
                     paddingHorizontal: 16,
                     paddingVertical: 11,
                     borderRadius: 999,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    opacity: starting ? 0.6 : 1,
+                    opacity: starting ? 0.5 : 1,
                   }}
                   onPress={onNext}
                   disabled={starting}
                   accessibilityRole="button"
-                  accessibilityLabel={`${t('mobile.common.next')} · ${photos.length}`}
+                  accessibilityLabel={`${t('mobile.common.next')} · ${photos.length + docs.length}`}
                 >
                   {starting ? (
                     <ActivityIndicator color="#fff" size="small" />
@@ -470,86 +746,51 @@ export default function CameraScreen() {
                 </Pressable>
               </View>
             </View>
-          ) : (
-            <Text
-              className="text-center"
-              style={{
-                color: 'rgba(255,255,255,0.65)',
-                fontFamily: fonts.regular,
-                fontSize: 12,
-                marginBottom: 8,
-              }}
-            >
-              {t('mobile.camera.zeroHint')}
-            </Text>
-          )}
+          ) : null}
 
+          {/* Bottom control row — three buttons sharing the same visual
+              vocabulary as the top bar (close + flash use the same round
+              translucent circles). Labels removed; the icons (folder for
+              files, switch-camera for flip) are universally read in
+              camera UIs. Removing the dark squares + caps labels drops
+              the visual weight that made the previous iteration feel
+              "off" against the camera feed. */}
           <View
             className="flex-row items-center justify-between"
             style={{ paddingHorizontal: 8 }}
           >
+            {/* LEFT: Add files — same iconBtnStyle as the top-bar close
+                and flash buttons. The Animated.View carries popChip's
+                bounce on a successful pick. */}
             <Animated.View style={{ transform: [{ scale: chipScale }] }}>
               <Pressable
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 2,
-                  borderColor:
-                    photos.length === 0
-                      ? 'rgba(255,255,255,0.25)'
-                      : 'rgba(255,255,255,0.8)',
-                  backgroundColor:
-                    photos.length === 0 ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.45)',
-                }}
-                onPress={onNext}
-                disabled={photos.length === 0 || starting}
+                style={{ ...iconBtnStyle, opacity: picking ? 0.6 : 1 }}
+                onPress={pickFiles}
+                disabled={picking}
                 accessibilityRole="button"
-                accessibilityLabel={t('mobile.camera.viewPhotos', { count: photos.length })}
+                accessibilityLabel={t('mobile.camera.pickFiles', {
+                  defaultValue: 'Add files',
+                })}
+                accessibilityHint={t('mobile.camera.pickFilesHint', {
+                  defaultValue:
+                    'PDF, DOCX, PPTX, XLSX, CSV — DOCX/PPTX up to 25 MB, others up to 50 MB',
+                })}
               >
-                {starting ? (
+                {picking ? (
                   <ActivityIndicator color="#fff" />
-                ) : photos.length > 0 ? (
-                  <>
-                    <AppImage
-                      source={{ uri: photos[photos.length - 1].uri }}
-                      style={{ width: '100%', height: '100%' }}
-                    />
-                    <View
-                      style={{
-                        position: 'absolute',
-                        top: -6,
-                        right: -6,
-                        minWidth: 22,
-                        height: 22,
-                        paddingHorizontal: 5,
-                        borderRadius: 11,
-                        backgroundColor: '#14452f',
-                        borderWidth: 2,
-                        borderColor: '#fff',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text style={{ color: '#fff', fontFamily: fonts.bold, fontSize: 11 }}>
-                        {photos.length}
-                      </Text>
-                    </View>
-                  </>
                 ) : (
-                  <Images color="rgba(255,255,255,0.5)" size={24} />
+                  <FolderOpen color="#fff" size={22} />
                 )}
               </Pressable>
             </Animated.View>
 
+            {/* CENTER: Shutter — large white-bordered ring, visually
+                dominates the row. No label. */}
             <Pressable
               style={{
-                width: 72,
-                height: 72,
-                borderRadius: 36,
+                width: 80,
+                height: 80,
+                borderRadius: 40,
                 borderWidth: 4,
                 borderColor: '#fff',
                 alignItems: 'center',
@@ -567,22 +808,23 @@ export default function CameraScreen() {
               ) : (
                 <View
                   style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 28,
+                    width: 64,
+                    height: 64,
+                    borderRadius: 32,
                     backgroundColor: '#fff',
                   }}
                 />
               )}
             </Pressable>
 
+            {/* RIGHT: Flip camera — same iconBtnStyle as the left. */}
             <Pressable
               style={iconBtnStyle}
               onPress={flipCamera}
               accessibilityRole="button"
               accessibilityLabel={t('mobile.camera.flipCamera')}
             >
-              <SwitchCamera color="#fff" size={24} />
+              <SwitchCamera color="#fff" size={22} />
             </Pressable>
           </View>
         </View>

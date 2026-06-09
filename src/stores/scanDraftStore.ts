@@ -27,6 +27,10 @@ export type Photo = {
   width: number;
   height: number;
   sizeBytes?: number;
+  /** Phase 2 — coarse origin label from `document_pages[]` when this photo
+   *  was extracted from a document (e.g. "sheet 仁義廠", "slide 3", "embedded").
+   *  Undefined for camera captures and PDF-derived pages. Office docs only. */
+  sourceLabel?: string;
 };
 
 export type AiResult = {
@@ -64,6 +68,18 @@ export type AiResult = {
    * response includes them.
    */
   prices?: AiPrices | null;
+  /**
+   * AI-picked category leaf id (subcategory id preferred, falls back to the
+   * parent category id). The grouped/smart-detect path plumbs this through
+   * via `mapProductData`; the single-product analyze path passes it through
+   * `mapAnalyzeResponse` so `processing.tsx` can patch the draft with the
+   * AI's category. `null` means the AI didn't return one. The detail form's
+   * cross-locale bridge (`CategoryConditionCard`) then maps EN ids to the
+   * seller's locale tree at hydrate time.
+   */
+  categoryId?: string | null;
+  /** Human-readable category name aligned with `categoryId`. */
+  categoryName?: string | null;
 };
 
 export type ScanFlowStep = 'processing' | 'review' | 'detail';
