@@ -71,15 +71,24 @@ export const detailSchema = z.object({
   // the typed brand is required. categoryId === sentinel already satisfies the
   // categoryId min(1) check above; this adds the brand-text requirement, mirror
   // of web's isCategorySelectionComplete.
-  if (
-    data.categoryId === OTHER_SUBCATEGORY_ID &&
-    !(data.customSubcategory ?? '').trim()
-  ) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Brand is required',
-      path: ['customSubcategory'],
-    });
+  if (data.categoryId === OTHER_SUBCATEGORY_ID) {
+    if (!(data.parentCategoryId ?? '').trim()) {
+      // Sentinel without a parent would submit with no product_category_ids
+      // (silently uncategorized). Not reachable via the current UI, but gate it
+      // for parity with web's isCategorySelectionComplete.
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Category is required',
+        path: ['parentCategoryId'],
+      });
+    }
+    if (!(data.customSubcategory ?? '').trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Brand is required',
+        path: ['customSubcategory'],
+      });
+    }
   }
   // S5.2: every visible row must have a non-empty address. Empty rows are a
   // UI artifact ("Add location" then never typed) — flag as required so the

@@ -5,6 +5,7 @@ import {
   getSuggestedSubcategory,
   productMetaFromItem,
 } from '../buildFormData';
+import { getDraftRequiredStatus } from '@/features/scanner/requiredStatus';
 import { OTHER_SUBCATEGORY_ID } from '@/features/scanner/constants';
 import type { DraftItem } from '@/stores/scanDraftStore';
 
@@ -116,5 +117,35 @@ describe('"Other (type brand)" subcategory resolution', () => {
     expect(meta.product_category_ids).toBe('456');
     expect(meta.category_name).toBe('Servers');
     expect(meta.suggested_subcategory).toBeUndefined();
+  });
+});
+
+// Regression: the grouped-review submit gate projects DraftItem → DetailFormInput
+// via requiredStatus.draftToFormInput. It must carry the Other fields, otherwise
+// the schema's "Brand is required" superRefine fires for every grouped Other item
+// (a valid brand gets falsely blocked from submitting).
+describe('grouped-review required-status gate for "Other"', () => {
+  it('Other with a typed brand is NOT blocked', () => {
+    const draft = fakeDraft({
+      categoryId: OTHER_SUBCATEGORY_ID,
+      parentCategoryId: '123',
+      parentCategoryName: 'Laptops',
+      customSubcategory: 'Asus',
+      photos: [{ uri: 'file://x.jpg' }] as DraftItem['photos'],
+    });
+    const status = getDraftRequiredStatus(draft);
+    expect(status.allComplete).toBe(true);
+  });
+
+  it('Other with an empty brand IS blocked', () => {
+    const draft = fakeDraft({
+      categoryId: OTHER_SUBCATEGORY_ID,
+      parentCategoryId: '123',
+      parentCategoryName: 'Laptops',
+      customSubcategory: '',
+      photos: [{ uri: 'file://x.jpg' }] as DraftItem['photos'],
+    });
+    const status = getDraftRequiredStatus(draft);
+    expect(status.allComplete).toBe(false);
   });
 });

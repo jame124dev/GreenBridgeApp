@@ -73,6 +73,13 @@ function draftToFormInput(draft: DraftItem): DetailFormInput {
     description: draft.description,
     categoryId: draft.categoryId ?? '',
     categoryName: draft.categoryName ?? '',
+    // "Other (type brand)" fields — must be projected too, else the schema's
+    // superRefine (which requires customSubcategory when categoryId is the
+    // Other sentinel) sees them as undefined and falsely blocks every valid
+    // grouped "Other" item. Mirrors formMapping.draftToFormValues.
+    customSubcategory: draft.customSubcategory ?? '',
+    parentCategoryId: draft.parentCategoryId ?? '',
+    parentCategoryName: draft.parentCategoryName ?? '',
     condition: draft.condition,
     operationStatus: draft.operationStatus,
     priceFormat: draft.priceFormat,
