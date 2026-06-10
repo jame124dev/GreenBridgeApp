@@ -64,7 +64,10 @@ export function CategoryConditionCard() {
     // and the subcategory section (which renders the Other card + input) would
     // unmount the instant Other is picked — the RN blink.
     if (categoryId === OTHER_SUBCATEGORY_ID) return watchedParentCategoryId || '';
-    if (!categoryId) return '';
+    // Parent-only AI fill (or after the clear-effect drops a non-leaf parent id):
+    // the leaf is empty but the parent was captured separately — select it so
+    // the category never appears blank when the AI gave a parent (web parity).
+    if (!categoryId) return watchedParentCategoryId || '';
     for (const cat of parents) {
       const catId = String(cat.id);
       if (catId === categoryId) return catId;
@@ -116,17 +119,37 @@ export function CategoryConditionCard() {
     if (!id) return;
     const stillValid = categories.data.options.some((o) => o.id === id);
     if (stillValid) return;
+    // Bridge an EN id over to the current locale's tree when possible.
+    let resolved = id;
     if (enCategories.data) {
       const bridged = bridgeCategoryId(
         id,
         enCategories.data,
         categories.data.categories,
       );
-      if (bridged && categories.data.options.some((o) => o.id === bridged)) {
-        setValue('categoryId', bridged, { shouldValidate: false });
-        return;
-      }
+      if (bridged) resolved = bridged;
     }
+    // Resolved id is a real leaf option → adopt it.
+    if (categories.data.options.some((o) => o.id === resolved)) {
+      setValue('categoryId', resolved, { shouldValidate: false });
+      return;
+    }
+    // Parent-only result: the AI returned a top-level category with no kept
+    // subcategory (e.g. a laptop whose brand is unknown — the backend clears the
+    // brand subcategory). A nested parent id isn't a leaf option, so the checks
+    // above can't match it. Keep it as the selected PARENT so the subcategory
+    // picker opens and the parent shows selected (web parity), and clear the
+    // leaf so the seller still must pick a brand / Other.
+    const parent = categories.data.categories.find(
+      (c) => String(c.id) === resolved,
+    );
+    if (parent) {
+      setValue('parentCategoryId', String(parent.id), { shouldValidate: false });
+      setValue('parentCategoryName', parent.name ?? '', { shouldValidate: false });
+      setValue('categoryId', '', { shouldValidate: false });
+      return;
+    }
+    // Truly stale/unknown id → drop it.
     setValue('categoryId', '', { shouldValidate: false });
   }, [
     categories.data,
@@ -292,48 +315,51 @@ export function CategoryConditionCard() {
                   );
                 })}
 
-                {/* "Other (type brand)" — files the product under the selected
-                    PARENT and sends the typed brand as suggested_subcategory.
-                    Selected when the form leaf is the sentinel. */}
-                {(() => {
-                  const active = value === OTHER_SUBCATEGORY_ID;
-                  return (
-                    <Pressable
-                      key="__other__"
-                      className={`flex-row items-center justify-between gap-sm border rounded-xs px-md py-2.5 ${
-                        active
-                          ? 'border-brand-primary border-2 bg-brand-primary-surface'
-                          : 'border-brand-border-strong'
-                      }`}
-                      style={{ marginTop: 6 }}
-                      onPress={() => {
-                        onChange(OTHER_SUBCATEGORY_ID);
-                        setValue('parentCategoryId', selectedParentId);
-                        setValue('parentCategoryName', selectedParent?.name ?? '');
-                      }}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: active }}
-                      accessibilityLabel={t('mobile.detail.subCategoryOther', {
+              </ScrollView>
+
+              {/* "Other (type brand)" lives OUTSIDE the maxHeight:240 brand
+                  ScrollView so it is ALWAYS visible below the (scrollable) brand
+                  list — inside it, it was the clipped 5th row under the fold.
+                  Files the product under the selected PARENT and sends the typed
+                  brand as suggested_subcategory. */}
+              {(() => {
+                const active = value === OTHER_SUBCATEGORY_ID;
+                return (
+                  <Pressable
+                    key="__other__"
+                    className={`flex-row items-center justify-between gap-sm border rounded-xs px-md py-2.5 ${
+                      active
+                        ? 'border-brand-primary border-2 bg-brand-primary-surface'
+                        : 'border-brand-border-strong'
+                    }`}
+                    style={{ marginTop: 6 }}
+                    onPress={() => {
+                      onChange(OTHER_SUBCATEGORY_ID);
+                      setValue('parentCategoryId', selectedParentId);
+                      setValue('parentCategoryName', selectedParent?.name ?? '');
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={t('mobile.detail.subCategoryOther', {
+                      defaultValue: 'Other (type brand)',
+                    })}
+                  >
+                    <Text
+                      className={`flex-1 ${active ? 'font-label text-brand-primary text-lg' : 'font-label-medium text-lg text-brand-foreground'}`}
+                      numberOfLines={1}
+                    >
+                      {t('mobile.detail.subCategoryOther', {
                         defaultValue: 'Other (type brand)',
                       })}
-                    >
-                      <Text
-                        className={`flex-1 ${active ? 'font-label text-brand-primary text-lg' : 'font-label-medium text-lg text-brand-foreground'}`}
-                        numberOfLines={1}
-                      >
-                        {t('mobile.detail.subCategoryOther', {
-                          defaultValue: 'Other (type brand)',
-                        })}
-                      </Text>
-                      <MaterialIcons
-                        name={active ? 'check-circle' : 'chevron-right'}
-                        size={20}
-                        color={active ? brand.primary : brand.placeholder}
-                      />
-                    </Pressable>
-                  );
-                })()}
-              </ScrollView>
+                    </Text>
+                    <MaterialIcons
+                      name={active ? 'check-circle' : 'chevron-right'}
+                      size={20}
+                      color={active ? brand.primary : brand.placeholder}
+                    />
+                  </Pressable>
+                );
+              })()}
 
               {value === OTHER_SUBCATEGORY_ID ? (
                 <Controller
