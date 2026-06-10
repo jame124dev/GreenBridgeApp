@@ -3712,6 +3712,8 @@
       "sectionMarketplace": "MARKETPLACE",
       "sectionModel": "MODEL",
       "sectionSubcategory": "SUBCATEGORY",
+      "subCategoryOther": "Other (type brand)",
+      "subCategoryOtherPlaceholder": "Enter brand name",
       "sectionVisibility": "LISTING VISIBILITY",
       "sectionYear": "YEAR",
       "selectCountry": "Select country",

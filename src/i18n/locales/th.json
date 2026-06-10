@@ -3615,6 +3615,8 @@
       "sectionMarketplace": "ตลาด",
       "sectionModel": "รุ่น",
       "sectionSubcategory": "หมวดหมู่ย่อย",
+      "subCategoryOther": "อื่น ๆ (พิมพ์แบรนด์)",
+      "subCategoryOtherPlaceholder": "กรอกชื่อแบรนด์",
       "sectionVisibility": "การมองเห็นสินค้า",
       "sectionYear": "ปี",
       "selectCountry": "เลือกประเทศ",

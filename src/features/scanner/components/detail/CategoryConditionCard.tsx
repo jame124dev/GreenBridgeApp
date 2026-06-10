@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import {
   CONDITION_LABELS,
+  OTHER_SUBCATEGORY_ID,
   VALID_CONDITION_KEYS,
   type ConditionKey,
 } from '@/features/scanner/constants';
@@ -21,6 +22,11 @@ import { brand } from '@/constants/theme';
 import { FieldLabel } from './FieldLabel';
 
 const GRADES: ItemGrade[] = ['A', 'B', 'C', 'D'];
+
+// Matches the shared TextInput pattern used across the detail cards (SpecsCard,
+// IdentityCard) so the "Other" brand field is visually consistent.
+const otherInputCls =
+  'bg-brand-surface border border-brand-border-strong rounded-xs px-md py-2.5 font-sans text-xl text-brand-foreground';
 
 /**
  * Category + condition + grade picker.
@@ -44,6 +50,7 @@ export function CategoryConditionCard() {
   const enCategories = useEnLabCategories(marketplace);
   const selectedConditions = watch('condition');
   const categoryId = watch('categoryId');
+  const watchedParentCategoryId = watch('parentCategoryId');
 
   const parents = categories.data?.categories ?? [];
 
@@ -51,6 +58,12 @@ export function CategoryConditionCard() {
   // - nested: parent whose subcategories contains this id
   // - flat:   the parent whose own id matches categoryId
   const derivedParentId = useMemo(() => {
+    // "Other (type brand)" — the sentinel leaf isn't in the tree, so the parent
+    // can't be derived by walking subcategories. Read it from the form's
+    // parentCategoryId instead. Without this, the parent pill would de-select
+    // and the subcategory section (which renders the Other card + input) would
+    // unmount the instant Other is picked — the RN blink.
+    if (categoryId === OTHER_SUBCATEGORY_ID) return watchedParentCategoryId || '';
     if (!categoryId) return '';
     for (const cat of parents) {
       const catId = String(cat.id);
@@ -60,7 +73,7 @@ export function CategoryConditionCard() {
       }
     }
     return '';
-  }, [categoryId, parents]);
+  }, [categoryId, parents, watchedParentCategoryId]);
 
   const [selectedParentId, setSelectedParentId] = useState(derivedParentId);
 
@@ -96,6 +109,9 @@ export function CategoryConditionCard() {
   useEffect(() => {
     if (!categories.data) return;
     if (!enBridgeSettled) return;
+    // Never wipe the "Other" sentinel — it's intentionally not in `options`,
+    // so the validity check below would otherwise clear it on every render.
+    if (getValues('categoryId') === OTHER_SUBCATEGORY_ID) return;
     const id = getValues('categoryId');
     if (!id) return;
     const stillValid = categories.data.options.some((o) => o.id === id);
@@ -120,6 +136,23 @@ export function CategoryConditionCard() {
     setValue,
   ]);
 
+  // Marketplace switch invalidates the category tree entirely. If the seller
+  // had "Other" selected, the sentinel + typed brand are stale (they belonged
+  // to a parent in the old tree), so reset all Other state. Skips the first
+  // run via a ref so an initial-render marketplace value doesn't wipe a
+  // freshly-hydrated draft's Other selection.
+  const prevMarketplaceRef = useRef(marketplace);
+  useEffect(() => {
+    if (prevMarketplaceRef.current === marketplace) return;
+    prevMarketplaceRef.current = marketplace;
+    if (getValues('categoryId') === OTHER_SUBCATEGORY_ID) {
+      setValue('categoryId', '', { shouldValidate: false });
+    }
+    setValue('customSubcategory', '');
+    setValue('parentCategoryId', '');
+    setValue('parentCategoryName', '');
+  }, [marketplace, getValues, setValue]);
+
   const toggleCondition = (key: ConditionKey) => {
     const next = selectedConditions.includes(key)
       ? selectedConditions.filter((c) => c !== key)
@@ -138,6 +171,11 @@ export function CategoryConditionCard() {
     // Flat marketplace → parent IS the leaf; commit immediately.
     // Nested → reset leaf so user picks a sub next.
     setValue('categoryId', catSubs.length === 0 ? id : '', { shouldValidate: false });
+    // Track the parent so the "Other" card can file under it; keep the typed
+    // brand from a previous parent out of a fresh selection.
+    setValue('parentCategoryId', id);
+    setValue('parentCategoryName', cat?.name ?? '');
+    setValue('customSubcategory', '');
   };
 
   return (
@@ -229,7 +267,12 @@ export function CategoryConditionCard() {
                           : 'border-brand-border-strong'
                       }`}
                       style={{ marginTop: 6 }}
-                      onPress={() => onChange(id)}
+                      onPress={() => {
+                        // Real sub picked → leaves "Other" naturally; drop any
+                        // stale typed brand so it's never submitted.
+                        onChange(id);
+                        setValue('customSubcategory', '');
+                      }}
                       accessibilityRole="radio"
                       accessibilityState={{ selected: active }}
                       accessibilityLabel={`${selectedParent.name} ${sub.name}`}
@@ -248,7 +291,79 @@ export function CategoryConditionCard() {
                     </Pressable>
                   );
                 })}
+
+                {/* "Other (type brand)" — files the product under the selected
+                    PARENT and sends the typed brand as suggested_subcategory.
+                    Selected when the form leaf is the sentinel. */}
+                {(() => {
+                  const active = value === OTHER_SUBCATEGORY_ID;
+                  return (
+                    <Pressable
+                      key="__other__"
+                      className={`flex-row items-center justify-between gap-sm border rounded-xs px-md py-2.5 ${
+                        active
+                          ? 'border-brand-primary border-2 bg-brand-primary-surface'
+                          : 'border-brand-border-strong'
+                      }`}
+                      style={{ marginTop: 6 }}
+                      onPress={() => {
+                        onChange(OTHER_SUBCATEGORY_ID);
+                        setValue('parentCategoryId', selectedParentId);
+                        setValue('parentCategoryName', selectedParent?.name ?? '');
+                      }}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={t('mobile.detail.subCategoryOther', {
+                        defaultValue: 'Other (type brand)',
+                      })}
+                    >
+                      <Text
+                        className={`flex-1 ${active ? 'font-label text-brand-primary text-lg' : 'font-label-medium text-lg text-brand-foreground'}`}
+                        numberOfLines={1}
+                      >
+                        {t('mobile.detail.subCategoryOther', {
+                          defaultValue: 'Other (type brand)',
+                        })}
+                      </Text>
+                      <MaterialIcons
+                        name={active ? 'check-circle' : 'chevron-right'}
+                        size={20}
+                        color={active ? brand.primary : brand.placeholder}
+                      />
+                    </Pressable>
+                  );
+                })()}
               </ScrollView>
+
+              {value === OTHER_SUBCATEGORY_ID ? (
+                <Controller
+                  control={control}
+                  name="customSubcategory"
+                  render={({
+                    field: { value: brandValue, onChange: onBrandChange, onBlur },
+                    fieldState,
+                  }) => (
+                    <View className="gap-1.5" style={{ marginTop: 6 }}>
+                      <TextInput
+                        className={otherInputCls}
+                        value={brandValue ?? ''}
+                        onChangeText={onBrandChange}
+                        onBlur={onBlur}
+                        maxLength={60}
+                        placeholder={t('mobile.detail.subCategoryOtherPlaceholder', {
+                          defaultValue: 'Enter brand name',
+                        })}
+                        placeholderTextColor={brand.placeholder}
+                      />
+                      {fieldState.error ? (
+                        <Text className="text-brand-destructive text-md">
+                          {fieldState.error.message}
+                        </Text>
+                      ) : null}
+                    </View>
+                  )}
+                />
+              ) : null}
             </View>
           )}
         />

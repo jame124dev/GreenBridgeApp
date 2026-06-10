@@ -3696,6 +3696,8 @@
       "sectionMarketplace": "上架市場",
       "sectionModel": "型號",
       "sectionSubcategory": "子分類",
+      "subCategoryOther": "其他（输入品牌）",
+      "subCategoryOtherPlaceholder": "输入品牌名称",
       "sectionVisibility": "商品可見度",
       "sectionYear": "年份",
       "selectCountry": "選擇國家",

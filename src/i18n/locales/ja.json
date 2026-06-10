@@ -3631,6 +3631,8 @@
       "sectionMarketplace": "出品先",
       "sectionModel": "モデル",
       "sectionSubcategory": "サブカテゴリ",
+      "subCategoryOther": "その他（ブランドを入力）",
+      "subCategoryOtherPlaceholder": "ブランド名を入力",
       "sectionVisibility": "公開範囲",
       "sectionYear": "年式",
       "selectCountry": "国を選択",
