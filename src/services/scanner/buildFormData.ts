@@ -2,7 +2,10 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 import { appendSpecsToDescription } from '@/features/scanner/appendSpecsToDescription';
-import { operationStatusForInstallation } from '@/features/scanner/constants';
+import {
+  OTHER_SUBCATEGORY_ID,
+  operationStatusForInstallation,
+} from '@/features/scanner/constants';
 import type { DraftItem, MarketplaceKey, Photo } from '@/stores/scanDraftStore';
 
 /**
@@ -20,6 +23,30 @@ export function marketplaceToAllowedSite(marketplace: MarketplaceKey): string {
 }
 
 const IS_WEB = Platform.OS === 'web';
+
+/**
+ * Resolve the category the product actually files under. For a normal pick this
+ * is just the chosen leaf (`categoryId`/`categoryName`). When the seller picked
+ * "Other (type brand)" (`categoryId === OTHER_SUBCATEGORY_ID`), the product
+ * files under the chosen PARENT category instead — web parity. Either id/name
+ * may be empty; callers guard before appending.
+ */
+export function getSubmittedCategory(item: DraftItem): { id: string; name: string } {
+  if (item.categoryId === OTHER_SUBCATEGORY_ID) {
+    return { id: item.parentCategoryId ?? '', name: item.parentCategoryName ?? '' };
+  }
+  return { id: item.categoryId ?? '', name: item.categoryName ?? '' };
+}
+
+/**
+ * The brand the seller typed for "Other" — sent as `suggested_subcategory`.
+ * Empty string for a normal subcategory pick (caller omits the field then).
+ */
+export function getSuggestedSubcategory(item: DraftItem): string {
+  return item.categoryId === OTHER_SUBCATEGORY_ID
+    ? (item.customSubcategory ?? '').trim()
+    : '';
+}
 
 async function appendFile(
   fd: FormData,
@@ -127,11 +154,18 @@ export async function buildProductFormData(
   // product_content as opaque text.
   fd.append('product_content', appendSpecsToDescription(item));
   fd.append('product_type', 'simple');
-  if (item.categoryId) {
-    fd.append('product_category_ids', item.categoryId);
+  // Category resolution accounts for "Other (type brand)": files under the
+  // parent + sends the typed brand as `suggested_subcategory` (web parity).
+  const submittedCategory = getSubmittedCategory(item);
+  if (submittedCategory.id) {
+    fd.append('product_category_ids', submittedCategory.id);
   }
-  if (item.categoryName) {
-    fd.append('category_name', item.categoryName);
+  if (submittedCategory.name) {
+    fd.append('category_name', submittedCategory.name);
+  }
+  const suggestedSubcategory = getSuggestedSubcategory(item);
+  if (suggestedSubcategory) {
+    fd.append('suggested_subcategory', suggestedSubcategory);
   }
 
   fd.append('seller_name', opts.sellerName);
@@ -230,8 +264,13 @@ export function productMetaFromItem(
     allowed_sites: [marketplaceToAllowedSite(item.marketplace)],
   };
 
-  if (item.categoryId) meta.product_category_ids = item.categoryId;
-  if (item.categoryName) meta.category_name = item.categoryName;
+  // Same "Other (type brand)" resolution as buildProductFormData — this is the
+  // grouped-submit path, so it must produce the identical category fields.
+  const submittedCategory = getSubmittedCategory(item);
+  if (submittedCategory.id) meta.product_category_ids = submittedCategory.id;
+  if (submittedCategory.name) meta.category_name = submittedCategory.name;
+  const suggestedSubcategory = getSuggestedSubcategory(item);
+  if (suggestedSubcategory) meta.suggested_subcategory = suggestedSubcategory;
 
   const serial = item.serialNumber?.trim();
   if (serial) meta.serial_number = serial;
