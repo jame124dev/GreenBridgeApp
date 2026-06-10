@@ -1,3 +1,13 @@
+/**
+ * Sentinel `categoryId` value meaning "the seller chose Other and typed a
+ * brand not in the subcategory list". Mirrors web GreenBridgeSeller — the
+ * literal '__other__' must match the value the web form and backend agree on.
+ * When this is the leaf id, the product files under the chosen PARENT category
+ * (parentCategoryId/parentCategoryName) and the typed brand is sent as the
+ * `suggested_subcategory` form field.
+ */
+export const OTHER_SUBCATEGORY_ID = '__other__';
+
 export const VALID_CONDITION_KEYS = [
   'new',
   'usedFunctional',

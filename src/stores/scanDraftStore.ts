@@ -121,6 +121,14 @@ export type DraftItem = {
   description: string;
   categoryId: string | null;
   categoryName: string | null;
+  // ── "Other (type brand)" subcategory (web parity) ─────────────────────────
+  // When the seller picks Other, `categoryId` holds the OTHER_SUBCATEGORY_ID
+  // sentinel, `parentCategoryId`/`parentCategoryName` carry the parent term the
+  // product files under, and `customSubcategory` holds the typed brand (sent as
+  // `suggested_subcategory` at submit). Empty strings when Other isn't chosen.
+  customSubcategory?: string;
+  parentCategoryId?: string;
+  parentCategoryName?: string;
   condition: string[];
   operationStatus: string[];
   pricePerUnit: string;
@@ -214,6 +222,9 @@ function emptyDraft(photos: Photo[]): DraftItem {
     description: '',
     categoryId: null,
     categoryName: null,
+    customSubcategory: '',
+    parentCategoryId: '',
+    parentCategoryName: '',
     condition: [],
     operationStatus: [...DEFAULT_OPERATION_STATUS],
     pricePerUnit: '',
@@ -327,6 +338,10 @@ function migrateDraft(d: DraftItem): DraftItem {
     co2Emissions: d.co2Emissions ?? '',
     grade: d.grade ?? 'A',
     serialNumber: d.serialNumber ?? '',
+    // "Other" subcategory backfill — older drafts have none of these.
+    customSubcategory: d.customSubcategory ?? '',
+    parentCategoryId: d.parentCategoryId ?? '',
+    parentCategoryName: d.parentCategoryName ?? '',
     marketplace: d.marketplace ?? marketplaceFromSiteType(siteType),
     installation: d.installation ?? 'deinstalled',
     listingDurationDays: d.listingDurationDays ?? 90,

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { OTHER_SUBCATEGORY_ID } from '@/features/scanner/constants';
+
 // S1 expansion (web parity). Keeps required fields strict (title, description,
 // category, condition, operation status, location). New spec fields (brand,
 // model, year, etc.) are optional strings — they fold into product_content via
@@ -22,6 +24,13 @@ export const detailSchema = z.object({
   // Category display name — clears in lockstep with categoryId when the
   // marketplace switches (W3 carry-forward; web parity with ReviewSubmitScreen).
   categoryName: z.string().optional(),
+  // "Other (type brand)" subcategory fields (web parity). When categoryId is
+  // the OTHER_SUBCATEGORY_ID sentinel, the product files under
+  // parentCategoryId/parentCategoryName and customSubcategory (the typed brand)
+  // is sent as `suggested_subcategory`. superRefine below requires the brand.
+  customSubcategory: z.string().optional(),
+  parentCategoryId: z.string().optional(),
+  parentCategoryName: z.string().optional(),
   condition: z.array(z.string()).min(1, 'Select at least one condition'),
   operationStatus: z.array(z.string()).min(1, 'Select operation status'),
   priceFormat: z.enum(['buyNow', 'offer']),
@@ -56,6 +65,20 @@ export const detailSchema = z.object({
       code: 'custom',
       message: 'Price is required for buy now',
       path: ['pricePerUnit'],
+    });
+  }
+  // "Other (type brand)" — when the seller picks Other for the subcategory,
+  // the typed brand is required. categoryId === sentinel already satisfies the
+  // categoryId min(1) check above; this adds the brand-text requirement, mirror
+  // of web's isCategorySelectionComplete.
+  if (
+    data.categoryId === OTHER_SUBCATEGORY_ID &&
+    !(data.customSubcategory ?? '').trim()
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Brand is required',
+      path: ['customSubcategory'],
     });
   }
   // S5.2: every visible row must have a non-empty address. Empty rows are a
