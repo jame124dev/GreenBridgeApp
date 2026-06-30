@@ -16,7 +16,7 @@ import { FieldLabel } from './FieldLabel';
  */
 export function MarketplaceCard() {
   const { t } = useTranslation();
-  const { control, watch } = useFormContext<DetailFormInput>();
+  const { control, watch, setValue } = useFormContext<DetailFormInput>();
   const marketplace = watch('marketplace');
 
   return (
@@ -40,7 +40,17 @@ export function MarketplaceCard() {
                     }`}
                     onPress={() => {
                       haptics.tap();
+                      if (opt.value === marketplace) return;
                       onChange(opt.value);
+                      // The category tree is marketplace-specific, so a real
+                      // user switch invalidates the current category/subcategory
+                      // (and any "Other" brand). Clear them here — NOT in a
+                      // marketplace watch-effect, which would also fire during
+                      // initial hydration and wipe the AI-auto-filled category.
+                      setValue('categoryId', '', { shouldValidate: false });
+                      setValue('parentCategoryId', '', { shouldValidate: false });
+                      setValue('parentCategoryName', '', { shouldValidate: false });
+                      setValue('customSubcategory', '', { shouldValidate: false });
                     }}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: active }}

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -48,7 +48,7 @@ export function useDetailController() {
     resolver: zodResolver(detailSchema),
     defaultValues: emptyDetailDefaults(),
   });
-  const { handleSubmit, reset, watch, setValue } = form;
+  const { handleSubmit, reset } = form;
 
   const draft = useScanDraft((s) => s.current);
   useEffect(() => {
@@ -59,28 +59,11 @@ export function useDetailController() {
     reset(draftToFormValues(draft));
   }, [draft, reset]);
 
-  // W3 (scan_v3): clear categoryId + categoryName when the user switches
-  // marketplaces. Web parity — `NewSubmissionUploadPage.tsx:230-238` does
-  // the same. Skip the initial hydration (the draftToFormValues effect above
-  // legitimately sets marketplace AND categoryId together; no drift) by
-  // tracking the previous marketplace in a ref and only reacting to
-  // user-driven changes after that first set.
-  const watchedMarketplace = watch('marketplace');
-  const prevMarketplaceRef = useRef<string | undefined>(undefined);
-  // setValue calls inside the effect ARE the effect's intent — synchronize
-  // categoryId/categoryName with a user-driven marketplace transition. The
-  // setState-in-effect rule's "compute in render" suggestion doesn't fit:
-  // we need to detect the transition (compare prev to current via ref) and
-  // emit the side effect exactly once per change.
-  useEffect(() => {
-    const prev = prevMarketplaceRef.current;
-    prevMarketplaceRef.current = watchedMarketplace;
-    if (prev === undefined || prev === watchedMarketplace) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setValue('categoryId', '', { shouldValidate: false });
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setValue('categoryName', '', { shouldValidate: false });
-  }, [watchedMarketplace, setValue]);
+  // Clearing categoryId/categoryName when the marketplace changes is handled in
+  // MarketplaceCard's onPress (user-driven only). A watch-effect here wrongly
+  // fired during initial hydration — the form's default marketplace ('101lab')
+  // flips to the AI-suggested one ('101it'), which looked like a user switch and
+  // wiped the auto-filled category before the category tree even loaded.
 
   const addMorePhotos = async () => {
     if (!draft) return;

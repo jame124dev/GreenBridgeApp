@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Controller, useFormContext } from 'react-hook-form';
@@ -110,7 +110,11 @@ export function CategoryConditionCard() {
   const enBridgeSettled =
     isAlreadyEn || enCategories.isSuccess || enCategories.isError;
   useEffect(() => {
-    if (!categories.data) return;
+    // Wait for a NON-EMPTY tree. React Query briefly yields a defined-but-empty
+    // {categories:[],options:[]} while loading; running against it would judge a
+    // valid AI categoryId (e.g. a parent id like "5421") as invalid and wipe it
+    // before the real tree arrives — the category would then never auto-fill.
+    if (!categories.data?.categories?.length) return;
     if (!enBridgeSettled) return;
     // Never wipe the "Other" sentinel — it's intentionally not in `options`,
     // so the validity check below would otherwise clear it on every render.
@@ -159,22 +163,10 @@ export function CategoryConditionCard() {
     setValue,
   ]);
 
-  // Marketplace switch invalidates the category tree entirely. If the seller
-  // had "Other" selected, the sentinel + typed brand are stale (they belonged
-  // to a parent in the old tree), so reset all Other state. Skips the first
-  // run via a ref so an initial-render marketplace value doesn't wipe a
-  // freshly-hydrated draft's Other selection.
-  const prevMarketplaceRef = useRef(marketplace);
-  useEffect(() => {
-    if (prevMarketplaceRef.current === marketplace) return;
-    prevMarketplaceRef.current = marketplace;
-    if (getValues('categoryId') === OTHER_SUBCATEGORY_ID) {
-      setValue('categoryId', '', { shouldValidate: false });
-    }
-    setValue('customSubcategory', '');
-    setValue('parentCategoryId', '');
-    setValue('parentCategoryName', '');
-  }, [marketplace, getValues, setValue]);
+  // NOTE: clearing the category/subcategory + Other fields on a marketplace
+  // change is handled in MarketplaceCard's onPress (user-driven only). Doing it
+  // here via a watch-effect wrongly fired during initial hydration (the form's
+  // default marketplace flips to the AI's), wiping the auto-filled category.
 
   const toggleCondition = (key: ConditionKey) => {
     const next = selectedConditions.includes(key)
