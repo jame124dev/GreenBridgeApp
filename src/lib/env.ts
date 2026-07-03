@@ -4,6 +4,46 @@ export function getExpoExtra() {
   return Constants.expoConfig?.extra ?? {};
 }
 
+/** NODE base URL (auth, GCS upload, product/batch fetch, smart-detect v2). */
+export function getGreenbidzApiUrl(): string {
+  return (getExpoExtra().GREENBIDZ_API_URL as string | undefined) ?? '';
+}
+
+/**
+ * ASSISTANT (Python FastAPI) base URL — chat stream, detect stream (Route B),
+ * WTB, handoff. Defaulted in `app.config.ts` to `https://ai.greenbidz.com`, so
+ * this is non-empty even without an `AI_BASE_URL` in `.env`.
+ */
+export function getAiBaseUrl(): string {
+  return (getExpoExtra().AI_BASE_URL as string | undefined) ?? '';
+}
+
+/**
+ * Socket.io server origin for the buyer↔seller messages (Node). The web uses a
+ * separate `VITE_SOCKET_URL` that is just the API host WITHOUT the `/api/v1`
+ * suffix (web `:4000/api/v1/` → socket `:4000`). We mirror that: honor an
+ * explicit `SOCKET_URL` from extra if set, else derive it from
+ * `GREENBIDZ_API_URL` by stripping a trailing `/api/v1` (+ any trailing slash).
+ */
+export function getSocketUrl(): string {
+  const explicit = (getExpoExtra().SOCKET_URL as string | undefined)?.trim();
+  if (explicit) return explicit.replace(/\/$/, '');
+  const api = getGreenbidzApiUrl().replace(/\/$/, '');
+  return api.replace(/\/api\/v\d+$/, '');
+}
+
+/**
+ * 101 Lab marketplace web origin — the Browse tab loads `${MARKETPLACE_URL}
+ * /buyer-marketplace?app=1` inside a WebView. Honor an explicit
+ * `EXPO_PUBLIC_MARKETPLACE_URL` (via app.config extra), else default to the
+ * live site. No trailing slash.
+ */
+export function getMarketplaceUrl(): string {
+  const extra = getExpoExtra().MARKETPLACE_URL as string | undefined;
+  const fromEnv = process.env.EXPO_PUBLIC_MARKETPLACE_URL;
+  return (extra ?? fromEnv ?? 'https://101lab.co').replace(/\/$/, '');
+}
+
 export function isAuthEnvConfigured(): boolean {
   const extra = getExpoExtra();
   return Boolean(extra.GREENBIDZ_API_URL && extra.X_SYSTEM_KEY);
