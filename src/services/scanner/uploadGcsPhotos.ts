@@ -118,6 +118,13 @@ export async function uploadGcsDocuments(
   const fd = new FormData();
   fd.append('sellerId', String(opts.sellerId));
   if (opts.sessionId) fd.append('sessionId', opts.sessionId);
+  // Skip the server-side AI content gate (same as the web sell-flow's fast
+  // path). Without this, `/gcs/upload` runs a "valid marketplace product?"
+  // check and REJECTS non-product/blank images → returns `files:[]` +
+  // `rejected:[…]` → the caller throws "GCS upload returned no files". The AI
+  // detect step downstream does its own identification, so the gate is redundant
+  // here and just blocks legitimate uploads.
+  fd.append('validate', 'false');
   for (const doc of documents) {
     await appendDocument(fd, doc);
   }
@@ -171,6 +178,13 @@ export async function uploadGcsPhotos(
   const fd = new FormData();
   fd.append('sellerId', String(opts.sellerId));
   if (opts.sessionId) fd.append('sessionId', opts.sessionId);
+  // Skip the server-side AI content gate (same as the web sell-flow's fast
+  // path). Without this, `/gcs/upload` runs a "valid marketplace product?"
+  // check and REJECTS non-product/blank images → returns `files:[]` +
+  // `rejected:[…]` → the caller throws "GCS upload returned no files". The AI
+  // detect step downstream does its own identification, so the gate is redundant
+  // here and just blocks legitimate uploads.
+  fd.append('validate', 'false');
   for (let i = 0; i < photos.length; i++) {
     await appendPhoto(fd, photos[i], i);
   }
@@ -179,7 +193,6 @@ export async function uploadGcsPhotos(
     timeout: 60_000,
     signal: opts.signal,
     headers: { 'Content-Type': 'multipart/form-data' },
-    // Same trick as createProduct.ts — don't let axios JSON-stringify the FD.
     transformRequest: (data) => data,
   });
 

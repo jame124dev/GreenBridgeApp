@@ -8,6 +8,7 @@ import { Button, Card, Screen, Stack, Text } from '@/components/ui';
 import { CONDITION_LABELS, type ConditionKey } from '@/features/scanner/constants';
 import { invalidateRecentSubmissions } from '@/features/scanner/invalidateRecentSubmissions';
 import { routes } from '@/lib/routes';
+import { IS_CUSTOMER } from '@/lib/flags';
 import { useScanDraft } from '@/stores/scanDraftStore';
 import { brand, colors } from '@/constants/theme';
 import { shadows } from '@/theme/shadows';
@@ -199,7 +200,12 @@ export default function SuccessScreen() {
         <Stack gap="xl">
           <Button
             label={t('mobile.success.captureNext')}
-            onPress={() => router.replace(routes.scanHome)}
+            onPress={() =>
+              // Lab customers reach this flow via the chat upload hand-off
+              // (launchSellerScan); send them back to the lab home, not the
+              // seller tab group that scanHome (/(tabs)) points at.
+              router.replace(IS_CUSTOMER ? '/(lab)/(tabs)/home' : routes.scanHome)
+            }
             fullWidth
           />
           {Number.isFinite(pk) && pk > 0 ? (

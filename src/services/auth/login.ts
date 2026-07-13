@@ -1,5 +1,6 @@
 import { greenbidz } from '@/api/greenbidzClient';
 import { getAuthConfigError } from '@/lib/env';
+import { IS_CUSTOMER } from '@/lib/flags';
 import { mmkv } from '@/lib/mmkv';
 import { setSecureItem } from '@/lib/secureStorage';
 import { logout } from './logout';
@@ -79,7 +80,10 @@ export async function login(payload: LoginPayload): Promise<LoginSuccess> {
   const user = payloadData?.data?.user;
   const role = user?.role;
 
-  if (role === 'buyer') {
+  // The customer (lab) build accepts BOTH buyer and seller/admin accounts —
+  // they see the same buy/sell app. The power-seller build (USER_TYPE=seller)
+  // stays seller/admin-only, so buyers are still bounced there.
+  if (role === 'buyer' && !IS_CUSTOMER) {
     await logout();
     throw new LoginError(
       'BUYER_NOT_ALLOWED',
@@ -87,7 +91,10 @@ export async function login(payload: LoginPayload): Promise<LoginSuccess> {
     );
   }
 
-  if (role !== 'admin' && role !== 'seller') {
+  const allowedRoles = IS_CUSTOMER
+    ? ['admin', 'seller', 'buyer']
+    : ['admin', 'seller'];
+  if (!role || !allowedRoles.includes(role)) {
     await logout();
     throw new LoginError('UNKNOWN', 'This account cannot use the mobile app.');
   }

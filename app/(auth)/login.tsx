@@ -11,6 +11,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Button, Card, Input, LanguageSheet, Screen, Text } from '@/components/ui';
 import { loginSchema, type LoginInput } from '@/features/auth/schema';
 import { useLogin } from '@/features/auth/useLogin';
+import { IS_CUSTOMER } from '@/lib/flags';
 import { LoginError } from '@/services/auth/login';
 import { toast } from 'sonner-native';
 import { useAuth } from '@/stores/authStore';
@@ -37,6 +38,13 @@ async function openInAppBrowser(url: string, errorMessage: string) {
     toast.error(errorMessage);
   }
 }
+
+// Post-auth landing route, forked at build time by EXPO_PUBLIC_USER_TYPE: the
+// customer (lab) app or the seller tabs. Mirrors `HOME_ROUTE` in app/_layout.tsx
+// so a `router.replace` here leaves the (auth) group at the right destination —
+// otherwise a customer would land on the seller tabs (the AuthGuard can no
+// longer correct it once we're outside the auth group).
+const HOME_ROUTE = IS_CUSTOMER ? '/(lab)/(tabs)/home' : '/(tabs)';
 
 // Stitch palette (GreenBidz Seller Login Redesign — project 8600847790717829846):
 // authority navy for primary actions, eco-teal as the card accent + footer badge.
@@ -70,7 +78,7 @@ export default function LoginScreen() {
 
   const onSubmit = (values: LoginInput) =>
     mut.mutate(values, {
-      onSuccess: () => router.replace('/(tabs)'),
+      onSuccess: () => router.replace(HOME_ROUTE),
       onError: (err) => {
         if (err instanceof LoginError) {
           if (err.code === 'EMAIL_NOT_VERIFIED') {

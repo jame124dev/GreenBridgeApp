@@ -27,6 +27,7 @@ import type {
 } from 'react-native-webview/lib/WebViewTypes';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, WifiOff } from 'lucide-react-native';
 
 import { Text } from '@/components/ui';
@@ -85,6 +86,7 @@ export default function LabBrowse() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useTabBarHeight();
+  const { t } = useTranslation();
 
   const webRef = useRef<WebView>(null);
   const canGoBackRef = useRef(false);
@@ -258,18 +260,18 @@ export default function LabBrowse() {
             <View style={styles.errorIcon}>
               <WifiOff size={26} color={brand.textMuted} strokeWidth={2} />
             </View>
-            <Text style={styles.errorTitle}>Couldn&apos;t load the marketplace</Text>
+            <Text style={styles.errorTitle}>{t('mobile.labBrowse.errorTitle')}</Text>
             <Text style={styles.errorBody}>
-              Check your connection and try again.
+              {t('mobile.labBrowse.errorBody')}
             </Text>
             <Pressable
               onPress={reload}
               accessibilityRole="button"
-              accessibilityLabel="Retry"
+              accessibilityLabel={t('mobile.labCommon.retry')}
               style={styles.retryBtn}
             >
               <RefreshCw size={16} color={brand.primaryForeground} strokeWidth={2.4} />
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={styles.retryText}>{t('mobile.labCommon.retry')}</Text>
             </Pressable>
           </View>
         ) : null}

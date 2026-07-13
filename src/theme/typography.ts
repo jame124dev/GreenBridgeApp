@@ -17,6 +17,7 @@ export const fonts = {
   semibold: 'Inter_600SemiBold',
   bold: 'Inter_700Bold',
   // Headlines (Hanken Grotesk)
+  headingBold: 'HankenGrotesk_800ExtraBold',
   heading: 'HankenGrotesk_700Bold',
   headingSemibold: 'HankenGrotesk_600SemiBold',
   // Labels / metadata (IBM Plex Sans)

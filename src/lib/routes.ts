@@ -3,6 +3,10 @@ import type { Href } from 'expo-router';
 /** Typed-route-safe paths (regenerate with `npx expo start` if routes change). */
 export const routes = {
   scanHome: '/(tabs)' as Href,
+  /** (lab) full "my listings" view — reached from Home Recent listings "See all". */
+  labListings: '/(lab)/(tabs)/listings' as Href,
+  /** (lab) dedicated notifications page — reached from the header bell. */
+  labNotifications: '/(lab)/notifications' as Href,
   profile: '/(tabs)/profile' as Href,
   scanListingMethod: '/scan/listing-method' as Href,
   scanGroupedReview: '/scan/grouped-review' as Href,

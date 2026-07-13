@@ -20,6 +20,7 @@ import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono';
 import {
   HankenGrotesk_600SemiBold,
   HankenGrotesk_700Bold,
+  HankenGrotesk_800ExtraBold,
 } from '@expo-google-fonts/hanken-grotesk';
 import {
   IBMPlexSans_500Medium,
@@ -30,9 +31,15 @@ import { Toaster } from 'sonner-native';
 
 import { setUnauthorizedHandler } from '@/api/interceptors';
 import { AppSplash } from '@/components/AppSplash';
+import { isSessionExpired } from '@/lib/authSession';
 import { warnMissingEnvInDev } from '@/lib/env';
+import { IS_CUSTOMER } from '@/lib/flags';
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/stores/authStore';
+
+// Post-auth home route for this bundle: the customer (lab) app or the seller
+// tabs. Selected once at build time by the EXPO_PUBLIC_USER_TYPE fork.
+const HOME_ROUTE = IS_CUSTOMER ? '/(lab)/(tabs)/home' : '/(tabs)';
 
 warnMissingEnvInDev();
 
@@ -44,6 +51,25 @@ function AuthGuard({ children }: { children: ReactNode }) {
   const profile = useAuth((s) => s.profile);
   const isPending = useAuth((s) => s.isPending);
   const hydrated = useAuth((s) => s.hydrated);
+  const reset = useAuth((s) => s.reset);
+
+  // Boot guard: a persisted profile whose refresh token has expired is a dead
+  // session — the app looks logged in but every authed call (esp. the AI chat)
+  // is treated as anonymous. Force re-login instead. Fail-open (see
+  // isSessionExpired): only fires when the refresh token is provably expired.
+  useEffect(() => {
+    if (!hydrated || !profile) return;
+    let cancelled = false;
+    void isSessionExpired().then((expired) => {
+      if (!cancelled && expired) {
+        reset();
+        router.replace('/(auth)/login');
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, profile, reset, router]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -62,7 +88,7 @@ function AuthGuard({ children }: { children: ReactNode }) {
     }
 
     if (profile && inAuthGroup) {
-      router.replace('/(tabs)');
+      router.replace(HOME_ROUTE);
     }
   }, [profile, isPending, segments, hydrated, router]);
 
@@ -81,6 +107,7 @@ export default function RootLayout() {
     JetBrainsMono_400Regular,
     HankenGrotesk_600SemiBold,
     HankenGrotesk_700Bold,
+    HankenGrotesk_800ExtraBold,
     IBMPlexSans_500Medium,
     IBMPlexSans_600SemiBold,
     ...MaterialIcons.font,

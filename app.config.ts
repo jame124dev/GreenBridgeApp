@@ -64,10 +64,17 @@ export default (): ExpoConfig => ({
       projectId: '57cd3db7-90b1-4b57-a723-679bfe81ef69',
     },
     GREENBIDZ_API_URL: process.env.GREENBIDZ_API_URL,
+    // ASSISTANT (Python FastAPI) base URL — chat/detect stream, WTB, handoff.
+    // Distinct from GREENBIDZ_API_URL (NODE). Default prod; override with
+    // AI_BASE_URL in .env (e.g. https://dev-ai.greenbidz.com for the dev stack).
+    AI_BASE_URL: process.env.AI_BASE_URL ?? 'https://ai.greenbidz.com',
     QUIPPY_API_URL: process.env.QUIPPY_API_URL,
     X_SYSTEM_KEY: process.env.X_SYSTEM_KEY,
     SITE_TYPE: process.env.SITE_TYPE ?? 'LabGreenbidz',
     WEB_APP_URL: process.env.WEB_APP_URL,
+    // 101 Lab marketplace web origin for the Browse-tab WebView. Default prod
+    // (https://101lab.co) applied in getMarketplaceUrl(); override here.
+    MARKETPLACE_URL: process.env.EXPO_PUBLIC_MARKETPLACE_URL,
     SENTRY_DSN: process.env.SENTRY_DSN,
   },
 });

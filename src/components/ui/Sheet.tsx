@@ -5,6 +5,8 @@ import {
   StyleSheet,
   Text as RNText,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -71,6 +73,8 @@ type SheetOptionProps = {
   indent?: boolean;
   /** Render as a section header (filled bg, uppercase) instead of a card. */
   header?: boolean;
+  /** Optional extra style merged onto the (non-header) card container. */
+  style?: StyleProp<ViewStyle>;
   onPress: () => void;
 };
 
@@ -81,6 +85,7 @@ Sheet.Option = function SheetOption({
   rightAdornment,
   indent = false,
   header = false,
+  style,
   onPress,
 }: SheetOptionProps) {
   if (header) {
@@ -113,6 +118,7 @@ Sheet.Option = function SheetOption({
         styles.option,
         active && styles.optionActive,
         indent && styles.optionIndent,
+        style,
       ]}
     >
       <View style={{ flex: 1, marginRight: 12 }}>

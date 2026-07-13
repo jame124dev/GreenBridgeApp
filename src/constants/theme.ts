@@ -108,8 +108,45 @@ export const brand = {
   tertiaryForeground:'#261900',
 } as const;
 
+// NewVersion customer-app (101LAB) green / buy tokens — added per the
+// foundation color-token prerequisite (NewVersion/00-foundation.md §Colors).
+// These are the marketplace buy/sell accents used by the (lab) route group;
+// reference by name, never scatter these hexes in screens.
+export const greenDarkest = '#0E3B2E'; // dark brand accent (buttons, primary CTA)
+export const greenDark = '#16794A';    // rings, toggle state, processing
+export const greenMedium = '#16A35A';  // success / match ring / progress
+export const greenLight = '#34D08C';   // glows, icon highlights
+export const buyBlue = '#2563EB';      // BUY mode, WTB labels, demand UI
+export const buyBlueDim = '#3B82F6';   // hover / progress
+export const buyBlueSurface = '#EEF3FE'; // buy-mode card bg
+export const warnAmber = '#E8A21A';    // "worth a look", match 91–94%
+
+// Nav-chrome accents (NewVersion/08-bottom-nav.md §3.4). Active tint reuses
+// `greenDarkest` (#0E3B2E); only these three are net-new to the FrostedTabBar.
+export const navIdle = '#9AA89F';      // idle icon + label (no existing near-match)
+export const navBorder = '#E8EEE9';    // top hairline (warmer than divider #eef2f9)
+export const badgeOrange = '#C25E00';  // Matches count pill (distinct from tertiary/warning); deepened from #E8841A so white count text clears WCAG AA (~4.6:1)
+
+// `lab` sub-object — prototype-only light neutrals for the NewVersion
+// customer-app screens (NewVersion/01-home-tell-ai.md §3). Keeps literal
+// hexes out of components; the green/buy tokens above are NOT redefined here.
+export const lab = {
+  bg: '#F4F7F4',
+  ink: '#10201A', inkSub: '#5E6E66', inkMeta: '#8A988F', inkFaint: '#90A096', inkChipSub: '#7C8A82', inkLabel: '#9AA89F',
+  hairline: '#E7EDE8',         // toggle track + chip border
+  utilBorder: '#E1E8E3', utilBg: '#F6F8F6', utilIcon: '#34503F',
+  pillBg: '#EAF3EC', chevron: '#B6C2BA',
+  sellBorder: '#BFE0CC', buyBorder: '#C3D5FA',
+  chipSellBg: '#EAF6EE', chipBuyBg: '#EAF1FE',
+  sellShadow: 'rgba(22,121,74,.55)', buyShadow: 'rgba(37,99,235,.45)',
+  toggleThumbShadow: 'rgba(14,59,46,.25)', composerShadow: 'rgba(14,59,46,.4)',
+} as const;
+
 export const gradients = {
   hero: ['#14452f', '#236b48'] as const,
+  // Soft brand wash behind lab-screen heroes — mint tint fading to the base bg.
+  // Gives the flat neutral screens depth ("app touch"). Used via <LabScreenBg>.
+  labWash: ['#E4F1E8', '#EDF4EF', '#F4F7F4'] as const,
 } as const;
 
 // Re-exports of legacy `@/theme` non-color surfaces so scan-tree files can

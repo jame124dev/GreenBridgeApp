@@ -7,6 +7,8 @@ import { toast } from 'sonner-native';
 import { Text } from '@/components/ui/Text';
 import { haptics } from '@/lib/haptics';
 import { brand } from '@/constants/theme';
+import { IS_CUSTOMER } from '@/lib/flags';
+import { routes } from '@/lib/routes';
 
 interface Props {
   /** Trigger the parent's sign-out flow (`useLogout` mutation). */
@@ -23,7 +25,10 @@ export function QuickActionsStrip({ onSignOut, signingOut }: Props) {
 
   const goListings = () => {
     haptics.tap();
-    router.push('/(tabs)/history');
+    // Fork-aware: the customer (lab) build has no seller (tabs) shell — routing
+    // there drops the user into the seller Home/History/Me nav. Send lab users
+    // to the in-shell "My listings" page (keeps the lab tab bar, Account active).
+    router.push(IS_CUSTOMER ? routes.labListings : '/(tabs)/history');
   };
 
   const showHelp = () => {

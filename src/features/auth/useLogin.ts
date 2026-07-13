@@ -15,7 +15,7 @@ export function useLogin() {
         id: res.user.id,
         email: res.user.email,
         name: res.user.name,
-        role: res.user.role as 'admin' | 'seller',
+        role: res.user.role as 'admin' | 'seller' | 'buyer',
         company: res.company,
       });
     },

@@ -28,3 +28,30 @@ export const SMART_DETECT_ENABLED = process.env.EXPO_PUBLIC_SMART_DETECT !== '0'
  * SSE client is native-only; see `smartDetectV2Enabled`.)
  */
 export const SMART_DETECT_V2_ENABLED = process.env.EXPO_PUBLIC_SMART_DETECT_V2 === '1';
+
+/**
+ * Build-time user-type fork. Selects which app the bundle targets: the seller
+ * dashboard (default) or the new customer app. Set `EXPO_PUBLIC_USER_TYPE` to
+ * `customer` in `.env` and restart Metro; any other value (or unset) is seller.
+ * Routing off this flag is the Shell phase — this module only reads it.
+ */
+export const USER_TYPE = (process.env.EXPO_PUBLIC_USER_TYPE === 'customer' ? 'customer' : 'seller') as 'seller' | 'customer';
+export const IS_CUSTOMER = USER_TYPE === 'customer';
+
+/**
+ * (lab) customer-app dynamic flags (NewVersion/dynamic/06-roadmap-risks.md §4).
+ * All **opt-in, default OFF** — with a flag off the corresponding surface reads
+ * the static `demo.ts` path exactly as the Phase-1 build (no half-wired states).
+ * Build-time `EXPO_PUBLIC_*`, inlined by Expo → a Metro restart applies a change,
+ * not a hot-reload. **Client flag ⊆ backend flag:** never turn one ON before its
+ * backend counterpart is enabled on the target env, or the endpoint 404s.
+ */
+
+/** P1 streaming composer/Processing → ASSISTANT `POST /chat/stream`. Default OFF. */
+export const LAB_CHAT_ENABLED = process.env.EXPO_PUBLIC_LAB_CHAT === '1';
+
+/** P3 Want-To-Buy save/list/matches. Backend counterpart: `wtb_enabled`. Default OFF. */
+export const WTB_ENABLED = process.env.EXPO_PUBLIC_WTB === '1';
+
+/** P2 attachment turns → ASSISTANT `POST /detect/stream`. Backend: `detect_stream_enabled`. Default OFF. */
+export const DETECT_STREAM_ENABLED = process.env.EXPO_PUBLIC_DETECT_STREAM === '1';
