@@ -13,6 +13,7 @@ const LANG_OPTIONS = [
   { code: 'zh-Hans', label: '简', name: '简体中文' },
   { code: 'ja', label: 'JA', name: '日本語' },
   { code: 'th', label: 'TH', name: 'ภาษาไทย' },
+  { code: 'vi', label: 'VI', name: 'Tiếng Việt' },
 ] as const;
 
 export type LanguageCode = (typeof LANG_OPTIONS)[number]['code'];

@@ -8,10 +8,11 @@ import zhHant from './locales/zh-Hant.json';
 import zhHans from './locales/zh-Hans.json';
 import ja from './locales/ja.json';
 import th from './locales/th.json';
+import vi from './locales/vi.json';
 
 // Explicit BCP-47 script subtags: zh-Hant = Traditional, zh-Hans = Simplified.
 // (The app's original bare `zh` was Traditional — see normalizeLanguage.)
-const SUPPORTED = ['en', 'zh-Hant', 'zh-Hans', 'ja', 'th'] as const;
+const SUPPORTED = ['en', 'zh-Hant', 'zh-Hans', 'ja', 'th', 'vi'] as const;
 export type SupportedLanguage = (typeof SUPPORTED)[number];
 
 const LANG_KEY = 'i18n.language';
@@ -30,6 +31,7 @@ export function normalizeLanguage(raw?: string | null): SupportedLanguage | null
   }
   if (l.startsWith('ja')) return 'ja';
   if (l.startsWith('th')) return 'th';
+  if (l.startsWith('vi')) return 'vi';
   if (l.startsWith('en')) return 'en';
   return null;
 }
@@ -55,6 +57,7 @@ void i18n.use(initReactI18next).init({
     'zh-Hans': { translation: zhHans },
     ja: { translation: ja },
     th: { translation: th },
+    vi: { translation: vi },
   },
   lng: loadStoredLanguage(),
   fallbackLng: 'en',
@@ -89,6 +92,7 @@ const LANGUAGE_BADGES: Record<SupportedLanguage, string> = {
   'zh-Hans': '简',
   ja: 'JA',
   th: 'TH',
+  vi: 'VI',
 };
 
 /** Header chip badge for the current language; tolerant of device/legacy codes. */
