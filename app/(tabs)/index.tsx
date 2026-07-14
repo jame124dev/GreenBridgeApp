@@ -26,8 +26,8 @@ import { useAuth } from '@/stores/authStore';
 import { useScanDraft } from '@/stores/scanDraftStore';
 import { useSellerLocation } from '@/features/location/useSellerLocation';
 import { routes } from '@/lib/routes';
+import { languageBadge } from '@/i18n';
 
-const LANG_LABELS: Record<string, string> = { en: 'EN', zh: 'ZH', ja: 'JA', th: 'TH' };
 
 export default function ScanHomeScreen() {
   const profile = useAuth((s) => s.profile);
@@ -35,7 +35,7 @@ export default function ScanHomeScreen() {
   const hydrated = useScanDraft((s) => s.hydrated);
 
   const { t, i18n } = useTranslation();
-  const langLabel = LANG_LABELS[i18n.language] ?? i18n.language.toUpperCase();
+  const langLabel = languageBadge(i18n.language);
   const [langSheetOpen, setLangSheetOpen] = useState(false);
 
   const { location, detecting, detect } = useSellerLocation();

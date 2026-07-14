@@ -4,10 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { haptics } from '@/lib/haptics';
 import { fonts } from '@/theme/typography';
 
-// Languages: same set the web supports (101lab-2/src/i18n/config.ts).
+// Languages: Chinese is split into Traditional (zh-Hant) and Simplified
+// (zh-Hans); the label is a single distinguishing glyph since a shared "ZH"
+// would be ambiguous between the two.
 const LANG_OPTIONS = [
   { code: 'en', label: 'EN', name: 'English' },
-  { code: 'zh', label: 'ZH', name: '中文' },
+  { code: 'zh-Hant', label: '繁', name: '繁體中文' },
+  { code: 'zh-Hans', label: '简', name: '简体中文' },
   { code: 'ja', label: 'JA', name: '日本語' },
   { code: 'th', label: 'TH', name: 'ภาษาไทย' },
 ] as const;

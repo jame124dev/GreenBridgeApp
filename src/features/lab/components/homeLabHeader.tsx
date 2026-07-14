@@ -7,13 +7,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react-native';
 import { HStack } from '@/components/ui';
+import { languageBadge } from '@/i18n';
 import { fonts, greenDarkest, lab, radius, spacing } from '@/constants/theme';
 import { OrbitLogo } from './homeOrbitLogo';
 import { LabLocationChip, LabSetLocationChip } from './LabLocationChip';
 import { NotificationBell } from '@/features/lab/notifications/NotificationBell';
 import type { ResolvedLocation } from '@/services/location/getDeviceLocation';
 
-const LANG_LABELS: Record<string, string> = { en: 'EN', zh: 'ZH', ja: 'JA', th: 'TH' };
 
 type Props = {
   /** Open the language picker (LanguageSheet). Omit to hide the language chip. */
@@ -29,7 +29,7 @@ type Props = {
 
 export function LabHeader({ onLanguagePress, location }: Props) {
   const { t, i18n } = useTranslation();
-  const langLabel = LANG_LABELS[i18n.language] ?? i18n.language.toUpperCase();
+  const langLabel = languageBadge(i18n.language);
 
   const hasLocationCache = Boolean(location?.value?.label?.trim());
   const showSet =

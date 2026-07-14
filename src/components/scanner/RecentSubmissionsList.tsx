@@ -30,7 +30,7 @@ function statusLabel(tone: StatusTone, t: (k: string) => string): string {
 
 function pickTitle(item: SellerBatch, lang: string): string {
   const i = item.titleI18n;
-  if (lang === 'zh') return i?.zh || i?.en || item.title || '';
+  if (lang.startsWith('zh')) return i?.zh || i?.en || item.title || '';
   if (lang === 'ja') return i?.ja || i?.en || item.title || '';
   if (lang === 'th') return i?.th || i?.en || item.title || '';
   return i?.en || item.title || '';

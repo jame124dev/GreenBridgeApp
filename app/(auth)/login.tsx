@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import { Eye, EyeOff, Globe, Leaf, Lock, Mail } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
+import { languageBadge } from '@/i18n';
 
 import { Button, Card, Input, LanguageSheet, Screen, Text } from '@/components/ui';
 import { loginSchema, type LoginInput } from '@/features/auth/schema';
@@ -25,7 +26,6 @@ import { getBranding } from '@/theme/branding';
 // all do this for OAuth + password reset flows).
 const FORGOT_PASSWORD_URL = 'https://seller.greenbidz.com/forgot-password';
 const CONTACT_URL = 'https://seller.greenbidz.com/contact';
-const LANG_LABELS: Record<string, string> = { en: 'EN', zh: 'ZH', ja: 'JA', th: 'TH' };
 
 async function openInAppBrowser(url: string, errorMessage: string) {
   try {
@@ -62,7 +62,7 @@ export default function LoginScreen() {
   const branding = getBranding();
   const [showPassword, setShowPassword] = useState(false);
   const [langSheetOpen, setLangSheetOpen] = useState(false);
-  const langLabel = LANG_LABELS[i18n.language] ?? i18n.language.toUpperCase();
+  const langLabel = languageBadge(i18n.language);
 
   const {
     control,
