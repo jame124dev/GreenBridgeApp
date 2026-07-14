@@ -35,6 +35,7 @@ import { isSessionExpired } from '@/lib/authSession';
 import { warnMissingEnvInDev } from '@/lib/env';
 import { IS_CUSTOMER } from '@/lib/flags';
 import { queryClient } from '@/lib/queryClient';
+import { initOneSignal, loginOneSignal } from '@/lib/onesignal';
 import { useAuth } from '@/stores/authStore';
 
 // Post-auth home route for this bundle: the customer (lab) app or the seller
@@ -113,13 +114,22 @@ export default function RootLayout() {
     ...MaterialIcons.font,
   });
 
+  const profileId = useAuth((s) => s.profile?.id);
+
   useEffect(() => {
     hydrate();
     setUnauthorizedHandler(() => {
       reset();
       router.replace('/(auth)/login');
     });
+    // OneSignal push foundation: init + permission prompt once on boot.
+    initOneSignal();
   }, [hydrate, reset, router]);
+
+  // Identify the signed-in user to OneSignal so backend external_id sends land.
+  useEffect(() => {
+    if (profileId != null) loginOneSignal(profileId);
+  }, [profileId]);
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
@@ -138,7 +148,9 @@ export default function RootLayout() {
                 <Stack screenOptions={{ headerShown: false }} />
               </AuthGuard>
             </QueryClientProvider>
-            <Toaster />
+            {/* Bottom-anchored so the notification card floats over content
+                and clears the top header; offset lifts it above the tab bar. */}
+            <Toaster position="bottom-center" offset={96} />
           </SafeAreaProvider>
         </KeyboardProvider>
       </BottomSheetModalProvider>

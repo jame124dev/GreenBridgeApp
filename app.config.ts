@@ -55,6 +55,14 @@ export default (): ExpoConfig => ({
         resizeMode: 'contain',
       },
     ],
+    [
+      'onesignal-expo-plugin',
+      {
+        // iOS APNs environment for the built app. 'development' for dev-client /
+        // TestFlight sandbox; switch to 'production' for App Store builds.
+        mode: 'development',
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,
