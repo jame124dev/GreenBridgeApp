@@ -2,15 +2,17 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { haptics } from '@/lib/haptics';
+import { normalizeLanguage } from '@/i18n';
 import { fonts } from '@/theme/typography';
 
-// Languages: Chinese is split into Traditional (zh-Hant) and Simplified
-// (zh-Hans); the label is a single distinguishing glyph since a shared "ZH"
-// would be ambiguous between the two.
+// Languages: Chinese is split into Traditional (zh-hant) and Simplified
+// (zh-hans); the label is a single distinguishing glyph since a shared "ZH"
+// would be ambiguous between the two. Codes are LOWERCASE to match the i18next
+// resource keys (see src/i18n/index.ts).
 const LANG_OPTIONS = [
   { code: 'en', label: 'EN', name: 'English' },
-  { code: 'zh-Hant', label: '繁', name: '繁體中文' },
-  { code: 'zh-Hans', label: '简', name: '简体中文' },
+  { code: 'zh-hant', label: '繁', name: '繁體中文' },
+  { code: 'zh-hans', label: '简', name: '简体中文' },
   { code: 'ja', label: 'JA', name: '日本語' },
   { code: 'th', label: 'TH', name: 'ภาษาไทย' },
   { code: 'vi', label: 'VI', name: 'Tiếng Việt' },
@@ -30,7 +32,8 @@ type Props = {
  */
 export function LanguageSheet({ visible, onClose }: Props) {
   const { t, i18n } = useTranslation();
-  const current = i18n.language;
+  // Normalize so the active check + comparison are robust to any code casing.
+  const current = normalizeLanguage(i18n.language) ?? i18n.language;
 
   const pick = (code: LanguageCode) => {
     if (code !== current) {

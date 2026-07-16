@@ -286,12 +286,12 @@ export function LocationCard() {
                     }}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: active }}
-                    accessibilityLabel={opt.label}
+                    accessibilityLabel={t(`mobile.detail.installOption.${opt.value}.label`, opt.label)}
                   >
                     <Text
                       className={`font-label-medium text-lg ${active ? 'text-brand-primary-foreground' : 'text-brand-text-muted'}`}
                     >
-                      {opt.label}
+                      {t(`mobile.detail.installOption.${opt.value}.label`, opt.label)}
                     </Text>
                   </Pressable>
                 );
@@ -299,7 +299,10 @@ export function LocationCard() {
             </View>
             {installation ? (
               <Text className="font-sans text-sm text-brand-text-muted mt-xs">
-                {INSTALLATION_OPTIONS.find((o) => o.value === installation)?.hint}
+                {t(
+                  `mobile.detail.installOption.${installation}.hint`,
+                  INSTALLATION_OPTIONS.find((o) => o.value === installation)?.hint ?? '',
+                )}
               </Text>
             ) : null}
           </View>

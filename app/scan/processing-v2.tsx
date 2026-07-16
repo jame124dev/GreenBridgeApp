@@ -46,12 +46,12 @@ const EMERALD = '#10b981'; // AI / active accent (matches the rest of the scan f
 // still emits the legacy alias for ONE release. We normalize at receive-time
 // (see `normalizePhase` below) so TIMELINE stays at 5 visible rows. Drop the
 // alias from `normalizePhase` after the backend stops emitting it.
-const TIMELINE: { phase: StagePhase; label: string }[] = [
-  { phase: 'validating', label: 'Validating' },
-  { phase: 'preparing_documents', label: 'Reading documents' },
-  { phase: 'ai_running', label: 'Uploading & detecting' },
-  { phase: 'extracting_products', label: 'Identifying products' },
-  { phase: 'done', label: 'Done' },
+const TIMELINE: { phase: StagePhase; key: string; label: string }[] = [
+  { phase: 'validating', key: 'validating', label: 'Validating' },
+  { phase: 'preparing_documents', key: 'readingDocuments', label: 'Reading documents' },
+  { phase: 'ai_running', key: 'uploadingDetecting', label: 'Uploading & detecting' },
+  { phase: 'extracting_products', key: 'identifyingProducts', label: 'Identifying products' },
+  { phase: 'done', key: 'done', label: 'Done' },
 ];
 const PHASE_ORDER = TIMELINE.map((t) => t.phase);
 
@@ -496,7 +496,7 @@ export default function ProcessingV2Screen() {
         >
           <Sparkles size={13} color={EMERALD} />
           <Text style={{ fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.5, color: '#0f9b6c' }}>
-            AI ANALYZING
+            {t('mobile.processingV2.aiAnalyzing', 'AI ANALYZING')}
           </Text>
         </View>
 
@@ -511,7 +511,11 @@ export default function ProcessingV2Screen() {
         <View style={{ marginTop: 24 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
             <Text style={{ fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.5, color: brand.mutedForeground }}>
-              STEP {stepNum} OF {TIMELINE.length}
+              {t('mobile.processingV2.stepOf', {
+                current: stepNum,
+                total: TIMELINE.length,
+                defaultValue: 'STEP {{current}} OF {{total}}',
+              })}
             </Text>
             <Text style={{ fontFamily: fonts.mono, fontSize: 11, color: brand.primary }}>
               {Math.round(progress * 100)}%
@@ -539,9 +543,14 @@ export default function ProcessingV2Screen() {
               <FileText size={18} color={brand.mutedForeground} />
             </View>
             <Text style={{ fontFamily: fonts.mono, fontSize: 12, color: brand.foreground }}>
-              {docInfo.count === 1
-                ? `Document 1 ready · ${docInfo.pages} pages`
-                : `${docInfo.count} documents ready · ${docInfo.pages} pages`}
+              {t('mobile.processingV2.documentsReady', {
+                count: docInfo.count,
+                pages: docInfo.pages,
+                defaultValue:
+                  docInfo.count === 1
+                    ? 'Document ready · {{pages}} pages'
+                    : '{{count}} documents ready · {{pages}} pages',
+              })}
             </Text>
           </View>
         ) : null}
@@ -553,7 +562,11 @@ export default function ProcessingV2Screen() {
             const current = phaseIndex === i;
             const productSub =
               current && row.phase === 'extracting_products' && productTotal
-                ? `Analyzing ${Math.min(products.length + 1, productTotal)} of ${productTotal}…`
+                ? t('mobile.processingV2.analyzingCount', {
+                    current: Math.min(products.length + 1, productTotal),
+                    total: productTotal,
+                    defaultValue: 'Analyzing {{current}} of {{total}}…',
+                  })
                 : null;
             return (
               <View key={row.phase} style={{ paddingLeft: 22, marginBottom: i === TIMELINE.length - 1 ? 0 : 22 }}>
@@ -588,7 +601,7 @@ export default function ProcessingV2Screen() {
                     textDecorationLine: done ? 'line-through' : 'none',
                   }}
                 >
-                  {row.label}
+                  {t(`mobile.processingV2.phase.${row.key}`, row.label)}
                 </Text>
                 {current && (phaseMsg || productSub) ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 }}>
@@ -642,7 +655,7 @@ export default function ProcessingV2Screen() {
                   {Math.round(detection.confidence * 100)}%
                 </Text>
                 <Text style={{ fontFamily: fonts.mono, fontSize: 8, letterSpacing: 0.5, color: brand.mutedForeground }}>
-                  CONFIDENT
+                  {t('mobile.processingV2.confident', 'CONFIDENT')}
                 </Text>
               </View>
             </View>

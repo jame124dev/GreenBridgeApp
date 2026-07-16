@@ -405,10 +405,12 @@ function draftFromSmartFields(
     dimensions: fields.dimensions,
     co2Emissions: fields.co2Emissions,
     grade: fields.grade,
-    // W2 (scan_v3): seed marketplace from AI suggestion when present.
-    // emptyDraft already supplied env-default via base.marketplace; only
-    // override when the AI gave a recognized value (non-null).
-    marketplace: fields.suggestedMarketplace ?? base.marketplace,
+    // Marketplace is LOCKED to this deployment's site (like the web:
+    // `lockedMarketplace = marketplaceFromSiteType(SITE_TYPE)`). This build is
+    // 101lab-only, so we ignore the AI's detected site_type for the marketplace
+    // and always use the env value — otherwise a mis-detected site_type could
+    // flip the form to 101it/101machine (wrong categories, wrong submit URL).
+    marketplace: marketplaceFromSiteType(getSiteType()),
     aiPrices: fields.aiPrices,
     ai: fields.ai,
     aiSkipped: false,

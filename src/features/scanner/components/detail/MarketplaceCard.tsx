@@ -14,10 +14,19 @@ import { FieldLabel } from './FieldLabel';
  * 101 Machines / Recycle / IT → machine categories). Keeping it visually
  * adjacent to the category card makes the dependency obvious.
  */
+// This build ships a single marketplace (101lab — the marketplace is LOCKED to
+// the deployment's SITE_TYPE, mirroring the web's `lockedMarketplace`). With no
+// real choice to offer, the picker is hidden. Flip to `false` (or gate on a
+// supported-marketplaces config) to bring the selector back for a future
+// multi-marketplace build.
+const MARKETPLACE_LOCKED = true;
+
 export function MarketplaceCard() {
   const { t } = useTranslation();
   const { control, watch, setValue } = useFormContext<DetailFormInput>();
   const marketplace = watch('marketplace');
+
+  if (MARKETPLACE_LOCKED) return null;
 
   return (
     <View className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl gap-sm">

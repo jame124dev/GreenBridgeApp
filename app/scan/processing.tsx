@@ -456,11 +456,11 @@ export default function ProcessingScreen() {
               dimensions:   ai.dimensions ?? '',
               co2Emissions: ai.co2Emissions ?? '',
               grade:        ai.grade ?? 'A',
-              // W2 (scan_v3): only override marketplace when the AI gave a
-              // recognized value. Null/undefined means "AI said nothing
-              // useful" — preserve whatever marketplace is already on the
-              // draft (env default from emptyDraft).
-              ...(ai.suggestedMarketplace ? { marketplace: ai.suggestedMarketplace } : {}),
+              // Marketplace is LOCKED to this deployment's site (web parity:
+              // `lockedMarketplace = marketplaceFromSiteType(SITE_TYPE)`). This
+              // build is 101lab-only, so we never let the AI's detected
+              // site_type flip the marketplace — the draft keeps its env
+              // default from emptyDraft.
               // ProfitIntelligenceCard tier prices. Only patch when the AI
               // returned them — null would clobber a prior value if the user
               // navigated back into a finished draft.

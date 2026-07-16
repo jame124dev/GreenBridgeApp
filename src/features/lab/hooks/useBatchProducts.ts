@@ -30,7 +30,8 @@ import {
 } from '@/features/lab/data/batchProductApi';
 import type { DraftPayload } from '@/features/lab/data/listingDraftApi';
 import type { QueueData, QueueItem } from '@/features/lab/streaming/labStreamTypes';
-import { newMsgId, type AiMsg } from '@/features/lab/chat/types';
+import { newMsgId } from '@/features/lab/chat/types';
+import { textContent, type Message } from '@/features/lab/chat/types/message';
 import type { TurnCard } from '@/features/lab/stores/threadStore';
 
 export type UseBatchProducts = {
@@ -50,25 +51,36 @@ export type UseBatchProducts = {
 
 /** Build the grouped {queue, draft} bot message from a next/load/split response
  *  so the overview pager + active draft collapse together as one unit. */
-function queueDraftMessage(
-  queue: QueueData,
-  payload: DraftPayload,
-): AiMsg {
+function queueDraftMessage(queue: QueueData, payload: DraftPayload): Message {
   const cards: TurnCard[] = [
     { type: 'listing_queue', data: queue },
     { type: 'listing_draft', data: payload },
   ];
-  return { id: newMsgId('bot'), role: 'bot', text: '', cards };
+  return {
+    id: newMsgId('assistant'),
+    role: 'assistant',
+    createdAt: Date.now(),
+    reason: 'complete',
+    content: textContent(''),
+    cards,
+  };
 }
 
-/** A single-card bot message (used for combine → one listing, and the gate). */
-function cardMessage(type: string, data: unknown): AiMsg {
-  return { id: newMsgId('bot'), role: 'bot', text: '', cards: [{ type, data }] };
+/** A single-card assistant message (used for combine → one listing, and the gate). */
+function cardMessage(type: string, data: unknown): Message {
+  return {
+    id: newMsgId('assistant'),
+    role: 'assistant',
+    createdAt: Date.now(),
+    reason: 'complete',
+    content: textContent(''),
+    cards: [{ type, data }],
+  };
 }
 
 export function useBatchProducts(
   conversationId: string,
-  appendMessages: (msgs: AiMsg[]) => void,
+  appendMessages: (msgs: Message[]) => void,
 ): UseBatchProducts {
   const [busy, setBusy] = useState(false);
   // Single-flight: one live request at a time. A boolean ref is enough — these
@@ -78,7 +90,7 @@ export function useBatchProducts(
   /** Run one batch action under the single-flight guard. `fn` returns the
    *  message(s) to append (or null to append nothing). */
   const run = useCallback(
-    async (fn: () => Promise<AiMsg[] | null>) => {
+    async (fn: () => Promise<Message[] | null>) => {
       if (inFlightRef.current) return;
       inFlightRef.current = true;
       setBusy(true);
@@ -102,7 +114,7 @@ export function useBatchProducts(
     (res: {
       status: number;
       body: NextProductResponse | Record<string, unknown> | null;
-    }): AiMsg[] | null => {
+    }): Message[] | null => {
       if (res.status === 401) return [cardMessage('listing_gate', { reason: 'login' })];
       const body = res.body as NextProductResponse | null;
       if (!body) return null;

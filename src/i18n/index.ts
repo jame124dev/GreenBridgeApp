@@ -10,9 +10,14 @@ import ja from './locales/ja.json';
 import th from './locales/th.json';
 import vi from './locales/vi.json';
 
-// Explicit BCP-47 script subtags: zh-Hant = Traditional, zh-Hans = Simplified.
-// (The app's original bare `zh` was Traditional — see normalizeLanguage.)
-const SUPPORTED = ['en', 'zh-Hant', 'zh-Hans', 'ja', 'th', 'vi'] as const;
+// Chinese is split into Traditional / Simplified. We use LOWERCASE BCP-47 codes
+// (`zh-hant` / `zh-hans`) everywhere — resource keys, supportedLngs, and the
+// picker — combined with i18next's `lowerCaseLng`. i18next reformats a
+// mixed-case script subtag (`zh-Hant`) inconsistently, so the resource lookup
+// misses the bundle and silently falls back to English; forcing lowercase on
+// both the codes and the lookup keeps them matched. (The app's original bare
+// `zh` was Traditional — see normalizeLanguage.)
+const SUPPORTED = ['en', 'zh-hant', 'zh-hans', 'ja', 'th', 'vi'] as const;
 export type SupportedLanguage = (typeof SUPPORTED)[number];
 
 const LANG_KEY = 'i18n.language';
@@ -20,14 +25,14 @@ const LANG_KEY = 'i18n.language';
 /** Map any stored value or device locale (e.g. `zh`, `zh-TW`, `zh-Hans-CN`,
  *  `en-US`) onto one of our supported languages, or null if unsupported.
  *  Chinese resolves to Traditional for TW/HK/MO (and the legacy bare `zh`),
- *  Simplified for CN/SG/`Hans`. */
+ *  Simplified for CN/SG/`Hans`. Returns lowercase codes to match the resources. */
 export function normalizeLanguage(raw?: string | null): SupportedLanguage | null {
   if (!raw) return null;
   const l = raw.toLowerCase();
   if (l.startsWith('zh')) {
-    if (l.includes('hans') || l.includes('cn') || l.includes('sg')) return 'zh-Hans';
+    if (l.includes('hans') || l.includes('cn') || l.includes('sg')) return 'zh-hans';
     // Hant / TW / HK / MO, and legacy bare `zh` (was Traditional in this app).
-    return 'zh-Hant';
+    return 'zh-hant';
   }
   if (l.startsWith('ja')) return 'ja';
   if (l.startsWith('th')) return 'th';
@@ -53,16 +58,23 @@ function loadStoredLanguage(): SupportedLanguage {
 void i18n.use(initReactI18next).init({
   resources: {
     en: { translation: en },
-    'zh-Hant': { translation: zhHant },
-    'zh-Hans': { translation: zhHans },
+    'zh-hant': { translation: zhHant },
+    'zh-hans': { translation: zhHans },
     ja: { translation: ja },
     th: { translation: th },
     vi: { translation: vi },
   },
   lng: loadStoredLanguage(),
   fallbackLng: 'en',
-  supportedLngs: SUPPORTED as unknown as string[],
-  nonExplicitSupportedLngs: true,
+  // NOTE: intentionally NO `supportedLngs`. With it set, i18next `cleanCode`
+  // reformats the list entry `zh-hant` -> `zh-Hant` while `lowerCaseLng`
+  // lowercases the runtime code to `zh-hant`; the mismatch filters Chinese out
+  // of the resolved hierarchy (resolves to just ["en"] -> English fallback).
+  // We normalize every code via normalizeLanguage() before it ever reaches
+  // i18next, so the supportedLngs guard is redundant here anyway.
+  // Force every code lowercase so `zh-Hant` (picker/device) and the `zh-hant`
+  // resource key always match.
+  lowerCaseLng: true,
   interpolation: { escapeValue: false },
 });
 
@@ -88,8 +100,8 @@ if (__DEV__ && typeof globalThis !== 'undefined') {
 // distinguishing glyph (繁 / 简) since a shared "ZH" would be ambiguous.
 const LANGUAGE_BADGES: Record<SupportedLanguage, string> = {
   en: 'EN',
-  'zh-Hant': '繁',
-  'zh-Hans': '简',
+  'zh-hant': '繁',
+  'zh-hans': '简',
   ja: 'JA',
   th: 'TH',
   vi: 'VI',
