@@ -3739,7 +3739,17 @@
       "scrapValueBaseline": "Scrap value baseline",
       "potentialProfit": "Potential profit",
       "profitInsight": "Selling on {{marketplace}} could earn you {{percent}}% more than scrap value alone.",
-      "aiBadge": "AI"
+      "aiBadge": "AI",
+      "installOption": {
+        "installed": {
+          "label": "Installed",
+          "hint": "Buyer needs to deinstall + ship"
+        },
+        "deinstalled": {
+          "label": "Deinstalled",
+          "hint": "Ready to ship today"
+        }
+      }
     },
     "success": {
       "heading": "Item submitted",
@@ -3964,9 +3974,13 @@
       "imSelling": "I'm selling",
       "imBuying": "I'm buying",
       "recentListings": "Recent listings",
+      "recentWants": "Recent wants",
       "seeAll": "See all",
       "offerOne": "{{count}} offer",
       "offerOther": "{{count}} offers",
+      "matchOne": "{{count}} match",
+      "matchOther": "{{count}} matches",
+      "noMatchesYet": "No matches yet",
       "status": {
         "active": "Active",
         "inReview": "In review",
@@ -3986,6 +4000,11 @@
     "labBrowse": {
       "errorTitle": "Couldn't load the marketplace",
       "errorBody": "Check your connection and try again."
+    },
+    "labProduct": {
+      "title": "Listing",
+      "back": "Back",
+      "openInBrowser": "Open in browser"
     },
     "labCommon": {
       "retry": "Retry",
@@ -4019,6 +4038,8 @@
       "untitledListing": "Untitled listing",
       "untitledItem": "Untitled item",
       "untitledWant": "Untitled want",
+      "imagePending": "Image pending",
+      "resultsCount": "Results · {{count}}",
       "results": "Results",
       "noMatchingItems": "No matching items right now.",
       "tellMeMore": "Tell me more about the {{name}}.",
@@ -4104,6 +4125,29 @@
       "saved": "Saved",
       "saveAlertMe": "Save & alert me",
       "saveWantMsg": "Yes, save this want and alert me about matches.",
+      "wtbEdit": {
+        "conditionLabel": "Condition",
+        "conditionAny": "Any",
+        "conditionPillA11y": "Condition {{label}}",
+        "conditionAnyA11y": "Any condition",
+        "budgetLabel": "Budget",
+        "budgetPrefix": "≤ $",
+        "budgetChip": "≤ ${{value}}",
+        "budgetFieldA11y": "Maximum budget",
+        "quantityLabel": "Quantity",
+        "qtyDecrementA11y": "Decrease quantity",
+        "qtyIncrementA11y": "Increase quantity",
+        "anyPlaceholder": "any",
+        "optionalSuffix": "(optional)",
+        "saving": "Saving…",
+        "saveError": "Couldn't save that want — please try again.",
+        "sentForApproval": "Sent for approval — “{{title}}”",
+        "pendingBody": "An admin will review this shortly. We'll start alerting you once it's approved.",
+        "pendingEmail": "Once approved, we'll email you the moment a new match is listed.",
+        "activeEmail": "We'll email you the moment a new match is listed.",
+        "viewInMyWants": "View it in My Wants",
+        "viewInMyWantsA11y": "View this want in My Wants"
+      },
       "savedAlertAbout": "Saved — we'll alert you about “{{title}}”",
       "yourWant": "your want",
       "matchesNowOne": "{{count}} match right now — we'll notify you as new ones appear.",
@@ -4202,7 +4246,23 @@
         "buy": "Ask a follow-up…"
       },
       "scrollToBottom": "Scroll to bottom",
-      "send": "Send"
+      "send": "Send",
+      "stop": "Stop",
+      "working": {
+        "default": "Working…",
+        "searching": "Searching the marketplace…",
+        "checking": "Checking your request…",
+        "reading": "Reading your documents…",
+        "thinking": "Analyzing…",
+        "ranking": "Ranking results…"
+      },
+      "actions": {
+        "copy": "Copy",
+        "copied": "Copied to clipboard",
+        "share": "Share",
+        "helpful": "Helpful",
+        "notHelpful": "Not helpful"
+      }
     },
     "labMatch": {
       "confirmInterest": {
@@ -4640,6 +4700,25 @@
         "today": "Today",
         "week": "This week",
         "earlier": "Earlier"
+      }
+    },
+    "processingV2": {
+      "aiAnalyzing": "AI ANALYZING",
+      "subtitle": "Live results appear as we find them",
+      "stepOf": "STEP {{current}} OF {{total}}",
+      "confident": "CONFIDENT",
+      "productsFound": "Products found",
+      "foundCount_one": "Found {{count}} item",
+      "foundCount_other": "Found {{count}} items",
+      "documentsReady_one": "Document ready · {{pages}} pages",
+      "documentsReady_other": "{{count}} documents ready · {{pages}} pages",
+      "analyzingCount": "Analyzing {{current}} of {{total}}…",
+      "phase": {
+        "validating": "Validating",
+        "readingDocuments": "Reading documents",
+        "uploadingDetecting": "Uploading & detecting",
+        "identifyingProducts": "Identifying products",
+        "done": "Done"
       }
     }
   }

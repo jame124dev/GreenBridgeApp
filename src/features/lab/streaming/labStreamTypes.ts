@@ -54,44 +54,10 @@ export type LabCardType =
   // eslint-disable-next-line @typescript-eslint/ban-types
   | (string & {});
 
-/**
- * One row in a multi-product `listing_queue` overview or a `listing_group_choice`
- * chooser (frozen wire contract; emitted for `source in {bulk_template,
- * document_split}` and the multi-photo image path). `image_url` is `null` for
- * document-split items (they have no page thumbnail); `missing` is the count of
- * still-required fields for that item. `index` is **1-based**.
- */
-export interface QueueItem {
-  index: number;
-  title: string;
-  image_url: string | null;
-  missing: number;
-}
-
-/**
- * `data{type:'listing_group_choice'}` payload — the one-time "found N products,
- * review separately or combine?" chooser (multi-photo image path). `first_payload`
- * is a `listing_draft` payload (the active item, also arriving as its own
- * `listing_draft` frame). `mode` marks which branch the server suggests.
- */
-export interface GroupChoiceData {
-  total: number;
-  items: QueueItem[];
-  first_payload: unknown;
-  mode: 'separate_default' | 'combined_default';
-}
-
-/**
- * `data{type:'listing_queue'}` payload — the multi-product overview pager.
- * `index` is the CURRENT active 1-based position; `remaining` counts items not
- * yet published/reviewed. Emitted for `source in {bulk_template, document_split}`.
- */
-export interface QueueData {
-  total: number;
-  index: number;
-  remaining: number;
-  items: QueueItem[];
-}
+// Card-payload contracts (`QueueItem`/`GroupChoiceData`/`QueueData`) now live in
+// `chat/types/cardPayloads` so presentational components can type their props
+// without importing `streaming/` (A4 §12.2). Re-exported here for the transport.
+export type { QueueItem, GroupChoiceData, QueueData } from '@/features/lab/chat/types/cardPayloads';
 
 /** `event: token` — one incremental prose delta (typing effect). */
 export type LabTokenEvent = { delta: string };

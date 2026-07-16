@@ -1,0 +1,5654 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`cards — characterization (representative families) batch_list golden (list rows + moreLine + tints) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#ffffff",
+      "borderColor": "#dfe5ec",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 1,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.05,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "borderBottomColor": "#eef2f9",
+        "borderBottomWidth": 0.5,
+        "flexDirection": "row",
+        "justifyContent": "space-between",
+        "marginBottom": 12,
+        "paddingBottom": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#16794A",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 1.2,
+            "lineHeight": 14,
+            "textTransform": "uppercase",
+          },
+          null,
+        ]
+      }
+    >
+      mobile.labCards.auctionsCount
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "gap": 8,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "borderColor": "#eef2f9",
+          "borderRadius": 8,
+          "borderWidth": 1,
+          "elevation": 1,
+          "padding": 12,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.05,
+          "shadowRadius": 2,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 8,
+            "justifyContent": "space-between",
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#121c28",
+              "flex": 1,
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 14,
+              "letterSpacing": -0.1,
+              "lineHeight": 18,
+            }
+          }
+        >
+          Lot A
+        </Text>
+        <View
+          style={
+            [
+              {
+                "borderColor": "#dfe5ec",
+                "borderRadius": 9999,
+                "borderWidth": 1,
+                "paddingHorizontal": 10,
+                "paddingVertical": 4,
+              },
+              {
+                "backgroundColor": "#f0fdf4",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 10,
+                  "letterSpacing": 1,
+                  "lineHeight": 13,
+                },
+                {
+                  "color": "#16794A",
+                },
+              ]
+            }
+          >
+            mobile.labCards.statusLive
+          </Text>
+        </View>
+      </View>
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 11,
+            "marginTop": 4,
+          }
+        }
+      >
+        mobile.labCards.itemsCount  ·  mobile.labCards.countryTaiwan
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "borderColor": "#eef2f9",
+          "borderRadius": 8,
+          "borderWidth": 1,
+          "elevation": 1,
+          "padding": 12,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.05,
+          "shadowRadius": 2,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 8,
+            "justifyContent": "space-between",
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#121c28",
+              "flex": 1,
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 14,
+              "letterSpacing": -0.1,
+              "lineHeight": 18,
+            }
+          }
+        >
+          Lot B
+        </Text>
+        <View
+          style={
+            [
+              {
+                "borderColor": "#dfe5ec",
+                "borderRadius": 9999,
+                "borderWidth": 1,
+                "paddingHorizontal": 10,
+                "paddingVertical": 4,
+              },
+              {
+                "backgroundColor": "#eef4ff",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 10,
+                  "letterSpacing": 1,
+                  "lineHeight": 13,
+                },
+                {
+                  "color": "#6b7280",
+                },
+              ]
+            }
+          >
+            mobile.labCards.statusSold
+          </Text>
+        </View>
+      </View>
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 11,
+            "marginTop": 4,
+          }
+        }
+      >
+        mobile.labCards.itemsCount  ·  mobile.labCards.countryTaiwan
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "borderColor": "#eef2f9",
+          "borderRadius": 8,
+          "borderWidth": 1,
+          "elevation": 1,
+          "padding": 12,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.05,
+          "shadowRadius": 2,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 8,
+            "justifyContent": "space-between",
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#121c28",
+              "flex": 1,
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 14,
+              "letterSpacing": -0.1,
+              "lineHeight": 18,
+            }
+          }
+        >
+          Lot C
+        </Text>
+        <View
+          style={
+            [
+              {
+                "borderColor": "#dfe5ec",
+                "borderRadius": 9999,
+                "borderWidth": 1,
+                "paddingHorizontal": 10,
+                "paddingVertical": 4,
+              },
+              {
+                "backgroundColor": "#eff6ff",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 10,
+                  "letterSpacing": 1,
+                  "lineHeight": 13,
+                },
+                {
+                  "color": "#1d4ed8",
+                },
+              ]
+            }
+          >
+            mobile.labCards.statusUpcoming
+          </Text>
+        </View>
+      </View>
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 11,
+            "marginTop": 4,
+          }
+        }
+      >
+        mobile.labCards.itemsCount  ·  mobile.labCards.countryTaiwan
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "borderColor": "#eef2f9",
+          "borderRadius": 8,
+          "borderWidth": 1,
+          "elevation": 1,
+          "padding": 12,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.05,
+          "shadowRadius": 2,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 8,
+            "justifyContent": "space-between",
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#121c28",
+              "flex": 1,
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 14,
+              "letterSpacing": -0.1,
+              "lineHeight": 18,
+            }
+          }
+        >
+          Lot D
+        </Text>
+        <View
+          style={
+            [
+              {
+                "borderColor": "#dfe5ec",
+                "borderRadius": 9999,
+                "borderWidth": 1,
+                "paddingHorizontal": 10,
+                "paddingVertical": 4,
+              },
+              {
+                "backgroundColor": "#fffbeb",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 10,
+                  "letterSpacing": 1,
+                  "lineHeight": 13,
+                },
+                {
+                  "color": "#b45309",
+                },
+              ]
+            }
+          >
+            mobile.labCards.statusPending
+          </Text>
+        </View>
+      </View>
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 11,
+            "marginTop": 4,
+          }
+        }
+      >
+        mobile.labCards.itemsCount  ·  mobile.labCards.countryTaiwan
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "borderColor": "#eef2f9",
+          "borderRadius": 8,
+          "borderWidth": 1,
+          "elevation": 1,
+          "padding": 12,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.05,
+          "shadowRadius": 2,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 8,
+            "justifyContent": "space-between",
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#121c28",
+              "flex": 1,
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 14,
+              "letterSpacing": -0.1,
+              "lineHeight": 18,
+            }
+          }
+        >
+          Lot E
+        </Text>
+        <View
+          style={
+            [
+              {
+                "borderColor": "#dfe5ec",
+                "borderRadius": 9999,
+                "borderWidth": 1,
+                "paddingHorizontal": 10,
+                "paddingVertical": 4,
+              },
+              {
+                "backgroundColor": "#eef4ff",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 10,
+                  "letterSpacing": 1,
+                  "lineHeight": 13,
+                },
+                {
+                  "color": "#6b7280",
+                },
+              ]
+            }
+          >
+            mobile.labCards.statusDraft
+          </Text>
+        </View>
+      </View>
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 11,
+            "marginTop": 4,
+          }
+        }
+      >
+        mobile.labCards.itemsCount  ·  mobile.labCards.countryTaiwan
+      </Text>
+    </View>
+  </View>
+  <Text
+    style={
+      {
+        "color": "#16794A",
+        "fontFamily": "Inter_600SemiBold",
+        "fontSize": 11,
+        "paddingTop": 6,
+        "textAlign": "center",
+      }
+    }
+  >
+    mobile.labCards.moreLine
+  </Text>
+</View>
+`;
+
+exports[`cards — characterization (representative families) bid_list golden (bid tints) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#ffffff",
+      "borderColor": "#dfe5ec",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 1,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.05,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "borderBottomColor": "#eef2f9",
+        "borderBottomWidth": 0.5,
+        "flexDirection": "row",
+        "justifyContent": "space-between",
+        "marginBottom": 12,
+        "paddingBottom": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#16794A",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 1.2,
+            "lineHeight": 14,
+            "textTransform": "uppercase",
+          },
+          null,
+        ]
+      }
+    >
+      mobile.labCards.yourBids (3)
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "gap": 8,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "borderColor": "#eef2f9",
+          "borderRadius": 8,
+          "borderWidth": 1,
+          "elevation": 1,
+          "padding": 12,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.05,
+          "shadowRadius": 2,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 8,
+            "justifyContent": "space-between",
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#121c28",
+              "flex": 1,
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 14,
+              "letterSpacing": -0.1,
+              "lineHeight": 18,
+            }
+          }
+        >
+          CNC Lathe
+        </Text>
+        <View
+          style={
+            [
+              {
+                "borderColor": "#dfe5ec",
+                "borderRadius": 9999,
+                "borderWidth": 1,
+                "paddingHorizontal": 10,
+                "paddingVertical": 4,
+              },
+              {
+                "backgroundColor": "#fffbeb",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 10,
+                  "letterSpacing": 1,
+                  "lineHeight": 13,
+                },
+                {
+                  "color": "#b45309",
+                },
+              ]
+            }
+          >
+            mobile.labCards.statusPending
+          </Text>
+        </View>
+      </View>
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 11,
+            "marginTop": 4,
+          }
+        }
+      >
+        5,000
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "borderColor": "#eef2f9",
+          "borderRadius": 8,
+          "borderWidth": 1,
+          "elevation": 1,
+          "padding": 12,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.05,
+          "shadowRadius": 2,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 8,
+            "justifyContent": "space-between",
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#121c28",
+              "flex": 1,
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 14,
+              "letterSpacing": -0.1,
+              "lineHeight": 18,
+            }
+          }
+        >
+          Milling Machine
+        </Text>
+        <View
+          style={
+            [
+              {
+                "borderColor": "#dfe5ec",
+                "borderRadius": 9999,
+                "borderWidth": 1,
+                "paddingHorizontal": 10,
+                "paddingVertical": 4,
+              },
+              {
+                "backgroundColor": "#f0fdf4",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 10,
+                  "letterSpacing": 1,
+                  "lineHeight": 13,
+                },
+                {
+                  "color": "#16794A",
+                },
+              ]
+            }
+          >
+            mobile.labCards.bidWinning
+          </Text>
+        </View>
+      </View>
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 11,
+            "marginTop": 4,
+          }
+        }
+      >
+        8,000
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "borderColor": "#eef2f9",
+          "borderRadius": 8,
+          "borderWidth": 1,
+          "elevation": 1,
+          "padding": 12,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.05,
+          "shadowRadius": 2,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 8,
+            "justifyContent": "space-between",
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#121c28",
+              "flex": 1,
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 14,
+              "letterSpacing": -0.1,
+              "lineHeight": 18,
+            }
+          }
+        >
+          Press Brake
+        </Text>
+        <View
+          style={
+            [
+              {
+                "borderColor": "#dfe5ec",
+                "borderRadius": 9999,
+                "borderWidth": 1,
+                "paddingHorizontal": 10,
+                "paddingVertical": 4,
+              },
+              {
+                "backgroundColor": "#fef2f2",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 10,
+                  "letterSpacing": 1,
+                  "lineHeight": 13,
+                },
+                {
+                  "color": "#dc3737",
+                },
+              ]
+            }
+          >
+            mobile.labCards.bidOutbid
+          </Text>
+        </View>
+      </View>
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 11,
+            "marginTop": 4,
+          }
+        }
+      >
+        3,000
+      </Text>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) catalog_summary golden (bigStat + facets) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#ffffff",
+      "borderColor": "#dfe5ec",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 1,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.05,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "borderBottomColor": "#eef2f9",
+        "borderBottomWidth": 0.5,
+        "flexDirection": "row",
+        "justifyContent": "space-between",
+        "marginBottom": 12,
+        "paddingBottom": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#16794A",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 1.2,
+            "lineHeight": 14,
+            "textTransform": "uppercase",
+          },
+          null,
+        ]
+      }
+    >
+      mobile.labCards.catalogSummary
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "alignItems": "baseline",
+        "flexDirection": "row",
+        "gap": 8,
+        "marginBottom": 4,
+      }
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#121c28",
+          "fontFamily": "HankenGrotesk_800ExtraBold",
+          "fontSize": 28,
+        }
+      }
+    >
+      1,284
+    </Text>
+    <Text
+      style={
+        {
+          "color": "#6b7280",
+          "fontFamily": "IBMPlexSans_600SemiBold",
+          "fontSize": 11,
+          "letterSpacing": 0.8,
+          "textTransform": "uppercase",
+        }
+      }
+    >
+      mobile.labCards.totalItemsListed
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "marginTop": 12,
+      }
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#6b7280",
+          "fontFamily": "IBMPlexSans_600SemiBold",
+          "fontSize": 11,
+          "letterSpacing": 0.8,
+          "textTransform": "uppercase",
+        }
+      }
+    >
+      mobile.labCards.topCategories
+    </Text>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+          "gap": 6,
+          "marginTop": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "borderColor": "#dfe5ec",
+            "borderRadius": 12,
+            "borderWidth": 1,
+            "flexDirection": "row",
+            "gap": 6,
+            "paddingHorizontal": 8,
+            "paddingVertical": 4,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#121c28",
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 12,
+            }
+          }
+        >
+          CNC
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#6b7280",
+              "fontFamily": "Inter_700Bold",
+              "fontSize": 11,
+            }
+          }
+        >
+          320
+        </Text>
+      </View>
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "borderColor": "#dfe5ec",
+            "borderRadius": 12,
+            "borderWidth": 1,
+            "flexDirection": "row",
+            "gap": 6,
+            "paddingHorizontal": 8,
+            "paddingVertical": 4,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#121c28",
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 12,
+            }
+          }
+        >
+          Lathes
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#6b7280",
+              "fontFamily": "Inter_700Bold",
+              "fontSize": 11,
+            }
+          }
+        >
+          210
+        </Text>
+      </View>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "marginTop": 12,
+      }
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#6b7280",
+          "fontFamily": "IBMPlexSans_600SemiBold",
+          "fontSize": 11,
+          "letterSpacing": 0.8,
+          "textTransform": "uppercase",
+        }
+      }
+    >
+      mobile.labCards.countries
+    </Text>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+          "gap": 6,
+          "marginTop": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "borderColor": "#dfe5ec",
+            "borderRadius": 12,
+            "borderWidth": 1,
+            "flexDirection": "row",
+            "gap": 6,
+            "paddingHorizontal": 8,
+            "paddingVertical": 4,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#121c28",
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 12,
+            }
+          }
+        >
+          Taiwan
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#6b7280",
+              "fontFamily": "Inter_700Bold",
+              "fontSize": 11,
+            }
+          }
+        >
+          540
+        </Text>
+      </View>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "marginTop": 12,
+      }
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#6b7280",
+          "fontFamily": "IBMPlexSans_600SemiBold",
+          "fontSize": 11,
+          "letterSpacing": 0.8,
+          "textTransform": "uppercase",
+        }
+      }
+    >
+      mobile.labCards.conditions
+    </Text>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+          "gap": 6,
+          "marginTop": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "borderColor": "#dfe5ec",
+            "borderRadius": 12,
+            "borderWidth": 1,
+            "flexDirection": "row",
+            "gap": 6,
+            "paddingHorizontal": 8,
+            "paddingVertical": 4,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#121c28",
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 12,
+            }
+          }
+        >
+          Working
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#6b7280",
+              "fontFamily": "Inter_700Bold",
+              "fontSize": 11,
+            }
+          }
+        >
+          900
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) handoff golden (soft card) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#ffffff",
+      "borderColor": "#dfe5ec",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 1,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.05,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "flex-start",
+        "flexDirection": "row",
+        "gap": 8,
+      }
+    }
+  >
+    <View
+      color="#16794A"
+      size={16}
+    />
+    <Text
+      style={
+        {
+          "color": "#121c28",
+          "flex": 1,
+          "fontFamily": "Inter_400Regular",
+          "fontSize": 13,
+          "lineHeight": 19,
+        }
+      }
+    >
+      Connecting you to a person.
+    </Text>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) listing_batch_result golden (skip roster) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#f0fdf4",
+      "borderColor": "#bbf7d0",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 3,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 4,
+        "width": 0,
+      },
+      "shadowOpacity": 0.08,
+      "shadowRadius": 8,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 12,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "backgroundColor": "#16A35A",
+          "borderRadius": 9999,
+          "height": 36,
+          "justifyContent": "center",
+          "width": 36,
+        }
+      }
+    >
+      <View
+        color="#fff"
+        size={20}
+      />
+    </View>
+    <View
+      style={
+        {
+          "flex": 1,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#16794A",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 1.2,
+            "lineHeight": 14,
+            "marginBottom": 2,
+            "textTransform": "uppercase",
+          }
+        }
+      >
+        mobile.labCards.batchPublished
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#121c28",
+            "fontFamily": "HankenGrotesk_700Bold",
+            "fontSize": 16,
+          }
+        }
+      >
+        mobile.labCards.listingLiveOther
+      </Text>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "backgroundColor": "#fffbeb",
+        "borderColor": "#f59e0b",
+        "borderRadius": 8,
+        "borderWidth": 1,
+        "marginTop": 12,
+        "padding": 12,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "flexDirection": "row",
+          "gap": 6,
+          "marginBottom": 8,
+        }
+      }
+    >
+      <View
+        color="#b45309"
+        size={14}
+      />
+      <Text
+        style={
+          {
+            "color": "#b45309",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 0.8,
+            "lineHeight": 14,
+            "textTransform": "uppercase",
+          }
+        }
+      >
+        mobile.labCards.needDetailsOne
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "gap": 4,
+        }
+      }
+    >
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#f59e0b",
+              "borderRadius": 8,
+              "borderWidth": 1,
+              "flexDirection": "row",
+              "gap": 8,
+              "paddingHorizontal": 12,
+              "paddingVertical": 8,
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+                "minWidth": 0,
+              }
+            }
+          >
+            <Text
+              numberOfLines={1}
+              style={
+                {
+                  "color": "#121c28",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 13,
+                }
+              }
+            >
+              Press Brake
+            </Text>
+            <Text
+              numberOfLines={1}
+              style={
+                {
+                  "color": "#b45309",
+                  "fontFamily": "Inter_400Regular",
+                  "fontSize": 11,
+                  "marginTop": 2,
+                }
+              }
+            >
+              mobile.labCards.needs
+            </Text>
+          </View>
+          <View
+            color="#b45309"
+            size={16}
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "marginTop": 12,
+        }
+      }
+    >
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={
+          {
+            "bottom": 8,
+            "left": 8,
+            "right": 8,
+            "top": 8,
+          }
+        }
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={{}}
+      >
+        <View
+          style={
+            [
+              {
+                "alignItems": "center",
+                "backgroundColor": "#16794A",
+                "borderRadius": 12,
+                "flexDirection": "row",
+                "gap": 6,
+                "justifyContent": "center",
+                "paddingHorizontal": 16,
+                "paddingVertical": 14,
+              },
+              undefined,
+            ]
+          }
+        >
+          <View
+            color="#fff"
+            size={15}
+          />
+          <Text
+            style={
+              {
+                "color": "#fff",
+                "fontFamily": "Inter_700Bold",
+                "fontSize": 13,
+              }
+            }
+          >
+            mobile.labCards.fixRemaining
+          </Text>
+        </View>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) listing_created golden 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#f0fdf4",
+      "borderColor": "#bbf7d0",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 3,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 4,
+        "width": 0,
+      },
+      "shadowOpacity": 0.08,
+      "shadowRadius": 8,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 12,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "backgroundColor": "#16A35A",
+          "borderRadius": 9999,
+          "height": 36,
+          "justifyContent": "center",
+          "width": 36,
+        }
+      }
+    >
+      <View
+        color="#fff"
+        size={20}
+      />
+    </View>
+    <View
+      style={
+        {
+          "flex": 1,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#16794A",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 1.2,
+            "lineHeight": 14,
+            "marginBottom": 2,
+            "textTransform": "uppercase",
+          }
+        }
+      >
+        mobile.labCards.listingPublished
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#121c28",
+            "fontFamily": "HankenGrotesk_700Bold",
+            "fontSize": 16,
+          }
+        }
+      >
+        Haas VF-2 CNC Mill
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 13,
+            "marginTop": 2,
+          }
+        }
+      >
+        mobile.labCards.productNumber
+      </Text>
+    </View>
+  </View>
+  <View
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={
+      {
+        "alignItems": "center",
+        "alignSelf": "flex-start",
+        "backgroundColor": "#ffffff",
+        "borderColor": "#bbf7d0",
+        "borderRadius": 9999,
+        "borderWidth": 1,
+        "flexDirection": "row",
+        "gap": 4,
+        "marginTop": 12,
+        "paddingHorizontal": 14,
+        "paddingVertical": 10,
+      }
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#16794A",
+          "fontFamily": "Inter_700Bold",
+          "fontSize": 13,
+        }
+      }
+    >
+      mobile.labCards.viewListing
+    </Text>
+    <View
+      color="#16794A"
+      size={14}
+    />
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) listing_draft golden 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#ffffff",
+      "borderColor": "#bbf7d0",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 3,
+      "overflow": "hidden",
+      "paddingBottom": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 4,
+        "width": 0,
+      },
+      "shadowOpacity": 0.08,
+      "shadowRadius": 8,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "backgroundColor": "#f0fdf4",
+        "flexDirection": "row",
+        "justifyContent": "space-between",
+        "paddingHorizontal": 16,
+        "paddingVertical": 10,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "flexDirection": "row",
+          "gap": 6,
+        }
+      }
+    >
+      <View
+        color="#16794A"
+        size={13}
+      />
+      <Text
+        style={
+          {
+            "color": "#16794A",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 1.2,
+            "lineHeight": 14,
+            "textTransform": "uppercase",
+          }
+        }
+      >
+        mobile.labCards.listingDraft
+      </Text>
+    </View>
+    <View
+      style={
+        [
+          {
+            "borderColor": "#dfe5ec",
+            "borderRadius": 9999,
+            "borderWidth": 1,
+            "paddingHorizontal": 10,
+            "paddingVertical": 4,
+          },
+          {
+            "backgroundColor": "#eef4ff",
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "fontFamily": "IBMPlexSans_600SemiBold",
+              "fontSize": 10,
+              "letterSpacing": 1,
+              "lineHeight": 13,
+            },
+            {
+              "color": "#6b7280",
+            },
+          ]
+        }
+      >
+        mobile.labCards.draft
+      </Text>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 12,
+        "paddingHorizontal": 16,
+        "paddingTop": 16,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "backgroundColor": "#f0fdf4",
+          "borderRadius": 12,
+          "height": 72,
+          "justifyContent": "center",
+          "overflow": "hidden",
+          "width": 72,
+        }
+      }
+    >
+      <View
+        color="#16794A"
+        size={26}
+      />
+    </View>
+    <View
+      style={
+        {
+          "flex": 1,
+        }
+      }
+    >
+      <Text
+        numberOfLines={2}
+        style={
+          {
+            "color": "#121c28",
+            "fontFamily": "HankenGrotesk_700Bold",
+            "fontSize": 17,
+            "letterSpacing": -0.2,
+            "lineHeight": 22,
+          }
+        }
+      >
+        Haas VF-2
+      </Text>
+      <View
+        style={
+          {
+            "flexDirection": "row",
+            "flexWrap": "wrap",
+            "gap": 6,
+            "marginTop": 6,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "alignSelf": "flex-start",
+                "borderRadius": 8,
+                "borderWidth": 1,
+                "paddingHorizontal": 10,
+                "paddingVertical": 4,
+              },
+              {
+                "backgroundColor": "#f0fdf4",
+                "borderColor": "#bbf7d0",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#6b7280",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 11,
+                  "letterSpacing": 0.2,
+                  "lineHeight": 14,
+                },
+                {
+                  "color": "#16794A",
+                },
+              ]
+            }
+          >
+            CNC
+          </Text>
+        </View>
+        <View
+          style={
+            [
+              {
+                "alignSelf": "flex-start",
+                "borderRadius": 8,
+                "borderWidth": 1,
+                "paddingHorizontal": 10,
+                "paddingVertical": 4,
+              },
+              {
+                "backgroundColor": "#eef4ff",
+                "borderColor": "#dfe5ec",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#6b7280",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 11,
+                  "letterSpacing": 0.2,
+                  "lineHeight": 14,
+                },
+                false,
+              ]
+            }
+          >
+            mobile.labCards.condWorking
+          </Text>
+        </View>
+      </View>
+    </View>
+  </View>
+  <View
+    style={
+      [
+        {
+          "backgroundColor": "#f0fdf4",
+          "borderLeftColor": "#16A35A",
+          "borderLeftWidth": 3,
+          "borderRadius": 8,
+          "marginHorizontal": 16,
+          "marginTop": 12,
+          "paddingHorizontal": 12,
+          "paddingVertical": 12,
+        },
+        false,
+      ]
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#0E3B2E",
+          "fontFamily": "HankenGrotesk_800ExtraBold",
+          "fontSize": 20,
+          "letterSpacing": -0.3,
+          "lineHeight": 24,
+        }
+      }
+    >
+      25,000
+       
+      <Text
+        style={
+          {
+            "color": "#16794A",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 0.6,
+          }
+        }
+      >
+        USD
+      </Text>
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "marginTop": 8,
+        "paddingHorizontal": 16,
+      }
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#16794A",
+          "fontFamily": "IBMPlexSans_600SemiBold",
+          "fontSize": 11,
+          "letterSpacing": 1.2,
+          "lineHeight": 14,
+          "marginBottom": 4,
+          "textTransform": "uppercase",
+        }
+      }
+    >
+      mobile.labCards.details
+    </Text>
+    <View
+      style={
+        [
+          {
+            "borderBottomColor": "#eef2f9",
+            "borderBottomWidth": 0.5,
+            "flexDirection": "row",
+            "gap": 12,
+            "justifyContent": "space-between",
+            "paddingVertical": 8,
+          },
+          false,
+        ]
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#5b6b63",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 13,
+            "lineHeight": 18,
+          }
+        }
+      >
+        mobile.labCards.field.brand
+      </Text>
+      <Text
+        numberOfLines={2}
+        style={
+          {
+            "color": "#121c28",
+            "flex": 1,
+            "fontFamily": "Inter_600SemiBold",
+            "fontSize": 13,
+            "letterSpacing": -0.1,
+            "lineHeight": 18,
+            "textAlign": "right",
+          }
+        }
+      >
+        Haas
+      </Text>
+    </View>
+    <View
+      style={
+        [
+          {
+            "borderBottomColor": "#eef2f9",
+            "borderBottomWidth": 0.5,
+            "flexDirection": "row",
+            "gap": 12,
+            "justifyContent": "space-between",
+            "paddingVertical": 8,
+          },
+          false,
+        ]
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#5b6b63",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 13,
+            "lineHeight": 18,
+          }
+        }
+      >
+        mobile.labCards.field.model
+      </Text>
+      <Text
+        numberOfLines={2}
+        style={
+          {
+            "color": "#121c28",
+            "flex": 1,
+            "fontFamily": "Inter_600SemiBold",
+            "fontSize": 13,
+            "letterSpacing": -0.1,
+            "lineHeight": 18,
+            "textAlign": "right",
+          }
+        }
+      >
+        VF-2
+      </Text>
+    </View>
+    <View
+      style={
+        [
+          {
+            "borderBottomColor": "#eef2f9",
+            "borderBottomWidth": 0.5,
+            "flexDirection": "row",
+            "gap": 12,
+            "justifyContent": "space-between",
+            "paddingVertical": 8,
+          },
+          {
+            "borderBottomWidth": 0,
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#5b6b63",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 13,
+            "lineHeight": 18,
+          }
+        }
+      >
+        mobile.labCards.field.location
+      </Text>
+      <Text
+        numberOfLines={2}
+        style={
+          {
+            "color": "#121c28",
+            "flex": 1,
+            "fontFamily": "Inter_600SemiBold",
+            "fontSize": 13,
+            "letterSpacing": -0.1,
+            "lineHeight": 18,
+            "textAlign": "right",
+          }
+        }
+      >
+        Taiwan
+      </Text>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "backgroundColor": "#eef4ff",
+        "borderRadius": 8,
+        "marginHorizontal": 16,
+        "marginTop": 12,
+        "padding": 12,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+          "justifyContent": "space-between",
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 0.6,
+            "lineHeight": 14,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#16794A",
+              "fontFamily": "HankenGrotesk_800ExtraBold",
+              "fontSize": 15,
+            }
+          }
+        >
+          6
+        </Text>
+         / 
+        7
+         
+        mobile.labCards.required
+      </Text>
+    </View>
+    <Text
+      numberOfLines={1}
+      style={
+        {
+          "color": "#16794A",
+          "fontFamily": "Inter_600SemiBold",
+          "fontSize": 12,
+          "lineHeight": 16,
+          "marginTop": 4,
+        }
+      }
+    >
+      mobile.labCards.allSet
+    </Text>
+    <View
+      style={
+        {
+          "backgroundColor": "#dfe5ec",
+          "borderRadius": 9999,
+          "height": 8,
+          "marginTop": 8,
+          "overflow": "hidden",
+        }
+      }
+    >
+      <View
+        style={
+          [
+            {
+              "borderRadius": 9999,
+              "height": "100%",
+            },
+            {},
+            {
+              "backgroundColor": "#E8A21A",
+            },
+          ]
+        }
+      />
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) listing_entry_options golden (EntryOption + buttons) 1`] = `
+<View
+  style={
+    {
+      "gap": 8,
+      "marginTop": 8,
+    }
+  }
+>
+  <View
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={{}}
+  >
+    <View
+      style={
+        [
+          {
+            "alignItems": "center",
+            "backgroundColor": "#ffffff",
+            "borderColor": "#dfe5ec",
+            "borderRadius": 16,
+            "borderWidth": 1,
+            "elevation": 1,
+            "flexDirection": "row",
+            "gap": 12,
+            "paddingHorizontal": 16,
+            "paddingVertical": 12,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 1,
+              "width": 0,
+            },
+            "shadowOpacity": 0.05,
+            "shadowRadius": 2,
+          },
+          undefined,
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "#f0fdf4",
+            "borderColor": "#bbf7d0",
+            "borderRadius": 9999,
+            "borderWidth": 1,
+            "height": 40,
+            "justifyContent": "center",
+            "width": 40,
+          }
+        }
+      >
+        <View
+          color="#16794A"
+          size={18}
+        />
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+              "flexWrap": "wrap",
+              "gap": 8,
+            }
+          }
+        >
+          <Text
+            style={
+              {
+                "color": "#121c28",
+                "fontFamily": "Inter_600SemiBold",
+                "fontSize": 14,
+              }
+            }
+          >
+            mobile.labCards.uploadPhotos
+          </Text>
+        </View>
+        <Text
+          style={
+            {
+              "color": "#6b7280",
+              "fontFamily": "Inter_400Regular",
+              "fontSize": 12,
+              "marginTop": 2,
+            }
+          }
+        >
+          mobile.labCards.uploadPhotosSub
+        </Text>
+      </View>
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "#eef4ff",
+            "borderRadius": 9999,
+            "height": 24,
+            "justifyContent": "center",
+            "width": 24,
+          }
+        }
+      >
+        <View
+          color="#16794A"
+          size={18}
+        />
+      </View>
+    </View>
+  </View>
+  <View
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={{}}
+  >
+    <View
+      style={
+        [
+          {
+            "alignItems": "center",
+            "backgroundColor": "#ffffff",
+            "borderColor": "#dfe5ec",
+            "borderRadius": 16,
+            "borderWidth": 1,
+            "elevation": 1,
+            "flexDirection": "row",
+            "gap": 12,
+            "paddingHorizontal": 16,
+            "paddingVertical": 12,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 1,
+              "width": 0,
+            },
+            "shadowOpacity": 0.05,
+            "shadowRadius": 2,
+          },
+          undefined,
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "#f0fdf4",
+            "borderColor": "#bbf7d0",
+            "borderRadius": 9999,
+            "borderWidth": 1,
+            "height": 40,
+            "justifyContent": "center",
+            "width": 40,
+          }
+        }
+      >
+        <View
+          color="#16794A"
+          size={18}
+        />
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+              "flexWrap": "wrap",
+              "gap": 8,
+            }
+          }
+        >
+          <Text
+            style={
+              {
+                "color": "#121c28",
+                "fontFamily": "Inter_600SemiBold",
+                "fontSize": 14,
+              }
+            }
+          >
+            mobile.labCards.enterManually
+          </Text>
+        </View>
+        <Text
+          style={
+            {
+              "color": "#6b7280",
+              "fontFamily": "Inter_400Regular",
+              "fontSize": 12,
+              "marginTop": 2,
+            }
+          }
+        >
+          mobile.labCards.enterManuallySub
+        </Text>
+      </View>
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "#eef4ff",
+            "borderRadius": 9999,
+            "height": 24,
+            "justifyContent": "center",
+            "width": 24,
+          }
+        }
+      >
+        <View
+          color="#16794A"
+          size={18}
+        />
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) listing_gate golden 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#f0fdf4",
+      "borderColor": "#bbf7d0",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 1,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.05,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <Text
+    style={
+      {
+        "color": "#121c28",
+        "fontFamily": "Inter_700Bold",
+        "fontSize": 14,
+      }
+    }
+  >
+    mobile.labCards.sellerAccessRequired
+  </Text>
+  <Text
+    style={
+      {
+        "color": "#6b7280",
+        "fontFamily": "Inter_400Regular",
+        "fontSize": 12,
+        "lineHeight": 18,
+        "marginTop": 4,
+      }
+    }
+  >
+    mobile.labCards.sellerAccessSub
+  </Text>
+</View>
+`;
+
+exports[`cards — characterization (representative families) listing_group_choice golden 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#ffffff",
+      "borderColor": "#dfe5ec",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 1,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.05,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "flex-start",
+        "flexDirection": "row",
+        "gap": 8,
+      }
+    }
+  >
+    <View
+      color="#16794A"
+      size={16}
+    />
+    <Text
+      style={
+        {
+          "color": "#121c28",
+          "flex": 1,
+          "fontFamily": "Inter_400Regular",
+          "fontSize": 13,
+          "lineHeight": 19,
+        }
+      }
+    >
+      mobile.labCards.foundLead
+       
+      <Text
+        style={
+          {
+            "fontFamily": "Inter_700Bold",
+          }
+        }
+      >
+        3
+      </Text>
+       
+      mobile.labCards.foundTail
+    </Text>
+  </View>
+  <Text
+    numberOfLines={1}
+    style={
+      [
+        {
+          "color": "#6b7280",
+          "fontFamily": "Inter_400Regular",
+          "fontSize": 13,
+        },
+        {
+          "marginTop": 6,
+        },
+      ]
+    }
+  >
+    mobile.labCards.firstUp
+  </Text>
+  <View
+    style={
+      {
+        "gap": 8,
+        "marginTop": 12,
+      }
+    }
+  >
+    <View
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": false,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={{}}
+    >
+      <View
+        style={
+          [
+            {
+              "alignItems": "center",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#dfe5ec",
+              "borderRadius": 16,
+              "borderWidth": 1,
+              "elevation": 1,
+              "flexDirection": "row",
+              "gap": 12,
+              "paddingHorizontal": 16,
+              "paddingVertical": 12,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 1,
+                "width": 0,
+              },
+              "shadowOpacity": 0.05,
+              "shadowRadius": 2,
+            },
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "backgroundColor": "#f0fdf4",
+              "borderColor": "#bbf7d0",
+              "borderRadius": 9999,
+              "borderWidth": 1,
+              "height": 40,
+              "justifyContent": "center",
+              "width": 40,
+            }
+          }
+        >
+          <View
+            color="#16794A"
+            size={18}
+          />
+        </View>
+        <View
+          style={
+            {
+              "flex": 1,
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "flexWrap": "wrap",
+                "gap": 8,
+              }
+            }
+          >
+            <Text
+              style={
+                {
+                  "color": "#121c28",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 14,
+                }
+              }
+            >
+              mobile.labCards.reviewSeparately
+            </Text>
+            <View
+              style={
+                {
+                  "backgroundColor": "#f0fdf4",
+                  "borderColor": "#bbf7d0",
+                  "borderRadius": 8,
+                  "borderWidth": 1,
+                  "paddingHorizontal": 6,
+                  "paddingVertical": 2,
+                }
+              }
+            >
+              <Text
+                style={
+                  {
+                    "color": "#16794A",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "fontSize": 9.5,
+                    "letterSpacing": 0.8,
+                    "textTransform": "uppercase",
+                  }
+                }
+              >
+                mobile.labCards.suggested
+              </Text>
+            </View>
+          </View>
+          <Text
+            style={
+              {
+                "color": "#6b7280",
+                "fontFamily": "Inter_400Regular",
+                "fontSize": 12,
+                "marginTop": 2,
+              }
+            }
+          >
+            mobile.labCards.reviewSeparatelySub
+          </Text>
+        </View>
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "backgroundColor": "#eef4ff",
+              "borderRadius": 9999,
+              "height": 24,
+              "justifyContent": "center",
+              "width": 24,
+            }
+          }
+        >
+          <View
+            color="#16794A"
+            size={18}
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": false,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={{}}
+    >
+      <View
+        style={
+          [
+            {
+              "alignItems": "center",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#dfe5ec",
+              "borderRadius": 16,
+              "borderWidth": 1,
+              "elevation": 1,
+              "flexDirection": "row",
+              "gap": 12,
+              "paddingHorizontal": 16,
+              "paddingVertical": 12,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 1,
+                "width": 0,
+              },
+              "shadowOpacity": 0.05,
+              "shadowRadius": 2,
+            },
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "backgroundColor": "#f0fdf4",
+              "borderColor": "#bbf7d0",
+              "borderRadius": 9999,
+              "borderWidth": 1,
+              "height": 40,
+              "justifyContent": "center",
+              "width": 40,
+            }
+          }
+        >
+          <View
+            color="#16794A"
+            size={18}
+          />
+        </View>
+        <View
+          style={
+            {
+              "flex": 1,
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "flexWrap": "wrap",
+                "gap": 8,
+              }
+            }
+          >
+            <Text
+              style={
+                {
+                  "color": "#121c28",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 14,
+                }
+              }
+            >
+              mobile.labCards.combineListing
+            </Text>
+          </View>
+          <Text
+            style={
+              {
+                "color": "#6b7280",
+                "fontFamily": "Inter_400Regular",
+                "fontSize": 12,
+                "marginTop": 2,
+              }
+            }
+          >
+            mobile.labCards.combineListingSub
+          </Text>
+        </View>
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "backgroundColor": "#eef4ff",
+              "borderRadius": 9999,
+              "height": 24,
+              "justifyContent": "center",
+              "width": 24,
+            }
+          }
+        >
+          <View
+            color="#16794A"
+            size={18}
+          />
+        </View>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) listing_queue golden (pager + queue rows + publish) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#ffffff",
+      "borderColor": "#dfe5ec",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 1,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.05,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "borderBottomColor": "#eef2f9",
+        "borderBottomWidth": 0.5,
+        "flexDirection": "row",
+        "justifyContent": "space-between",
+        "marginBottom": 12,
+        "paddingBottom": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#16794A",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 1.2,
+            "lineHeight": 14,
+            "textTransform": "uppercase",
+          },
+          null,
+        ]
+      }
+    >
+      mobile.labCards.itemOfTotal
+    </Text>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 6,
+        }
+      }
+    >
+      <View
+        accessibilityLabel="mobile.labCards.prevItem"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": true,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={6}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "alignItems": "center",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#bbf7d0",
+              "borderRadius": 12,
+              "borderWidth": 1,
+              "height": 30,
+              "justifyContent": "center",
+              "width": 30,
+            },
+            {
+              "opacity": 0.35,
+            },
+          ]
+        }
+      >
+        <View
+          color="#16794A"
+          size={18}
+        />
+      </View>
+      <View
+        accessibilityLabel="mobile.labCards.nextItem"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": false,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={6}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "alignItems": "center",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#bbf7d0",
+              "borderRadius": 12,
+              "borderWidth": 1,
+              "height": 30,
+              "justifyContent": "center",
+              "width": 30,
+            },
+            false,
+          ]
+        }
+      >
+        <View
+          color="#16794A"
+          size={18}
+        />
+      </View>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "gap": 8,
+      }
+    }
+  >
+    <View
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+    >
+      <View
+        style={
+          [
+            {
+              "alignItems": "center",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#eef2f9",
+              "borderRadius": 8,
+              "borderWidth": 1,
+              "elevation": 1,
+              "flexDirection": "row",
+              "gap": 12,
+              "padding": 12,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 1,
+                "width": 0,
+              },
+              "shadowOpacity": 0.05,
+              "shadowRadius": 2,
+            },
+            {
+              "backgroundColor": "#f0fdf4",
+              "borderColor": "#bbf7d0",
+            },
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "backgroundColor": "#eef4ff",
+              "borderRadius": 8,
+              "height": 44,
+              "justifyContent": "center",
+              "overflow": "hidden",
+              "width": 44,
+            }
+          }
+        >
+          <View
+            color="#9fd2b4"
+            size={18}
+          />
+        </View>
+        <View
+          style={
+            {
+              "flex": 1,
+              "minWidth": 0,
+            }
+          }
+        >
+          <Text
+            numberOfLines={2}
+            style={
+              {
+                "color": "#121c28",
+                "fontFamily": "Inter_600SemiBold",
+                "fontSize": 14,
+                "lineHeight": 18,
+              }
+            }
+          >
+            CNC Lathe
+          </Text>
+          <View
+            style={
+              {
+                "alignSelf": "flex-start",
+                "marginTop": 4,
+              }
+            }
+          >
+            <View
+              style={
+                [
+                  {
+                    "borderColor": "#dfe5ec",
+                    "borderRadius": 9999,
+                    "borderWidth": 1,
+                    "paddingHorizontal": 10,
+                    "paddingVertical": 4,
+                  },
+                  {
+                    "backgroundColor": "#f0fdf4",
+                  },
+                ]
+              }
+            >
+              <Text
+                style={
+                  [
+                    {
+                      "fontFamily": "IBMPlexSans_600SemiBold",
+                      "fontSize": 10,
+                      "letterSpacing": 1,
+                      "lineHeight": 13,
+                    },
+                    {
+                      "color": "#16794A",
+                    },
+                  ]
+                }
+              >
+                mobile.labCards.ready
+              </Text>
+            </View>
+          </View>
+        </View>
+        <View
+          color="#6b7280"
+          size={18}
+        />
+      </View>
+    </View>
+    <View
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+    >
+      <View
+        style={
+          [
+            {
+              "alignItems": "center",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#eef2f9",
+              "borderRadius": 8,
+              "borderWidth": 1,
+              "elevation": 1,
+              "flexDirection": "row",
+              "gap": 12,
+              "padding": 12,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 1,
+                "width": 0,
+              },
+              "shadowOpacity": 0.05,
+              "shadowRadius": 2,
+            },
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "backgroundColor": "#eef4ff",
+              "borderRadius": 8,
+              "height": 44,
+              "justifyContent": "center",
+              "overflow": "hidden",
+              "width": 44,
+            }
+          }
+        >
+          <View
+            color="#9fd2b4"
+            size={18}
+          />
+        </View>
+        <View
+          style={
+            {
+              "flex": 1,
+              "minWidth": 0,
+            }
+          }
+        >
+          <Text
+            numberOfLines={2}
+            style={
+              {
+                "color": "#121c28",
+                "fontFamily": "Inter_600SemiBold",
+                "fontSize": 14,
+                "lineHeight": 18,
+              }
+            }
+          >
+            Milling Machine
+          </Text>
+          <View
+            style={
+              {
+                "alignSelf": "flex-start",
+                "marginTop": 4,
+              }
+            }
+          >
+            <View
+              style={
+                [
+                  {
+                    "borderColor": "#dfe5ec",
+                    "borderRadius": 9999,
+                    "borderWidth": 1,
+                    "paddingHorizontal": 10,
+                    "paddingVertical": 4,
+                  },
+                  {
+                    "backgroundColor": "#fffbeb",
+                  },
+                ]
+              }
+            >
+              <Text
+                style={
+                  [
+                    {
+                      "fontFamily": "IBMPlexSans_600SemiBold",
+                      "fontSize": 10,
+                      "letterSpacing": 1,
+                      "lineHeight": 13,
+                    },
+                    {
+                      "color": "#b45309",
+                    },
+                  ]
+                }
+              >
+                mobile.labCards.needsCount
+              </Text>
+            </View>
+          </View>
+        </View>
+        <View
+          color="#6b7280"
+          size={18}
+        />
+      </View>
+    </View>
+    <View
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+    >
+      <View
+        style={
+          [
+            {
+              "alignItems": "center",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#eef2f9",
+              "borderRadius": 8,
+              "borderWidth": 1,
+              "elevation": 1,
+              "flexDirection": "row",
+              "gap": 12,
+              "padding": 12,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 1,
+                "width": 0,
+              },
+              "shadowOpacity": 0.05,
+              "shadowRadius": 2,
+            },
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "backgroundColor": "#eef4ff",
+              "borderRadius": 8,
+              "height": 44,
+              "justifyContent": "center",
+              "overflow": "hidden",
+              "width": 44,
+            }
+          }
+        >
+          <View
+            color="#9fd2b4"
+            size={18}
+          />
+        </View>
+        <View
+          style={
+            {
+              "flex": 1,
+              "minWidth": 0,
+            }
+          }
+        >
+          <Text
+            numberOfLines={2}
+            style={
+              {
+                "color": "#121c28",
+                "fontFamily": "Inter_600SemiBold",
+                "fontSize": 14,
+                "lineHeight": 18,
+              }
+            }
+          >
+            Press Brake
+          </Text>
+          <View
+            style={
+              {
+                "alignSelf": "flex-start",
+                "marginTop": 4,
+              }
+            }
+          >
+            <View
+              style={
+                [
+                  {
+                    "borderColor": "#dfe5ec",
+                    "borderRadius": 9999,
+                    "borderWidth": 1,
+                    "paddingHorizontal": 10,
+                    "paddingVertical": 4,
+                  },
+                  {
+                    "backgroundColor": "#fffbeb",
+                  },
+                ]
+              }
+            >
+              <Text
+                style={
+                  [
+                    {
+                      "fontFamily": "IBMPlexSans_600SemiBold",
+                      "fontSize": 10,
+                      "letterSpacing": 1,
+                      "lineHeight": 13,
+                    },
+                    {
+                      "color": "#b45309",
+                    },
+                  ]
+                }
+              >
+                mobile.labCards.needsCount
+              </Text>
+            </View>
+          </View>
+        </View>
+        <View
+          color="#6b7280"
+          size={18}
+        />
+      </View>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "marginTop": 12,
+      }
+    }
+  >
+    <View
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={
+        {
+          "bottom": 8,
+          "left": 8,
+          "right": 8,
+          "top": 8,
+        }
+      }
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={{}}
+    >
+      <View
+        style={
+          [
+            {
+              "alignItems": "center",
+              "backgroundColor": "#16794A",
+              "borderRadius": 12,
+              "flexDirection": "row",
+              "gap": 6,
+              "justifyContent": "center",
+              "paddingHorizontal": 16,
+              "paddingVertical": 14,
+            },
+            undefined,
+          ]
+        }
+      >
+        <View
+          color="#fff"
+          size={16}
+        />
+        <Text
+          style={
+            {
+              "color": "#fff",
+              "fontFamily": "Inter_700Bold",
+              "fontSize": 13,
+            }
+          }
+        >
+          mobile.labCards.publishAllReady
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) overview golden (CardShell + StatTile) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#ffffff",
+      "borderColor": "#dfe5ec",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 1,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.05,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "borderBottomColor": "#eef2f9",
+        "borderBottomWidth": 0.5,
+        "flexDirection": "row",
+        "justifyContent": "space-between",
+        "marginBottom": 12,
+        "paddingBottom": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#16794A",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 1.2,
+            "lineHeight": 14,
+            "textTransform": "uppercase",
+          },
+          null,
+        ]
+      }
+    >
+      mobile.labCards.marketplaceOverview
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "flexDirection": "row",
+        "gap": 12,
+      }
+    }
+  >
+    <View
+      style={
+        [
+          {
+            "borderColor": "#dfe5ec",
+            "borderRadius": 16,
+            "borderWidth": 1,
+            "flex": 1,
+            "padding": 12,
+          },
+          {
+            "backgroundColor": "#f0fdf4",
+            "borderColor": "#bbf7d0",
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#121c28",
+              "fontFamily": "HankenGrotesk_800ExtraBold",
+              "fontSize": 28,
+            },
+            {
+              "color": "#0E3B2E",
+            },
+          ]
+        }
+      >
+        42
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 0.8,
+            "marginTop": 4,
+            "textTransform": "uppercase",
+          }
+        }
+      >
+        mobile.labCards.activeLots
+      </Text>
+    </View>
+    <View
+      style={
+        [
+          {
+            "borderColor": "#dfe5ec",
+            "borderRadius": 16,
+            "borderWidth": 1,
+            "flex": 1,
+            "padding": 12,
+          },
+          undefined,
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#121c28",
+              "fontFamily": "HankenGrotesk_800ExtraBold",
+              "fontSize": 28,
+            },
+            undefined,
+          ]
+        }
+      >
+        128
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 0.8,
+            "marginTop": 4,
+            "textTransform": "uppercase",
+          }
+        }
+      >
+        mobile.labCards.completed
+      </Text>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) platform_info golden (steps) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#ffffff",
+      "borderColor": "#dfe5ec",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 1,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.05,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "borderBottomColor": "#eef2f9",
+        "borderBottomWidth": 0.5,
+        "flexDirection": "row",
+        "justifyContent": "space-between",
+        "marginBottom": 12,
+        "paddingBottom": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#16794A",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 1.2,
+            "lineHeight": 14,
+            "textTransform": "uppercase",
+          },
+          null,
+        ]
+      }
+    >
+      About GreenBidz
+    </Text>
+  </View>
+  <Text
+    style={
+      {
+        "color": "#5b6b63",
+        "fontFamily": "Inter_400Regular",
+        "fontSize": 13,
+        "lineHeight": 19,
+        "marginTop": 4,
+      }
+    }
+  >
+    GreenBidz is a marketplace for industrial equipment.
+  </Text>
+  <View
+    style={
+      {
+        "gap": 10,
+        "marginTop": 8,
+      }
+    }
+  >
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 10,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "#f0fdf4",
+            "borderRadius": 9999,
+            "height": 20,
+            "justifyContent": "center",
+            "width": 20,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#16794A",
+              "fontFamily": "Inter_700Bold",
+              "fontSize": 11,
+            }
+          }
+        >
+          1
+        </Text>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#121c28",
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 12,
+            }
+          }
+        >
+          List
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#6b7280",
+              "fontFamily": "Inter_400Regular",
+              "fontSize": 11,
+              "lineHeight": 16,
+              "marginTop": 2,
+            }
+          }
+        >
+          Post your item.
+        </Text>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 10,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "#f0fdf4",
+            "borderRadius": 9999,
+            "height": 20,
+            "justifyContent": "center",
+            "width": 20,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#16794A",
+              "fontFamily": "Inter_700Bold",
+              "fontSize": 11,
+            }
+          }
+        >
+          2
+        </Text>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#121c28",
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 12,
+            }
+          }
+        >
+          Bid
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#6b7280",
+              "fontFamily": "Inter_400Regular",
+              "fontSize": 11,
+              "lineHeight": 16,
+              "marginTop": 2,
+            }
+          }
+        >
+          Buyers place bids.
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) product detail golden (detailTitle/detailDesc + status) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#ffffff",
+      "borderColor": "#dfe5ec",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 1,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.05,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "borderBottomColor": "#eef2f9",
+        "borderBottomWidth": 0.5,
+        "flexDirection": "row",
+        "justifyContent": "space-between",
+        "marginBottom": 12,
+        "paddingBottom": 8,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "color": "#16794A",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 11,
+            "letterSpacing": 1.2,
+            "lineHeight": 14,
+            "textTransform": "uppercase",
+          },
+          null,
+        ]
+      }
+    >
+      mobile.labCards.listing
+    </Text>
+  </View>
+  <Text
+    style={
+      {
+        "color": "#121c28",
+        "fontFamily": "Inter_700Bold",
+        "fontSize": 15,
+      }
+    }
+  >
+    Haas VF-2
+  </Text>
+  <Text
+    numberOfLines={3}
+    style={
+      {
+        "color": "#5b6b63",
+        "fontFamily": "Inter_400Regular",
+        "fontSize": 13,
+        "lineHeight": 19,
+        "marginTop": 4,
+      }
+    }
+  >
+    A vertical machining center in working condition.
+  </Text>
+  <View
+    style={
+      {
+        "flexDirection": "row",
+        "flexWrap": "wrap",
+        "gap": 6,
+        "marginTop": 6,
+      }
+    }
+  >
+    <View
+      style={
+        [
+          {
+            "borderColor": "#dfe5ec",
+            "borderRadius": 9999,
+            "borderWidth": 1,
+            "paddingHorizontal": 10,
+            "paddingVertical": 4,
+          },
+          {
+            "backgroundColor": "#f0fdf4",
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "fontFamily": "IBMPlexSans_600SemiBold",
+              "fontSize": 10,
+              "letterSpacing": 1,
+              "lineHeight": 13,
+            },
+            {
+              "color": "#16794A",
+            },
+          ]
+        }
+      >
+        mobile.labCards.statusLive
+      </Text>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) product_list golden (with image) 1`] = `
+<View
+  style={
+    {
+      "gap": 12,
+    }
+  }
+>
+  <Text
+    style={
+      {
+        "color": "#6b7280",
+        "fontFamily": "IBMPlexSans_600SemiBold",
+        "fontSize": 11,
+        "letterSpacing": 1.2,
+        "lineHeight": 14,
+        "marginBottom": 8,
+        "textTransform": "uppercase",
+      }
+    }
+  >
+    mobile.labCards.resultsCount
+  </Text>
+  <View
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={{}}
+  >
+    <View
+      style={
+        {
+          "backgroundColor": "#ffffff",
+          "borderColor": "#dfe5ec",
+          "borderRadius": 16,
+          "borderWidth": 1,
+          "elevation": 1,
+          "overflow": "hidden",
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.05,
+          "shadowRadius": 2,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "aspectRatio": 1.3333333333333333,
+            "backgroundColor": "#eef4ff",
+            "width": "100%",
+          }
+        }
+      >
+        <Image
+          resizeMode="cover"
+          source={
+            {
+              "uri": "https://greenbidz.com/img/vf2.jpg",
+            }
+          }
+          style={
+            {
+              "height": "100%",
+              "width": "100%",
+            }
+          }
+        />
+      </View>
+      <View
+        style={
+          {
+            "gap": 8,
+            "padding": 16,
+          }
+        }
+      >
+        <Text
+          numberOfLines={2}
+          style={
+            {
+              "color": "#121c28",
+              "fontFamily": "HankenGrotesk_700Bold",
+              "fontSize": 17,
+              "letterSpacing": -0.2,
+              "lineHeight": 22,
+            }
+          }
+        >
+          Haas VF-2 Vertical Machining Center
+        </Text>
+        <View
+          style={
+            {
+              "flexDirection": "row",
+              "flexWrap": "wrap",
+              "gap": 6,
+              "marginTop": 6,
+            }
+          }
+        >
+          <View
+            style={
+              [
+                {
+                  "alignSelf": "flex-start",
+                  "borderRadius": 8,
+                  "borderWidth": 1,
+                  "paddingHorizontal": 10,
+                  "paddingVertical": 4,
+                },
+                {
+                  "backgroundColor": "#f0fdf4",
+                  "borderColor": "#bbf7d0",
+                },
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#6b7280",
+                    "fontFamily": "Inter_600SemiBold",
+                    "fontSize": 11,
+                    "letterSpacing": 0.2,
+                    "lineHeight": 14,
+                  },
+                  {
+                    "color": "#16794A",
+                  },
+                ]
+              }
+            >
+              mobile.labCards.condLikeNew
+            </Text>
+          </View>
+          <View
+            style={
+              [
+                {
+                  "alignSelf": "flex-start",
+                  "borderRadius": 8,
+                  "borderWidth": 1,
+                  "paddingHorizontal": 10,
+                  "paddingVertical": 4,
+                },
+                {
+                  "backgroundColor": "#eef4ff",
+                  "borderColor": "#dfe5ec",
+                },
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#6b7280",
+                    "fontFamily": "Inter_600SemiBold",
+                    "fontSize": 11,
+                    "letterSpacing": 0.2,
+                    "lineHeight": 14,
+                  },
+                  false,
+                ]
+              }
+            >
+              mobile.labCards.countryTaiwan
+            </Text>
+          </View>
+        </View>
+        <Text
+          style={
+            {
+              "color": "#16794A",
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 15,
+            }
+          }
+        >
+          USD 25,000
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) product_list golden 1`] = `
+<View
+  style={
+    {
+      "gap": 12,
+    }
+  }
+>
+  <Text
+    style={
+      {
+        "color": "#6b7280",
+        "fontFamily": "IBMPlexSans_600SemiBold",
+        "fontSize": 11,
+        "letterSpacing": 1.2,
+        "lineHeight": 14,
+        "marginBottom": 8,
+        "textTransform": "uppercase",
+      }
+    }
+  >
+    mobile.labCards.resultsCount
+  </Text>
+  <View
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={{}}
+  >
+    <View
+      style={
+        {
+          "backgroundColor": "#ffffff",
+          "borderColor": "#dfe5ec",
+          "borderRadius": 16,
+          "borderWidth": 1,
+          "elevation": 1,
+          "overflow": "hidden",
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.05,
+          "shadowRadius": 2,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "aspectRatio": 1.3333333333333333,
+            "backgroundColor": "#eef4ff",
+            "width": "100%",
+          }
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flex": 1,
+              "gap": 4,
+              "justifyContent": "center",
+            }
+          }
+        >
+          <View
+            color="#9fd2b4"
+            size={26}
+          />
+          <Text
+            style={
+              {
+                "color": "#6b7280",
+                "fontFamily": "IBMPlexSans_600SemiBold",
+                "fontSize": 10,
+                "letterSpacing": 0.8,
+                "textTransform": "uppercase",
+              }
+            }
+          >
+            mobile.labCards.imagePending
+          </Text>
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "gap": 8,
+            "padding": 16,
+          }
+        }
+      >
+        <Text
+          numberOfLines={2}
+          style={
+            {
+              "color": "#121c28",
+              "fontFamily": "HankenGrotesk_700Bold",
+              "fontSize": 17,
+              "letterSpacing": -0.2,
+              "lineHeight": 22,
+            }
+          }
+        >
+          CNC Lathe
+        </Text>
+        <View
+          style={
+            {
+              "flexDirection": "row",
+              "flexWrap": "wrap",
+              "gap": 6,
+              "marginTop": 6,
+            }
+          }
+        >
+          <View
+            style={
+              [
+                {
+                  "alignSelf": "flex-start",
+                  "borderRadius": 8,
+                  "borderWidth": 1,
+                  "paddingHorizontal": 10,
+                  "paddingVertical": 4,
+                },
+                {
+                  "backgroundColor": "#f0fdf4",
+                  "borderColor": "#bbf7d0",
+                },
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#6b7280",
+                    "fontFamily": "Inter_600SemiBold",
+                    "fontSize": 11,
+                    "letterSpacing": 0.2,
+                    "lineHeight": 14,
+                  },
+                  {
+                    "color": "#16794A",
+                  },
+                ]
+              }
+            >
+              mobile.labCards.condWorking
+            </Text>
+          </View>
+          <View
+            style={
+              [
+                {
+                  "alignSelf": "flex-start",
+                  "borderRadius": 8,
+                  "borderWidth": 1,
+                  "paddingHorizontal": 10,
+                  "paddingVertical": 4,
+                },
+                {
+                  "backgroundColor": "#eef4ff",
+                  "borderColor": "#dfe5ec",
+                },
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#6b7280",
+                    "fontFamily": "Inter_600SemiBold",
+                    "fontSize": 11,
+                    "letterSpacing": 0.2,
+                    "lineHeight": 14,
+                  },
+                  false,
+                ]
+              }
+            >
+              mobile.labCards.countryTaiwan
+            </Text>
+          </View>
+        </View>
+        <Text
+          style={
+            {
+              "color": "#16794A",
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 15,
+            }
+          }
+        >
+          USD 12,000
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`cards — characterization (representative families) wtb_draft golden (soft card + header + teaser + reserved inputs) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#ffffff",
+      "borderColor": "#dfe5ec",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "elevation": 1,
+      "padding": 16,
+      "shadowColor": "#000",
+      "shadowOffset": {
+        "height": 1,
+        "width": 0,
+      },
+      "shadowOpacity": 0.05,
+      "shadowRadius": 2,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 6,
+        "marginBottom": 8,
+      }
+    }
+  >
+    <View
+      color="#16794A"
+      size={14}
+    />
+    <Text
+      style={
+        {
+          "color": "#16794A",
+          "fontFamily": "IBMPlexSans_600SemiBold",
+          "fontSize": 11,
+          "letterSpacing": 1.2,
+          "lineHeight": 14,
+          "textTransform": "uppercase",
+        }
+      }
+    >
+      mobile.labCards.wantToBuy
+    </Text>
+  </View>
+  <Text
+    style={
+      {
+        "color": "#121c28",
+        "fontFamily": "Inter_700Bold",
+        "fontSize": 15,
+      }
+    }
+  >
+    CNC Lathe Wanted
+  </Text>
+  <View
+    style={
+      {
+        "flexDirection": "row",
+        "flexWrap": "wrap",
+        "gap": 6,
+        "marginTop": 8,
+      }
+    }
+  >
+    <View
+      style={
+        [
+          {
+            "alignSelf": "flex-start",
+            "borderRadius": 8,
+            "borderWidth": 1,
+            "paddingHorizontal": 10,
+            "paddingVertical": 4,
+          },
+          {
+            "backgroundColor": "#f0fdf4",
+            "borderColor": "#bbf7d0",
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#6b7280",
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 11,
+              "letterSpacing": 0.2,
+              "lineHeight": 14,
+            },
+            {
+              "color": "#16794A",
+            },
+          ]
+        }
+      >
+        CNC
+      </Text>
+    </View>
+    <View
+      style={
+        [
+          {
+            "alignSelf": "flex-start",
+            "borderRadius": 8,
+            "borderWidth": 1,
+            "paddingHorizontal": 10,
+            "paddingVertical": 4,
+          },
+          {
+            "backgroundColor": "#eef4ff",
+            "borderColor": "#dfe5ec",
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#6b7280",
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 11,
+              "letterSpacing": 0.2,
+              "lineHeight": 14,
+            },
+            false,
+          ]
+        }
+      >
+        lathe
+      </Text>
+    </View>
+    <View
+      style={
+        [
+          {
+            "alignSelf": "flex-start",
+            "borderRadius": 8,
+            "borderWidth": 1,
+            "paddingHorizontal": 10,
+            "paddingVertical": 4,
+          },
+          {
+            "backgroundColor": "#eef4ff",
+            "borderColor": "#dfe5ec",
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#6b7280",
+              "fontFamily": "Inter_600SemiBold",
+              "fontSize": 11,
+              "letterSpacing": 0.2,
+              "lineHeight": 14,
+            },
+            false,
+          ]
+        }
+      >
+        cnc
+      </Text>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "gap": 6,
+        "marginTop": 12,
+      }
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#16794A",
+          "fontFamily": "IBMPlexSans_600SemiBold",
+          "fontSize": 11,
+          "letterSpacing": 1,
+          "lineHeight": 14,
+          "textTransform": "uppercase",
+        }
+      }
+    >
+      mobile.labCards.wtbEdit.conditionLabel
+       
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 10,
+            "letterSpacing": 0,
+            "textTransform": "none",
+          }
+        }
+      >
+        mobile.labCards.wtbEdit.optionalSuffix
+      </Text>
+    </Text>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+          "gap": 6,
+        }
+      }
+    >
+      <View
+        accessibilityLabel="mobile.labCards.wtbEdit.conditionPillA11y"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": false,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={4}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={{}}
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "#eef4ff",
+                "borderColor": "#dfe5ec",
+                "borderRadius": 8,
+                "borderWidth": 1,
+                "paddingHorizontal": 12,
+                "paddingVertical": 7,
+              },
+              false,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#6b7280",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 12.5,
+                },
+                false,
+              ]
+            }
+          >
+            mobile.labCards.condNew
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityLabel="mobile.labCards.wtbEdit.conditionPillA11y"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": false,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={4}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={{}}
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "#eef4ff",
+                "borderColor": "#dfe5ec",
+                "borderRadius": 8,
+                "borderWidth": 1,
+                "paddingHorizontal": 12,
+                "paddingVertical": 7,
+              },
+              false,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#6b7280",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 12.5,
+                },
+                false,
+              ]
+            }
+          >
+            mobile.labCards.condRefurbished
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityLabel="mobile.labCards.wtbEdit.conditionPillA11y"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": true,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={4}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={{}}
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "#eef4ff",
+                "borderColor": "#dfe5ec",
+                "borderRadius": 8,
+                "borderWidth": 1,
+                "paddingHorizontal": 12,
+                "paddingVertical": 7,
+              },
+              {
+                "backgroundColor": "#f0fdf4",
+                "borderColor": "#bbf7d0",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#6b7280",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 12.5,
+                },
+                {
+                  "color": "#16794A",
+                },
+              ]
+            }
+          >
+            mobile.labCards.condWorking
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityLabel="mobile.labCards.wtbEdit.conditionAnyA11y"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": false,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={4}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={{}}
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "#eef4ff",
+                "borderColor": "#dfe5ec",
+                "borderRadius": 8,
+                "borderWidth": 1,
+                "paddingHorizontal": 12,
+                "paddingVertical": 7,
+              },
+              false,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#6b7280",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 12.5,
+                },
+                false,
+              ]
+            }
+          >
+            mobile.labCards.wtbEdit.conditionAny
+          </Text>
+        </View>
+      </View>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "gap": 6,
+        "marginTop": 12,
+      }
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#16794A",
+          "fontFamily": "IBMPlexSans_600SemiBold",
+          "fontSize": 11,
+          "letterSpacing": 1,
+          "lineHeight": 14,
+          "textTransform": "uppercase",
+        }
+      }
+    >
+      mobile.labCards.wtbEdit.budgetLabel
+       
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 10,
+            "letterSpacing": 0,
+            "textTransform": "none",
+          }
+        }
+      >
+        mobile.labCards.wtbEdit.optionalSuffix
+      </Text>
+    </Text>
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#E7EDE8",
+          "borderRadius": 8,
+          "borderWidth": 1.4,
+          "flexDirection": "row",
+          "gap": 4,
+          "minHeight": 42,
+          "paddingHorizontal": 12,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_600SemiBold",
+            "fontSize": 14,
+          }
+        }
+      >
+        mobile.labCards.wtbEdit.budgetPrefix
+      </Text>
+      <TextInput
+        accessibilityLabel="mobile.labCards.wtbEdit.budgetFieldA11y"
+        keyboardType="number-pad"
+        onChangeText={[Function]}
+        placeholder="mobile.labCards.wtbEdit.anyPlaceholder"
+        placeholderTextColor="#90A096"
+        style={
+          {
+            "color": "#10201A",
+            "flex": 1,
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 14,
+            "paddingVertical": 8,
+          }
+        }
+        value="15000"
+      />
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+          "gap": 6,
+        }
+      }
+    >
+      <View
+        accessibilityLabel="mobile.labCards.wtbEdit.budgetChip"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": false,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={4}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={{}}
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "#eef4ff",
+                "borderColor": "#dfe5ec",
+                "borderRadius": 8,
+                "borderWidth": 1,
+                "paddingHorizontal": 12,
+                "paddingVertical": 7,
+              },
+              false,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#6b7280",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 12.5,
+                },
+                false,
+              ]
+            }
+          >
+            mobile.labCards.wtbEdit.budgetChip
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityLabel="mobile.labCards.wtbEdit.budgetChip"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": false,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={4}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={{}}
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "#eef4ff",
+                "borderColor": "#dfe5ec",
+                "borderRadius": 8,
+                "borderWidth": 1,
+                "paddingHorizontal": 12,
+                "paddingVertical": 7,
+              },
+              false,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#6b7280",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 12.5,
+                },
+                false,
+              ]
+            }
+          >
+            mobile.labCards.wtbEdit.budgetChip
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityLabel="mobile.labCards.wtbEdit.budgetChip"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": false,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={4}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={{}}
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "#eef4ff",
+                "borderColor": "#dfe5ec",
+                "borderRadius": 8,
+                "borderWidth": 1,
+                "paddingHorizontal": 12,
+                "paddingVertical": 7,
+              },
+              false,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#6b7280",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 12.5,
+                },
+                false,
+              ]
+            }
+          >
+            mobile.labCards.wtbEdit.budgetChip
+          </Text>
+        </View>
+      </View>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "gap": 6,
+        "marginTop": 12,
+      }
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#16794A",
+          "fontFamily": "IBMPlexSans_600SemiBold",
+          "fontSize": 11,
+          "letterSpacing": 1,
+          "lineHeight": 14,
+          "textTransform": "uppercase",
+        }
+      }
+    >
+      mobile.labCards.wtbEdit.quantityLabel
+       
+      <Text
+        style={
+          {
+            "color": "#6b7280",
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 10,
+            "letterSpacing": 0,
+            "textTransform": "none",
+          }
+        }
+      >
+        mobile.labCards.wtbEdit.optionalSuffix
+      </Text>
+    </Text>
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "alignSelf": "flex-start",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#E7EDE8",
+          "borderRadius": 8,
+          "borderWidth": 1.4,
+          "flexDirection": "row",
+          "overflow": "hidden",
+        }
+      }
+    >
+      <View
+        accessibilityLabel="mobile.labCards.wtbEdit.qtyDecrementA11y"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={6}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "alignItems": "center",
+            "justifyContent": "center",
+            "minHeight": 42,
+            "width": 42,
+          }
+        }
+      >
+        <View
+          color="#16794A"
+          size={16}
+        />
+      </View>
+      <TextInput
+        accessibilityLabel="mobile.labCards.wtbEdit.quantityLabel"
+        keyboardType="number-pad"
+        onChangeText={[Function]}
+        placeholder="mobile.labCards.wtbEdit.anyPlaceholder"
+        placeholderTextColor="#90A096"
+        style={
+          {
+            "borderColor": "#E7EDE8",
+            "borderLeftWidth": 0.5,
+            "borderRightWidth": 0.5,
+            "color": "#10201A",
+            "fontFamily": "Inter_600SemiBold",
+            "fontSize": 14,
+            "minHeight": 42,
+            "minWidth": 56,
+            "textAlign": "center",
+          }
+        }
+        value="2"
+      />
+      <View
+        accessibilityLabel="mobile.labCards.wtbEdit.qtyIncrementA11y"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={6}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "alignItems": "center",
+            "justifyContent": "center",
+            "minHeight": 42,
+            "width": 42,
+          }
+        }
+      >
+        <View
+          color="#16794A"
+          size={16}
+        />
+      </View>
+    </View>
+  </View>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 6,
+        "marginTop": 10,
+      }
+    }
+  >
+    <View
+      color="#16794A"
+      size={14}
+    />
+    <Text
+      style={
+        {
+          "color": "#6b7280",
+          "flex": 1,
+          "fontFamily": "Inter_400Regular",
+          "fontSize": 12,
+        }
+      }
+    >
+      mobile.labCards.wtbTeaserMatchesOne
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "flexDirection": "row",
+        "flexWrap": "wrap",
+        "gap": 8,
+        "marginTop": 12,
+      }
+    }
+  >
+    <View
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": false,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={
+        {
+          "bottom": 8,
+          "left": 8,
+          "right": 8,
+          "top": 8,
+        }
+      }
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={{}}
+    >
+      <View
+        style={
+          [
+            {
+              "alignItems": "center",
+              "backgroundColor": "#16794A",
+              "borderRadius": 12,
+              "flexDirection": "row",
+              "gap": 6,
+              "justifyContent": "center",
+              "paddingHorizontal": 16,
+              "paddingVertical": 14,
+            },
+            false,
+          ]
+        }
+      >
+        <View
+          color="#fff"
+          size={16}
+        />
+        <Text
+          style={
+            {
+              "color": "#fff",
+              "fontFamily": "Inter_700Bold",
+              "fontSize": 13,
+            }
+          }
+        >
+          mobile.labCards.saveAlertMe
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;

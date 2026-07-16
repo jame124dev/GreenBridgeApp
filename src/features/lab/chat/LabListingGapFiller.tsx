@@ -30,7 +30,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -69,15 +68,11 @@ import {
 
 import { Sheet } from '@/components/ui';
 import {
-  brand,
   fonts,
-  greenDark,
-  greenDarkest,
-  greenMedium,
   radius,
   spacing,
-  warnAmber,
 } from '@/constants/theme';
+import { createThemedStyles, useColor } from '@/features/lab/chat/theme';
 import { haptics } from '@/lib/haptics';
 import { usePressScale, usePop } from '@/animations/recipes';
 import { useAuth } from '@/stores/authStore';
@@ -265,6 +260,11 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
   const entering = usePop();
   const { t, i18n } = useTranslation();
   const sellerId = useAuth((s) => s.profile?.id ?? null);
+  const styles = useGapStyles();
+  const placeholderColor = useColor('text.placeholder');
+  const dangerColor = useColor('status.danger');
+  const accentPressedColor = useColor('accent.pressed');
+  const successColor = useColor('status.success');
 
   // Keys the user has answered/skipped THIS mount — the current slide is the
   // first live gap NOT in this set. Purely additive; never reset per data frame,
@@ -601,7 +601,7 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
       <Animated.View entering={entering} exiting={FadeOut.duration(180)} style={styles.shell}>
         <View style={styles.guestRow}>
           <View style={styles.headerCoin}>
-            <Sparkles size={14} color={greenDark} />
+            <Sparkles size={14} color={accentPressedColor} />
           </View>
           <Text style={styles.guestText}>
             {t('mobile.labGap.guestFinish', {
@@ -622,7 +622,7 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
     if (remainingRequired.length === 0) {
       return (
         <Animated.View entering={entering} exiting={FadeOut.duration(180)} style={styles.doneShell}>
-          <PartyPopper size={16} color={greenMedium} />
+          <PartyPopper size={16} color={successColor} />
           <Text style={styles.doneText}>
             {t('mobile.labGap.allSet', {
               defaultValue: 'All set — review the draft above and tap Publish.',
@@ -638,7 +638,7 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
       <Animated.View entering={entering} exiting={FadeOut.duration(180)} style={styles.blockedShell}>
         <View style={styles.blockedHeadRow}>
           <View style={styles.promptCoin}>
-            <ClipboardList size={15} color={greenDark} />
+            <ClipboardList size={15} color={accentPressedColor} />
           </View>
           <View style={styles.blockedHeadText}>
             <Text style={styles.blockedTitle}>
@@ -684,7 +684,7 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
       {/* Header + step count */}
       <View style={styles.headerRow}>
         <View style={styles.headerLead}>
-          <Sparkles size={13} color={greenDark} strokeWidth={2.4} />
+          <Sparkles size={13} color={accentPressedColor} strokeWidth={2.4} />
           <Text style={styles.headerTitle}>
             {t('mobile.labGap.finishListing', { defaultValue: 'Finish your listing' })}
           </Text>
@@ -723,7 +723,7 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
             style={styles.banner}
             accessibilityRole="button"
           >
-            <AlertTriangle size={13} color={brand.destructive} />
+            <AlertTriangle size={13} color={dangerColor} />
             <Text style={styles.bannerText}>
               {t('mobile.labGap.errSave', {
                 defaultValue:
@@ -737,7 +737,7 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
           {/* Prompt row */}
           <View style={styles.promptRow}>
             <View style={styles.promptCoin}>
-              <Icon size={15} color={greenDark} />
+              <Icon size={15} color={accentPressedColor} />
             </View>
             <Text style={styles.promptText}>
               {t(`mobile.labGap.prompt.${key}`, { defaultValue: meta.prompt })}
@@ -815,7 +815,7 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
                   onChangeText={setValue}
                   keyboardType="decimal-pad"
                   placeholder={t('mobile.labGap.pricePlaceholder', { defaultValue: 'e.g. 5000' })}
-                  placeholderTextColor={brand.placeholder}
+                  placeholderTextColor={placeholderColor}
                   onSubmitEditing={() => {
                     if (canNext) save(value);
                   }}
@@ -866,7 +866,7 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
                 style={styles.offerBtn}
                 accessibilityRole="button"
               >
-                <HandCoins size={13} color={greenDark} />
+                <HandCoins size={13} color={accentPressedColor} />
                 <Text style={styles.offerBtnText}>
                   {t('mobile.labGap.acceptOffers', { defaultValue: 'Accept offers instead' })}
                 </Text>
@@ -887,7 +887,7 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
                   field: humanize(key),
                 })
               }
-              placeholderTextColor={brand.placeholder}
+              placeholderTextColor={placeholderColor}
               autoCapitalize={meta.kind === 'text' ? 'sentences' : 'none'}
               onSubmitEditing={() => {
                 if (canNext) save(value);
@@ -910,14 +910,14 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
               >
                 {uploading ? (
                   <>
-                    <ActivityIndicator color={greenDark} />
+                    <ActivityIndicator color={accentPressedColor} />
                     <Text style={styles.uploadTitle}>
                       {t('mobile.labGap.uploading', { defaultValue: 'Uploading…' })}
                     </Text>
                   </>
                 ) : (
                   <>
-                    <ImagePlus size={22} color={greenDark} />
+                    <ImagePlus size={22} color={accentPressedColor} />
                     <Text style={styles.uploadTitle}>
                       {t('mobile.labGap.uploadPhoto', { defaultValue: 'Upload a photo' })}
                     </Text>
@@ -938,7 +938,7 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
                   defaultValue: 'Take a photo with the camera',
                 })}
               >
-                <Camera size={16} color={greenDark} />
+                <Camera size={16} color={accentPressedColor} />
                 <Text style={styles.cameraBtnText}>
                   {t('mobile.labGap.useCamera', { defaultValue: 'Use camera' })}
                 </Text>
@@ -1021,9 +1021,10 @@ export function LabListingGapFiller({ data, conversationId, onSaved, onManual }:
 
 /* ── Sub-components ────────────────────────────────────────────────────────── */
 
-/** Primary "Use current location" chip — greenDark fill, white spinner busy. */
+/** Primary "Use current location" chip — accent.pressed fill, white spinner busy. */
 function UseCurrentChip({ detecting, onPress }: { detecting: boolean; onPress: () => void }) {
   const { t } = useTranslation();
+  const styles = useGapStyles();
   const { style, onPressIn, onPressOut } = usePressScale();
   return (
     <AnimatedPressable
@@ -1062,6 +1063,8 @@ function PickerRow({
   placeholder: string;
   onPress: () => void;
 }) {
+  const styles = useGapStyles();
+  const mutedColor = useColor('text.muted');
   return (
     <Pressable onPress={onPress} style={styles.pickerRow} accessibilityRole="button">
       <Text
@@ -1070,7 +1073,7 @@ function PickerRow({
       >
         {value || placeholder}
       </Text>
-      <ChevronDown size={16} color={brand.mutedForeground} />
+      <ChevronDown size={16} color={mutedColor} />
     </Pressable>
   );
 }
@@ -1086,6 +1089,7 @@ function ChoicePill({
   disabled: boolean;
   onPress: () => void;
 }) {
+  const styles = useGapStyles();
   const { style, onPressIn, onPressOut } = usePressScale();
   return (
     <AnimatedPressable
@@ -1114,6 +1118,7 @@ function NextButton({
   saving: boolean;
   onPress: () => void;
 }) {
+  const styles = useGapStyles();
   const { style, onPressIn, onPressOut } = usePressScale();
   return (
     <AnimatedPressable
@@ -1143,6 +1148,7 @@ function NextButton({
  *  re-opens the stepper at the first remaining required field. */
 function FinishRequiredButton({ onPress }: { onPress: () => void }) {
   const { t } = useTranslation();
+  const styles = useGapStyles();
   const { style, onPressIn, onPressOut } = usePressScale();
   return (
     <AnimatedPressable
@@ -1178,6 +1184,8 @@ function CategoryPickerSheet({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const styles = useGapStyles();
+  const placeholderColor = useColor('text.placeholder');
   const [query, setQuery] = useState('');
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -1202,7 +1210,7 @@ function CategoryPickerSheet({
           value={query}
           onChangeText={setQuery}
           placeholder={t('mobile.labGap.search', { defaultValue: 'Search…' })}
-          placeholderTextColor={brand.placeholder}
+          placeholderTextColor={placeholderColor}
           autoCorrect={false}
           returnKeyType="search"
           style={styles.catSearchInput}
@@ -1236,12 +1244,12 @@ function CategoryPickerSheet({
 
 /* ── Styles ────────────────────────────────────────────────────────────────── */
 
-const styles = StyleSheet.create({
+const useGapStyles = createThemedStyles((t) => ({
   shell: {
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: brand.successBorder,
-    backgroundColor: brand.successBg,
+    borderColor: t.color['status.successBorder'],
+    backgroundColor: t.color['status.successSurface'],
     marginBottom: spacing.sm,
     overflow: 'hidden',
   },
@@ -1251,20 +1259,20 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: brand.successBorder,
-    backgroundColor: brand.successBg,
+    borderColor: t.color['status.successBorder'],
+    backgroundColor: t.color['status.successSurface'],
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     marginBottom: spacing.sm,
   },
-  doneText: { flex: 1, fontFamily: fonts.semibold, fontSize: 13, color: greenDarkest },
+  doneText: { flex: 1, fontFamily: fonts.semibold, fontSize: 13, color: t.color['accent'] },
 
   // Still-blocked completion (required field skipped) — honest, non-celebratory.
   blockedShell: {
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: brand.successBorder,
-    backgroundColor: brand.successBg,
+    borderColor: t.color['status.successBorder'],
+    backgroundColor: t.color['status.successSurface'],
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     marginBottom: spacing.sm,
@@ -1272,9 +1280,9 @@ const styles = StyleSheet.create({
   },
   blockedHeadRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   blockedHeadText: { flex: 1, gap: 2 },
-  blockedTitle: { fontFamily: fonts.bold, fontSize: 14.5, lineHeight: 19, color: brand.foreground },
-  blockedBody: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, color: greenDarkest },
-  blockedField: { fontFamily: fonts.bold, color: greenDark },
+  blockedTitle: { fontFamily: fonts.bold, fontSize: 14.5, lineHeight: 19, color: t.color['text.primary'] },
+  blockedBody: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, color: t.color['accent'] },
+  blockedField: { fontFamily: fonts.bold, color: t.color['accent.pressed'] },
   finishBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1282,7 +1290,7 @@ const styles = StyleSheet.create({
     gap: 6,
     alignSelf: 'flex-start',
     minHeight: 40,
-    backgroundColor: greenDark,
+    backgroundColor: t.color['accent.pressed'],
     borderRadius: radius.md,
     paddingHorizontal: 16,
     paddingVertical: 9,
@@ -1303,9 +1311,9 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: greenDark,
+    color: t.color['accent.pressed'],
   },
-  stepCount: { fontFamily: fonts.semibold, fontSize: 11, color: brand.mutedForeground },
+  stepCount: { fontFamily: fonts.semibold, fontSize: 11, color: t.color['text.muted'] },
 
   progressRow: {
     flexDirection: 'row',
@@ -1317,10 +1325,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     borderRadius: radius.full,
-    backgroundColor: brand.border,
+    backgroundColor: t.color['border.subtle'],
     overflow: 'hidden',
   },
-  progressFill: { height: '100%', borderRadius: radius.full, backgroundColor: greenMedium },
+  progressFill: { height: '100%', borderRadius: radius.full, backgroundColor: t.color['status.success'] },
 
   body: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.md },
 
@@ -1330,30 +1338,30 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: brand.warningBorder,
-    backgroundColor: brand.warningBg,
+    borderColor: t.color['status.warningBorder'],
+    backgroundColor: t.color['status.warningSurface'],
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginBottom: spacing.sm,
   },
-  bannerText: { flex: 1, fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 15, color: brand.warningText },
+  bannerText: { flex: 1, fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 15, color: t.color['status.warningStrong'] },
 
   promptRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.sm },
   promptCoin: {
     width: 30,
     height: 30,
     borderRadius: radius.full,
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
     borderWidth: 1,
-    borderColor: brand.successBorder,
+    borderColor: t.color['status.successBorder'],
     alignItems: 'center',
     justifyContent: 'center',
   },
-  promptText: { flex: 1, fontFamily: fonts.bold, fontSize: 14.5, lineHeight: 19, color: brand.foreground },
+  promptText: { flex: 1, fontFamily: fonts.bold, fontSize: 14.5, lineHeight: 19, color: t.color['text.primary'] },
   confirmBadge: {
-    backgroundColor: brand.warningBg,
+    backgroundColor: t.color['status.warningSurface'],
     borderWidth: 1,
-    borderColor: brand.warningBorder,
+    borderColor: t.color['status.warningBorder'],
     borderRadius: radius.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -1362,7 +1370,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontSize: 9,
     letterSpacing: 0.4,
-    color: brand.warningText,
+    color: t.color['status.warningStrong'],
   },
 
   gap8: { gap: 8 },
@@ -1374,7 +1382,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     minHeight: 44,
-    backgroundColor: greenDark,
+    backgroundColor: t.color['accent.pressed'],
     borderRadius: radius.md,
     paddingHorizontal: 16,
     paddingVertical: 11,
@@ -1384,7 +1392,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 11.5,
     lineHeight: 16,
-    color: brand.warningText,
+    color: t.color['status.warningStrong'],
   },
 
   // Picker row (country / category trigger)
@@ -1394,27 +1402,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 44,
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     borderRadius: radius.md,
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  pickerValue: { flex: 1, fontFamily: fonts.regular, fontSize: 14, color: brand.foreground, marginRight: 8 },
-  pickerPlaceholder: { color: brand.placeholder },
+  pickerValue: { flex: 1, fontFamily: fonts.regular, fontSize: 14, color: t.color['text.primary'], marginRight: 8 },
+  pickerPlaceholder: { color: t.color['text.placeholder'] },
 
   // Text / number inputs
   input: {
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     borderRadius: radius.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
     minHeight: 44,
     fontFamily: fonts.regular,
     fontSize: 14,
-    color: brand.foreground,
-    backgroundColor: brand.surface,
+    color: t.color['text.primary'],
+    backgroundColor: t.color['surface.raised'],
   },
 
   // Price
@@ -1423,38 +1431,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     borderRadius: radius.md,
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
     paddingHorizontal: 12,
     minHeight: 44,
   },
-  priceSym: { fontFamily: fonts.bold, fontSize: 14, color: brand.mutedForeground },
-  priceInput: { flex: 1, fontFamily: fonts.regular, fontSize: 14, color: brand.foreground, paddingVertical: 10 },
+  priceSym: { fontFamily: fonts.bold, fontSize: 14, color: t.color['text.muted'] },
+  priceInput: { flex: 1, fontFamily: fonts.regular, fontSize: 14, color: t.color['text.primary'], paddingVertical: 10 },
   estimateRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
-  estimateLabel: { fontFamily: fonts.semibold, fontSize: 11, color: brand.mutedForeground },
+  estimateLabel: { fontFamily: fonts.semibold, fontSize: 11, color: t.color['text.muted'] },
   estimateChip: {
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     borderRadius: radius.sm,
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  estimateChipText: { fontFamily: fonts.semibold, fontSize: 12, color: brand.textMuted },
+  estimateChipText: { fontFamily: fonts.semibold, fontSize: 12, color: t.color['text.secondary'] },
   offerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 6,
     borderWidth: 1,
-    borderColor: brand.successBorder,
+    borderColor: t.color['status.successBorder'],
     borderRadius: radius.md,
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  offerBtnText: { fontFamily: fonts.semibold, fontSize: 12, color: greenDark },
+  offerBtnText: { fontFamily: fonts.semibold, fontSize: 12, color: t.color['accent.pressed'] },
 
   // Chips (condition / operation / grade)
   pillGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -1465,14 +1473,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     borderRadius: radius.md,
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  pillSelected: { backgroundColor: greenDark, borderColor: greenDark },
-  pillText: { fontFamily: fonts.semibold, fontSize: 13, color: brand.textMuted },
+  pillSelected: { backgroundColor: t.color['accent.pressed'], borderColor: t.color['accent.pressed'] },
+  pillText: { fontFamily: fonts.semibold, fontSize: 13, color: t.color['text.secondary'] },
   pillTextSelected: { color: '#fff' },
 
   // Photo upload
@@ -1483,9 +1491,9 @@ const styles = StyleSheet.create({
     gap: 4,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: brand.successBorder,
+    borderColor: t.color['status.successBorder'],
     borderRadius: radius.md,
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
     paddingVertical: 22,
   },
   cameraBtn: {
@@ -1495,46 +1503,46 @@ const styles = StyleSheet.create({
     gap: 6,
     minHeight: 44,
     borderWidth: 1,
-    borderColor: greenDarkest,
+    borderColor: t.color['accent'],
     borderRadius: radius.md,
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
     paddingVertical: 10,
   },
-  cameraBtnText: { fontFamily: fonts.bold, fontSize: 12.5, color: greenDarkest },
-  uploadTitle: { fontFamily: fonts.bold, fontSize: 13, color: greenDark },
-  uploadHint: { fontFamily: fonts.regular, fontSize: 11, color: brand.mutedForeground },
+  cameraBtnText: { fontFamily: fonts.bold, fontSize: 12.5, color: t.color['accent'] },
+  uploadTitle: { fontFamily: fonts.bold, fontSize: 13, color: t.color['accent.pressed'] },
+  uploadHint: { fontFamily: fonts.regular, fontSize: 11, color: t.color['text.muted'] },
 
-  fieldError: { fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 15, color: brand.destructive, marginTop: 6 },
+  fieldError: { fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 15, color: t.color['status.danger'], marginTop: 6 },
 
   // Actions
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: spacing.md },
   manualBtn: { marginRight: 'auto', paddingHorizontal: 4, paddingVertical: 6 },
-  manualText: { fontFamily: fonts.semibold, fontSize: 12.5, color: greenDark },
+  manualText: { fontFamily: fonts.semibold, fontSize: 12.5, color: t.color['accent.pressed'] },
   skipBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.sm },
-  skipText: { fontFamily: fonts.semibold, fontSize: 13, color: brand.mutedForeground },
+  skipText: { fontFamily: fonts.semibold, fontSize: 13, color: t.color['text.muted'] },
   nextBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     minHeight: 40,
-    backgroundColor: greenDark,
+    backgroundColor: t.color['accent.pressed'],
     borderRadius: radius.md,
     paddingHorizontal: 16,
     paddingVertical: 9,
   },
-  nextBtnDisabled: { backgroundColor: brand.borderStrong },
+  nextBtnDisabled: { backgroundColor: t.color['border.strong'] },
   nextBtnText: { fontFamily: fonts.bold, fontSize: 13, color: '#fff' },
 
   // Guest gate
   guestRow: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: spacing.md },
-  guestText: { flex: 1, fontFamily: fonts.semibold, fontSize: 13, lineHeight: 18, color: greenDarkest },
+  guestText: { flex: 1, fontFamily: fonts.semibold, fontSize: 13, lineHeight: 18, color: t.color['accent'] },
   headerCoin: {
     width: 28,
     height: 28,
     borderRadius: radius.full,
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
     borderWidth: 1,
-    borderColor: brand.successBorder,
+    borderColor: t.color['status.successBorder'],
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1543,15 +1551,15 @@ const styles = StyleSheet.create({
   catSearchWrap: { paddingHorizontal: 4, paddingBottom: spacing.sm },
   catSearchInput: {
     borderWidth: 1,
-    borderColor: brand.borderStrong,
+    borderColor: t.color['border.strong'],
     borderRadius: radius.sm,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontFamily: fonts.regular,
     fontSize: 14,
-    color: brand.foreground,
-    backgroundColor: brand.surface,
+    color: t.color['text.primary'],
+    backgroundColor: t.color['surface.raised'],
   },
   catEmpty: { paddingHorizontal: 4, paddingVertical: spacing.md },
-  catEmptyText: { fontFamily: fonts.regular, fontSize: 13, color: brand.mutedForeground },
-});
+  catEmptyText: { fontFamily: fonts.regular, fontSize: 13, color: t.color['text.muted'] },
+}));

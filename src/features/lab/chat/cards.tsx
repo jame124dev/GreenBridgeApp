@@ -6,8 +6,10 @@
 // `onSend` callback (mirrors the web Save/Confirm/View actions which send a
 // natural-language message so the agent calls the tool).
 import { useEffect, useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
+import { toast } from 'sonner-native';
 import Animated from 'react-native-reanimated';
 import {
   AlertCircle,
@@ -18,32 +20,29 @@ import {
   ChevronLeft,
   ChevronRight,
   Gavel,
+  ImageOff,
   ImagePlus,
   Layers,
+  Mail,
+  Minus,
   PencilLine,
   PartyPopper,
+  Plus,
   Sparkles,
 } from 'lucide-react-native';
 
 import { AppImage } from '@/components/ui';
-import {
-  brand,
-  elevation,
-  fonts,
-  greenDark,
-  greenDarkest,
-  greenMedium,
-  radius,
-  spacing,
-  warnAmber,
-} from '@/constants/theme';
+import { fonts, radius, spacing } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
+import { useWantMutations } from '@/features/lab/hooks/useWantMutations';
+import type { WtbRequestData } from '@/features/lab/data/wtbApi';
 import { usePressScale, useProgress } from '@/animations/recipes';
+import { createThemedStyles, useColor, useTheme } from './theme';
+import { CardRegistry } from './registries/cardRegistry';
 import {
-  batchStatusTint,
-  bidStatusTint,
   CardShell,
   Chip,
+  cleanTitle,
   condLabel,
   countryLabel,
   formatValue,
@@ -51,12 +50,9 @@ import {
   num,
   relTime,
   StatusChip,
+  useStatusTints,
 } from './cardKit';
-import type {
-  GroupChoiceData,
-  QueueData,
-  QueueItem,
-} from '@/features/lab/streaming/labStreamTypes';
+import type { GroupChoiceData, QueueData, QueueItem } from './types/cardPayloads';
 import type { PublishBatchResult, SkippedItem } from '@/features/lab/data/batchProductApi';
 
 /* Every card takes the same envelope: the raw `data` payload + an `onSend` used
@@ -114,7 +110,9 @@ export function toProductRow(v: unknown): ProductRow {
   return {
     id: (o.id ?? o.product_id) as ProductRow['id'],
     batchId: (o.batch_id ?? o.batchId) as ProductRow['batchId'],
-    name: (o.name ?? o.title ?? o.product_name) as string | undefined,
+    // cleanTitle repairs legacy WP mojibake (e.g. U+0097 → '-') so catalog names
+    // never render a "tofu" box; `|| undefined` preserves the absent-name semantics.
+    name: cleanTitle((o.name ?? o.title ?? o.product_name) as string | undefined) || undefined,
     image: (o.image ?? o.image_url ?? o.imageUrl) as string | null | undefined,
     condition: (o.condition ?? o.item_condition) as string | null | undefined,
     country: o.country as string | null | undefined,
@@ -125,42 +123,61 @@ export function toProductRow(v: unknown): ProductRow {
 
 export function LabProductCard({ row, onPress }: { row: ProductRow; onPress?: () => void }) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const accentIconMuted = useColor('accent.iconMuted');
   const { style, onPressIn, onPressOut } = usePressScale();
-  const priceText =
-    typeof row.price === 'number' && row.price > 0
-      ? `${row.currency ? `${row.currency} ` : ''}${row.price.toLocaleString()}`
-      : t('mobile.labCards.priceOnRequest');
+  // price is ~0%-populated across the catalog → keep it QUIET (never the hero,
+  // never "$0"): a priced row shows the amount, everything else "Price on request".
+  const priced = typeof row.price === 'number' && row.price > 0;
   return (
     <AnimatedPressable style={style} onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut}>
-      <View style={styles.product}>
-        <View style={styles.thumb}>
+      <View style={styles.card}>
+        {/* Image-first media band — a constant 4/3 tile so there is ZERO layout
+            shift when the backend image fast-follow lands. Today every row is
+            image-less → an on-brand placeholder (image wiring is a separate PR;
+            resizeMode:'cover' will crop portrait photos — flag to that PR). */}
+        <View style={styles.cardImage}>
           {row.image ? (
-            <AppImage source={{ uri: row.image }} style={styles.thumbImg} />
+            <AppImage source={{ uri: row.image }} style={styles.cardImageFill} resizeMode="cover" />
           ) : (
-            <Sparkles size={22} color={brand.primaryAccent} />
+            <View style={styles.cardImagePlaceholder}>
+              <ImageOff size={26} color={accentIconMuted} />
+              <Text style={styles.cardImageCaption}>{t('mobile.labCards.imagePending')}</Text>
+            </View>
           )}
         </View>
-        <View style={styles.productBody}>
-          <Text numberOfLines={2} style={styles.productName}>
+        <View style={styles.cardBody}>
+          <Text numberOfLines={2} style={styles.cardName}>
             {row.name || t('mobile.labCards.untitledListing')}
           </Text>
-          <View style={styles.rowChips}>
-            {row.condition ? <Chip tone="emerald">{condLabel(row.condition)}</Chip> : null}
-            {row.country ? <Chip>{countryLabel(row.country)}</Chip> : null}
-          </View>
-          <Text style={styles.productPrice}>{priceText}</Text>
+          {/* condition + country are the RELIABLE, decision-relevant fields — the
+              scannable weight of the card. Each chip renders only when present. */}
+          {row.condition || row.country ? (
+            <View style={styles.rowChips}>
+              {row.condition ? <Chip tone="emerald">{condLabel(row.condition)}</Chip> : null}
+              {row.country ? <Chip>{countryLabel(row.country)}</Chip> : null}
+            </View>
+          ) : null}
+          {priced ? (
+            <Text style={styles.cardPrice}>
+              {`${row.currency ? `${row.currency} ` : ''}${row.price!.toLocaleString()}`}
+            </Text>
+          ) : (
+            <Text style={styles.cardPriceMuted}>{t('mobile.labCards.priceOnRequest')}</Text>
+          )}
         </View>
       </View>
     </AnimatedPressable>
   );
 }
 
-function LabProductCardList({ data, mode, onSend }: CardProps) {
+function LabProductCardList({ data, onSend }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const router = useRouter();
   const o = asObj(data);
   const rows = asArr(o.results ?? o.items ?? (Array.isArray(data) ? data : [])).map(toProductRow);
   const identified = asObj(o.identified);
-  const showActions = mode === 'buyer';
 
   if (rows.length === 0) {
     // Image search recognised an item but nothing is in stock → identify-confirm.
@@ -177,21 +194,34 @@ function LabProductCardList({ data, mode, onSend }: CardProps) {
   }
 
   return (
-    <View style={{ gap: spacing.sm }}>
-      {rows.map((row, i) => (
-        <LabProductCard
-          key={`${row.id ?? 'x'}-${i}`}
-          row={row}
-          onPress={
-            showActions && row.name
-              ? () => {
-                  haptics.tap();
-                  onSend?.(t('mobile.labCards.tellMeMore', { name: row.name }));
-                }
-              : undefined
-          }
-        />
-      ))}
+    <View style={{ gap: spacing.md }}>
+      {/* RESULTS eyebrow — the explicit named prose→evidence boundary (mirrors the
+          CardShell / SourcesStrip eyebrow voice). Suppressed in the 0-row /
+          identify-confirm / no-match branches (handled above). */}
+      <Text style={styles.resultsEyebrow}>{t('mobile.labCards.resultsCount', { count: rows.length })}</Text>
+      {rows.map((row, i) => {
+        // Tapping a product opens the marketplace listing detail (like 101 Lab),
+        // NOT an "ask the AI about it" follow-up. Prefer batchId (the buyer
+        // marketplace route key); fall back to the product id if that's all we got.
+        const detailId = row.batchId ?? row.id;
+        return (
+          <LabProductCard
+            key={`${row.id ?? 'x'}-${i}`}
+            row={row}
+            onPress={
+              detailId != null
+                ? () => {
+                    haptics.tap();
+                    router.push({
+                      pathname: '/(lab)/product/[id]',
+                      params: { id: String(detailId), name: row.name ?? '' },
+                    });
+                  }
+                : undefined
+            }
+          />
+        );
+      })}
     </View>
   );
 }
@@ -206,10 +236,12 @@ export function LabIdentifyConfirmCard({
   onSend?: (text: string) => void;
 }) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const accentPressed = useColor('accent.pressed');
   return (
     <View style={styles.softCard}>
       <View style={styles.identifyRow}>
-        <Sparkles size={16} color={greenDark} />
+        <Sparkles size={16} color={accentPressed} />
         <Text style={styles.identifyText}>
           {t('mobile.labCards.identifyLead')} <Text style={styles.bold}>{name}</Text>
           {t('mobile.labCards.identifyTail')}
@@ -233,6 +265,8 @@ export function LabIdentifyConfirmCard({
 
 function LabProductDetailCard({ data }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const tints = useStatusTints();
   const o = asObj(data);
   if (o.found === false) {
     return (
@@ -241,9 +275,9 @@ function LabProductDetailCard({ data }: CardProps) {
       </CardShell>
     );
   }
-  const title = (o.title ?? o.name) as string | undefined;
+  const title = cleanTitle((o.title ?? o.name) as string | undefined);
   const desc = (o.description ?? o.post_content) as string | undefined;
-  const tint = o.batch_status ? batchStatusTint(String(o.batch_status)) : null;
+  const tint = o.batch_status ? tints.batch(String(o.batch_status)) : null;
   return (
     <CardShell title={t('mobile.labCards.listing')}>
       <Text style={styles.detailTitle}>{title || t('mobile.labCards.untitledListing')}</Text>
@@ -265,6 +299,7 @@ function LabProductDetailCard({ data }: CardProps) {
 
 function LabOverviewCard({ data }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
   const o = asObj(data);
   return (
     <CardShell title={t('mobile.labCards.marketplaceOverview')}>
@@ -278,6 +313,7 @@ function LabOverviewCard({ data }: CardProps) {
 
 function LabCatalogSummaryCard({ data }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
   const o = asObj(data);
   const facet = (label: string, items: unknown) => {
     const rows = asArr(items) as { name?: string; count?: number }[];
@@ -313,6 +349,8 @@ function LabCatalogSummaryCard({ data }: CardProps) {
 
 function LabBatchListCard({ data }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const tints = useStatusTints();
   const o = asObj(data);
   const rows = asArr(o.batches ?? o.items ?? (Array.isArray(data) ? data : [])) as Record<
     string,
@@ -330,13 +368,13 @@ function LabBatchListCard({ data }: CardProps) {
     <CardShell title={t('mobile.labCards.auctionsCount', { count: rows.length })}>
       <View style={{ gap: spacing.sm }}>
         {visible.map((b, i) => {
-          const tint = batchStatusTint(b.status as string);
+          const tint = tints.batch(b.status as string);
           const closes = relTime(b.end_date as string);
           return (
             <View key={i} style={styles.listRow}>
               <View style={styles.listRowTop}>
                 <Text numberOfLines={1} style={styles.listRowTitle}>
-                  {(b.name as string) ||
+                  {cleanTitle(b.name as string) ||
                     t('mobile.labCards.batchNumber', {
                       number: b.batch_number ?? b.batch_id ?? i + 1,
                     })}
@@ -371,6 +409,8 @@ function LabBatchListCard({ data }: CardProps) {
 
 function LabSellerActivityCard({ data }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const tints = useStatusTints();
   const o = asObj(data);
   const rows = asArr(o.listings ?? o.items ?? (Array.isArray(data) ? data : [])) as Record<
     string,
@@ -388,12 +428,12 @@ function LabSellerActivityCard({ data }: CardProps) {
     <CardShell title={t('mobile.labCards.yourListingsCount', { count: rows.length })}>
       <View style={{ gap: spacing.sm }}>
         {visible.map((b, i) => {
-          const tint = batchStatusTint(b.status as string);
+          const tint = tints.batch(b.status as string);
           return (
             <View key={i} style={styles.listRow}>
               <View style={styles.listRowTop}>
                 <Text numberOfLines={1} style={styles.listRowTitle}>
-                  {((b.name ?? b.title) as string) ||
+                  {cleanTitle((b.name ?? b.title) as string) ||
                     t('mobile.labCards.batchNumber', { number: b.batch_id ?? i + 1 })}
                 </Text>
                 <StatusChip {...tint} />
@@ -433,6 +473,8 @@ function bidRows(data: unknown): Record<string, unknown>[] {
 
 function BidRowsCard({ data, title, empty }: { data: unknown; title: string; empty: string }) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const tints = useStatusTints();
   const o = asObj(data);
   if (o.status === 'login_required') {
     return <LabGateCard data={{ reason: 'login' }} />;
@@ -450,14 +492,14 @@ function BidRowsCard({ data, title, empty }: { data: unknown; title: string; emp
     <CardShell title={`${title} (${rows.length})`}>
       <View style={{ gap: spacing.sm }}>
         {visible.map((b, i) => {
-          const tint = bidStatusTint((b.bid_status ?? b.status) as string);
+          const tint = tints.bid((b.bid_status ?? b.status) as string);
           const when = relTime((b.submitted_at ?? b.placed_at) as string);
           const amount = (b.bid_amount ?? b.amount) as number | undefined;
           return (
             <View key={i} style={styles.listRow}>
               <View style={styles.listRowTop}>
                 <Text numberOfLines={1} style={styles.listRowTitle}>
-                  {((b.batch_name ?? b.product_name) as string) || t('mobile.labCards.listing')}
+                  {cleanTitle((b.batch_name ?? b.product_name) as string) || t('mobile.labCards.listing')}
                 </Text>
                 <StatusChip {...tint} />
               </View>
@@ -500,6 +542,7 @@ function LabReceivedBidsCard({ data }: CardProps) {
 
 function LabPlatformInfoCard({ data }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
   const o = asObj(data);
   const steps = asArr(o.steps) as { title?: string; detail?: string }[];
   const points = asArr(o.points) as { label?: string; detail?: string }[];
@@ -570,6 +613,14 @@ const fieldLabel = (k: string, t: (key: string) => string) =>
 
 function LabListingDraftCard({ data, onSend, onEditDraft }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  // Icon + status-chip tints (D2 semantic tokens); the "not ready" chip and the
+  // amber meter read Phase-1 compat bridges where D1 has no token.
+  const theme = useTheme();
+  const accentPressed = useColor('accent.pressed');
+  const textMuted = useColor('text.muted');
+  const surfaceAlt = useColor('surface.alt');
+  const meterFull = useColor('status.success');
   const o = asObj(data);
   const fields = asObj(asObj(o.draft).fields ?? o.fields);
   const imageUrls = asArr(asObj(o.draft).image_urls ?? o.image_urls) as string[];
@@ -602,19 +653,19 @@ function LabListingDraftCard({ data, onSend, onEditDraft }: CardProps) {
   useEffect(() => {
     animateTo(filled / REQUIRED_FIELDS.length);
   }, [filled]); // eslint-disable-line react-hooks/exhaustive-deps
-  const meterColor = pct < 100 ? warnAmber : greenMedium;
+  const meterColor = pct < 100 ? theme.compat['accent.meterWarn'] : meterFull;
 
   return (
     <View style={styles.draftCard}>
       <View style={styles.draftHeader}>
         <View style={styles.draftHeaderLead}>
-          <Sparkles size={13} color={greenDark} />
+          <Sparkles size={13} color={accentPressed} />
           <Text style={styles.draftHeaderTitle}>{t('mobile.labCards.listingDraft')}</Text>
         </View>
         <StatusChip
           label={ready ? t('mobile.labCards.ready') : t('mobile.labCards.draft')}
-          color={ready ? greenDark : brand.mutedForeground}
-          bg={ready ? brand.successBg : brand.surfaceMuted}
+          color={ready ? accentPressed : textMuted}
+          bg={ready ? theme.compat['status.successSurface'] : surfaceAlt}
         />
       </View>
 
@@ -623,7 +674,7 @@ function LabListingDraftCard({ data, onSend, onEditDraft }: CardProps) {
           {image ? (
             <AppImage source={{ uri: image }} style={styles.thumbImg} />
           ) : (
-            <Sparkles size={26} color={greenDark} />
+            <Sparkles size={26} color={accentPressed} />
           )}
         </View>
         <View style={{ flex: 1 }}>
@@ -703,7 +754,7 @@ function LabListingDraftCard({ data, onSend, onEditDraft }: CardProps) {
         <View style={styles.draftEditWrap}>
           <GhostButton
             label={t('mobile.labCards.editDetails')}
-            icon={<PencilLine size={15} color={greenDark} />}
+            icon={<PencilLine size={15} color={accentPressed} />}
             onPress={() => {
               haptics.tap();
               onEditDraft(data);
@@ -734,6 +785,8 @@ function LabListingDraftCard({ data, onSend, onEditDraft }: CardProps) {
 
 function LabListingCreatedCard({ data }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const accentPressed = useColor('accent.pressed');
   const o = asObj(data);
   const url = o.url as string | undefined;
   const productId = o.product_id;
@@ -746,7 +799,7 @@ function LabListingCreatedCard({ data }: CardProps) {
         <View style={{ flex: 1 }}>
           <Text style={styles.createdEyebrow}>{t('mobile.labCards.listingPublished')}</Text>
           <Text style={styles.createdTitle}>
-            {((o.name ?? o.title) as string) || t('mobile.labCards.listingLive')}
+            {cleanTitle((o.name ?? o.title) as string) || t('mobile.labCards.listingLive')}
           </Text>
           {productId != null ? (
             <Text style={styles.createdMeta}>
@@ -764,7 +817,7 @@ function LabListingCreatedCard({ data }: CardProps) {
           style={styles.linkRow}
         >
           <Text style={styles.linkText}>{t('mobile.labCards.viewListing')}</Text>
-          <ArrowUpRight size={14} color={greenDark} />
+          <ArrowUpRight size={14} color={accentPressed} />
         </Pressable>
       ) : null}
     </View>
@@ -801,6 +854,11 @@ function LabListingQueueCard({
   batchBusy,
 }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const theme = useTheme();
+  const accentPressed = useColor('accent.pressed');
+  const textMuted = useColor('text.muted');
+  const accentIconMuted = useColor('accent.iconMuted');
   const o = asObj(data) as Partial<QueueData>;
   const total = typeof o.total === 'number' ? o.total : 0;
   const index = typeof o.index === 'number' ? o.index : 1;
@@ -846,7 +904,7 @@ function LabListingQueueCard({
                 {it.image_url ? (
                   <AppImage source={{ uri: it.image_url }} style={styles.thumbImg} />
                 ) : (
-                  <Sparkles size={18} color={brand.primaryAccent} />
+                  <Sparkles size={18} color={accentIconMuted} />
                 )}
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
@@ -855,17 +913,17 @@ function LabListingQueueCard({
                 </Text>
                 <View style={{ marginTop: 4, alignSelf: 'flex-start' }}>
                   {it.missing === 0 ? (
-                    <StatusChip label={t('mobile.labCards.ready')} color={greenDark} bg={brand.successBg} />
+                    <StatusChip label={t('mobile.labCards.ready')} color={accentPressed} bg={theme.compat['status.successSurface']} />
                   ) : (
                     <StatusChip
                       label={t('mobile.labCards.needsCount', { count: it.missing })}
-                      color={brand.warningText}
-                      bg={brand.warningBg}
+                      color={theme.compat['status.warningStrong']}
+                      bg={theme.compat['status.warningSurface']}
                     />
                   )}
                 </View>
               </View>
-              {onJumpProduct ? <ChevronRight size={18} color={brand.mutedForeground} /> : null}
+              {onJumpProduct ? <ChevronRight size={18} color={textMuted} /> : null}
             </View>
           );
           if (!onJumpProduct) return <View key={it.index}>{row}</View>;
@@ -926,6 +984,8 @@ function LabListingGroupChoiceCard({
   batchBusy,
 }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const accentPressed = useColor('accent.pressed');
   const o = asObj(data) as Partial<GroupChoiceData>;
   const total = typeof o.total === 'number' ? o.total : asArr(o.items).length;
   const mode = o.mode;
@@ -935,7 +995,7 @@ function LabListingGroupChoiceCard({
   return (
     <View style={styles.softCard}>
       <View style={styles.identifyRow}>
-        <Layers size={16} color={greenDark} />
+        <Layers size={16} color={accentPressed} />
         <Text style={styles.identifyText}>
           {t('mobile.labCards.foundLead')} <Text style={styles.bold}>{total}</Text>{' '}
           {t('mobile.labCards.foundTail')}
@@ -948,7 +1008,7 @@ function LabListingGroupChoiceCard({
       ) : null}
       <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
         <EntryOption
-          icon={<Layers size={18} color={greenDark} />}
+          icon={<Layers size={18} color={accentPressed} />}
           title={t('mobile.labCards.reviewSeparately', { count: total })}
           subtitle={t('mobile.labCards.reviewSeparatelySub')}
           badge={mode === 'separate_default' ? t('mobile.labCards.suggested') : undefined}
@@ -956,7 +1016,7 @@ function LabListingGroupChoiceCard({
           onPress={() => onSplitProducts?.()}
         />
         <EntryOption
-          icon={<Bookmark size={18} color={greenDark} />}
+          icon={<Bookmark size={18} color={accentPressed} />}
           title={t('mobile.labCards.combineListing')}
           subtitle={t('mobile.labCards.combineListingSub')}
           badge={mode === 'combined_default' ? t('mobile.labCards.suggested') : undefined}
@@ -976,6 +1036,8 @@ function LabListingGroupChoiceCard({
  */
 function LabBatchResultCard({ data, onJumpProduct, batchBusy }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const theme = useTheme();
   const o = asObj(data) as Partial<PublishBatchResult>;
   const publishedCount = typeof o.published_count === 'number' ? o.published_count : asArr(o.published).length;
   const skippedCount = typeof o.skipped_count === 'number' ? o.skipped_count : asArr(o.skipped).length;
@@ -1001,7 +1063,7 @@ function LabBatchResultCard({ data, onJumpProduct, batchBusy }: CardProps) {
       {skippedCount > 0 ? (
         <View style={styles.skipWrap}>
           <View style={styles.skipHead}>
-            <AlertCircle size={14} color={brand.warningText} />
+            <AlertCircle size={14} color={theme.compat['status.warningStrong']} />
             <Text style={styles.skipHeadText}>
               {skippedCount === 1
                 ? t('mobile.labCards.needDetailsOne', { count: skippedCount })
@@ -1026,7 +1088,7 @@ function LabBatchResultCard({ data, onJumpProduct, batchBusy }: CardProps) {
                       </Text>
                     ) : null}
                   </View>
-                  {onJumpProduct ? <ChevronRight size={16} color={brand.warningText} /> : null}
+                  {onJumpProduct ? <ChevronRight size={16} color={theme.compat['status.warningStrong']} /> : null}
                 </View>
               );
               if (!onJumpProduct) return <View key={idx}>{rowInner}</View>;
@@ -1067,16 +1129,17 @@ function LabBatchResultCard({ data, onJumpProduct, batchBusy }: CardProps) {
 
 function LabListingEntryOptionsCard({ onSend, onUploadPress }: CardProps) {
   const { t } = useTranslation();
+  const accentPressed = useColor('accent.pressed');
   return (
     <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
       <EntryOption
-        icon={<ImagePlus size={18} color={greenDark} />}
+        icon={<ImagePlus size={18} color={accentPressed} />}
         title={t('mobile.labCards.uploadPhotos')}
         subtitle={t('mobile.labCards.uploadPhotosSub')}
         onPress={() => onUploadPress?.()}
       />
       <EntryOption
-        icon={<PencilLine size={18} color={greenDark} />}
+        icon={<PencilLine size={18} color={accentPressed} />}
         title={t('mobile.labCards.enterManually')}
         subtitle={t('mobile.labCards.enterManuallySub')}
         onPress={() => onSend?.(t('mobile.labCards.enterManuallyMsg'))}
@@ -1089,6 +1152,7 @@ function LabListingEntryOptionsCard({ onSend, onUploadPress }: CardProps) {
 
 function LabGateCard({ data }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
   const o = asObj(data);
   const reason = o.reason as string | undefined;
   const isSeller = reason === 'seller_access';
@@ -1108,18 +1172,251 @@ function LabGateCard({ data }: CardProps) {
 
 /* ── Want-To-Buy cards ────────────────────────────────────────────────────── */
 
-function LabWtbDraftCard({ data, onSend }: CardProps) {
+/* Condition option codes (order mirrors the web `CONDITION_OPTIONS`); labels are
+ * resolved from the shared `condLabel` map so we don't fork the i18n vocabulary. */
+const WTB_CONDITION_CODES = ['new', 'refurbished', 'working'] as const;
+
+/** Round up to a "nice" magnitude (100→100, 4200→5000) — mirrors web `nice()`. */
+function niceRound(v: number): number {
+  if (v <= 0) return 0;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  return Math.ceil(v / p) * p;
+}
+
+/** Three quick-budget tiers: adaptive around the priced preview matches, else the
+ *  static [1k, 5k, 25k] fallback (ported from web `budgetQuickChips`). */
+function budgetQuickChips(prices: number[]): number[] {
+  const priced = prices.filter((n) => Number.isFinite(n) && n > 0);
+  if (priced.length === 0) return [1000, 5000, 25000];
+  const top = niceRound(Math.max(...priced) * 1.2);
+  const tiers = [niceRound(top * 0.25), niceRound(top * 0.5), top];
+  return [...new Set(tiers)].filter((n) => n > 0);
+}
+
+/** Compact money label for a budget chip: 25000→"25k", 1500000→"1.5m". */
+function fmtBudget(v: number): string {
+  if (v >= 1_000_000) return `${+(v / 1_000_000).toFixed(2)}m`;
+  if (v >= 1000) return `${+(v / 1000).toFixed(2)}k`;
+  return String(v);
+}
+
+/** A toggle pill for a condition / budget option. Emerald when selected. */
+function TogglePill({
+  label,
+  selected,
+  onPress,
+  a11yLabel,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+  a11yLabel: string;
+}) {
+  const { style, onPressIn, onPressOut } = usePressScale();
+  const styles = useCardStyles();
+  return (
+    <AnimatedPressable
+      style={style}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      accessibilityLabel={a11yLabel}
+      hitSlop={4}
+    >
+      <View style={[styles.togglePill, selected && styles.togglePillOn]}>
+        <Text style={[styles.togglePillText, selected && styles.togglePillTextOn]}>{label}</Text>
+      </View>
+    </AnimatedPressable>
+  );
+}
+
+/** [−] [n] [+] quantity stepper, floored at 1; empty renders the "any" placeholder. */
+function QtyStepper({
+  value,
+  onChange,
+}: {
+  value: number | '';
+  onChange: (v: number | '') => void;
+}) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const accentPressed = useColor('accent.pressed');
+  const inputPlaceholder = useColor('input.placeholder');
+  const dec = () => {
+    haptics.tap();
+    onChange(Math.max(1, (value === '' ? 1 : value) - 1));
+  };
+  const inc = () => {
+    haptics.tap();
+    onChange(value === '' ? 1 : value + 1);
+  };
+  return (
+    <View style={styles.stepper}>
+      <Pressable
+        onPress={dec}
+        style={styles.stepBtn}
+        hitSlop={6}
+        accessibilityRole="button"
+        accessibilityLabel={t('mobile.labCards.wtbEdit.qtyDecrementA11y')}
+      >
+        <Minus size={16} color={accentPressed} />
+      </Pressable>
+      <TextInput
+        style={styles.stepInput}
+        value={value === '' ? '' : String(value)}
+        onChangeText={(txt) => {
+          const digits = txt.replace(/[^0-9]/g, '');
+          onChange(digits === '' ? '' : Math.max(1, Number(digits)));
+        }}
+        keyboardType="number-pad"
+        placeholder={t('mobile.labCards.wtbEdit.anyPlaceholder')}
+        placeholderTextColor={inputPlaceholder}
+        accessibilityLabel={t('mobile.labCards.wtbEdit.quantityLabel')}
+      />
+      <Pressable
+        onPress={inc}
+        style={styles.stepBtn}
+        hitSlop={6}
+        accessibilityRole="button"
+        accessibilityLabel={t('mobile.labCards.wtbEdit.qtyIncrementA11y')}
+      >
+        <Plus size={16} color={accentPressed} />
+      </Pressable>
+    </View>
+  );
+}
+
+/** Uppercase field label with a lowercase "(optional)" suffix. */
+function FieldLabel({ text }: { text: string }) {
+  const { t } = useTranslation();
+  const styles = useCardStyles();
+  return (
+    <Text style={styles.wtbFieldLabel}>
+      {text} <Text style={styles.wtbFieldOptional}>{t('mobile.labCards.wtbEdit.optionalSuffix')}</Text>
+    </Text>
+  );
+}
+
+function LabWtbDraftCard({ data }: CardProps) {
+  const { t } = useTranslation();
+  const styles = useCardStyles();
+  // WTB presentation + input tints (D2 / R1 input tokens).
+  const accentPressed = useColor('accent.pressed');
+  const inputPlaceholder = useColor('input.placeholder');
+  const router = useRouter();
+  const { createWant, isCreating } = useWantMutations();
   const o = asObj(data);
   const f = asObj(o.draft);
   const keywords = asArr(f.keywords) as string[];
   const preview = asArr(o.preview_matches ?? o.immediate_matches);
-  const [saved, setSaved] = useState(false);
 
+  // Editable state, seeded from whatever the AI recognised (05-mobile-ux; mirrors
+  // the web `WtbDraftCard` seeds). Empty condition set == "Any".
+  const [conditions, setConditions] = useState<string[]>(() =>
+    (asArr(f.condition_wanted) as unknown[]).filter((c): c is string => typeof c === 'string'),
+  );
+  const [maxPrice, setMaxPrice] = useState<string>(f.max_price != null ? String(f.max_price) : '');
+  const [qty, setQty] = useState<number | ''>(typeof f.quantity === 'number' ? f.quantity : '');
+  const [result, setResult] = useState<WtbRequestData | null>(null);
+
+  // Quick-budget tiers from any priced preview matches (else the 1k/5k/25k fallback).
+  const previewPrices = preview.map((m) => {
+    const row = toProductRow(m);
+    return typeof row.price === 'number' ? row.price : Number(row.price);
+  });
+  const budgetChips = budgetQuickChips(previewPrices);
+
+  const toggleCond = (code: string) =>
+    setConditions((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
+
+  const handleSave = async () => {
+    if (isCreating || result) return;
+    haptics.tap();
+    // Spread the whole draft, then overlay the edited buyer choices. `site_type`
+    // must NEVER go in the body (create schema is `extra='forbid'`) — it's a header.
+    const draft = { ...f } as Record<string, unknown>;
+    delete draft.site_type;
+    try {
+      const created = await createWant({
+        ...draft,
+        title: (f.title as string) ?? '',
+        condition_wanted: conditions.length ? conditions : undefined,
+        max_price: maxPrice.trim() === '' ? undefined : Number(maxPrice),
+        quantity: qty === '' ? undefined : Number(qty),
+      });
+      haptics.success();
+      setResult(created);
+    } catch {
+      haptics.error();
+      toast.error(t('mobile.labCards.wtbEdit.saveError'));
+    }
+  };
+
+  // ── Post-save: pending-approval affordance (replaces the bare "Saved" state) ──
+  if (result) {
+    const req = result.request;
+    const title = req.title || t('mobile.labCards.yourWant');
+    const matches = result.matches.map(toProductRow);
+    const status = (req.status ?? '').toLowerCase();
+    const pending = status === 'paused' || status === 'pending';
+    const body1 = pending
+      ? t('mobile.labCards.wtbEdit.pendingBody')
+      : matches.length > 0
+        ? matches.length === 1
+          ? t('mobile.labCards.matchesNowOne', { count: matches.length })
+          : t('mobile.labCards.matchesNowOther', { count: matches.length })
+        : t('mobile.labCards.noMatchesYetNotify');
+    const body2 = pending
+      ? t('mobile.labCards.wtbEdit.pendingEmail')
+      : t('mobile.labCards.wtbEdit.activeEmail');
+    return (
+      <View style={styles.createdCard}>
+        <View style={styles.identifyRow}>
+          <Check size={16} color={accentPressed} />
+          <Text style={[styles.createdTitle, { flex: 1 }]}>
+            {pending
+              ? t('mobile.labCards.wtbEdit.sentForApproval', { title })
+              : t('mobile.labCards.savedAlertAbout', { title })}
+          </Text>
+        </View>
+        <Text style={[styles.muted, { marginTop: spacing.sm }]}>{body1}</Text>
+        <View style={styles.wtbEmailRow}>
+          <Mail size={14} color={accentPressed} />
+          <Text style={styles.wtbEmailText}>{body2}</Text>
+        </View>
+        <Pressable
+          style={styles.linkRow}
+          accessibilityRole="button"
+          accessibilityLabel={t('mobile.labCards.wtbEdit.viewInMyWantsA11y')}
+          onPress={() => {
+            haptics.tap();
+            router.push('/(lab)/(tabs)/matches');
+          }}
+        >
+          <Text style={styles.linkText}>{t('mobile.labCards.wtbEdit.viewInMyWants')}</Text>
+          <ChevronRight size={15} color={accentPressed} />
+        </Pressable>
+        {matches.length > 0 ? (
+          <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+            {matches.map((m, i) => (
+              <LabProductCard key={`${m.id ?? 'x'}-${i}`} row={m} />
+            ))}
+          </View>
+        ) : null}
+      </View>
+    );
+  }
+
+  // ── Edit state: title + tags, then editable condition / budget / quantity ──
   return (
     <View style={styles.softCard}>
       <View style={styles.wtbHeader}>
-        <Bookmark size={14} color={greenDark} />
+        <Bookmark size={14} color={accentPressed} />
         <Text style={styles.wtbHeaderText}>{t('mobile.labCards.wantToBuy')}</Text>
       </View>
       <Text style={styles.detailTitle}>{(f.title as string) || t('mobile.labCards.untitledWant')}</Text>
@@ -1131,8 +1428,68 @@ function LabWtbDraftCard({ data, onSend }: CardProps) {
           ))}
         </View>
       ) : null}
+
+      {/* Condition — multi-select pills + an "Any" clear-all pseudo-option. */}
+      <View style={styles.wtbField}>
+        <FieldLabel text={t('mobile.labCards.wtbEdit.conditionLabel')} />
+        <View style={styles.pillWrap}>
+          {WTB_CONDITION_CODES.map((code) => (
+            <TogglePill
+              key={code}
+              label={condLabel(code)}
+              selected={conditions.includes(code)}
+              onPress={() => toggleCond(code)}
+              a11yLabel={t('mobile.labCards.wtbEdit.conditionPillA11y', { label: condLabel(code) })}
+            />
+          ))}
+          <TogglePill
+            label={t('mobile.labCards.wtbEdit.conditionAny')}
+            selected={conditions.length === 0}
+            onPress={() => setConditions([])}
+            a11yLabel={t('mobile.labCards.wtbEdit.conditionAnyA11y')}
+          />
+        </View>
+      </View>
+
+      {/* Budget — free "≤ $" input + adaptive quick chips. */}
+      <View style={styles.wtbField}>
+        <FieldLabel text={t('mobile.labCards.wtbEdit.budgetLabel')} />
+        <View style={styles.budgetInputWrap}>
+          <Text style={styles.budgetPrefix}>{t('mobile.labCards.wtbEdit.budgetPrefix')}</Text>
+          <TextInput
+            style={styles.budgetInput}
+            value={maxPrice}
+            onChangeText={(txt) => setMaxPrice(txt.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+            placeholder={t('mobile.labCards.wtbEdit.anyPlaceholder')}
+            placeholderTextColor={inputPlaceholder}
+            accessibilityLabel={t('mobile.labCards.wtbEdit.budgetFieldA11y')}
+          />
+        </View>
+        <View style={styles.pillWrap}>
+          {budgetChips.map((v) => {
+            const label = t('mobile.labCards.wtbEdit.budgetChip', { value: fmtBudget(v) });
+            return (
+              <TogglePill
+                key={v}
+                label={label}
+                selected={maxPrice !== '' && Number(maxPrice) === v}
+                onPress={() => setMaxPrice(String(v))}
+                a11yLabel={label}
+              />
+            );
+          })}
+        </View>
+      </View>
+
+      {/* Quantity — floored-at-1 stepper. */}
+      <View style={styles.wtbField}>
+        <FieldLabel text={t('mobile.labCards.wtbEdit.quantityLabel')} />
+        <QtyStepper value={qty} onChange={setQty} />
+      </View>
+
       <View style={styles.wtbTeaser}>
-        <Sparkles size={14} color={greenDark} />
+        <Sparkles size={14} color={accentPressed} />
         <Text style={styles.wtbTeaserText}>
           {preview.length > 0
             ? preview.length === 1
@@ -1143,15 +1500,10 @@ function LabWtbDraftCard({ data, onSend }: CardProps) {
       </View>
       <View style={styles.btnRow}>
         <PrimaryButton
-          label={saved ? t('mobile.labCards.saved') : t('mobile.labCards.saveAlertMe')}
-          icon={saved ? <Check size={16} color="#fff" /> : <Bell size={16} color="#fff" />}
-          disabled={saved}
-          onPress={() => {
-            if (saved) return;
-            setSaved(true); // idempotent: fire once (05-mobile-ux §3.4 guard)
-            haptics.success();
-            onSend?.(t('mobile.labCards.saveWantMsg'));
-          }}
+          label={isCreating ? t('mobile.labCards.wtbEdit.saving') : t('mobile.labCards.saveAlertMe')}
+          icon={<Bell size={16} color="#fff" />}
+          disabled={isCreating}
+          onPress={handleSave}
         />
       </View>
     </View>
@@ -1160,6 +1512,8 @@ function LabWtbDraftCard({ data, onSend }: CardProps) {
 
 function LabWtbRequestCard({ data }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const accentPressed = useColor('accent.pressed');
   const o = asObj(data);
   const req = asObj(o.request);
   const title = (req.title ?? o.title) as string | undefined;
@@ -1167,7 +1521,7 @@ function LabWtbRequestCard({ data }: CardProps) {
   return (
     <View style={styles.createdCard}>
       <View style={styles.identifyRow}>
-        <Check size={16} color={greenDark} />
+        <Check size={16} color={accentPressed} />
         <Text style={[styles.createdTitle, { flex: 1 }]}>
           {t('mobile.labCards.savedAlertAbout', { title: title || t('mobile.labCards.yourWant') })}
         </Text>
@@ -1192,6 +1546,7 @@ function LabWtbRequestCard({ data }: CardProps) {
 
 function LabWtbListCard({ data, onSend }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
   const o = asObj(data);
   const items = asArr(o.items ?? o.requests) as Record<string, unknown>[];
   if (items.length === 0) {
@@ -1236,6 +1591,7 @@ function LabWtbListCard({ data, onSend }: CardProps) {
 
 function LabWtbMatchesCard({ data }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
   const o = asObj(data);
   const matches = asArr(o.items ?? o.matches).map(toProductRow);
   return (
@@ -1257,12 +1613,14 @@ function LabWtbMatchesCard({ data }: CardProps) {
 
 function LabHandoffCard({ data }: CardProps) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
   const o = asObj(data);
   const msg = (o.message as string) || t('mobile.labCards.connectingPerson');
+  const accentPressed = useColor('accent.pressed');
   return (
     <View style={styles.softCard}>
       <View style={styles.identifyRow}>
-        <Gavel size={16} color={greenDark} />
+        <Gavel size={16} color={accentPressed} />
         <Text style={styles.identifyText}>{msg}</Text>
       </View>
     </View>
@@ -1272,9 +1630,11 @@ function LabHandoffCard({ data }: CardProps) {
 /* ── Small building blocks ────────────────────────────────────────────────── */
 
 function StatTile({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  const styles = useCardStyles();
+  const accentColor = useColor('accent');
   return (
     <View style={[styles.statTile, accent && styles.statTileAccent]}>
-      <Text style={[styles.statValue, accent && { color: greenDarkest }]}>{value}</Text>
+      <Text style={[styles.statValue, accent && { color: accentColor }]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
@@ -1297,6 +1657,8 @@ function EntryOption({
   disabled?: boolean;
 }) {
   const { style, onPressIn, onPressOut } = usePressScale();
+  const styles = useCardStyles();
+  const accentPressed = useColor('accent.pressed');
   return (
     <AnimatedPressable
       style={style}
@@ -1322,7 +1684,7 @@ function EntryOption({
           <Text style={styles.entrySub}>{subtitle}</Text>
         </View>
         <View style={styles.entryChevron}>
-          <ChevronRight size={18} color={greenDark} />
+          <ChevronRight size={18} color={accentPressed} />
         </View>
       </View>
     </AnimatedPressable>
@@ -1340,6 +1702,8 @@ function PagerChevron({
   onPress: () => void;
 }) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
+  const accentPressed = useColor('accent.pressed');
   return (
     <Pressable
       disabled={disabled}
@@ -1350,9 +1714,9 @@ function PagerChevron({
       style={[styles.pagerChevron, disabled && { opacity: 0.35 }]}
     >
       {dir === 'prev' ? (
-        <ChevronLeft size={18} color={greenDark} />
+        <ChevronLeft size={18} color={accentPressed} />
       ) : (
-        <ChevronRight size={18} color={greenDark} />
+        <ChevronRight size={18} color={accentPressed} />
       )}
     </Pressable>
   );
@@ -1370,6 +1734,7 @@ export function PrimaryButton({
   disabled?: boolean;
 }) {
   const { style, onPressIn, onPressOut } = usePressScale();
+  const styles = useCardStyles();
   return (
     <AnimatedPressable
       style={style}
@@ -1399,6 +1764,7 @@ export function GhostButton({
   icon?: React.ReactNode;
 }) {
   const { style, onPressIn, onPressOut } = usePressScale();
+  const styles = useCardStyles();
   return (
     <AnimatedPressable
       style={style}
@@ -1419,6 +1785,7 @@ export function GhostButton({
 
 function LabUnknownCard({ type }: { type: string }) {
   const { t } = useTranslation();
+  const styles = useCardStyles();
   if (!__DEV__) return null; // silent in prod — forward-compatible
   return (
     <CardShell title={t('mobile.labCards.unsupportedCard')}>
@@ -1427,11 +1794,13 @@ function LabUnknownCard({ type }: { type: string }) {
   );
 }
 
-/* ── Card registry (dispatch by data.type) ────────────────────────────────── */
+/* ── Card registry (A4 §9 — dispatch by data.type via registration) ───────── */
 
-type CardComponent = (p: CardProps) => React.ReactElement | null;
-
-const REGISTRY: Record<string, CardComponent> = {
+// PR-9: the dispatch table is a formal CardRegistry (register/resolve), not a
+// literal switch/map — a new card type is one `register()` call. `bid_list`
+// stays a mode-disambiguated special case in `renderCard` (it picks a renderer
+// by `ctx.mode`, which a type→renderer map can't express).
+export const cardRegistry = new CardRegistry<CardProps>().registerAll({
   product_list: LabProductCardList,
   product: LabProductDetailCard,
   overview: LabOverviewCard,
@@ -1453,7 +1822,7 @@ const REGISTRY: Record<string, CardComponent> = {
   wtb_request_list: LabWtbListCard,
   wtb_matches: LabWtbMatchesCard,
   handoff: LabHandoffCard,
-};
+});
 
 /**
  * Render one card by wire `type` (05-mobile-ux §4 dispatch). `bid_list`
@@ -1484,7 +1853,7 @@ export function renderCard(
     const Comp = ctx.mode === 'seller' || type === 'received_bids' ? LabReceivedBidsCard : LabBidListCard;
     return <Comp data={data} mode={ctx.mode} onSend={ctx.onSend} />;
   }
-  const Comp = REGISTRY[type];
+  const Comp = cardRegistry.resolve(type);
   if (!Comp) return <LabUnknownCard type={type} />;
   return (
     <Comp
@@ -1503,108 +1872,154 @@ export function renderCard(
   );
 }
 
-const styles = StyleSheet.create({
-  muted: { fontFamily: fonts.regular, fontSize: 13, color: brand.mutedForeground },
+// PR-3B-0 plumbing: the shared card stylesheet comes from the reusable
+// themed-style builder. Per-family token swaps land one PR at a time; keys not
+// yet migrated stay on `theme.ts` constants (still pixel-identical). Migrated so
+// far: cardKit primitives (PR-3B-1), listing-draft family (PR-3B-2 — draftCard/
+// meter/price + createdCard cluster), product family (PR-3B-3 — product/thumb),
+// stat/overview/catalog family (PR-3B-4 — statTile/bigStat/facet), buttons +
+// entry options + gate (PR-3B-5), list/batch/seller (PR-3B-6 — listRow/moreLine),
+// multi-product (PR-3B-7 — queue/pager/skip), WTB/soft-card cluster (PR-3B-8 —
+// soft/detail/steps/muted + WTB presentation). Only the PR-8-reserved WTB input
+// controls (lab.* inputs, toggle pill, stepper, field labels) + 2 untokenized
+// primaryAccent placeholder icons remain on legacy constants. Each card reads
+// `useCardStyles()`.
+const useCardStyles = createThemedStyles((t) => ({
+  muted: { fontFamily: fonts.regular, fontSize: 13, color: t.color['text.muted'] },
   bold: { fontFamily: fonts.bold },
   rowChips: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
   rowChipsWrap: { flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' },
 
-  // Product
-  product: {
-    flexDirection: 'row',
-    gap: spacing.md,
+  // ── Image-first product card (redesigned) ──────────────────────────────────
+  // RESULTS eyebrow — the named prose→evidence boundary; unified eyebrow voice.
+  resultsEyebrow: {
+    fontFamily: fonts.label,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: t.color['text.muted'],
+    marginBottom: spacing.sm,
+  },
+  // Vertical tile: media band butts the body (no padding on the container; the
+  // body owns padding); overflow clips the media to the rounded corners; the
+  // elevation floats it above the flat prose bubble.
+  card: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: brand.border,
-    backgroundColor: brand.surface,
-    padding: spacing.lg,
-    ...elevation.sm,
+    borderColor: t.color['border.subtle'],
+    backgroundColor: t.color['surface.raised'],
+    overflow: 'hidden',
+    ...t.elevation('raised'),
   },
+  // Constant 4/3 media band in BOTH states → zero layout shift when images land.
+  cardImage: { width: '100%', aspectRatio: 4 / 3, backgroundColor: t.color['surface.alt'] },
+  cardImageFill: { width: '100%', height: '100%' },
+  cardImagePlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+  cardImageCaption: {
+    fontFamily: fonts.label,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: t.color['text.muted'],
+  },
+  cardBody: { padding: spacing.lg, gap: spacing.sm },
+  // Hero of the text zone (matches draftHeroTitle's 17) — fixes "small fonts".
+  cardName: {
+    fontFamily: fonts.heading,
+    fontSize: 17,
+    lineHeight: 22,
+    letterSpacing: -0.2,
+    color: t.color['text.primary'],
+  },
+  cardPrice: { fontFamily: fonts.semibold, fontSize: 15, color: t.color['accent.pressed'] },
+  cardPriceMuted: { fontFamily: fonts.regular, fontSize: 13, color: t.color['text.muted'] },
+
+  // Legacy thumb keys — STILL used by LabListingQueueCard / LabListingDraftCard.
+  // (The old `product`/`productBody`/`productName`/`productPrice` keys were
+  // retired with the image-first redesign; thumb/thumbImg are preserved.)
   thumb: {
     width: 60,
     height: 60,
     borderRadius: radius.md,
-    backgroundColor: brand.surfaceMuted,
+    backgroundColor: t.color['surface.alt'],
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   thumbImg: { width: '100%', height: '100%' },
-  productBody: { flex: 1, minWidth: 0 },
-  productName: { fontFamily: fonts.bold, fontSize: 15, color: brand.foreground },
-  productPrice: { fontFamily: fonts.semibold, fontSize: 13, color: greenDark, marginTop: 6 },
 
-  // Identify / soft cards
+  // Identify / soft cards (PR-3B-8)
   softCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: brand.border,
-    backgroundColor: brand.surface,
+    borderColor: t.color['border.subtle'],
+    backgroundColor: t.color['surface.raised'],
     padding: spacing.lg,
-    ...elevation.sm,
+    ...t.elevation('raised'),
   },
   identifyRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
-  identifyText: { flex: 1, fontFamily: fonts.regular, fontSize: 13, color: brand.foreground, lineHeight: 19 },
+  identifyText: { flex: 1, fontFamily: fonts.regular, fontSize: 13, color: t.color['text.primary'], lineHeight: 19 },
   btnRow: { flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' },
 
-  // Detail
-  detailTitle: { fontFamily: fonts.bold, fontSize: 15, color: brand.foreground },
-  detailDesc: { fontFamily: fonts.regular, fontSize: 13, color: brand.textMuted, marginTop: 4, lineHeight: 19 },
+  // Detail (PR-3B-8)
+  detailTitle: { fontFamily: fonts.bold, fontSize: 15, color: t.color['text.primary'] },
+  detailDesc: { fontFamily: fonts.regular, fontSize: 13, color: t.color['text.secondary'], marginTop: 4, lineHeight: 19 },
 
-  // Stats
+  // Stats (PR-3B-4)
   statGrid: { flexDirection: 'row', gap: spacing.md },
   statTile: {
     flex: 1,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     padding: spacing.md,
   },
-  statTileAccent: { borderColor: brand.successBorder, backgroundColor: brand.successBg },
-  statValue: { fontFamily: fonts.headingBold, fontSize: 28, color: brand.foreground },
-  statLabel: { fontFamily: fonts.label, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', color: brand.mutedForeground, marginTop: 4 },
-  bigStat: { fontFamily: fonts.headingBold, fontSize: 28, color: brand.foreground },
+  statTileAccent: { borderColor: t.compat['status.successBorder'], backgroundColor: t.compat['status.successSurface'] },
+  statValue: { fontFamily: fonts.headingBold, fontSize: 28, color: t.color['text.primary'] },
+  statLabel: { fontFamily: fonts.label, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', color: t.color['text.muted'], marginTop: 4 },
+  bigStat: { fontFamily: fonts.headingBold, fontSize: 28, color: t.color['text.primary'] },
   catalogTotal: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 4 },
-  facetLabel: { fontFamily: fonts.label, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', color: brand.mutedForeground },
+  facetLabel: { fontFamily: fonts.label, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', color: t.color['text.muted'] },
   facetChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  facetChipText: { fontFamily: fonts.semibold, fontSize: 12, color: brand.foreground },
-  facetChipCount: { fontFamily: fonts.bold, fontSize: 11, color: brand.mutedForeground },
+  facetChipText: { fontFamily: fonts.semibold, fontSize: 12, color: t.color['text.primary'] },
+  facetChipCount: { fontFamily: fonts.bold, fontSize: 11, color: t.color['text.muted'] },
 
-  // List rows (batch/bid/seller)
+  // List rows (batch/bid/seller) (PR-3B-6)
   listRow: {
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: brand.divider,
+    borderColor: t.compat['border.divider'],
     padding: spacing.md,
-    ...elevation.sm,
+    ...t.elevation('raised'),
   },
   listRowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  listRowTitle: { flex: 1, fontFamily: fonts.semibold, fontSize: 14, lineHeight: 18, letterSpacing: -0.1, color: brand.foreground },
-  listRowMeta: { fontFamily: fonts.regular, fontSize: 11, color: brand.mutedForeground, marginTop: spacing.xs },
-  moreLine: { fontFamily: fonts.semibold, fontSize: 11, color: greenDark, textAlign: 'center', paddingTop: 6 },
+  listRowTitle: { flex: 1, fontFamily: fonts.semibold, fontSize: 14, lineHeight: 18, letterSpacing: -0.1, color: t.color['text.primary'] },
+  listRowMeta: { fontFamily: fonts.regular, fontSize: 11, color: t.color['text.muted'], marginTop: spacing.xs },
+  moreLine: { fontFamily: fonts.semibold, fontSize: 11, color: t.color['accent.pressed'], textAlign: 'center', paddingTop: 6 },
 
-  // Steps
+  // Steps (PR-3B-8)
   stepRow: { flexDirection: 'row', gap: 10 },
   stepBadge: {
     width: 20,
     height: 20,
     borderRadius: radius.full,
-    backgroundColor: brand.successBg,
+    backgroundColor: t.compat['status.successSurface'],
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepBadgeText: { fontFamily: fonts.bold, fontSize: 11, color: greenDark },
-  stepTitle: { fontFamily: fonts.semibold, fontSize: 12, color: brand.foreground },
-  stepDetail: { fontFamily: fonts.regular, fontSize: 11, color: brand.mutedForeground, marginTop: 2, lineHeight: 16 },
+  stepBadgeText: { fontFamily: fonts.bold, fontSize: 11, color: t.color['accent.pressed'] },
+  stepTitle: { fontFamily: fonts.semibold, fontSize: 12, color: t.color['text.primary'] },
+  stepDetail: { fontFamily: fonts.regular, fontSize: 11, color: t.color['text.muted'], marginTop: 2, lineHeight: 16 },
 
   // Draft — the seller centrepiece. Keeps overflow:'hidden' for the tinted
   // header band + rounded corners (clips the iOS shadow — accepted; the card
@@ -1613,70 +2028,70 @@ const styles = StyleSheet.create({
   draftCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: brand.successBorder,
-    backgroundColor: brand.surface,
+    borderColor: t.compat['status.successBorder'],
+    backgroundColor: t.color['surface.raised'],
     overflow: 'hidden',
     paddingBottom: spacing.lg,
-    ...elevation.md,
+    ...t.elevation('overlay'),
   },
   draftHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: brand.successBg,
+    backgroundColor: t.compat['status.successSurface'],
     paddingHorizontal: spacing.lg,
     paddingVertical: 10,
   },
   draftHeaderLead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  draftHeaderTitle: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, textTransform: 'uppercase', color: greenDark },
+  draftHeaderTitle: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, textTransform: 'uppercase', color: t.color['accent.pressed'] },
   draftHero: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   draftThumb: {
     width: 72,
     height: 72,
     borderRadius: radius.md,
-    backgroundColor: brand.successBg,
+    backgroundColor: t.compat['status.successSurface'],
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  draftHeroTitle: { fontFamily: fonts.heading, fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: brand.foreground },
+  draftHeroTitle: { fontFamily: fonts.heading, fontSize: 17, lineHeight: 22, letterSpacing: -0.2, color: t.color['text.primary'] },
   priceBar: {
     marginHorizontal: spacing.lg,
     marginTop: spacing.md,
     borderRadius: radius.sm,
-    backgroundColor: brand.successBg,
+    backgroundColor: t.compat['status.successSurface'],
     borderLeftWidth: 3,
-    borderLeftColor: greenMedium,
+    borderLeftColor: t.color['status.success'],
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
   // Missing-price variant: same height/padding as the priced band, but amber —
   // a full-width "+ Add price" row (not a floating chip). PRESERVE: green band
   // only when a price exists.
-  priceBarNeed: { backgroundColor: brand.warningBg, borderLeftColor: brand.warning },
-  priceText: { fontFamily: fonts.headingBold, fontSize: 20, lineHeight: 24, letterSpacing: -0.3, color: greenDarkest },
-  priceCurrency: { fontFamily: fonts.label, fontSize: 11, letterSpacing: 0.6, color: greenDark },
-  needChipText: { fontFamily: fonts.semibold, fontSize: 15, color: brand.warningText },
+  priceBarNeed: { backgroundColor: t.compat['status.warningSurface'], borderLeftColor: t.color['status.warning'] },
+  priceText: { fontFamily: fonts.headingBold, fontSize: 20, lineHeight: 24, letterSpacing: -0.3, color: t.color['accent'] },
+  priceCurrency: { fontFamily: fonts.label, fontSize: 11, letterSpacing: 0.6, color: t.color['accent.pressed'] },
+  needChipText: { fontFamily: fonts.semibold, fontSize: 15, color: t.compat['status.warningStrong'] },
   detailList: { paddingHorizontal: spacing.lg, marginTop: spacing.sm },
-  detailListLabel: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, textTransform: 'uppercase', color: greenDark, marginBottom: 4 },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: brand.divider },
-  detailKey: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, color: brand.textMuted },
-  detailVal: { flex: 1, textAlign: 'right', fontFamily: fonts.semibold, fontSize: 13, lineHeight: 18, letterSpacing: -0.1, color: brand.foreground },
-  meter: { marginHorizontal: spacing.lg, marginTop: spacing.md, borderRadius: radius.sm, backgroundColor: brand.surfaceMuted, padding: spacing.md },
+  detailListLabel: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, textTransform: 'uppercase', color: t.color['accent.pressed'], marginBottom: 4 },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.compat['border.divider'] },
+  detailKey: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, color: t.color['text.secondary'] },
+  detailVal: { flex: 1, textAlign: 'right', fontFamily: fonts.semibold, fontSize: 13, lineHeight: 18, letterSpacing: -0.1, color: t.color['text.primary'] },
+  meter: { marginHorizontal: spacing.lg, marginTop: spacing.md, borderRadius: radius.sm, backgroundColor: t.color['surface.alt'], padding: spacing.md },
   meterTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  meterLabel: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 0.6, color: brand.mutedForeground },
-  meterCount: { fontFamily: fonts.headingBold, fontSize: 15, color: greenDark },
-  meterNeeds: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 15, color: brand.warningText, textAlign: 'left', marginTop: spacing.xs },
-  meterReady: { fontFamily: fonts.semibold, fontSize: 12, lineHeight: 16, color: greenDark, marginTop: spacing.xs },
-  meterTrack: { height: 8, borderRadius: radius.full, backgroundColor: brand.border, marginTop: spacing.sm, overflow: 'hidden' },
+  meterLabel: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 0.6, color: t.color['text.muted'] },
+  meterCount: { fontFamily: fonts.headingBold, fontSize: 15, color: t.color['accent.pressed'] },
+  meterNeeds: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 15, color: t.compat['status.warningStrong'], textAlign: 'left', marginTop: spacing.xs },
+  meterReady: { fontFamily: fonts.semibold, fontSize: 12, lineHeight: 16, color: t.color['accent.pressed'], marginTop: spacing.xs },
+  meterTrack: { height: 8, borderRadius: radius.full, backgroundColor: t.color['border.subtle'], marginTop: spacing.sm, overflow: 'hidden' },
   meterFill: { height: '100%', borderRadius: radius.full },
   draftFooter: {
     marginTop: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: brand.divider,
-    backgroundColor: brand.successBg,
+    borderTopColor: t.compat['border.divider'],
+    backgroundColor: t.compat['status.successSurface'],
   },
   draftPublishWrap: { alignSelf: 'stretch' },
   // Edit-details affordance band — indents from the same 16px spine as the rest
@@ -1684,27 +2099,29 @@ const styles = StyleSheet.create({
   // secondary action, not a floating chip.
   draftEditWrap: { marginTop: spacing.md, paddingHorizontal: spacing.lg },
 
-  // Created
+  // Created — shared with the WTB-result + batch-result states (same shell).
+  // Migrating here makes those render theme-reactive early; pixel-identical since
+  // every token resolves to the current value (their own families migrate later).
   createdCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: brand.successBorder,
-    backgroundColor: brand.successBg,
+    borderColor: t.compat['status.successBorder'],
+    backgroundColor: t.compat['status.successSurface'],
     padding: spacing.lg,
-    ...elevation.md,
+    ...t.elevation('overlay'),
   },
   createdHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   createdCoin: {
     width: 36,
     height: 36,
     borderRadius: radius.full,
-    backgroundColor: greenMedium,
+    backgroundColor: t.color['status.success'],
     alignItems: 'center',
     justifyContent: 'center',
   },
-  createdEyebrow: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, textTransform: 'uppercase', color: greenDark, marginBottom: 2 },
-  createdTitle: { fontFamily: fonts.heading, fontSize: 16, color: brand.foreground },
-  createdMeta: { fontFamily: fonts.regular, fontSize: 13, color: brand.mutedForeground, marginTop: 2 },
+  createdEyebrow: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, textTransform: 'uppercase', color: t.color['accent.pressed'], marginBottom: 2 },
+  createdTitle: { fontFamily: fonts.heading, fontSize: 16, color: t.color['text.primary'] },
+  createdMeta: { fontFamily: fonts.regular, fontSize: 13, color: t.color['text.muted'], marginTop: 2 },
   linkRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1712,34 +2129,34 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: brand.successBorder,
-    backgroundColor: brand.surface,
+    borderColor: t.compat['status.successBorder'],
+    backgroundColor: t.color['surface.raised'],
     borderRadius: radius.full,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  linkText: { fontFamily: fonts.bold, fontSize: 13, color: greenDark },
+  linkText: { fontFamily: fonts.bold, fontSize: 13, color: t.color['accent.pressed'] },
 
-  // Entry options
+  // Entry options (PR-3B-5)
   entryOption: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: brand.border,
-    backgroundColor: brand.surface,
+    borderColor: t.color['border.subtle'],
+    backgroundColor: t.color['surface.raised'],
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    ...elevation.sm,
+    ...t.elevation('raised'),
   },
   entryIcon: {
     width: 40,
     height: 40,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: brand.successBorder,
-    backgroundColor: brand.successBg,
+    borderColor: t.compat['status.successBorder'],
+    backgroundColor: t.compat['status.successSurface'],
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1747,32 +2164,32 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: radius.full,
-    backgroundColor: brand.surfaceMuted,
+    backgroundColor: t.color['surface.alt'],
     alignItems: 'center',
     justifyContent: 'center',
   },
-  entryTitle: { fontFamily: fonts.semibold, fontSize: 14, color: brand.foreground },
+  entryTitle: { fontFamily: fonts.semibold, fontSize: 14, color: t.color['text.primary'] },
   entryTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   entryBadge: {
     borderRadius: radius.sm,
-    backgroundColor: brand.successBg,
+    backgroundColor: t.compat['status.successSurface'],
     borderWidth: 1,
-    borderColor: brand.successBorder,
+    borderColor: t.compat['status.successBorder'],
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  entryBadgeText: { fontFamily: fonts.label, fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase', color: greenDark },
-  entrySub: { fontFamily: fonts.regular, fontSize: 12, color: brand.mutedForeground, marginTop: 2 },
+  entryBadgeText: { fontFamily: fonts.label, fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase', color: t.color['accent.pressed'] },
+  entrySub: { fontFamily: fonts.regular, fontSize: 12, color: t.color['text.muted'], marginTop: 2 },
 
-  // Queue overview (multi-product pager)
+  // Queue overview (multi-product pager) (PR-3B-7)
   queuePager: { flexDirection: 'row', gap: 6 },
   pagerChevron: {
     width: 30,
     height: 30,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: brand.successBorder,
-    backgroundColor: brand.surface,
+    borderColor: t.compat['status.successBorder'],
+    backgroundColor: t.color['surface.raised'],
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1782,74 +2199,129 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: brand.divider,
-    backgroundColor: brand.surface,
+    borderColor: t.compat['border.divider'],
+    backgroundColor: t.color['surface.raised'],
     padding: spacing.md,
-    ...elevation.sm,
+    ...t.elevation('raised'),
   },
-  queueRowActive: { borderColor: brand.successBorder, backgroundColor: brand.successBg },
+  queueRowActive: { borderColor: t.compat['status.successBorder'], backgroundColor: t.compat['status.successSurface'] },
   queueThumb: {
     width: 44,
     height: 44,
     borderRadius: radius.sm,
-    backgroundColor: brand.surfaceMuted,
+    backgroundColor: t.color['surface.alt'],
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  queueRowTitle: { fontFamily: fonts.semibold, fontSize: 14, lineHeight: 18, color: brand.foreground },
+  queueRowTitle: { fontFamily: fonts.semibold, fontSize: 14, lineHeight: 18, color: t.color['text.primary'] },
   queuePublishWrap: { marginTop: spacing.md },
 
-  // Batch result — skipped roster
+  // Batch result — skipped roster (PR-3B-7)
   skipWrap: {
     marginTop: spacing.md,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: brand.warning,
-    backgroundColor: brand.warningBg,
+    borderColor: t.color['status.warning'],
+    backgroundColor: t.compat['status.warningSurface'],
     padding: spacing.md,
   },
   skipHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
-  skipHeadText: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 0.8, textTransform: 'uppercase', color: brand.warningText },
+  skipHeadText: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 0.8, textTransform: 'uppercase', color: t.compat['status.warningStrong'] },
   skipRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: brand.warning,
-    backgroundColor: brand.surface,
+    borderColor: t.color['status.warning'],
+    backgroundColor: t.color['surface.raised'],
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  skipRowTitle: { fontFamily: fonts.semibold, fontSize: 13, color: brand.foreground },
-  skipRowNeeds: { fontFamily: fonts.regular, fontSize: 11, color: brand.warningText, marginTop: 2 },
+  skipRowTitle: { fontFamily: fonts.semibold, fontSize: 13, color: t.color['text.primary'] },
+  skipRowNeeds: { fontFamily: fonts.regular, fontSize: 11, color: t.compat['status.warningStrong'], marginTop: 2 },
 
-  // Gate
+  // Gate (PR-3B-5)
   gateCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: brand.successBorder,
-    backgroundColor: brand.successBg,
+    borderColor: t.compat['status.successBorder'],
+    backgroundColor: t.compat['status.successSurface'],
     padding: spacing.lg,
-    ...elevation.sm,
+    ...t.elevation('raised'),
   },
-  gateTitle: { fontFamily: fonts.bold, fontSize: 14, color: brand.foreground },
-  gateSub: { fontFamily: fonts.regular, fontSize: 12, color: brand.mutedForeground, marginTop: 4, lineHeight: 18 },
+  gateTitle: { fontFamily: fonts.bold, fontSize: 14, color: t.color['text.primary'] },
+  gateSub: { fontFamily: fonts.regular, fontSize: 12, color: t.color['text.muted'], marginTop: 4, lineHeight: 18 },
 
-  // WTB
+  // WTB presentation (PR-3B-8)
   wtbHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  wtbHeaderText: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, textTransform: 'uppercase', color: greenDark },
+  wtbHeaderText: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, textTransform: 'uppercase', color: t.color['accent.pressed'] },
   wtbTeaser: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
-  wtbTeaserText: { flex: 1, fontFamily: fonts.regular, fontSize: 12, color: brand.mutedForeground },
+  wtbTeaserText: { flex: 1, fontFamily: fonts.regular, fontSize: 12, color: t.color['text.muted'] },
+  // WTB editable-draft controls (R1: migrated off lab.*/brand to input.* + D1
+  // tokens; light values identical → pixel-identical).
+  wtbField: { marginTop: spacing.md, gap: 6 },
+  wtbFieldLabel: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 1.0, textTransform: 'uppercase', color: t.color['accent.pressed'] },
+  wtbFieldOptional: { fontFamily: fonts.regular, fontSize: 10, letterSpacing: 0, textTransform: 'none', color: t.color['text.muted'] },
+  pillWrap: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  togglePill: {
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: t.color['border.subtle'],
+    backgroundColor: t.color['surface.alt'],
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  togglePillOn: { borderColor: t.compat['status.successBorder'], backgroundColor: t.compat['status.successSurface'] },
+  togglePillText: { fontFamily: fonts.semibold, fontSize: 12.5, color: t.color['text.muted'] },
+  togglePillTextOn: { color: t.color['accent.pressed'] },
+  budgetInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: radius.sm,
+    borderWidth: 1.4,
+    borderColor: t.color['input.border'],
+    backgroundColor: t.color['surface.raised'],
+    paddingHorizontal: 12,
+    minHeight: 42,
+  },
+  budgetPrefix: { fontFamily: fonts.semibold, fontSize: 14, color: t.color['text.muted'] },
+  budgetInput: { flex: 1, fontFamily: fonts.regular, fontSize: 14, color: t.color['input.text'], paddingVertical: 8 },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: radius.sm,
+    borderWidth: 1.4,
+    borderColor: t.color['input.border'],
+    backgroundColor: t.color['surface.raised'],
+    overflow: 'hidden',
+  },
+  stepBtn: { width: 42, minHeight: 42, alignItems: 'center', justifyContent: 'center' },
+  stepInput: {
+    minWidth: 56,
+    minHeight: 42,
+    textAlign: 'center',
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    color: t.color['input.text'],
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderColor: t.color['input.border'],
+  },
+  wtbEmailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: spacing.sm },
+  wtbEmailText: { flex: 1, fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: t.color['text.muted'] },
 
-  // Buttons
+  // Buttons (PR-3B-5). primaryBtnText stays '#fff' — no D1 token yet;
+  // TODO(Phase 2): map to color['text.onAccent'].
   primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: greenDark,
+    backgroundColor: t.color['accent.pressed'],
     borderRadius: radius.md,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -1858,12 +2330,12 @@ const styles = StyleSheet.create({
   ghostBtn: {
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: brand.successBorder,
-    backgroundColor: brand.surface,
+    borderColor: t.compat['status.successBorder'],
+    backgroundColor: t.color['surface.raised'],
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   ghostBtnSmall: { paddingHorizontal: 12, paddingVertical: 10 },
   ghostBtnIcon: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  ghostBtnText: { fontFamily: fonts.bold, fontSize: 12.5, color: greenDark },
-});
+  ghostBtnText: { fontFamily: fonts.bold, fontSize: 12.5, color: t.color['accent.pressed'] },
+}));

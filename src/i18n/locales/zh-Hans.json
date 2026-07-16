@@ -3723,7 +3723,17 @@
       "scrapValueBaseline": "废料价值基准",
       "potentialProfit": "潜在获利",
       "profitInsight": "在 {{marketplace}} 上架可比直接卖废料多赚 {{percent}}%。",
-      "aiBadge": "AI"
+      "aiBadge": "AI",
+      "installOption": {
+        "installed": {
+          "label": "已安装",
+          "hint": "买家需自行拆卸并运送"
+        },
+        "deinstalled": {
+          "label": "已拆卸",
+          "hint": "今日即可发货"
+        }
+      }
     },
     "success": {
       "heading": "已提交",
@@ -3944,9 +3954,13 @@
       "imSelling": "我要出售",
       "imBuying": "我要购买",
       "recentListings": "最近发布",
+      "recentWants": "最近求购",
       "seeAll": "查看全部",
       "offerOne": "{{count}} 个报价",
       "offerOther": "{{count}} 个报价",
+      "matchOne": "{{count}} 个匹配",
+      "matchOther": "{{count}} 个匹配",
+      "noMatchesYet": "暂无匹配",
       "status": {
         "active": "在售",
         "inReview": "审核中",
@@ -3966,6 +3980,11 @@
     "labBrowse": {
       "errorTitle": "无法加载市场",
       "errorBody": "请检查您的网络连接后重试。"
+    },
+    "labProduct": {
+      "title": "商品",
+      "back": "返回",
+      "openInBrowser": "在浏览器打开"
     },
     "labCommon": {
       "retry": "重试",
@@ -3999,6 +4018,8 @@
       "untitledListing": "未命名商品",
       "untitledItem": "未命名条目",
       "untitledWant": "未命名求购",
+      "imagePending": "图片待补",
+      "resultsCount": "结果 · {{count}}",
       "results": "结果",
       "noMatchingItems": "暂时没有匹配的商品。",
       "tellMeMore": "告诉我更多关于{{name}}的信息。",
@@ -4182,7 +4203,23 @@
         "buy": "追问一下…"
       },
       "scrollToBottom": "滚动到底部",
-      "send": "发送"
+      "send": "发送",
+      "stop": "停止",
+      "working": {
+        "default": "处理中…",
+        "searching": "正在搜索市集…",
+        "checking": "正在确认你的需求…",
+        "reading": "正在读取你的文件…",
+        "thinking": "分析中…",
+        "ranking": "正在排序结果…"
+      },
+      "actions": {
+        "copy": "复制",
+        "copied": "已复制到剪贴板",
+        "share": "分享",
+        "helpful": "有帮助",
+        "notHelpful": "没帮助"
+      }
     },
     "labMatch": {
       "confirmInterest": {
@@ -4620,6 +4657,25 @@
         "today": "今天",
         "week": "本周",
         "earlier": "更早"
+      }
+    },
+    "processingV2": {
+      "aiAnalyzing": "AI 分析中",
+      "subtitle": "结果会在我们找到时实时显示",
+      "stepOf": "步骤 {{current}} / {{total}}",
+      "confident": "置信度",
+      "productsFound": "找到的产品",
+      "foundCount_one": "找到 {{count}} 件商品",
+      "foundCount_other": "找到 {{count}} 件商品",
+      "documentsReady_one": "文件已就绪 · {{pages}} 页",
+      "documentsReady_other": "{{count}} 份文件已就绪 · {{pages}} 页",
+      "analyzingCount": "正在分析第 {{current}} / {{total}} 项…",
+      "phase": {
+        "validating": "验证中",
+        "readingDocuments": "读取文件中",
+        "uploadingDetecting": "上传与检测中",
+        "identifyingProducts": "识别产品中",
+        "done": "完成"
       }
     }
   }

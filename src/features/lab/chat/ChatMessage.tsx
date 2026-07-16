@@ -6,30 +6,36 @@
 // Completed rows POP in; the streaming bot bubble does NOT POP per token (it
 // fades once then grows — the screen renders it via a separate live component).
 import React, { memo } from 'react';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { Linking, Text, View } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { AlertTriangle, FileText } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
 import { AppImage } from '@/components/ui';
-import { brand, buyBlue, elevation, fonts, greenDarkest, greenMedium, radius, spacing } from '@/constants/theme';
+import { fonts, radius, spacing } from '@/constants/theme';
 import { usePop } from '@/animations/recipes';
+import { CHAT_UI_V2 } from '@/lib/flags';
+import { createThemedStyles, useColor } from './theme';
 import { GhostButton, renderCard } from './cards';
 import { toolLabel } from './cardKit';
-import { ThinkingDots } from './ThinkingDots';
-import type { AiMsg } from './types';
+import { WorkingIndicator } from './WorkingIndicator';
+import { MessageActions } from './MessageActions';
+import { isErrorMessage, messageText, type Message } from './types/message';
+import { CodeBlock } from './CodeBlock';
+import { messageHasDraftCard, resolveBotText } from './streamSanitizer';
 
 /* ── Markdown-lite → RN <Text> ─────────────────────────────────────────────
- * The assistant emits only bold, bullet/numbered lists and links. A tiny
- * line-based parser covers all of it without a heavy dependency (05 §2.2). */
+ * The assistant emits only bold, bullet/numbered lists, links, code blocks,
+ * inline code, block quotes, and headings. A tiny line/block parser covers all
+ * of it without a heavy dependency (05 §2.2). */
 
-// Tokenize bold / image / link so the assistant's markdown doesn't leak raw
-// syntax. Order matters: image `![alt](url)` before link `[text](url)` (the
-// former starts with `!`), before `**bold**`.
-const MD_TOKEN_RE = /(!\[[^\]]*\]\([^)]*\)|\[[^\]]*\]\([^)]*\)|\*\*[^*]+\*\*)/g;
+// Tokenize bold / image / link / inline code so the assistant's markdown doesn't leak raw
+// syntax. Order matters.
+const MD_TOKEN_RE = /(!\[[^\]]*\]\([^)]*\)|\[[^\]]*\]\([^)]*\)|\*\*[^*]+\*\*|`[^`]+`)/g;
 const MD_LINK_RE = /^\[([^\]]*)\]\(([^)]+)\)$/;
 
 function InlineText({ text, style }: { text: string; style?: object }) {
+  const styles = useChatMessageStyles();
   const parts = text.split(MD_TOKEN_RE).filter(Boolean);
   return (
     <Text style={style}>
@@ -60,16 +66,73 @@ function InlineText({ text, style }: { text: string; style?: object }) {
             </Text>
           );
         }
+        if (p.startsWith('`') && p.endsWith('`')) {
+          return (
+            <Text key={i} style={styles.inlineCode}>
+              {p.slice(1, -1)}
+            </Text>
+          );
+        }
         return <Text key={i}>{p}</Text>;
       })}
     </Text>
   );
 }
 
-export function MarkdownLite({ text }: { text: string }) {
+export type Block =
+  | { type: 'prose'; text: string }
+  | { type: 'code'; code: string; language: string };
+
+export function parseBlocks(text: string): Block[] {
+  const blocks: Block[] = [];
+  const lines = text.split('\n');
+  let inCode = false;
+  let codeLines: string[] = [];
+  let language = '';
+  let proseLines: string[] = [];
+
+  const flushProse = () => {
+    if (proseLines.length > 0) {
+      blocks.push({ type: 'prose', text: proseLines.join('\n') });
+      proseLines = [];
+    }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const match = line.match(/^```(\w*)/);
+    if (match) {
+      if (inCode) {
+        blocks.push({ type: 'code', code: codeLines.join('\n'), language });
+        codeLines = [];
+        language = '';
+        inCode = false;
+      } else {
+        flushProse();
+        language = match[1] || '';
+        inCode = true;
+      }
+    } else if (inCode) {
+      codeLines.push(line);
+    } else {
+      proseLines.push(line);
+    }
+  }
+
+  if (inCode) {
+    blocks.push({ type: 'code', code: codeLines.join('\n'), language });
+  } else {
+    flushProse();
+  }
+
+  return blocks;
+}
+
+function MarkdownLiteProse({ text }: { text: string }) {
+  const styles = useChatMessageStyles();
   const lines = text.split('\n');
   return (
-    <View>
+    <View style={{ width: '100%' }}>
       {lines.map((raw, i) => {
         const line = raw.trimEnd();
         if (line.trim() === '') return <View key={i} style={styles.gap} />;
@@ -77,6 +140,24 @@ export function MarkdownLite({ text }: { text: string }) {
         // the listing draft card already shows the photo, so the raw markdown +
         // long URL would just be a wide, ugly noise line here.
         if (/!\[[^\]]*\]\([^)]*\)/.test(line)) return null;
+
+        // Headings: #, ##, ###
+        const heading = line.match(/^\s*(#{1,3})\s+(.*)$/);
+        if (heading) {
+          return <InlineText key={i} text={heading[2]} style={styles.heading} />;
+        }
+
+        // Blockquotes: >
+        const quote = line.match(/^\s*>\s+(.*)$/);
+        if (quote) {
+          return (
+            <View key={i} style={styles.quoteContainer}>
+              <View style={styles.quoteBorder} />
+              <InlineText text={quote[1]} style={styles.quoteText} />
+            </View>
+          );
+        }
+
         const bullet = line.match(/^\s*[-*]\s+(.*)$/);
         const numbered = line.match(/^\s*(\d+)\.\s+(.*)$/);
         if (bullet) {
@@ -101,33 +182,33 @@ export function MarkdownLite({ text }: { text: string }) {
   );
 }
 
-/** Draft cards whose prose the assistant pads with a redundant "**Label:**
- *  value" field dump (already shown in the card itself). */
-const DRAFT_CARD_TYPES = new Set(['listing_draft', 'wtb_draft']);
-function messageHasDraftCard(cards?: { type: string }[]): boolean {
-  return !!cards?.some((c) => DRAFT_CARD_TYPES.has(c.type));
+export function MarkdownLite({ text }: { text: string }) {
+  const blocks = parseBlocks(text);
+  return (
+    <View style={{ width: '100%' }}>
+      {blocks.map((block, idx) => {
+        if (block.type === 'code') {
+          return <CodeBlock key={idx} code={block.code} language={block.language} />;
+        }
+        return <MarkdownLiteProse key={idx} text={block.text} />;
+      })}
+    </View>
+  );
 }
 
-const FIELD_BULLET_RE = /^\s*[-*]\s+\*\*[^*]+:\*\*/; // "- **Label:** value"
-/** Collapse the redundant field-dump when a draft card accompanies the prose:
- *  drop the "**Label:** value" bullets and the dangling "…here are the details:"
- *  lead-in, leaving just the opening + closing sentence (e.g. "Your draft is
- *  ready. Please add a location to publish."). The card already shows the
- *  fields. Only invoked when a draft card is present — ordinary prose (and the
- *  live streaming bubble) is never touched. */
-export function stripDraftFieldDump(text: string): string {
-  return text
-    .split('\n')
-    .filter((l) => !FIELD_BULLET_RE.test(l))
-    .join('\n')
-    .replace(/\s*here(?:'s| are)?(?: the)?(?: updated)? details:\s*/i, ' ')
-    .replace(/[ \t]{2,}/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
+// The card-aware text strips live in the pure `streamSanitizer` module now
+// (PR: clean streaming frames) so the streaming path can converge on the exact
+// committed render. Re-exported so existing importers keep working unchanged.
+export {
+  stripDraftFieldDump,
+  stripCardFieldDump,
+  messageHasDraftCard,
+  messageHasInfoCard,
+} from './streamSanitizer';
 
 function SourcesStrip({ tools }: { tools: string[] }) {
   const { t } = useTranslation();
+  const styles = useChatMessageStyles();
   const unique = [...new Set(tools)];
   if (unique.length === 0) return null;
   return (
@@ -143,8 +224,120 @@ function SourcesStrip({ tools }: { tools: string[] }) {
   );
 }
 
+/** Card-action handlers threaded to `renderCard` — shared by the committed
+ *  (ChatMessage) and streaming (StreamingMessage) drivers via AssistantMessage. */
+export type CardActionHandlers = {
+  onSend: (text: string) => void;
+  onUploadPress?: () => void;
+  onEditDraft?: (data: unknown) => void;
+  onJumpProduct?: (index: number) => void;
+  onAdvanceProduct?: (dir: 'prev' | 'next', currentIndex: number, total: number) => void;
+  onCombineProducts?: () => void;
+  onSplitProducts?: () => void;
+  onPublishBatch?: () => void;
+  batchBusy?: boolean;
+};
+
+/**
+ * The SHARED assistant-message presentation (A4 §2.1 / §12.7). BOTH the committed
+ * path (ChatMessage) and the live streaming path (StreamingMessage) render THIS
+ * subtree — a single source of visual truth, so the two can never drift. Callers
+ * own the row wrapper + entering animation and supply already-resolved `text`
+ * (committed: full/field-dump-collapsed; streaming: the revealed substring).
+ * Thinking dots show pre-first-token (no text, no cards). Cards are each wrapped
+ * in a CardBoundary so a bad payload never crashes the thread (05-mobile-ux §4).
+ */
+export function AssistantMessage({
+  text,
+  cards,
+  sources,
+  mode,
+  committed,
+  streaming,
+  phase,
+  onSend,
+  onUploadPress,
+  onEditDraft,
+  onJumpProduct,
+  onAdvanceProduct,
+  onCombineProducts,
+  onSplitProducts,
+  onPublishBatch,
+  batchBusy,
+}: CardActionHandlers & {
+  text: string;
+  cards?: { type: string; data: unknown }[];
+  sources?: string[];
+  mode: 'buyer' | 'seller';
+  /** R4: this is a SETTLED message (not the live streaming leaf) → show the
+   *  copy/share/feedback action row (behind CHAT_UI_V2). The streaming driver
+   *  omits it, so actions only appear once the answer is final. */
+  committed?: boolean;
+  /** True only for the live streaming leaf; keeps the text bubble slot present
+   *  pre-first-token so an early data-card can never render above the text. */
+  streaming?: boolean;
+  /** Optional live pipeline phase (turn.phase) — surfaced by the WorkingIndicator
+   *  as a phase-aware "AI is working" label pre-first-token. Additive: absent on
+   *  committed messages (which are never thinking), so behavior-neutral there. */
+  phase?: string;
+}) {
+  const styles = useChatMessageStyles();
+  const hasCards = !!cards && cards.length > 0;
+  const isThinking = !text && (streaming || !hasCards);
+  // A DRAFT card (WTB / listing) is an artifact the assistant "presents" — while
+  // streaming, hold it until the intro text has begun so it slides in BELOW the
+  // prose instead of popping in first and getting a text bubble pushed in above
+  // it. Result/info cards still stream in immediately (they ARE the answer).
+  // Committed messages always show their cards.
+  const isDraftCard = messageHasDraftCard(cards);
+  const showCards = hasCards && (!streaming || !isDraftCard || !!text);
+  const cardsInner = hasCards
+    ? cards!.map((c, i) => (
+        <CardBoundary key={`${c.type}-${i}`}>
+          {renderCard(c.type, c.data, {
+            mode,
+            onSend,
+            onUploadPress,
+            onEditDraft,
+            onJumpProduct,
+            onAdvanceProduct,
+            onCombineProducts,
+            onSplitProducts,
+            onPublishBatch,
+            batchBusy,
+          })}
+        </CardBoundary>
+      ))
+    : null;
+  return (
+    <View style={styles.botWrap}>
+      {(text || isThinking) && (
+        <View style={[styles.bubble, styles.botBubble]}>
+          {isThinking ? <WorkingIndicator phase={phase} mode={mode} /> : <MarkdownLite text={text} />}
+        </View>
+      )}
+
+      {committed && CHAT_UI_V2 && !!text ? <MessageActions text={text} /> : null}
+
+      {/* Streaming: cards fade/slide in (smooth entrance, no pop). Committed: plain
+          View — the row already animates, and this keeps snapshots byte-identical. */}
+      {showCards ? (
+        streaming ? (
+          <Animated.View entering={FadeIn.duration(260)} style={styles.cards}>
+            {cardsInner}
+          </Animated.View>
+        ) : (
+          <View style={styles.cards}>{cardsInner}</View>
+        )
+      ) : null}
+
+      {sources && sources.length > 0 ? <SourcesStrip tools={sources} /> : null}
+    </View>
+  );
+}
+
 export type ChatMessageProps = {
-  msg: AiMsg;
+  msg: Message;
   mode: 'buyer' | 'seller';
   /** Send a follow-up turn (card actions + retry). */
   onSend: (text: string) => void;
@@ -162,8 +355,10 @@ export type ChatMessageProps = {
   onSplitProducts?: () => void;
   onPublishBatch?: () => void;
   batchBusy?: boolean;
-  /** True while this bot bubble is the live streaming one (skip POP). */
-  live?: boolean;
+  /** This committed row is replacing the pixel-identical streaming bubble on
+   *  screen (the settle handoff) — mount with NO entering animation so the swap
+   *  frame is invisible (no POP/fade on text the user is already reading). */
+  handoff?: boolean;
 };
 
 function ChatMessageImpl({
@@ -179,15 +374,19 @@ function ChatMessageImpl({
   onSplitProducts,
   onPublishBatch,
   batchBusy,
-  live,
+  handoff,
 }: ChatMessageProps) {
   const { t } = useTranslation();
   const reduced = useReducedMotion();
   const popEntering = usePop();
-  const accent = mode === 'seller' ? greenDarkest : buyBlue;
+  const styles = useChatMessageStyles();
+  const sellAccent = useColor('mode.sell');
+  const buyAccent = useColor('mode.buy');
+  const accent = mode === 'seller' ? sellAccent : buyAccent;
+  const dangerStrong = useColor('status.dangerStrong');
 
-  const hasCards = !!msg.cards && msg.cards.length > 0;
-  const isThinking = msg.role === 'bot' && !msg.text && !hasCards;
+  const text = messageText(msg);
+  const isErr = isErrorMessage(msg);
 
   // User bubble — right, filled. Renders sent attachments (image thumbnails /
   // doc chips) above the text so the sender sees what they sent.
@@ -195,10 +394,10 @@ function ChatMessageImpl({
     const atts = msg.attachments ?? [];
     const images = atts.filter((a) => a.isImage);
     const docs = atts.filter((a) => !a.isImage);
-    const hasText = msg.text.length > 0;
+    const hasText = text.length > 0;
     return (
       <Animated.View entering={reduced ? FadeIn.duration(200) : popEntering} style={styles.rowRight}>
-        <View style={[styles.bubble, styles.userBubble, { backgroundColor: accent }]}>
+        <View style={[styles.bubble, styles.userBubble, !CHAT_UI_V2 && { backgroundColor: accent }]}>
           {images.length > 0 ? (
             <View style={[styles.sentImgRow, (hasText || docs.length > 0) && styles.sentAttGap]}>
               {images.map((a) => (
@@ -217,20 +416,20 @@ function ChatMessageImpl({
               </Text>
             </View>
           ))}
-          {hasText ? <Text style={styles.userText}>{msg.text}</Text> : null}
+          {hasText ? <Text style={styles.userText}>{text}</Text> : null}
         </View>
       </Animated.View>
     );
   }
 
   // Error bubble — left, danger tint + Retry.
-  if (msg.role === 'err') {
+  if (isErr) {
     return (
       <Animated.View entering={reduced ? FadeIn.duration(200) : popEntering} style={styles.rowLeft}>
         <View style={[styles.bubble, styles.errBubble]}>
           <View style={styles.errRow}>
-            <AlertTriangle size={16} color={brand.destructiveStrong} />
-            <Text style={styles.errText}>{msg.text}</Text>
+            <AlertTriangle size={16} color={dangerStrong} />
+            <Text style={styles.errText}>{text}</Text>
           </View>
           {msg.retry ? (
             <View style={{ marginTop: 8, alignSelf: 'flex-start' }}>
@@ -242,44 +441,34 @@ function ChatMessageImpl({
     );
   }
 
-  // Bot bubble — left. The live streaming bubble fades once (no POP per token).
-  const entering = live ? FadeIn.duration(200) : reduced ? FadeIn.duration(200) : popEntering;
-  // When this turn carries a draft card, collapse the redundant field-dump prose
-  // (the card shows those fields). Committed messages only — the live bubble
-  // streams full text, then commits to this clean version.
-  const botText = messageHasDraftCard(msg.cards) ? stripDraftFieldDump(msg.text) : msg.text;
+  // Bot bubble — left. A settle handoff mounts PLAIN (entering undefined): the
+  // row is replacing the streaming bubble's identical pixels in the same frame,
+  // so any entrance animation would read as a visible jump (D3).
+  const entering = handoff ? undefined : reduced ? FadeIn.duration(200) : popEntering;
+  // When this turn carries a card that already shows the structured fields,
+  // collapse the redundant field-dump prose (draft cards → their field list;
+  // result/info cards like product_list → the bold "**Name** / **Condition:**"
+  // bullets). The streaming leaf resolves through the SAME function (via
+  // streamSafeText) so the settle swap is byte-identical.
+  const botText = resolveBotText(text, msg.cards);
   return (
     <Animated.View entering={entering} style={styles.rowLeft}>
-      <View style={styles.botWrap}>
-        {(botText || isThinking) && (
-          <View style={[styles.bubble, styles.botBubble]}>
-            {isThinking ? <ThinkingDots /> : <MarkdownLite text={botText} />}
-          </View>
-        )}
-
-        {hasCards ? (
-          <View style={styles.cards}>
-            {msg.cards!.map((c, i) => (
-              <CardBoundary key={`${c.type}-${i}`}>
-                {renderCard(c.type, c.data, {
-                  mode,
-                  onSend,
-                  onUploadPress,
-                  onEditDraft,
-                  onJumpProduct,
-                  onAdvanceProduct,
-                  onCombineProducts,
-                  onSplitProducts,
-                  onPublishBatch,
-                  batchBusy,
-                })}
-              </CardBoundary>
-            ))}
-          </View>
-        ) : null}
-
-        {msg.tools && msg.tools.length > 0 ? <SourcesStrip tools={msg.tools} /> : null}
-      </View>
+      <AssistantMessage
+        text={botText}
+        cards={msg.cards}
+        sources={msg.sources}
+        mode={mode}
+        committed
+        onSend={onSend}
+        onUploadPress={onUploadPress}
+        onEditDraft={onEditDraft}
+        onJumpProduct={onJumpProduct}
+        onAdvanceProduct={onAdvanceProduct}
+        onCombineProducts={onCombineProducts}
+        onSplitProducts={onSplitProducts}
+        onPublishBatch={onPublishBatch}
+        batchBusy={batchBusy}
+      />
     </Animated.View>
   );
 }
@@ -302,7 +491,11 @@ class CardBoundary extends React.Component<
 
 export const ChatMessage = memo(ChatMessageImpl);
 
-const styles = StyleSheet.create({
+// Colors/elevation from the theme (D2); layout/spacing/radius/fonts stay as
+// direct `@/constants/theme` imports (theme-independent). Built via the reusable
+// createThemedStyles builder so the style-prop shape — and PR-0 snapshots — are
+// unchanged.
+const useChatMessageStyles = createThemedStyles((t) => ({
   rowRight: { alignItems: 'flex-end', width: '100%' },
   rowLeft: { alignItems: 'flex-start', width: '100%' },
   bubble: {
@@ -311,8 +504,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  userBubble: { borderBottomRightRadius: radius.sm },
-  userText: { fontFamily: fonts.regular, fontSize: 14, color: '#fff', lineHeight: 20 },
+  userBubble: {
+    backgroundColor: CHAT_UI_V2 ? t.color['surface.alt'] : undefined,
+    borderRadius: CHAT_UI_V2 ? radius.full : radius.lg,
+    borderBottomRightRadius: CHAT_UI_V2 ? radius.full : radius.sm,
+    paddingHorizontal: CHAT_UI_V2 ? 20 : 14,
+    paddingVertical: CHAT_UI_V2 ? 14 : 10,
+    maxWidth: CHAT_UI_V2 ? '72%' : '88%',
+  },
+  userText: {
+    fontFamily: fonts.regular,
+    fontSize: CHAT_UI_V2 ? 17 : 14,
+    color: CHAT_UI_V2 ? t.color['text.primary'] : '#fff',
+    lineHeight: CHAT_UI_V2 ? 26 : 20,
+    letterSpacing: CHAT_UI_V2 ? -0.2 : 0,
+  },
   // Sent attachments inside the user bubble (on the accent fill).
   sentImgRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   sentImg: {
@@ -335,53 +541,96 @@ const styles = StyleSheet.create({
   },
   sentDocName: { flexShrink: 1, fontFamily: fonts.semibold, fontSize: 13, color: '#fff' },
   sentAttGap: { marginBottom: 8 },
-  // Full-width so cards (width:'100%') get the whole thread column; the text
-  // bubble caps itself at 92% and hugs its content via alignSelf. (Was
-  // maxWidth:'92%' here, which collapsed the column — and any wrap-friendly card
-  // like the listing draft — to ~half width.)
   botWrap: { width: '100%' },
   botBubble: {
     alignSelf: 'flex-start',
-    maxWidth: '92%',
-    backgroundColor: brand.surface,
-    borderWidth: 1,
-    // Firmer border + soft lift so the prose bubble reads as one tactile
-    // column with the elevated cards beneath it.
-    borderColor: brand.border,
-    borderBottomLeftRadius: radius.sm,
-    ...elevation.sm,
+    maxWidth: CHAT_UI_V2 ? '84%' : '92%',
+    backgroundColor: CHAT_UI_V2 ? 'transparent' : t.color['surface.raised'],
+    borderWidth: CHAT_UI_V2 ? 0 : 1,
+    borderColor: CHAT_UI_V2 ? 'transparent' : t.color['border.subtle'],
+    borderBottomLeftRadius: CHAT_UI_V2 ? 0 : radius.sm,
+    paddingHorizontal: CHAT_UI_V2 ? 0 : 14,
+    paddingVertical: CHAT_UI_V2 ? 0 : 10,
+    ...t.elevation('flat'),
   },
   errBubble: {
-    backgroundColor: brand.destructiveBg,
+    backgroundColor: t.color['status.dangerSurface'],
     borderBottomLeftRadius: radius.sm,
   },
   errRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
-  errText: { flex: 1, fontFamily: fonts.regular, fontSize: 14, color: brand.destructiveStrong, lineHeight: 20 },
-  // 21 line-height calms multi-line paragraphs; the bullet baselines to match.
-  botText: { fontFamily: fonts.regular, fontSize: 14, color: brand.foreground, lineHeight: 21 },
+  errText: { flex: 1, fontFamily: fonts.regular, fontSize: 14, color: t.color['status.dangerStrong'], lineHeight: 20 },
+  botText: {
+    fontFamily: fonts.regular,
+    fontSize: CHAT_UI_V2 ? 17 : 14,
+    color: t.color['text.primary'],
+    lineHeight: CHAT_UI_V2 ? 32 : 21,
+    letterSpacing: CHAT_UI_V2 ? -0.2 : 0,
+  },
   bold: { fontFamily: fonts.bold },
-  link: { fontFamily: fonts.semibold, color: greenDarkest, textDecorationLine: 'underline' },
-  gap: { height: 8 },
+  link: { fontFamily: fonts.semibold, color: t.color['accent'], textDecorationLine: 'underline' },
+  inlineCode: {
+    fontFamily: fonts.mono,
+    fontSize: CHAT_UI_V2 ? 14 : 12,
+    color: t.color['accent'],
+    backgroundColor: CHAT_UI_V2 ? t.color['surface.alt'] : 'rgba(0,0,0,0.06)',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  heading: {
+    fontFamily: fonts.semibold,
+    fontSize: CHAT_UI_V2 ? 22 : 16,
+    lineHeight: CHAT_UI_V2 ? 30 : 22,
+    letterSpacing: CHAT_UI_V2 ? -0.3 : 0,
+    color: t.color['text.primary'],
+    marginTop: CHAT_UI_V2 ? spacing.md : spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  quoteContainer: {
+    flexDirection: 'row',
+    paddingLeft: 12,
+    marginVertical: 6,
+    position: 'relative',
+  },
+  quoteBorder: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: t.color['accent'],
+    borderRadius: 1.5,
+  },
+  quoteText: {
+    fontFamily: fonts.regular,
+    fontSize: CHAT_UI_V2 ? 17 : 14,
+    lineHeight: CHAT_UI_V2 ? 28 : 20,
+    color: t.color['text.secondary'],
+  },
+  gap: { height: CHAT_UI_V2 ? 24 : 8 },
   li: { flexDirection: 'row', gap: 8, marginVertical: 2 },
-  bullet: { fontFamily: fonts.semibold, fontSize: 14, lineHeight: 21, color: brand.textMuted, minWidth: 16 },
-  cards: { width: '100%', gap: spacing.sm, marginTop: spacing.sm },
+  bullet: {
+    fontFamily: fonts.semibold,
+    fontSize: CHAT_UI_V2 ? 17 : 14,
+    lineHeight: CHAT_UI_V2 ? 32 : 21,
+    color: t.color['text.secondary'],
+    minWidth: 16,
+  },
+  cards: { width: '100%', gap: spacing.sm, marginTop: spacing.md },
   sources: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 5, marginTop: 8 },
-  // Unified eyebrow voice (letterSpacing 1.2); stays muted so the strip is
-  // secondary to the cards above it.
-  sourcesLabel: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, color: brand.mutedForeground },
-  // Bordered pill with a leading provenance dot — a quiet "where this came from"
-  // marker; padding/border only, no size bump, to stay visually secondary.
+  sourcesLabel: { fontFamily: fonts.label, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, color: t.color['text.muted'] },
   sourceChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     borderRadius: radius.full,
-    backgroundColor: brand.surfaceMuted,
+    backgroundColor: t.color['surface.alt'],
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  sourceDot: { width: 5, height: 5, borderRadius: radius.full, backgroundColor: greenMedium },
-  sourceChipText: { fontFamily: fonts.regular, fontSize: 10.5, lineHeight: 13, letterSpacing: 0.2, color: brand.mutedForeground },
-});
+  sourceDot: { width: 5, height: 5, borderRadius: radius.full, backgroundColor: t.color['status.success'] },
+  sourceChipText: { fontFamily: fonts.regular, fontSize: 10.5, lineHeight: 13, letterSpacing: 0.2, color: t.color['text.muted'] },
+}));
+

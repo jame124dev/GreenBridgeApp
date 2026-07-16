@@ -2,7 +2,7 @@
 // pulse (opacity 0.35↔1) with an 0.15s stagger. Static under reduced motion.
 // Decorative — hidden from the screen reader.
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -14,9 +14,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { brand } from '@/constants/theme';
+import { createThemedStyles } from './theme';
 
 function Dot({ delay, reduced }: { delay: number; reduced: boolean }) {
+  const styles = useStyles();
   const v = useSharedValue(reduced ? 1 : 0.35);
   useEffect(() => {
     if (reduced) {
@@ -35,6 +36,7 @@ function Dot({ delay, reduced }: { delay: number; reduced: boolean }) {
 
 export function ThinkingDots() {
   const reduced = useReducedMotion();
+  const styles = useStyles();
   return (
     <View style={styles.row} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <Dot delay={0} reduced={reduced} />
@@ -44,7 +46,8 @@ export function ThinkingDots() {
   );
 }
 
-const styles = StyleSheet.create({
+// Colors from the theme (D2); layout/size are theme-independent literals.
+const useStyles = createThemedStyles((t) => ({
   row: { flexDirection: 'row', gap: 5, paddingVertical: 4 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: brand.placeholder },
-});
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: t.color['text.placeholder'] },
+}));

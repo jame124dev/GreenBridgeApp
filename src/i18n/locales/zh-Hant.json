@@ -3723,7 +3723,17 @@
       "scrapValueBaseline": "廢料價值基準",
       "potentialProfit": "潛在獲利",
       "profitInsight": "在 {{marketplace}} 上架可比直接賣廢料多賺 {{percent}}%。",
-      "aiBadge": "AI"
+      "aiBadge": "AI",
+      "installOption": {
+        "installed": {
+          "label": "已安裝",
+          "hint": "買家需自行拆卸並運送"
+        },
+        "deinstalled": {
+          "label": "已拆卸",
+          "hint": "今日即可出貨"
+        }
+      }
     },
     "success": {
       "heading": "已提交",
@@ -3944,9 +3954,13 @@
       "imSelling": "我要出售",
       "imBuying": "我要購買",
       "recentListings": "最近釋出",
+      "recentWants": "最近求購",
       "seeAll": "檢視全部",
       "offerOne": "{{count}} 個報價",
       "offerOther": "{{count}} 個報價",
+      "matchOne": "{{count}} 個匹配",
+      "matchOther": "{{count}} 個匹配",
+      "noMatchesYet": "尚無匹配",
       "status": {
         "active": "在售",
         "inReview": "稽核中",
@@ -3966,6 +3980,11 @@
     "labBrowse": {
       "errorTitle": "無法載入市場",
       "errorBody": "請檢查您的網路連線後重試。"
+    },
+    "labProduct": {
+      "title": "商品",
+      "back": "返回",
+      "openInBrowser": "在瀏覽器開啟"
     },
     "labCommon": {
       "retry": "重試",
@@ -3999,6 +4018,8 @@
       "untitledListing": "未命名商品",
       "untitledItem": "未命名條目",
       "untitledWant": "未命名求購",
+      "imagePending": "圖片待補",
+      "resultsCount": "結果 · {{count}}",
       "results": "結果",
       "noMatchingItems": "暫時沒有匹配的商品。",
       "tellMeMore": "告訴我更多關於{{name}}的資訊。",
@@ -4182,7 +4203,23 @@
         "buy": "追問一下…"
       },
       "scrollToBottom": "滾動到底部",
-      "send": "傳送"
+      "send": "傳送",
+      "stop": "停止",
+      "working": {
+        "default": "處理中…",
+        "searching": "正在搜尋市集…",
+        "checking": "正在確認你的需求…",
+        "reading": "正在讀取你的文件…",
+        "thinking": "分析中…",
+        "ranking": "正在排序結果…"
+      },
+      "actions": {
+        "copy": "複製",
+        "copied": "已複製到剪貼簿",
+        "share": "分享",
+        "helpful": "有幫助",
+        "notHelpful": "沒幫助"
+      }
     },
     "labMatch": {
       "confirmInterest": {
@@ -4620,6 +4657,25 @@
         "today": "今天",
         "week": "本週",
         "earlier": "更早"
+      }
+    },
+    "processingV2": {
+      "aiAnalyzing": "AI 分析中",
+      "subtitle": "結果會在我們找到時即時顯示",
+      "stepOf": "步驟 {{current}} / {{total}}",
+      "confident": "信心度",
+      "productsFound": "找到的產品",
+      "foundCount_one": "找到 {{count}} 件商品",
+      "foundCount_other": "找到 {{count}} 件商品",
+      "documentsReady_one": "文件已就緒 · {{pages}} 頁",
+      "documentsReady_other": "{{count}} 份文件已就緒 · {{pages}} 頁",
+      "analyzingCount": "正在分析第 {{current}} / {{total}} 項…",
+      "phase": {
+        "validating": "驗證中",
+        "readingDocuments": "讀取文件中",
+        "uploadingDetecting": "上傳與偵測中",
+        "identifyingProducts": "辨識產品中",
+        "done": "完成"
       }
     }
   }

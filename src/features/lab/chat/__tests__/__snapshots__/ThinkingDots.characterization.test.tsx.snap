@@ -1,0 +1,61 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ThinkingDots — characterization golden structure 1`] = `
+<View
+  accessibilityElementsHidden={true}
+  importantForAccessibility="no-hide-descendants"
+  style={
+    {
+      "flexDirection": "row",
+      "gap": 5,
+      "paddingVertical": 4,
+    }
+  }
+>
+  <View
+    style={
+      [
+        {
+          "backgroundColor": "#9ca3af",
+          "borderRadius": 3,
+          "height": 6,
+          "width": 6,
+        },
+        {
+          "opacity": 0.35,
+        },
+      ]
+    }
+  />
+  <View
+    style={
+      [
+        {
+          "backgroundColor": "#9ca3af",
+          "borderRadius": 3,
+          "height": 6,
+          "width": 6,
+        },
+        {
+          "opacity": 0.35,
+        },
+      ]
+    }
+  />
+  <View
+    style={
+      [
+        {
+          "backgroundColor": "#9ca3af",
+          "borderRadius": 3,
+          "height": 6,
+          "width": 6,
+        },
+        {
+          "opacity": 0.35,
+        },
+      ]
+    }
+  />
+</View>
+`;

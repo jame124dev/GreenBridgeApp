@@ -57,16 +57,12 @@ import {
 
 import { AppImage, Sheet } from '@/components/ui';
 import {
-  brand,
   elevation,
   fonts,
-  greenDark,
-  greenDarkest,
-  greenMedium,
   radius,
   spacing,
-  warnAmber,
 } from '@/constants/theme';
+import { createThemedStyles, useColor } from '@/features/lab/chat/theme';
 import { haptics } from '@/lib/haptics';
 import { usePop, usePressScale, useSpin, POP_STAGGER_MS } from '@/animations/recipes';
 import { useAuth } from '@/stores/authStore';
@@ -183,6 +179,12 @@ export const LabListingEditSheet = forwardRef<LabListingEditSheetRef, Props>(
     const insets = useSafeAreaInsets();
     const { t, i18n } = useTranslation();
     const sheetRef = useRef<BottomSheetModal>(null);
+    const styles = useSheetStyles();
+    const mutedColor = useColor('text.muted');
+    const dangerColor = useColor('status.danger');
+    const placeholderColor = useColor('text.placeholder');
+    const accentPressedColor = useColor('accent.pressed');
+    const warningAccentColor = useColor('status.warningAccent');
 
     // Seller identity — null → guest (uploadGcsPhotos + save need a real id).
     const sellerId = useAuth((s) => s.profile?.id ?? null);
@@ -694,14 +696,14 @@ export const LabListingEditSheet = forwardRef<LabListingEditSheetRef, Props>(
           <View style={styles.header}>
             <View style={styles.headerLead}>
               <View style={styles.headerCoin}>
-                <Sparkles size={15} color={greenDark} />
+                <Sparkles size={15} color={accentPressedColor} />
               </View>
               <Text style={styles.headerTitle}>
                 {t('mobile.labEdit.editListing', { defaultValue: 'Edit listing' })}
               </Text>
               {loading ? (
                 <Animated.View style={spinStyle}>
-                  <RefreshCw size={15} color={greenDark} />
+                  <RefreshCw size={15} color={accentPressedColor} />
                 </Animated.View>
               ) : null}
             </View>
@@ -715,7 +717,7 @@ export const LabListingEditSheet = forwardRef<LabListingEditSheetRef, Props>(
               accessibilityLabel={t('mobile.labEdit.close', { defaultValue: 'Close' })}
               style={styles.headerClose}
             >
-              <X size={20} color={brand.mutedForeground} />
+              <X size={20} color={mutedColor} />
             </Pressable>
           </View>
 
@@ -732,7 +734,7 @@ export const LabListingEditSheet = forwardRef<LabListingEditSheetRef, Props>(
               {netError ? (
                 <Banner
                   tone="destructive"
-                  icon={<AlertTriangle size={15} color={brand.destructive} />}
+                  icon={<AlertTriangle size={15} color={dangerColor} />}
                   text={t('mobile.labEdit.errSaveConnection', {
                     defaultValue: "Couldn't save your changes — check your connection.",
                   })}
@@ -743,7 +745,7 @@ export const LabListingEditSheet = forwardRef<LabListingEditSheetRef, Props>(
               {Object.keys(errors).length > 0 ? (
                 <Banner
                   tone="destructive"
-                  icon={<AlertTriangle size={15} color={brand.destructive} />}
+                  icon={<AlertTriangle size={15} color={dangerColor} />}
                   text={t('mobile.labEdit.fixHighlighted', {
                     defaultValue: 'Please fix the highlighted fields.',
                   })}
@@ -760,7 +762,7 @@ export const LabListingEditSheet = forwardRef<LabListingEditSheetRef, Props>(
                 status={
                   imageUrls.length > 0 ? (
                     <View style={styles.statusReady}>
-                      <Check size={13} color={greenDark} />
+                      <Check size={13} color={accentPressedColor} />
                       <Text style={styles.statusReadyText}>
                         {t('mobile.labEdit.ready', { defaultValue: 'Ready' })}
                       </Text>
@@ -986,7 +988,7 @@ export const LabListingEditSheet = forwardRef<LabListingEditSheetRef, Props>(
                 title={t('mobile.labEdit.listingSetup', { defaultValue: 'Listing setup' })}
                 chip={
                   <View style={styles.reqChip}>
-                    <Sparkles size={11} color={warnAmber} />
+                    <Sparkles size={11} color={warningAccentColor} />
                     <Text style={styles.reqChipText}>
                       {t('mobile.labEdit.required', { defaultValue: 'Required' })}
                     </Text>
@@ -1073,7 +1075,7 @@ export const LabListingEditSheet = forwardRef<LabListingEditSheetRef, Props>(
                           placeholder={t('mobile.labEdit.pricePlaceholder', {
                             defaultValue: '0.00',
                           })}
-                          placeholderTextColor={brand.placeholder}
+                          placeholderTextColor={placeholderColor}
                         />
                         <Pressable
                           onPress={() => {
@@ -1088,7 +1090,7 @@ export const LabListingEditSheet = forwardRef<LabListingEditSheetRef, Props>(
                           })}
                         >
                           <Text style={styles.currencyText}>{currency}</Text>
-                          <ChevronDown size={14} color={brand.mutedForeground} />
+                          <ChevronDown size={14} color={mutedColor} />
                         </Pressable>
                       </View>
                       <FieldError msg={errors.price_per_unit} />
@@ -1190,6 +1192,7 @@ function EditSectionCard({
   chip?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const styles = useSheetStyles();
   const entering = usePop(index * POP_STAGGER_MS);
   return (
     <Animated.View entering={entering} style={styles.section}>
@@ -1219,18 +1222,21 @@ function EditFieldLabel({
   needs?: boolean;
 }) {
   const { t } = useTranslation();
+  const styles = useSheetStyles();
+  const accentPressedColor = useColor('accent.pressed');
+  const warningAccentColor = useColor('status.warningAccent');
   return (
     <View style={styles.fieldLabelRow}>
       <Text style={styles.fieldLabel}>{String(children).toUpperCase()}</Text>
       {ai ? (
         <View style={styles.aiPill}>
-          <Sparkles size={9} color={greenDark} />
+          <Sparkles size={9} color={accentPressedColor} />
           <Text style={styles.aiPillText}>AI</Text>
         </View>
       ) : null}
       {verify ? (
         <View style={styles.verifyPill}>
-          <AlertTriangle size={9} color={warnAmber} />
+          <AlertTriangle size={9} color={warningAccentColor} />
           <Text style={styles.verifyPillText}>
             {t('mobile.labEdit.verify', { defaultValue: 'verify' })}
           </Text>
@@ -1246,6 +1252,7 @@ function EditFieldLabel({
 }
 
 function FieldError({ msg }: { msg?: string }) {
+  const styles = useSheetStyles();
   if (!msg) return null;
   return <Text style={styles.fieldError}>{msg}</Text>;
 }
@@ -1277,6 +1284,7 @@ function FieldFooterRow({
   counter?: string;
   counterOver?: boolean;
 }) {
+  const styles = useSheetStyles();
   if (!helper && !counter) return null;
   return (
     <View style={styles.fieldFooterRow}>
@@ -1292,6 +1300,8 @@ function FieldFooterRow({
 
 function EditTextField(props: BaseFieldProps) {
   const [focused, setFocused] = useState(false);
+  const styles = useSheetStyles();
+  const placeholderColor = useColor('text.placeholder');
   return (
     <View>
       <EditFieldLabel ai={props.ai} verify={props.verify} needs={props.needs}>
@@ -1306,7 +1316,7 @@ function EditTextField(props: BaseFieldProps) {
         value={props.value}
         onChangeText={props.onChangeText}
         placeholder={props.placeholder}
-        placeholderTextColor={brand.placeholder}
+        placeholderTextColor={placeholderColor}
         maxLength={props.maxLength}
         autoCapitalize={props.autoCapitalize ?? 'sentences'}
         autoCorrect={false}
@@ -1327,6 +1337,8 @@ function EditNumberField(
   props: BaseFieldProps & { keyboardType: 'number-pad' | 'decimal-pad' },
 ) {
   const [focused, setFocused] = useState(false);
+  const styles = useSheetStyles();
+  const placeholderColor = useColor('text.placeholder');
   return (
     <View>
       <EditFieldLabel ai={props.ai} verify={props.verify} needs={props.needs}>
@@ -1341,7 +1353,7 @@ function EditNumberField(
         value={props.value}
         onChangeText={props.onChangeText}
         placeholder={props.placeholder}
-        placeholderTextColor={brand.placeholder}
+        placeholderTextColor={placeholderColor}
         keyboardType={props.keyboardType}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
@@ -1353,6 +1365,8 @@ function EditNumberField(
 
 function EditMultilineField(props: BaseFieldProps) {
   const [focused, setFocused] = useState(false);
+  const styles = useSheetStyles();
+  const placeholderColor = useColor('text.placeholder');
   return (
     <View>
       <EditFieldLabel ai={props.ai} verify={props.verify} needs={props.needs}>
@@ -1368,7 +1382,7 @@ function EditMultilineField(props: BaseFieldProps) {
         value={props.value}
         onChangeText={props.onChangeText}
         placeholder={props.placeholder}
-        placeholderTextColor={brand.placeholder}
+        placeholderTextColor={placeholderColor}
         maxLength={props.maxLength}
         multiline
         numberOfLines={4}
@@ -1398,6 +1412,7 @@ function PillGroup({
   value: string;
   onSelect: (v: string) => void;
 }) {
+  const styles = useSheetStyles();
   return (
     <View style={styles.pillGrid}>
       {options.map((o) => (
@@ -1425,6 +1440,7 @@ function Pill({
   onPress: () => void;
 }) {
   const { style, onPressIn, onPressOut } = usePressScale();
+  const styles = useSheetStyles();
   return (
     <AnimatedPressable
       style={[style, styles.pill, selected && styles.pillSelected]}
@@ -1455,6 +1471,8 @@ function PickerRow({
   error?: boolean;
   onPress: () => void;
 }) {
+  const styles = useSheetStyles();
+  const mutedColor = useColor('text.muted');
   const twoLine = !!subValue;
   return (
     <Pressable
@@ -1484,7 +1502,7 @@ function PickerRow({
           {value || placeholder}
         </Text>
       )}
-      <ChevronDown size={16} color={brand.mutedForeground} />
+      <ChevronDown size={16} color={mutedColor} />
     </Pressable>
   );
 }
@@ -1505,6 +1523,9 @@ function PhotoGrid({
   onRemove: (idx: number) => void;
 }) {
   const { t } = useTranslation();
+  const styles = useSheetStyles();
+  const accentPressedColor = useColor('accent.pressed');
+  const warningAccentColor = useColor('status.warningAccent');
   return (
     <View style={styles.photoGrid}>
       {urls.map((url, i) => (
@@ -1515,7 +1536,7 @@ function PhotoGrid({
           </View>
           {i === 0 ? (
             <View style={styles.photoStar}>
-              <Star size={12} color="#fff" fill={warnAmber} />
+              <Star size={12} color="#fff" fill={warningAccentColor} />
             </View>
           ) : null}
           <Pressable
@@ -1541,10 +1562,10 @@ function PhotoGrid({
           accessibilityLabel={t('mobile.labEdit.addPhotos', { defaultValue: 'Add photos' })}
         >
           {uploading ? (
-            <ActivityIndicator color={greenDark} />
+            <ActivityIndicator color={accentPressedColor} />
           ) : (
             <>
-              <ImagePlus size={20} color={greenDark} />
+              <ImagePlus size={20} color={accentPressedColor} />
               <Text style={styles.photoAddText}>
                 {t('mobile.labEdit.add', { defaultValue: 'Add' })}
               </Text>
@@ -1582,6 +1603,9 @@ function LabCategorySheet({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const styles = useSheetStyles();
+  const mutedColor = useColor('text.muted');
+  const dangerColor = useColor('status.danger');
   const empty = categories.length === 0;
   return (
     <Sheet
@@ -1599,7 +1623,7 @@ function LabCategorySheet({
           style={styles.catRetry}
           accessibilityRole="button"
         >
-          <AlertTriangle size={16} color={brand.destructive} />
+          <AlertTriangle size={16} color={dangerColor} />
           <Text style={styles.catRetryText}>
             {t('mobile.labEdit.categoriesLoadError', {
               defaultValue: "Couldn't load categories — tap to retry",
@@ -1625,7 +1649,7 @@ function LabCategorySheet({
                 rightAdornment={
                   <ChevronDown
                     size={16}
-                    color={brand.mutedForeground}
+                    color={mutedColor}
                     style={isParent ? styles.chevronOpen : undefined}
                   />
                 }
@@ -1713,6 +1737,7 @@ function Banner({
   actionLabel?: string;
   onAction?: () => void;
 }) {
+  const styles = useSheetStyles();
   return (
     <View style={[styles.banner, tone === 'destructive' && styles.bannerDestructive]}>
       {icon}
@@ -1737,10 +1762,12 @@ function Banner({
 
 function GuestPanel({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
+  const styles = useSheetStyles();
+  const accentPressedColor = useColor('accent.pressed');
   return (
     <View style={styles.guestPanel}>
       <View style={styles.guestCoin}>
-        <Sparkles size={22} color={greenDark} />
+        <Sparkles size={22} color={accentPressedColor} />
       </View>
       <Text style={styles.guestTitle}>
         {t('mobile.labEdit.signInTitle', { defaultValue: 'Sign in to edit this listing' })}
@@ -1779,6 +1806,7 @@ function FooterGhost({
   onPress: () => void;
 }) {
   const { style, onPressIn, onPressOut } = usePressScale();
+  const styles = useSheetStyles();
   return (
     <AnimatedPressable
       style={[style, styles.footerGhost, disabled && { opacity: 0.5 }]}
@@ -1804,6 +1832,7 @@ function FooterPrimary({
 }) {
   const { style, onPressIn, onPressOut } = usePressScale();
   const spin = useSpin();
+  const styles = useSheetStyles();
   return (
     <AnimatedPressable
       style={[style, styles.footerPrimary, saving && { opacity: 0.6 }]}
@@ -1827,10 +1856,10 @@ function FooterPrimary({
 
 /* ── Styles ─────────────────────────────────────────────────────────────────── */
 
-const styles = StyleSheet.create({
-  grabber: { backgroundColor: brand.borderStrong, width: 44 },
+const useSheetStyles = createThemedStyles((t) => ({
+  grabber: { backgroundColor: t.color['border.strong'], width: 44 },
   sheetBg: {
-    backgroundColor: brand.background,
+    backgroundColor: t.color['surface.sheet'],
     borderTopLeftRadius: radius['2xl'],
     borderTopRightRadius: radius['2xl'],
   },
@@ -1843,14 +1872,14 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
     paddingBottom: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: brand.divider,
+    borderBottomColor: t.color['border.divider'],
   },
   headerLead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerCoin: {
     width: 30,
     height: 30,
     borderRadius: radius.full,
-    backgroundColor: brand.successBg,
+    backgroundColor: t.color['status.successSurface'],
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1858,7 +1887,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.heading,
     fontSize: 17,
     letterSpacing: -0.2,
-    color: brand.foreground,
+    color: t.color['text.primary'],
   },
   headerClose: {
     width: 44,
@@ -1873,8 +1902,8 @@ const styles = StyleSheet.create({
   section: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: brand.border,
-    backgroundColor: brand.surface,
+    borderColor: t.color['border.subtle'],
+    backgroundColor: t.color['surface.raised'],
     overflow: 'hidden',
     ...elevation.sm,
   },
@@ -1882,11 +1911,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: brand.surfaceMuted,
+    backgroundColor: t.color['surface.alt'],
     paddingHorizontal: spacing.lg,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: brand.divider,
+    borderBottomColor: t.color['border.divider'],
   },
   sectionEyebrow: {
     fontFamily: fonts.label,
@@ -1894,20 +1923,20 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: greenDark,
+    color: t.color['accent.pressed'],
   },
   sectionHeadRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionBody: { padding: spacing.lg, gap: spacing.lg },
   statusReady: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statusReadyText: { fontFamily: fonts.semibold, fontSize: 12, color: greenDark },
-  statusNeed: { fontFamily: fonts.semibold, fontSize: 12, color: brand.destructive },
+  statusReadyText: { fontFamily: fonts.semibold, fontSize: 12, color: t.color['accent.pressed'] },
+  statusNeed: { fontFamily: fonts.semibold, fontSize: 12, color: t.color['status.danger'] },
   reqChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: brand.warningBg,
+    backgroundColor: t.color['status.warningSurface'],
     borderWidth: 1,
-    borderColor: brand.warningBorder,
+    borderColor: t.color['status.warningBorder'],
     borderRadius: radius.sm,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -1917,7 +1946,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: brand.warningText,
+    color: t.color['status.warningStrong'],
   },
 
   // Layout
@@ -1937,59 +1966,59 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-    color: brand.mutedForeground,
+    color: t.color['text.muted'],
   },
   aiPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    backgroundColor: brand.successBg,
+    backgroundColor: t.color['status.successSurface'],
     borderRadius: radius.full,
     paddingHorizontal: 6,
     paddingVertical: 1,
   },
-  aiPillText: { fontFamily: fonts.bold, fontSize: 9, color: greenDark },
+  aiPillText: { fontFamily: fonts.bold, fontSize: 9, color: t.color['accent.pressed'] },
   verifyPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    backgroundColor: brand.warningBg,
+    backgroundColor: t.color['status.warningSurface'],
     borderRadius: radius.full,
     paddingHorizontal: 6,
     paddingVertical: 1,
   },
-  verifyPillText: { fontFamily: fonts.semibold, fontSize: 9, color: brand.warningText },
-  needsText: { fontFamily: fonts.semibold, fontSize: 9, color: greenMedium },
+  verifyPillText: { fontFamily: fonts.semibold, fontSize: 9, color: t.color['status.warningStrong'] },
+  needsText: { fontFamily: fonts.semibold, fontSize: 9, color: t.color['status.success'] },
 
   // Inputs
   input: {
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     borderRadius: radius.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
     minHeight: 44,
     fontFamily: fonts.regular,
     fontSize: 14,
-    color: brand.foreground,
-    backgroundColor: brand.surface,
+    color: t.color['text.primary'],
+    backgroundColor: t.color['surface.raised'],
   },
-  inputFocused: { borderColor: greenDark },
-  inputError: { borderColor: brand.destructive },
+  inputFocused: { borderColor: t.color['accent.pressed'] },
+  inputError: { borderColor: t.color['status.danger'] },
   inputMultiline: { minHeight: 96, paddingTop: 10 },
   fieldFooterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 4,
   },
-  fieldHelper: { fontFamily: fonts.regular, fontSize: 11, color: brand.placeholder },
-  fieldCounter: { fontFamily: fonts.regular, fontSize: 11, color: brand.placeholder },
-  fieldCounterOver: { color: brand.destructive },
+  fieldHelper: { fontFamily: fonts.regular, fontSize: 11, color: t.color['text.placeholder'] },
+  fieldCounter: { fontFamily: fonts.regular, fontSize: 11, color: t.color['text.placeholder'] },
+  fieldCounterOver: { color: t.color['status.danger'] },
   fieldError: {
     fontFamily: fonts.regular,
     fontSize: 11,
     lineHeight: 14,
-    color: brand.destructive,
+    color: t.color['status.danger'],
     marginTop: 4,
   },
 
@@ -2002,17 +2031,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     borderRadius: radius.md,
-    backgroundColor: brand.surfaceMuted,
+    backgroundColor: t.color['surface.alt'],
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  pillSelected: { backgroundColor: greenDark, borderColor: greenDark },
+  pillSelected: { backgroundColor: t.color['accent.pressed'], borderColor: t.color['accent.pressed'] },
   pillText: {
     fontFamily: fonts.semibold,
     fontSize: 13,
-    color: brand.foreground,
+    color: t.color['text.primary'],
     textAlign: 'center',
   },
   pillTextSelected: { color: '#fff' },
@@ -2023,14 +2052,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     borderRadius: radius.md,
     paddingHorizontal: 12,
     minHeight: 44,
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
   },
-  pickerValue: { flex: 1, fontFamily: fonts.regular, fontSize: 14, color: brand.foreground },
-  pickerPlaceholder: { color: brand.placeholder },
+  pickerValue: { flex: 1, fontFamily: fonts.regular, fontSize: 14, color: t.color['text.primary'] },
+  pickerPlaceholder: { color: t.color['text.placeholder'] },
   // Two-line breadcrumb variant (Category): top-aligned + taller padding so the
   // stacked parent/sub don't clip. Single-line callers keep the centered path.
   pickerRowTwoLine: { alignItems: 'flex-start', paddingVertical: 8 },
@@ -2038,12 +2067,12 @@ const styles = StyleSheet.create({
   pickerParent: {
     fontFamily: fonts.semibold,
     fontSize: 14,
-    color: brand.foreground,
+    color: t.color['text.primary'],
   },
   pickerSubValue: {
     fontFamily: fonts.regular,
     fontSize: 13,
-    color: greenDark,
+    color: t.color['accent.pressed'],
     marginTop: 2,
   },
 
@@ -2059,19 +2088,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     marginBottom: 8,
   },
   catRetryText: {
     fontFamily: fonts.semibold,
     fontSize: 13,
-    color: brand.destructive,
+    color: t.color['status.danger'],
   },
   catSkeletonWrap: { gap: 10, paddingVertical: 4 },
   catSkeleton: {
     height: 48,
     borderRadius: radius.md,
-    backgroundColor: brand.surfaceMuted,
+    backgroundColor: t.color['surface.alt'],
   },
 
   // Price bar
@@ -2079,26 +2108,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     borderRadius: radius.md,
     marginTop: spacing.sm,
     minHeight: 52,
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
     overflow: 'hidden',
   },
-  priceBarError: { borderColor: brand.destructive },
+  priceBarError: { borderColor: t.color['status.danger'] },
   priceSym: {
     paddingHorizontal: 12,
     fontFamily: fonts.semibold,
     fontSize: 16,
-    color: brand.mutedForeground,
+    color: t.color['text.muted'],
   },
   priceInput: {
     flex: 1,
     fontFamily: fonts.heading,
     fontSize: 22,
     letterSpacing: -0.4,
-    color: brand.foreground,
+    color: t.color['text.primary'],
     paddingVertical: 8,
   },
   currencyTap: {
@@ -2108,15 +2137,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: '100%',
     borderLeftWidth: 1,
-    borderLeftColor: brand.border,
-    backgroundColor: brand.surfaceMuted,
+    borderLeftColor: t.color['border.subtle'],
+    backgroundColor: t.color['surface.alt'],
   },
-  currencyText: { fontFamily: fonts.semibold, fontSize: 13, color: brand.foreground },
+  currencyText: { fontFamily: fonts.semibold, fontSize: 13, color: t.color['text.primary'] },
   offerNote: {
     marginTop: spacing.sm,
     borderWidth: 1,
-    borderColor: brand.warningBorder,
-    backgroundColor: brand.warningBg,
+    borderColor: t.color['status.warningBorder'],
+    backgroundColor: t.color['status.warningSurface'],
     borderRadius: radius.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -2125,7 +2154,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 12,
     lineHeight: 17,
-    color: brand.warningText,
+    color: t.color['status.warningStrong'],
   },
   offerNoteBold: { fontFamily: fonts.bold },
 
@@ -2135,9 +2164,9 @@ const styles = StyleSheet.create({
     width: '22%',
     aspectRatio: 1,
     borderRadius: radius.md,
-    backgroundColor: brand.surfaceMuted,
+    backgroundColor: t.color['surface.alt'],
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     overflow: 'hidden',
   },
   photoImg: { width: '100%', height: '100%' },
@@ -2165,21 +2194,21 @@ const styles = StyleSheet.create({
   },
   photoAdd: {
     borderWidth: 2,
-    borderColor: brand.successBorder,
+    borderColor: t.color['status.successBorder'],
     borderStyle: 'dashed',
-    backgroundColor: brand.surface,
+    backgroundColor: t.color['surface.raised'],
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
   },
-  photoAddText: { fontFamily: fonts.semibold, fontSize: 10, color: greenDark },
+  photoAddText: { fontFamily: fonts.semibold, fontSize: 10, color: t.color['accent.pressed'] },
 
   // Metrics
   metricsBox: {
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
     borderRadius: radius.md,
-    backgroundColor: brand.surfaceMuted,
+    backgroundColor: t.color['surface.alt'],
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -2189,13 +2218,13 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 2,
   },
-  metricKey: { fontFamily: fonts.regular, fontSize: 12, color: brand.mutedForeground },
+  metricKey: { fontFamily: fonts.regular, fontSize: 12, color: t.color['text.muted'] },
   metricVal: {
     flex: 1,
     textAlign: 'right',
     fontFamily: fonts.semibold,
     fontSize: 12,
-    color: brand.foreground,
+    color: t.color['text.primary'],
   },
 
   // Banners
@@ -2209,18 +2238,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   bannerDestructive: {
-    backgroundColor: brand.destructiveBg,
-    borderColor: brand.destructive,
+    backgroundColor: t.color['status.dangerSurface'],
+    borderColor: t.color['status.danger'],
   },
-  bannerText: { flex: 1, fontFamily: fonts.semibold, fontSize: 12, color: brand.destructiveStrong },
+  bannerText: { flex: 1, fontFamily: fonts.semibold, fontSize: 12, color: t.color['status.dangerStrong'] },
   bannerAction: {
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: brand.destructive,
+    borderColor: t.color['status.danger'],
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  bannerActionText: { fontFamily: fonts.bold, fontSize: 12, color: brand.destructive },
+  bannerActionText: { fontFamily: fonts.bold, fontSize: 12, color: t.color['status.danger'] },
 
   // Footer
   footer: {
@@ -2229,8 +2258,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: brand.divider,
-    backgroundColor: brand.surface,
+    borderTopColor: t.color['border.divider'],
+    backgroundColor: t.color['surface.raised'],
   },
   footerGhost: {
     minHeight: 48,
@@ -2239,10 +2268,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: brand.border,
-    backgroundColor: brand.surface,
+    borderColor: t.color['border.subtle'],
+    backgroundColor: t.color['surface.raised'],
   },
-  footerGhostText: { fontFamily: fonts.semibold, fontSize: 14, color: brand.mutedForeground },
+  footerGhostText: { fontFamily: fonts.semibold, fontSize: 14, color: t.color['text.muted'] },
   footerPrimary: {
     flex: 1,
     flexDirection: 'row',
@@ -2251,7 +2280,7 @@ const styles = StyleSheet.create({
     gap: 6,
     minHeight: 48,
     borderRadius: radius.md,
-    backgroundColor: greenDark,
+    backgroundColor: t.color['accent.pressed'],
   },
   footerPrimaryText: { fontFamily: fonts.bold, fontSize: 14, color: '#fff' },
 
@@ -2267,9 +2296,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: radius.full,
-    backgroundColor: brand.successBg,
+    backgroundColor: t.color['status.successSurface'],
     borderWidth: 1,
-    borderColor: brand.successBorder,
+    borderColor: t.color['status.successBorder'],
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
@@ -2277,14 +2306,14 @@ const styles = StyleSheet.create({
   guestTitle: {
     fontFamily: fonts.heading,
     fontSize: 18,
-    color: brand.foreground,
+    color: t.color['text.primary'],
     textAlign: 'center',
   },
   guestSub: {
     fontFamily: fonts.regular,
     fontSize: 13,
     lineHeight: 19,
-    color: brand.mutedForeground,
+    color: t.color['text.muted'],
     textAlign: 'center',
   },
   guestBtn: {
@@ -2294,7 +2323,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,
-    backgroundColor: greenDarkest,
+    backgroundColor: t.color['accent'],
   },
   guestBtnText: { fontFamily: fonts.bold, fontSize: 14, color: '#fff' },
-});
+}));

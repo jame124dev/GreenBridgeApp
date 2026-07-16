@@ -6,7 +6,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import i18n from '@/i18n';
-import { brand, elevation, fonts, greenDark, radius, spacing } from '@/constants/theme';
+import { fonts, radius, spacing } from '@/constants/theme';
+import { createThemedStyles, useTheme } from './theme';
 
 // Resolve a labCards key against the current language. Called from within card
 // components that subscribe via useTranslation, so re-renders stay reactive.
@@ -90,7 +91,35 @@ export const formatValue = (v: unknown): string => {
 
 export const num = (n?: number | null): string => (n == null ? '0' : n.toLocaleString());
 
-/** A short relative time ("in 3 days" / "2 days ago" / "today"). null on bad input. */
+/* -- cleanTitle ------------------------------------------------------------
+ * Catalog titles from the legacy WordPress DB carry Windows-1252 mojibake: a
+ * byte like 0x97 (an em dash in CP1252) was stored raw as the C1 control char
+ * U+0097 instead of decoding to U+2014, so every font renders a tofu box (e.g.
+ * Nikon SMZ800N <box> Zoom Stereomicroscope). Repair the common CP1252
+ * punctuation, fold the Unicode dash family to a plain hyphen, and drop any
+ * remaining non-printing / private-use / replacement characters -- while
+ * leaving letters (INCLUDING CJK product names) untouched. Display-only + safe
+ * to double-apply. */
+const CP1252_C1: Record<number, string> = {
+  0x82: ',', 0x84: '"', 0x85: '...', 0x8b: '<', 0x91: "'", 0x92: "'",
+  0x93: '"', 0x94: '"', 0x95: '-', 0x96: '-', 0x97: '-', 0x9b: '>',
+};
+// Dash family (incl. non-breaking hyphen U+2011, which Inter lacks) -> hyphen.
+const DASH_RE = /[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g;
+// C0 controls + DEL, soft hyphen, zero-width/bidi marks, line/para seps, word
+// joiner, the Private Use Area, BOM, and the Specials block (incl. the
+// object-replacement U+FFFC and replacement U+FFFD characters).
+const STRIP_RE = /[\u0000-\u001F\u007F\u00AD\u200B-\u200F\u2028\u2029\u2060\uE000-\uF8FF\uFEFF\uFFF9-\uFFFD]/g;
+export const cleanTitle = (s?: string | null): string => {
+  if (!s) return '';
+  return s
+    .replace(/[\u0080-\u009F]/g, (c) => CP1252_C1[c.charCodeAt(0)] ?? '')
+    .replace(DASH_RE, '-')
+    .replace(STRIP_RE, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+};
+
 export const relTime = (iso?: string | null): string | null => {
   if (!iso) return null;
   const t = new Date(iso).getTime();
@@ -125,6 +154,7 @@ export function Chip({
   children: React.ReactNode;
   tone?: 'emerald' | 'gray';
 }) {
+  const styles = useCardKitStyles();
   return (
     <View style={[styles.chip, tone === 'emerald' ? styles.chipEmerald : styles.chipGray]}>
       <Text style={[styles.chipText, tone === 'emerald' && styles.chipTextEmerald]}>{children}</Text>
@@ -134,6 +164,7 @@ export function Chip({
 
 /** A status chip with a caller-provided tint. */
 export function StatusChip({ label, color, bg }: { label: string; color: string; bg: string }) {
+  const styles = useCardKitStyles();
   return (
     <View style={[styles.statusChip, { backgroundColor: bg }]}>
       <Text style={[styles.statusChipText, { color }]}>{label}</Text>
@@ -153,6 +184,7 @@ export function CardShell({
   accent?: string;
   children: React.ReactNode;
 }) {
+  const styles = useCardKitStyles();
   return (
     <View style={styles.shell}>
       <View style={styles.shellHeader}>
@@ -166,57 +198,81 @@ export function CardShell({
 
 /* ── Batch / bid status maps → tint tokens ────────────────────────────────── */
 
-const emerald = { color: greenDark, bg: brand.successBg };
-const grey = { color: brand.mutedForeground, bg: brand.surfaceMuted };
-const amber = { color: brand.warningText, bg: brand.warningBg };
-const blue = { color: brand.infoText, bg: brand.infoBg };
+// These tint maps are consumed inside render loops in cards.tsx. R2: they read
+// the ACTIVE theme (semantic tokens + Phase-1 compat bridges) so the tints switch
+// light/dark — hence a hook. Light values are unchanged (pixel-identical). The
+// label logic (`tc()` i18n) and per-status color/bg choices are preserved; only
+// the color SOURCE moved from the light singleton to `useTheme()`.
+export function useStatusTints() {
+  const theme = useTheme();
+  const emerald = {
+    color: theme.color['accent.pressed'],
+    bg: theme.compat['status.successSurface'],
+  };
+  const grey = {
+    color: theme.color['text.muted'],
+    bg: theme.color['surface.alt'],
+  };
+  const amber = {
+    color: theme.compat['status.warningStrong'],
+    bg: theme.compat['status.warningSurface'],
+  };
+  const blue = {
+    color: theme.compat['status.infoStrong'],
+    bg: theme.compat['status.infoSurface'],
+  };
 
-export const batchStatusTint = (
-  s?: string,
-): { label: string; color: string; bg: string } => {
-  switch (s) {
-    case 'live_for_bids':
-      return { label: tc('statusLive'), ...emerald };
-    case 'sold':
-      return { label: tc('statusSold'), ...grey };
-    case 'upcoming':
-      return { label: tc('statusUpcoming'), ...blue };
-    case 'pending':
-      return { label: tc('statusPending'), ...amber };
-    case 'draft':
-      return { label: tc('statusDraft'), ...grey };
-    case 'closed':
-      return { label: tc('statusClosed'), ...grey };
-    case 'unsold':
-      return { label: tc('statusUnsold'), ...grey };
-    default:
-      return {
-        label: s ? s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—',
-        ...grey,
-      };
-  }
-};
+  const batch = (s?: string): { label: string; color: string; bg: string } => {
+    switch (s) {
+      case 'live_for_bids':
+        return { label: tc('statusLive'), ...emerald };
+      case 'sold':
+        return { label: tc('statusSold'), ...grey };
+      case 'upcoming':
+        return { label: tc('statusUpcoming'), ...blue };
+      case 'pending':
+        return { label: tc('statusPending'), ...amber };
+      case 'draft':
+        return { label: tc('statusDraft'), ...grey };
+      case 'closed':
+        return { label: tc('statusClosed'), ...grey };
+      case 'unsold':
+        return { label: tc('statusUnsold'), ...grey };
+      default:
+        return {
+          label: s ? s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—',
+          ...grey,
+        };
+    }
+  };
 
-export const bidStatusTint = (
-  s?: string,
-): { label: string; color: string; bg: string } => {
-  switch (s) {
-    case 'pending':
-      return { label: tc('statusPending'), ...amber };
-    case 'accepted':
-    case 'winning':
-      return { label: s === 'winning' ? tc('bidWinning') : tc('bidAccepted'), ...emerald };
-    case 'rejected':
-    case 'outbid':
-      return { label: s === 'outbid' ? tc('bidOutbid') : tc('bidDeclined'), color: brand.destructive, bg: brand.destructiveBg };
-    case 'counter_offer':
-      return { label: tc('bidCounterOffer'), ...blue };
-    default:
-      return { label: s || '—', ...grey };
-  }
-};
+  const bid = (s?: string): { label: string; color: string; bg: string } => {
+    switch (s) {
+      case 'pending':
+        return { label: tc('statusPending'), ...amber };
+      case 'accepted':
+      case 'winning':
+        return { label: s === 'winning' ? tc('bidWinning') : tc('bidAccepted'), ...emerald };
+      case 'rejected':
+      case 'outbid':
+        return {
+          label: s === 'outbid' ? tc('bidOutbid') : tc('bidDeclined'),
+          color: theme.color['status.danger'],
+          bg: theme.color['status.dangerSurface'],
+        };
+      case 'counter_offer':
+        return { label: tc('bidCounterOffer'), ...blue };
+      default:
+        return { label: s || '—', ...grey };
+    }
+  };
 
-const styles = StyleSheet.create({
+  return { batch, bid };
+}
+
+// Colors from the theme (D2 semantic tokens) + Phase-1 compat bridges where D1
+// has no token; layout/spacing/radius/fonts stay theme-independent literals.
+const useCardKitStyles = createThemedStyles((t) => ({
   // Chips get a 1px border + 4px vertical padding so every pill reads as a
   // tactile badge (rescues the near-invisible gray "Used, working" condition
   // chip). Tone-specific borders match each tone's fill family.
@@ -227,16 +283,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignSelf: 'flex-start',
   },
-  chipEmerald: { backgroundColor: brand.successBg, borderColor: brand.successBorder },
-  chipGray: { backgroundColor: brand.surfaceMuted, borderColor: brand.border },
+  chipEmerald: {
+    backgroundColor: t.compat['status.successSurface'],
+    borderColor: t.compat['status.successBorder'],
+  },
+  chipGray: { backgroundColor: t.color['surface.alt'], borderColor: t.color['border.subtle'] },
   chipText: {
     fontFamily: fonts.semibold,
     fontSize: 11,
     lineHeight: 14,
     letterSpacing: 0.2,
-    color: brand.mutedForeground,
+    color: t.color['text.muted'],
   },
-  chipTextEmerald: { color: greenDark },
+  chipTextEmerald: { color: t.color['accent.pressed'] },
   // Pill-shaped status badge; the fixed hairline border keeps it crisp against
   // the caller-provided tint and matches the squat "Draft" pill to a badge edge.
   statusChip: {
@@ -244,16 +303,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: brand.border,
+    borderColor: t.color['border.subtle'],
   },
   statusChipText: { fontFamily: fonts.label, fontSize: 10, lineHeight: 13, letterSpacing: 1.0 },
   shell: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: brand.border,
-    backgroundColor: brand.surface,
+    borderColor: t.color['border.subtle'],
+    backgroundColor: t.color['surface.raised'],
     padding: spacing.lg,
-    ...elevation.sm,
+    ...t.elevation('raised'),
   },
   shellHeader: {
     flexDirection: 'row',
@@ -262,7 +321,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     // Hairline under the eyebrow gives the titled band a crisp shelf.
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: brand.divider,
+    borderBottomColor: t.compat['border.divider'],
     paddingBottom: spacing.sm,
   },
   // Unified eyebrow voice (IBM Plex small-caps, 11/14, letterSpacing 1.2).
@@ -272,6 +331,6 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: greenDark,
+    color: t.color['accent.pressed'],
   },
-});
+}));

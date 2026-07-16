@@ -53,5 +53,10 @@ export const LAB_CHAT_ENABLED = process.env.EXPO_PUBLIC_LAB_CHAT === '1';
 /** P3 Want-To-Buy save/list/matches. Backend counterpart: `wtb_enabled`. Default OFF. */
 export const WTB_ENABLED = process.env.EXPO_PUBLIC_WTB === '1';
 
+/** Phase-2 chat redesign — dark chat theme (D1 §4). When ON, the chat subtree
+ *  renders the `chatDarkTheme` (forest canvas, green accent); OFF = the frozen
+ *  light singleton (behavior-neutral). Build-time flag → Metro restart to apply. */
+export const CHAT_UI_V2 = process.env.EXPO_PUBLIC_CHAT_UI_V2 === '1';
+
 /** P2 attachment turns → ASSISTANT `POST /detect/stream`. Backend: `detect_stream_enabled`. Default OFF. */
 export const DETECT_STREAM_ENABLED = process.env.EXPO_PUBLIC_DETECT_STREAM === '1';

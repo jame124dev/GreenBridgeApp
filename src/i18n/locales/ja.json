@@ -3658,7 +3658,17 @@
       "scrapValueBaseline": "廃材価値の基準",
       "potentialProfit": "潜在的な利益",
       "profitInsight": "{{marketplace}} で出品すれば、廃材として売るより {{percent}}% 多く稼げます。",
-      "aiBadge": "AI"
+      "aiBadge": "AI",
+      "installOption": {
+        "installed": {
+          "label": "設置済み",
+          "hint": "買い手が撤去して発送する必要があります"
+        },
+        "deinstalled": {
+          "label": "撤去済み",
+          "hint": "本日発送可能"
+        }
+      }
     },
     "success": {
       "heading": "送信完了",
@@ -3901,6 +3911,11 @@
     "labBrowse": {
       "errorTitle": "マーケットプレイスを読み込めませんでした",
       "errorBody": "接続を確認してもう一度お試しください。"
+    },
+    "labProduct": {
+      "title": "商品",
+      "back": "戻る",
+      "openInBrowser": "ブラウザで開く"
     },
     "labCommon": {
       "retry": "再試行",
@@ -4555,6 +4570,25 @@
         "today": "今日",
         "week": "今週",
         "earlier": "それ以前"
+      }
+    },
+    "processingV2": {
+      "aiAnalyzing": "AI 解析中",
+      "subtitle": "検出結果はリアルタイムに表示されます",
+      "stepOf": "ステップ {{current}} / {{total}}",
+      "confident": "信頼度",
+      "productsFound": "見つかった製品",
+      "foundCount_one": "{{count}} 件見つかりました",
+      "foundCount_other": "{{count}} 件見つかりました",
+      "documentsReady_one": "書類の準備完了 · {{pages}} ページ",
+      "documentsReady_other": "{{count}} 件の書類の準備完了 · {{pages}} ページ",
+      "analyzingCount": "{{total}} 件中 {{current}} 件を解析中…",
+      "phase": {
+        "validating": "検証中",
+        "readingDocuments": "書類を読み取り中",
+        "uploadingDetecting": "アップロード・検出中",
+        "identifyingProducts": "製品を識別中",
+        "done": "完了"
       }
     }
   }

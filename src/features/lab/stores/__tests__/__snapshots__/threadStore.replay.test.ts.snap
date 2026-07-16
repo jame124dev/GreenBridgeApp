@@ -1,0 +1,25 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`threadStore.applyFrame — replay baseline golden: settled turn shape 1`] = `
+{
+  "cards": [
+    {
+      "data": {
+        "low_confidence": [],
+        "missing_required": [],
+        "title": "Sample Machine",
+      },
+      "type": "listing_draft",
+    },
+  ],
+  "draft": {
+    "low_confidence": [],
+    "missing_required": [],
+    "title": "Sample Machine",
+  },
+  "phase": "ai_running",
+  "state": "COMPLETED",
+  "status": "done",
+  "text": "Hello there, your listing is ready.",
+}
+`;

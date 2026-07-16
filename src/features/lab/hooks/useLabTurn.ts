@@ -21,6 +21,7 @@
 // with the flag off the Home screen keeps its exact static behavior.
 import { useCallback, useEffect, useRef } from 'react';
 
+import i18n from '@/i18n';
 import { DETECT_STREAM_ENABLED } from '@/lib/flags';
 import { useAuth } from '@/stores/authStore';
 import type { Photo } from '@/stores/scanDraftStore';
@@ -37,6 +38,14 @@ import { useThread } from '@/features/lab/stores/threadStore';
 
 /** Fixed per this build — the 101LAB customer flow is site 2 (01 §7). */
 const SITE_TYPE = 'labgreenbidz';
+
+/** The user's selected UI language, sent to the assistant so its natural-language
+ *  replies match the app language (previously hardcoded 'en' for detect and
+ *  omitted for chat, so the AI always answered in English). Values are the
+ *  lowercase i18n codes: en | zh-hant | zh-hans | ja | th | vi. */
+function assistantLanguage(): string {
+  return i18n.language || 'en';
+}
 
 export type UseLabTurn = {
   /** Open a turn. Pass explicit text (e.g. a quick-chip prompt), else the
@@ -133,7 +142,7 @@ export function useLabTurn(): UseLabTurn {
         body = {
           conversation_id: conversationId,
           site_type: SITE_TYPE,
-          language: 'en',
+          language: assistantLanguage(),
           mode: apiMode,
           ...(imageUrls?.length ? { image_urls: imageUrls } : {}),
           ...(documentUrls?.length ? { document_urls: documentUrls } : {}),
@@ -147,6 +156,7 @@ export function useLabTurn(): UseLabTurn {
           conversation_id: conversationId,
           message,
           site_type: SITE_TYPE,
+          language: assistantLanguage(),
           mode: apiMode,
           ...(imageUrls?.length ? { image_urls: imageUrls } : {}),
           ...(documentUrls?.length ? { document_urls: documentUrls } : {}),

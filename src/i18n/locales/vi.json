@@ -3739,7 +3739,17 @@
       "scrapValueBaseline": "Giá trị phế liệu cơ bản",
       "potentialProfit": "Lợi nhuận tiềm năng",
       "profitInsight": "Bán trên {{marketplace}} có thể giúp bạn kiếm thêm {{percent}}% so với chỉ bán phế liệu.",
-      "aiBadge": "AI"
+      "aiBadge": "AI",
+      "installOption": {
+        "installed": {
+          "label": "Đã lắp đặt",
+          "hint": "Người mua cần tháo dỡ và vận chuyển"
+        },
+        "deinstalled": {
+          "label": "Đã tháo dỡ",
+          "hint": "Sẵn sàng giao ngay hôm nay"
+        }
+      }
     },
     "success": {
       "heading": "Đã gửi sản phẩm",
@@ -3986,6 +3996,11 @@
     "labBrowse": {
       "errorTitle": "Không thể tải chợ",
       "errorBody": "Kiểm tra kết nối của bạn và thử lại."
+    },
+    "labProduct": {
+      "title": "Sản phẩm",
+      "back": "Quay lại",
+      "openInBrowser": "Mở trong trình duyệt"
     },
     "labCommon": {
       "retry": "Thử lại",
@@ -4640,6 +4655,25 @@
         "today": "Hôm nay",
         "week": "Tuần này",
         "earlier": "Trước đó"
+      }
+    },
+    "processingV2": {
+      "aiAnalyzing": "AI ĐANG PHÂN TÍCH",
+      "subtitle": "Kết quả hiện ra ngay khi chúng tôi tìm thấy",
+      "stepOf": "BƯỚC {{current}} / {{total}}",
+      "confident": "ĐỘ TIN CẬY",
+      "productsFound": "Sản phẩm tìm thấy",
+      "foundCount_one": "Đã tìm thấy {{count}} mục",
+      "foundCount_other": "Đã tìm thấy {{count}} mục",
+      "documentsReady_one": "Tài liệu đã sẵn sàng · {{pages}} trang",
+      "documentsReady_other": "{{count}} tài liệu đã sẵn sàng · {{pages}} trang",
+      "analyzingCount": "Đang phân tích {{current}}/{{total}}…",
+      "phase": {
+        "validating": "Đang xác thực",
+        "readingDocuments": "Đang đọc tài liệu",
+        "uploadingDetecting": "Đang tải lên & nhận diện",
+        "identifyingProducts": "Đang nhận diện sản phẩm",
+        "done": "Hoàn tất"
       }
     }
   }

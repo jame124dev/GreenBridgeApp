@@ -1,0 +1,302 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ChatMessage — golden structure bot markdown message 1`] = `
+<View
+  style={
+    {
+      "alignItems": "flex-start",
+      "width": "100%",
+    }
+  }
+>
+  <View
+    style={
+      {
+        "width": "100%",
+      }
+    }
+  >
+    <View
+      style={
+        [
+          {
+            "borderRadius": 16,
+            "maxWidth": "88%",
+            "paddingHorizontal": 14,
+            "paddingVertical": 10,
+          },
+          {
+            "alignSelf": "flex-start",
+            "backgroundColor": "#ffffff",
+            "borderBottomLeftRadius": 8,
+            "borderColor": "#dfe5ec",
+            "borderWidth": 1,
+            "elevation": 0,
+            "maxWidth": "92%",
+            "paddingHorizontal": 14,
+            "paddingVertical": 10,
+            "shadowColor": "transparent",
+            "shadowOpacity": 0,
+          },
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "width": "100%",
+          }
+        }
+      >
+        <View
+          style={
+            {
+              "width": "100%",
+            }
+          }
+        >
+          <Text
+            style={
+              {
+                "color": "#121c28",
+                "fontFamily": "Inter_400Regular",
+                "fontSize": 14,
+                "letterSpacing": 0,
+                "lineHeight": 21,
+              }
+            }
+          >
+            <Text>
+              Here is a 
+            </Text>
+            <Text
+              style={
+                {
+                  "fontFamily": "Inter_700Bold",
+                }
+              }
+            >
+              bold
+            </Text>
+            <Text>
+               word.
+            </Text>
+          </Text>
+          <View
+            style={
+              {
+                "flexDirection": "row",
+                "gap": 8,
+                "marginVertical": 2,
+              }
+            }
+          >
+            <Text
+              style={
+                {
+                  "color": "#5b6b63",
+                  "fontFamily": "Inter_600SemiBold",
+                  "fontSize": 14,
+                  "lineHeight": 21,
+                  "minWidth": 16,
+                }
+              }
+            >
+              •
+            </Text>
+            <Text
+              style={
+                {
+                  "color": "#121c28",
+                  "fontFamily": "Inter_400Regular",
+                  "fontSize": 14,
+                  "letterSpacing": 0,
+                  "lineHeight": 21,
+                }
+              }
+            >
+              <Text>
+                item one
+              </Text>
+            </Text>
+          </View>
+          <Text
+            style={
+              {
+                "color": "#121c28",
+                "fontFamily": "Inter_400Regular",
+                "fontSize": 14,
+                "letterSpacing": 0,
+                "lineHeight": 21,
+              }
+            }
+          >
+            <Text
+              onPress={[Function]}
+              style={
+                {
+                  "color": "#0E3B2E",
+                  "fontFamily": "Inter_600SemiBold",
+                  "textDecorationLine": "underline",
+                }
+              }
+            >
+              Google
+            </Text>
+          </Text>
+        </View>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`ChatMessage — golden structure error message 1`] = `
+<View
+  style={
+    {
+      "alignItems": "flex-start",
+      "width": "100%",
+    }
+  }
+>
+  <View
+    style={
+      [
+        {
+          "borderRadius": 16,
+          "maxWidth": "88%",
+          "paddingHorizontal": 14,
+          "paddingVertical": 10,
+        },
+        {
+          "backgroundColor": "#fef2f2",
+          "borderBottomLeftRadius": 8,
+        },
+      ]
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "flex-start",
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        color="#b91c1c"
+        size={16}
+      />
+      <Text
+        style={
+          {
+            "color": "#b91c1c",
+            "flex": 1,
+            "fontFamily": "Inter_400Regular",
+            "fontSize": 14,
+            "lineHeight": 20,
+          }
+        }
+      >
+        Something went wrong
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "alignSelf": "flex-start",
+          "marginTop": 8,
+        }
+      }
+    >
+      <View
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+      >
+        <Text>
+          mobile.labCards.retry
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`ChatMessage — golden structure user message 1`] = `
+<View
+  style={
+    {
+      "alignItems": "flex-end",
+      "width": "100%",
+    }
+  }
+>
+  <View
+    style={
+      [
+        {
+          "borderRadius": 16,
+          "maxWidth": "88%",
+          "paddingHorizontal": 14,
+          "paddingVertical": 10,
+        },
+        {
+          "backgroundColor": undefined,
+          "borderBottomRightRadius": 8,
+          "borderRadius": 16,
+          "maxWidth": "88%",
+          "paddingHorizontal": 14,
+          "paddingVertical": 10,
+        },
+        {
+          "backgroundColor": "#2563EB",
+        },
+      ]
+    }
+  >
+    <Text
+      style={
+        {
+          "color": "#fff",
+          "fontFamily": "Inter_400Regular",
+          "fontSize": 14,
+          "letterSpacing": 0,
+          "lineHeight": 20,
+        }
+      }
+    >
+      Find me a CNC lathe
+    </Text>
+  </View>
+</View>
+`;

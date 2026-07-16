@@ -3642,7 +3642,17 @@
       "scrapValueBaseline": "มูลค่าเศษวัสดุพื้นฐาน",
       "potentialProfit": "กำไรที่อาจได้รับ",
       "profitInsight": "การขายบน {{marketplace}} อาจทำให้คุณได้กำไรมากกว่าการขายเป็นเศษวัสดุ {{percent}}%",
-      "aiBadge": "AI"
+      "aiBadge": "AI",
+      "installOption": {
+        "installed": {
+          "label": "ติดตั้งแล้ว",
+          "hint": "ผู้ซื้อต้องถอดและจัดส่งเอง"
+        },
+        "deinstalled": {
+          "label": "ถอดแล้ว",
+          "hint": "พร้อมจัดส่งวันนี้"
+        }
+      }
     },
     "success": {
       "heading": "ส่งแล้ว",
@@ -3885,6 +3895,11 @@
     "labBrowse": {
       "errorTitle": "โหลดตลาดไม่สำเร็จ",
       "errorBody": "โปรดตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง"
+    },
+    "labProduct": {
+      "title": "รายการสินค้า",
+      "back": "กลับ",
+      "openInBrowser": "เปิดในเบราว์เซอร์"
     },
     "labCommon": {
       "retry": "ลองอีกครั้ง",
@@ -4539,6 +4554,25 @@
         "today": "วันนี้",
         "week": "สัปดาห์นี้",
         "earlier": "ก่อนหน้านี้"
+      }
+    },
+    "processingV2": {
+      "aiAnalyzing": "AI กำลังวิเคราะห์",
+      "subtitle": "ผลลัพธ์จะแสดงแบบเรียลไทม์เมื่อเราพบ",
+      "stepOf": "ขั้นตอน {{current}} / {{total}}",
+      "confident": "ความมั่นใจ",
+      "productsFound": "ผลิตภัณฑ์ที่พบ",
+      "foundCount_one": "พบ {{count}} รายการ",
+      "foundCount_other": "พบ {{count}} รายการ",
+      "documentsReady_one": "เอกสารพร้อมแล้ว · {{pages}} หน้า",
+      "documentsReady_other": "เอกสาร {{count}} ฉบับพร้อมแล้ว · {{pages}} หน้า",
+      "analyzingCount": "กำลังวิเคราะห์ {{current}} จาก {{total}}…",
+      "phase": {
+        "validating": "กำลังตรวจสอบ",
+        "readingDocuments": "กำลังอ่านเอกสาร",
+        "uploadingDetecting": "กำลังอัปโหลดและตรวจจับ",
+        "identifyingProducts": "กำลังระบุผลิตภัณฑ์",
+        "done": "เสร็จสิ้น"
       }
     }
   }
