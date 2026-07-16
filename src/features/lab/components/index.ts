@@ -6,6 +6,7 @@ export { TAB_CONFIG, STATIC_BADGES, type BadgeKey } from './tabConfig';
 export { LabPlaceholder, type NextAction } from './LabPlaceholder';
 export { AttachmentChips } from './AttachmentChips';
 export { HomeRecentListings } from './HomeRecentListings';
+export { HomeRecentWants } from './HomeRecentWants';
 export { LabScreenBg } from './LabScreenBg';
 export { UploadSourceSheet, type UploadSource } from './UploadSourceSheet';
 

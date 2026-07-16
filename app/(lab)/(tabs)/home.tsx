@@ -22,6 +22,7 @@ import {
   AiComposer,
   AttachmentChips,
   HomeRecentListings,
+  HomeRecentWants,
   LabHeader,
   LabScreenBg,
   ModeToggle,
@@ -199,6 +200,10 @@ export default function LabHome() {
       {/* Recent listings — a mini seller dashboard under the composer. Sell-mode
           only ("my listings" is a seller concept); hides itself when empty. */}
       {mode === 'sell' && <HomeRecentListings />}
+
+      {/* Recent wants — the buyer-mode mirror ("My Wants" preview). Buy-mode only;
+          gated on WTB_ENABLED via useWants; hides itself when empty/signed-out. */}
+      {mode === 'buy' && <HomeRecentWants />}
 
       {/* Language picker — globe chip in the header opens this (reuses the seller
           LanguageSheet; i18n.changeLanguage re-renders every t() on the screen). */}
