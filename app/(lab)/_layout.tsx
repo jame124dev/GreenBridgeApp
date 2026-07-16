@@ -25,6 +25,9 @@ export default function LabLayout() {
       {/* match presents bottom-up (modal) per the transition matrix */}
       <Stack.Screen name="match/[id]" options={{ presentation: 'modal' }} />
       <Stack.Screen name="deal/[id]" />
+      {/* Product detail — buyer-marketplace listing in a WebView, pushed from a
+          chat product card (or any product surface). */}
+      <Stack.Screen name="product/[id]" />
     </Stack>
   );
 }
