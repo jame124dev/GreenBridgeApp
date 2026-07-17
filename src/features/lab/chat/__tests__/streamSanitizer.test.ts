@@ -284,3 +284,23 @@ describe('streamSanitizer — gap collapse (device nit: stacked gap Views)', () 
     );
   });
 });
+
+describe('streamSanitizer — plain (non-bold) field-dump bullets (emulator-observed leak)', () => {
+  it('strips un-bolded "Condition: / Country:" bullets next to a product_list card', () => {
+    const prod = [
+      'Here are some HPLC systems available:',
+      '',
+      '- Condition: Working',
+      '- Country: Taiwan',
+      '',
+      '- Condition: Working',
+      '- Country: Taiwan',
+      '',
+      'Most listings are price-on-request. Want me to save this and alert you when new ones are listed?',
+    ].join('\n');
+    const cards = [{ type: 'product_list' }];
+    expect(streamSafeText(prod, cards, true)).toBe(
+      'Here are some HPLC systems available:\n\nMost listings are price-on-request. Want me to save this and alert you when new ones are listed?',
+    );
+  });
+});

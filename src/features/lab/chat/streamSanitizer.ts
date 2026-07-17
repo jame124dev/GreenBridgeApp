@@ -71,16 +71,19 @@ const INFO_CARD_TYPES = new Set([
 export function messageHasInfoCard(cards?: { type: string }[]): boolean {
   return !!cards?.some((c) => INFO_CARD_TYPES.has(c.type));
 }
-// A bulleted/numbered line whose content LEADS WITH BOLD — the field-dump shape
-// ("- **Nikon SMZ800N**", "- **Condition:** Refurbished"). Conversational bullets
-// (which don't start bold) are left untouched.
-const BOLD_BULLET_RE = /^\s*(?:[-*]|\d+\.)\s+\*\*/;
-/** Drop the redundant bold field-dump bullets when a result/info card is present,
+// ANY bulleted/numbered line. Originally only bold-led bullets were treated as
+// the field-dump shape ("- **Condition:** Refurbished") and "conversational"
+// bullets kept — but live payloads vary per turn (device-observed: the same
+// query later dumped plain "- Condition: Working" bullets, which leaked). With
+// a RESULT/INFO card on screen, every prose list item mirrors the card, so the
+// safe rule is: no list items next to an info card, period.
+const LIST_ITEM_RE = /^\s*(?:[-*]|\d+\.)\s+/;
+/** Drop the redundant field-dump list items when a result/info card is present,
  *  leaving the conversational lead + closing sentences. */
 export function stripCardFieldDump(text: string): string {
   return text
     .split('\n')
-    .filter((l) => !BOLD_BULLET_RE.test(l) && !IMAGE_ONLY_LINE_RE.test(l))
+    .filter((l) => !LIST_ITEM_RE.test(l) && !IMAGE_ONLY_LINE_RE.test(l))
     .map((l) => l.trimEnd())
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
