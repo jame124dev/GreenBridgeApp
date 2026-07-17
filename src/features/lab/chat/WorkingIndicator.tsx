@@ -30,25 +30,47 @@ const PHASE_KEY: Record<string, string> = {
   extracting_products: 'mobile.labChat.working.ranking',
 };
 
-export function WorkingIndicator({ phase, mode }: { phase?: string; mode: 'buyer' | 'seller' }) {
+export function WorkingIndicator({
+  phase,
+  mode,
+  resultsReady,
+  draftPending,
+}: {
+  phase?: string;
+  mode: 'buyer' | 'seller';
+  /** Result/info cards already streamed in but the prose hasn't started — the
+   *  label must STOP claiming to search once results are visibly on screen
+   *  (glitch-audit G3: "Searching the marketplace…" above RESULTS · 28). */
+  resultsReady?: boolean;
+  /** A draft card arrived but is HELD until the intro text begins (the
+   *  artifact-reveal hold) — say so instead of "searching". */
+  draftPending?: boolean;
+}) {
   const { t } = useTranslation();
   const reduced = useReducedMotion();
   const styles = useStyles();
-  const key =
-    (phase && PHASE_KEY[phase]) ||
-    (mode === 'buyer' ? 'mobile.labChat.working.searching' : 'mobile.labChat.working.default');
+  // Precedence: what the user can SEE wins over pipeline phases — once cards
+  // are on screen the only honest label is "summarizing", whatever the stream's
+  // phase field still says.
+  const key = resultsReady
+    ? 'mobile.labChat.working.summarizing'
+    : draftPending
+      ? 'mobile.labChat.working.draft'
+      : (phase && PHASE_KEY[phase]) ||
+        (mode === 'buyer' ? 'mobile.labChat.working.searching' : 'mobile.labChat.working.default');
   const label = t(key);
   return (
     <View style={styles.row}>
       {/* Reused verbatim — same dots, same freeze-under-reduced-motion. */}
       <ThinkingDots />
-      {/* Fixed-minHeight row above means a phase label swap never reflows the
-          bubble (no scroll jerk). Key on `phase` so each phase cross-fades in;
-          reduced motion → instant text swap (dots already freeze). */}
+      {/* Fixed-minHeight row above means a label swap never reflows the bubble
+          (no scroll jerk). Key on the RESOLVED key so every swap — phase change
+          OR the searching→summarizing flip — cross-fades in; reduced motion →
+          instant text swap (dots already freeze). */}
       {reduced ? (
         <Text style={styles.label}>{label}</Text>
       ) : (
-        <Animated.Text key={phase ?? '_default'} entering={FadeIn.duration(200)} style={styles.label}>
+        <Animated.Text key={key} entering={FadeIn.duration(200)} style={styles.label}>
           {label}
         </Animated.Text>
       )}

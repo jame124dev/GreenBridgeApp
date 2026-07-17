@@ -4254,7 +4254,9 @@
         "checking": "Checking your request…",
         "reading": "Reading your documents…",
         "thinking": "Analyzing…",
-        "ranking": "Ranking results…"
+        "ranking": "Ranking results…",
+        "summarizing": "Putting together a summary…",
+        "draft": "Preparing your draft…"
       },
       "actions": {
         "copy": "Copy",

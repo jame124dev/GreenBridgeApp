@@ -313,7 +313,18 @@ export function AssistantMessage({
     <View style={styles.botWrap}>
       {(text || isThinking) && (
         <View style={[styles.bubble, styles.botBubble]}>
-          {isThinking ? <WorkingIndicator phase={phase} mode={mode} /> : <MarkdownLite text={text} />}
+          {isThinking ? (
+            <WorkingIndicator
+              phase={phase}
+              mode={mode}
+              // Once result cards are on screen the label must stop claiming to
+              // search (G3); a held draft card gets its own "preparing" copy.
+              resultsReady={hasCards && !isDraftCard}
+              draftPending={hasCards && isDraftCard}
+            />
+          ) : (
+            <MarkdownLite text={text} />
+          )}
         </View>
       )}
 

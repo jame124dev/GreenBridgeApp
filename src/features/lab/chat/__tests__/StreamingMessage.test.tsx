@@ -88,6 +88,23 @@ describe('StreamingMessage (PR-8 unified render path)', () => {
     expect(byId('card-product_list')).toBeTruthy();
   });
 
+  it('G3: once result cards land pre-token, the label says summarizing, not searching', () => {
+    useThread.getState().startTurn();
+    useThread.getState().applyFrame({ type: 'data', data: { type: 'product_list', data: {} } });
+    const { getByText, queryByText } = render(stream);
+    // The i18n mock returns the raw key — assert the RESOLVED key flipped from
+    // the search copy to the summarizing copy (glitch-audit G3).
+    expect(getByText('mobile.labChat.working.summarizing')).toBeTruthy();
+    expect(queryByText('mobile.labChat.working.searching')).toBeNull();
+  });
+
+  it('G3: a held DRAFT card gets the preparing-draft label', () => {
+    useThread.getState().startTurn();
+    useThread.getState().applyFrame({ type: 'data', data: { type: 'wtb_draft', data: {} } });
+    const { getByText } = render(stream);
+    expect(getByText('mobile.labChat.working.draft')).toBeTruthy();
+  });
+
   it('an early data card before the first token keeps the thinking slot above the card (ordering fix)', () => {
     useThread.getState().startTurn();
     // A card arrives as an early `data` frame BEFORE any text token.

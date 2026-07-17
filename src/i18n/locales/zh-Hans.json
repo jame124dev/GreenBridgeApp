@@ -4211,7 +4211,9 @@
         "checking": "正在确认你的需求…",
         "reading": "正在读取你的文件…",
         "thinking": "分析中…",
-        "ranking": "正在排序结果…"
+        "ranking": "正在排序结果…",
+        "summarizing": "正在整理搜索结果…",
+        "draft": "正在准备草稿…"
       },
       "actions": {
         "copy": "复制",

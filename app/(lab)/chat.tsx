@@ -24,7 +24,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { KeyboardEvents, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
+import { useKeyboardInset } from '@/features/lab/chat/hooks/useKeyboardInset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -106,27 +106,19 @@ function LabChatScreen() {
   // Keyboard visibility → collapse the composer's home-indicator inset while the
   // keyboard is up (the keyboard already clears the indicator), so the input sits
   // flush on the keyboard instead of floating above it with a gap. (bugfix)
-  // Use the keyboard-controller's OWN events — with react-native-keyboard-controller
-  // active, RN's `Keyboard` events don't fire reliably, so the collapse never
-  // triggered and the composer kept its full home-indicator inset (a ~30px strip).
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-  useEffect(() => {
-    const show = KeyboardEvents.addListener('keyboardDidShow', () => setKeyboardVisible(true));
-    const hide = KeyboardEvents.addListener('keyboardDidHide', () => setKeyboardVisible(false));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-
-  // Keyboard avoidance driven DETERMINISTICALLY by the keyboard animation value
-  // (0 when closed) rather than a `behavior="padding"` KeyboardAvoidingView —
-  // the KAV could leave STALE keyboard-height padding after dismiss on some
-  // devices (seen on MIUI), which, with the bottom-anchored thread, floated the
-  // composer mid-screen over a dead gap. `Math.abs` is sign-agnostic; padding is
-  // always 0 when the keyboard is closed, so it can never get stuck. (bugfix)
-  const keyboard = useReanimatedKeyboardAnimation();
-  const keyboardAvoidStyle = useAnimatedStyle(() => ({ paddingBottom: Math.abs(keyboard.height.value) }));
+  // Keyboard avoidance — ONE reconciled animated value for BOTH the avoid
+  // padding and the safe-area inset (glitch-audit G1/G2). The previous design
+  // tracked the keyboard through two independent primitives (an animated height
+  // + a `keyboardVisible` boolean fed by didShow/didHide), and each was observed
+  // missing the "closed" signal independently on hardware-key IME transitions —
+  // stranding either a keyboard-height dead gap (G1) or the composer under the
+  // 3-button nav bar (G2). useKeyboardInset cross-clamps three native channels
+  // so the value always converges; `max(inset, safeArea)` means the safe-area
+  // padding can never be toggled off by a missed event.
+  const keyboardInset = useKeyboardInset();
+  const keyboardAvoidStyle = useAnimatedStyle(() => ({
+    paddingBottom: Math.max(keyboardInset.value, insets.bottom),
+  }));
 
   const scrollToEnd = useCallback((animated = false) => {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated }));
@@ -297,9 +289,10 @@ function LabChatScreen() {
         <View
           style={[
             styles.composerWrap,
-            // Keyboard up → minimal padding (keyboard clears the home indicator);
-            // keyboard down → full safe-area inset so the input clears it.
-            { paddingBottom: keyboardVisible ? 8 : Math.max(insets.bottom, 10) },
+            // Constant internal padding — the OUTER animated container already
+            // carries max(keyboardHeight, safe-area), so this must never depend
+            // on keyboard state (the old boolean toggle was glitch G2).
+            { paddingBottom: 10 },
           ]}
           onLayout={(e) => setComposerHeight(e.nativeEvent.layout.height)}
         >
