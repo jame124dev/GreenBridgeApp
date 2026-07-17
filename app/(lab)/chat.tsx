@@ -431,7 +431,10 @@ function LabChatScreen() {
               canSend={chat.input.trim().length > 0 || hasAttachments}
               onSend={() => {
                 chat.send(chat.input);
-                inputRef.current?.focus();
+                // Dismiss the keyboard on send (ChatGPT/Claude style) so the
+                // answer isn't hidden behind it and the pinned message is fully
+                // visible. Tapping the input again re-opens it (default focus).
+                inputRef.current?.blur();
               }}
               onStop={chat.stop}
             />
