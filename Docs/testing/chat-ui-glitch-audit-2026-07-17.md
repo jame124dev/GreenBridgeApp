@@ -172,3 +172,32 @@ Suite after fixes: 29 suites / 357 tests, tsc clean, eslint clean.
 Remaining verification debt: one pass on the physical phone (gesture nav) to
 confirm no regression there — the emulator config covers the failure modes, the
 phone covers the happy path.
+
+
+---
+
+## Round 2 — results-presentation redesign (same day, user-driven)
+
+User retest surfaced the deeper UX problem behind G3: it wasn't just the label —
+28 full-width cards streamed INTO the thread while the summary was still being
+written, burying the conversation. Shipped (emulator-verified end-to-end):
+
+1. **Universal card hold (artifact reveal).** The draft-only hold is now the rule
+   for ALL cards: while streaming, cards stay hidden until the intro text begins
+   (WorkingIndicator narrates: "Putting together a summary…" / "Preparing your
+   draft…"); a turn that never produces text reveals its cards at settle.
+   Sequencing is now: status → summary text → results. (StreamingMessage test
+   updated to the new contract.)
+2. **2-column results grid, capped at 6.** A single result keeps the full-width
+   hero card; 2+ render compact grid cards (photo, 2-line name, condition chip,
+   price). Beyond 6, a "View all N results" button opens…
+3. **ProductPagerSheet** — a scrimmed popup with one product per page, horizontal
+   snap-paging, live "n / N" counter, dots for small sets, and an "Open listing"
+   tap-through to /product/[id]. Browse lives here, not in the thread.
+4. **Draft-turn prose leak fixed** — stripDraftFieldDump now drops plain
+   ("- Condition: Used") and bold-titled preview-match bullets next to a draft
+   card, same shape-variance lesson as the result-card strip (regression test
+   with the exact observed payload).
+
+Suite: 29 suites / 361 tests green, tsc + eslint clean. i18n ×6 locales
+(viewAllResults/pagerOf/openListing + labCommon.close).

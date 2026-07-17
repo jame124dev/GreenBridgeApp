@@ -284,13 +284,16 @@ export function AssistantMessage({
   const styles = useChatMessageStyles();
   const hasCards = !!cards && cards.length > 0;
   const isThinking = !text && (streaming || !hasCards);
-  // A DRAFT card (WTB / listing) is an artifact the assistant "presents" — while
-  // streaming, hold it until the intro text has begun so it slides in BELOW the
-  // prose instead of popping in first and getting a text bubble pushed in above
-  // it. Result/info cards still stream in immediately (they ARE the answer).
-  // Committed messages always show their cards.
+  // EVERY card is an artifact the assistant "presents" — while streaming, hold
+  // it until the intro text has begun so it slides in BELOW the prose instead
+  // of popping in first (originally draft-only; generalized after user testing:
+  // 28 result cards flooding the thread while the label still said "putting
+  // together a summary" read as broken sequencing — glitch-audit follow-up).
+  // The WorkingIndicator's resultsReady/draftPending copy narrates the hold.
+  // Committed messages always show their cards, so a turn that never produces
+  // text still reveals its cards at settle.
   const isDraftCard = messageHasDraftCard(cards);
-  const showCards = hasCards && (!streaming || !isDraftCard || !!text);
+  const showCards = hasCards && (!streaming || !!text);
   const cardsInner = hasCards
     ? cards!.map((c, i) => (
         <CardBoundary key={`${c.type}-${i}`}>

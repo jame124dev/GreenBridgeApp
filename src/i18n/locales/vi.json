@@ -4004,6 +4004,7 @@
     },
     "labCommon": {
       "retry": "Thử lại",
+      "close": "Đóng",
       "locating": "Đang định vị…",
       "setLocation": "Đặt vị trí",
       "setYourLocation": "Đặt vị trí của bạn",
@@ -4037,6 +4038,9 @@
       "results": "Kết quả",
       "noMatchingItems": "Hiện chưa có mục nào phù hợp.",
       "tellMeMore": "Cho tôi biết thêm về {{name}}.",
+      "viewAllResults": "Xem tất cả {{count}} kết quả",
+      "pagerOf": "{{current}} / {{total}}",
+      "openListing": "Mở tin đăng",
       "identifyLead": "Tôi nhận diện đây là",
       "identifyTail": ". Có đúng không?",
       "yesThatsIt": "Đúng rồi",

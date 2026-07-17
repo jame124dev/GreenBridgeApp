@@ -3919,6 +3919,7 @@
     },
     "labCommon": {
       "retry": "再試行",
+      "close": "閉じる",
       "locating": "位置情報を取得中…",
       "setLocation": "位置を設定",
       "setYourLocation": "位置を設定する",
@@ -3952,6 +3953,9 @@
       "results": "検索結果",
       "noMatchingItems": "現在、一致する商品はありません。",
       "tellMeMore": "{{name}}についてもっと教えてください。",
+      "viewAllResults": "{{count}}件すべて見る",
+      "pagerOf": "{{current}} / {{total}}",
+      "openListing": "リスティングを開く",
       "identifyLead": "これは次のものと認識しました：",
       "identifyTail": "。合っていますか？",
       "yesThatsIt": "はい、それです",

@@ -44,7 +44,14 @@ const IMAGE_ONLY_LINE_RE = /^\s*!\[[^\]]*\]\([^)]*\)\s*$/;
 export function stripDraftFieldDump(text: string): string {
   return text
     .split('\n')
-    .filter((l) => !FIELD_BULLET_RE.test(l) && !IMAGE_ONLY_LINE_RE.test(l))
+    // FIELD_BULLET_RE catches the bolded "**Label:** value" shape; the payload
+    // ALSO varies into plain list items ("- Condition: Used") and bold-titled
+    // preview-match bullets (emulator-observed leak next to the WTB draft card,
+    // same shape-variance as the result-card dump) — with a draft card present,
+    // every prose list item mirrors the card/preview, so drop them all.
+    .filter(
+      (l) => !FIELD_BULLET_RE.test(l) && !LIST_ITEM_RE.test(l) && !IMAGE_ONLY_LINE_RE.test(l),
+    )
     .map((l) => l.trimEnd())
     .join('\n')
     .replace(/\s*here(?:'s| are)?(?: the)?(?: updated)? details:\s*/i, ' ')

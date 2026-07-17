@@ -3988,6 +3988,7 @@
     },
     "labCommon": {
       "retry": "重試",
+      "close": "關閉",
       "locating": "定位中…",
       "setLocation": "設定位置",
       "setYourLocation": "設定您的位置",
@@ -4023,6 +4024,9 @@
       "results": "結果",
       "noMatchingItems": "暫時沒有匹配的商品。",
       "tellMeMore": "告訴我更多關於{{name}}的資訊。",
+      "viewAllResults": "查看全部 {{count}} 個結果",
+      "pagerOf": "{{current}} / {{total}}",
+      "openListing": "開啟商品頁",
       "identifyLead": "我識別到這是一個",
       "identifyTail": "。對嗎？",
       "yesThatsIt": "對，就是它",

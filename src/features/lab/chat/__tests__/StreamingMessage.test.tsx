@@ -105,15 +105,22 @@ describe('StreamingMessage (PR-8 unified render path)', () => {
     expect(getByText('mobile.labChat.working.draft')).toBeTruthy();
   });
 
-  it('an early data card before the first token keeps the thinking slot above the card (ordering fix)', () => {
+  it('an early data card before the first token is HELD behind the thinking slot (artifact reveal, all cards)', () => {
     useThread.getState().startTurn();
     // A card arrives as an early `data` frame BEFORE any text token.
     useThread.getState().applyFrame({ type: 'data', data: { type: 'product_list', data: {} } });
-    const { getByTestId } = render(stream);
-    // The reserved streaming slot still shows the thinking dots (top bubble) even
-    // though a card already exists — so the card can never render above the text.
-    expect(getByTestId('thinking-dots')).toBeTruthy();
-    expect(getByTestId('card-product_list')).toBeTruthy();
+    const held = render(stream);
+    // The reserved streaming slot shows the working indicator, and the card is
+    // HELD until the intro text begins — result cards flooding in above/before
+    // the summary read as broken sequencing (user-reported).
+    expect(held.getByTestId('thinking-dots')).toBeTruthy();
+    expect(held.queryByTestId('card-product_list')).toBeNull();
+
+    // First token → the card reveals below the prose.
+    useThread.getState().applyFrame({ type: 'token', delta: 'Here is what I found' });
+    const shown = render(stream);
+    expect(shown.getByText('Here is what I found')).toBeTruthy();
+    expect(shown.getByTestId('card-product_list')).toBeTruthy();
   });
 
   it('holds a DRAFT card until the intro text begins, then reveals it (artifact reveal)', () => {

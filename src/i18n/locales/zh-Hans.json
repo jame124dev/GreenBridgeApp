@@ -3988,6 +3988,7 @@
     },
     "labCommon": {
       "retry": "重试",
+      "close": "关闭",
       "locating": "定位中…",
       "setLocation": "设置位置",
       "setYourLocation": "设置您的位置",
@@ -4023,6 +4024,9 @@
       "results": "结果",
       "noMatchingItems": "暂时没有匹配的商品。",
       "tellMeMore": "告诉我更多关于{{name}}的信息。",
+      "viewAllResults": "查看全部 {{count}} 个结果",
+      "pagerOf": "{{current}} / {{total}}",
+      "openListing": "打开商品页",
       "identifyLead": "我识别到这是一个",
       "identifyTail": "。对吗？",
       "yesThatsIt": "对，就是它",

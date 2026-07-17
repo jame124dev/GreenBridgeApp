@@ -304,3 +304,25 @@ describe('streamSanitizer — plain (non-bold) field-dump bullets (emulator-obse
     );
   });
 });
+
+describe('streamSanitizer — draft-card plain-bullet leak (emulator-observed)', () => {
+  it('strips un-bolded field bullets AND preview-match dumps next to a wtb_draft card', () => {
+    const prod = [
+      "Here's a draft for your Want-To-Buy request:",
+      '',
+      '- **2017 JIH-I JIH-CNC6500M Milling Machine**',
+      '- Condition: Used',
+      '- Location: Taiwan',
+      '',
+      '- **2009 ProArc MASTER50 CNC Plasma Cutting Machine**',
+      '- Condition: Used',
+      '- Location: Taiwan',
+      '',
+      'You can review and save it to get alerts.',
+    ].join('\n');
+    const cards = [{ type: 'wtb_draft' }];
+    expect(streamSafeText(prod, cards, true)).toBe(
+      "Here's a draft for your Want-To-Buy request:\n\nYou can review and save it to get alerts.",
+    );
+  });
+});

@@ -38,6 +38,7 @@ import { useWantMutations } from '@/features/lab/hooks/useWantMutations';
 import type { WtbRequestData } from '@/features/lab/data/wtbApi';
 import { usePressScale, useProgress } from '@/animations/recipes';
 import { createThemedStyles, useColor, useTheme } from './theme';
+import { ProductPagerSheet } from './ProductPagerSheet';
 import { CardRegistry } from './registries/cardRegistry';
 import {
   CardShell,
@@ -93,7 +94,7 @@ const asArr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 
 /* ── ProductCard + list (shared, most-reused) ─────────────────────────────── */
 
-type ProductRow = {
+export type ProductRow = {
   id?: number | string;
   batchId?: number | string | null;
   name?: string;
@@ -121,7 +122,16 @@ export function toProductRow(v: unknown): ProductRow {
   };
 }
 
-export function LabProductCard({ row, onPress }: { row: ProductRow; onPress?: () => void }) {
+export function LabProductCard({
+  row,
+  onPress,
+  compact = false,
+}: {
+  row: ProductRow;
+  onPress?: () => void;
+  /** Grid variant — tighter body + smaller type so two columns stay scannable. */
+  compact?: boolean;
+}) {
   const { t } = useTranslation();
   const styles = useCardStyles();
   const accentIconMuted = useColor('accent.iconMuted');
@@ -141,21 +151,25 @@ export function LabProductCard({ row, onPress }: { row: ProductRow; onPress?: ()
             <AppImage source={{ uri: row.image }} style={styles.cardImageFill} resizeMode="cover" />
           ) : (
             <View style={styles.cardImagePlaceholder}>
-              <ImageOff size={26} color={accentIconMuted} />
-              <Text style={styles.cardImageCaption}>{t('mobile.labCards.imagePending')}</Text>
+              <ImageOff size={compact ? 20 : 26} color={accentIconMuted} />
+              {compact ? null : (
+                <Text style={styles.cardImageCaption}>{t('mobile.labCards.imagePending')}</Text>
+              )}
             </View>
           )}
         </View>
-        <View style={styles.cardBody}>
-          <Text numberOfLines={2} style={styles.cardName}>
+        <View style={compact ? styles.cardBodyCompact : styles.cardBody}>
+          <Text numberOfLines={2} style={compact ? styles.cardNameCompact : styles.cardName}>
             {row.name || t('mobile.labCards.untitledListing')}
           </Text>
           {/* condition + country are the RELIABLE, decision-relevant fields — the
-              scannable weight of the card. Each chip renders only when present. */}
-          {row.condition || row.country ? (
+              scannable weight of the card. Each chip renders only when present.
+              Compact grid keeps ONLY the condition chip (country moves to the
+              pager) so two columns never wrap chips onto a third line. */}
+          {row.condition || (!compact && row.country) ? (
             <View style={styles.rowChips}>
               {row.condition ? <Chip tone="emerald">{condLabel(row.condition)}</Chip> : null}
-              {row.country ? <Chip>{countryLabel(row.country)}</Chip> : null}
+              {!compact && row.country ? <Chip>{countryLabel(row.country)}</Chip> : null}
             </View>
           ) : null}
           {priced ? (
@@ -171,10 +185,28 @@ export function LabProductCard({ row, onPress }: { row: ProductRow; onPress?: ()
   );
 }
 
+/** Inline cap — beyond this the grid stops and a "View all N" button opens the
+ *  swipeable results pager. 6 = three 2-column rows: enough to scan the best
+ *  matches without turning the thread into an endless product wall (user
+ *  feedback: 28 stacked full-width cards buried the conversation). */
+const INLINE_RESULTS_MAX = 6;
+
+/** Open a product's marketplace listing (like tapping a card on 101 Lab). */
+function openProduct(router: ReturnType<typeof useRouter>, row: ProductRow) {
+  const detailId = row.batchId ?? row.id;
+  if (detailId == null) return;
+  haptics.tap();
+  router.push({
+    pathname: '/(lab)/product/[id]',
+    params: { id: String(detailId), name: row.name ?? '' },
+  });
+}
+
 function LabProductCardList({ data, onSend }: CardProps) {
   const { t } = useTranslation();
   const styles = useCardStyles();
   const router = useRouter();
+  const [pagerOpen, setPagerOpen] = useState(false);
   const o = asObj(data);
   const rows = asArr(o.results ?? o.items ?? (Array.isArray(data) ? data : [])).map(toProductRow);
   const identified = asObj(o.identified);
@@ -193,35 +225,46 @@ function LabProductCardList({ data, onSend }: CardProps) {
     );
   }
 
+  const inline = rows.slice(0, INLINE_RESULTS_MAX);
+  const overflow = rows.length - inline.length;
+
   return (
     <View style={{ gap: spacing.md }}>
       {/* RESULTS eyebrow — the explicit named prose→evidence boundary (mirrors the
           CardShell / SourcesStrip eyebrow voice). Suppressed in the 0-row /
           identify-confirm / no-match branches (handled above). */}
       <Text style={styles.resultsEyebrow}>{t('mobile.labCards.resultsCount', { count: rows.length })}</Text>
-      {rows.map((row, i) => {
-        // Tapping a product opens the marketplace listing detail (like 101 Lab),
-        // NOT an "ask the AI about it" follow-up. Prefer batchId (the buyer
-        // marketplace route key); fall back to the product id if that's all we got.
-        const detailId = row.batchId ?? row.id;
-        return (
-          <LabProductCard
-            key={`${row.id ?? 'x'}-${i}`}
-            row={row}
-            onPress={
-              detailId != null
-                ? () => {
-                    haptics.tap();
-                    router.push({
-                      pathname: '/(lab)/product/[id]',
-                      params: { id: String(detailId), name: row.name ?? '' },
-                    });
-                  }
-                : undefined
-            }
-          />
-        );
-      })}
+      {/* 2-column grid — a single result keeps the full-width hero card; 2+
+          results go compact so the thread stays a conversation, not a catalog. */}
+      {inline.length === 1 ? (
+        <LabProductCard row={inline[0]} onPress={() => openProduct(router, inline[0])} />
+      ) : (
+        <View style={styles.resultsGrid}>
+          {inline.map((row, i) => (
+            <View key={`${row.id ?? 'x'}-${i}`} style={styles.resultsGridItem}>
+              <LabProductCard compact row={row} onPress={() => openProduct(router, row)} />
+            </View>
+          ))}
+        </View>
+      )}
+      {overflow > 0 ? (
+        <GhostButton
+          label={t('mobile.labCards.viewAllResults', { count: rows.length })}
+          onPress={() => {
+            haptics.tap();
+            setPagerOpen(true);
+          }}
+        />
+      ) : null}
+      <ProductPagerSheet
+        visible={pagerOpen}
+        rows={rows}
+        onClose={() => setPagerOpen(false)}
+        onOpenProduct={(row) => {
+          setPagerOpen(false);
+          openProduct(router, row);
+        }}
+      />
     </View>
   );
 }
@@ -1934,6 +1977,24 @@ const useCardStyles = createThemedStyles((t) => ({
   },
   cardPrice: { fontFamily: fonts.semibold, fontSize: 15, color: t.color['accent.pressed'] },
   cardPriceMuted: { fontFamily: fonts.regular, fontSize: 13, color: t.color['text.muted'] },
+
+  // 2-column results grid (user feedback: N full-width cards buried the chat).
+  resultsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: spacing.md,
+  },
+  resultsGridItem: { width: '48.5%' },
+  cardBodyCompact: { padding: spacing.md, gap: spacing.xs },
+  cardNameCompact: {
+    fontFamily: fonts.heading,
+    fontSize: 13.5,
+    lineHeight: 18,
+    letterSpacing: -0.1,
+    color: t.color['text.primary'],
+    minHeight: 36,
+  },
 
   // Legacy thumb keys — STILL used by LabListingQueueCard / LabListingDraftCard.
   // (The old `product`/`productBody`/`productName`/`productPrice` keys were

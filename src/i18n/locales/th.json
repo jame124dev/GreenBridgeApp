@@ -3903,6 +3903,7 @@
     },
     "labCommon": {
       "retry": "ลองอีกครั้ง",
+      "close": "ปิด",
       "locating": "กำลังระบุตำแหน่ง…",
       "setLocation": "ตั้งค่าตำแหน่ง",
       "setYourLocation": "ตั้งค่าตำแหน่งของคุณ",
@@ -3936,6 +3937,9 @@
       "results": "ผลลัพธ์",
       "noMatchingItems": "ยังไม่มีสินค้าที่ตรงกันในขณะนี้",
       "tellMeMore": "บอกฉันเพิ่มเติมเกี่ยวกับ {{name}}",
+      "viewAllResults": "ดูทั้งหมด {{count}} รายการ",
+      "pagerOf": "{{current}} / {{total}}",
+      "openListing": "เปิดรายการสินค้า",
       "identifyLead": "ฉันระบุได้ว่านี่คือ",
       "identifyTail": " ใช่ไหม?",
       "yesThatsIt": "ใช่ ใช่เลย",

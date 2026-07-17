@@ -192,6 +192,28 @@ const LISTING_CREATED = {
 };
 
 describe('cards — characterization (representative families)', () => {
+  it('product_list: >6 rows renders a capped grid + a "View all N" opener (results redesign)', () => {
+    const rows = Array.from({ length: 9 }, (_, i) => ({
+      id: i + 1, name: `Machine ${i + 1}`, condition: 'working', country: 'TW',
+    }));
+    const { getByText, queryByText } = draw('product_list', { results: rows });
+    // Cap: items 1-6 inline, 7+ live in the pager only.
+    expect(getByText('Machine 6')).toBeTruthy();
+    expect(queryByText('Machine 7')).toBeNull();
+    // The opener carries the TRUE total.
+    expect(getByText('mobile.labCards.viewAllResults')).toBeTruthy();
+  });
+  it('product_list: 2-6 rows render as a grid WITHOUT the opener', () => {
+    const rows = [
+      { id: 1, name: 'Mill A', condition: 'working', country: 'TW' },
+      { id: 2, name: 'Mill B', condition: 'working', country: 'TW' },
+    ];
+    const { getByText, queryByText } = draw('product_list', { results: rows });
+    expect(getByText('Mill A')).toBeTruthy();
+    expect(getByText('Mill B')).toBeTruthy();
+    expect(queryByText('mobile.labCards.viewAllResults')).toBeNull();
+  });
+
   it('product_list golden', () => {
     expect(draw('product_list', PRODUCT_LIST).toJSON()).toMatchSnapshot();
   });
