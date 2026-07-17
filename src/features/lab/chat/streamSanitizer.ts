@@ -34,6 +34,12 @@ const FIELD_BULLET_RE = /^\s*[-*]\s+\*\*[^*]+:\*\*/; // "- **Label:** value"
 // Matches:" above the WTB card). Deliberately requires the ** wrapper so
 // ordinary short prose lines ending in ":" are never touched.
 const SECTION_HEADER_BOLD_RE = /^\s*(?:#{1,6}\s+)?\*\*[^*\n]{1,40}:?\*\*:?\s*$/;
+// A line that is ENTIRELY one emphasis span — the model's other field-dump shape
+// next to a card: "*Condition: Working | Location: Taiwan*" (one per result),
+// which isn't a bullet so the list-item rule misses it (device-observed). A real
+// mid-sentence italic ("this is *great*") starts with prose, so `^\s*\*` won't
+// match it — only whole-line emphasis is stripped.
+const WHOLE_EMPHASIS_LINE_RE = /^\s*\*{1,2}[^*\n]+\*{1,2}\s*$/;
 /** Collapse the redundant field-dump when a draft card accompanies the prose:
  *  drop the "**Label:** value" bullets and the dangling "…here are the details:"
  *  lead-in, leaving just the opening + closing sentence (e.g. "Your draft is
@@ -60,6 +66,7 @@ export function stripDraftFieldDump(text: string): string {
         !FIELD_BULLET_RE.test(l) &&
         !LIST_ITEM_RE.test(l) &&
         !SECTION_HEADER_BOLD_RE.test(l) &&
+        !WHOLE_EMPHASIS_LINE_RE.test(l) &&
         !IMAGE_ONLY_LINE_RE.test(l),
     )
     .map((l) => l.trimEnd())
@@ -101,7 +108,11 @@ export function stripCardFieldDump(text: string): string {
   return text
     .split('\n')
     .filter(
-      (l) => !LIST_ITEM_RE.test(l) && !SECTION_HEADER_BOLD_RE.test(l) && !IMAGE_ONLY_LINE_RE.test(l),
+      (l) =>
+        !LIST_ITEM_RE.test(l) &&
+        !SECTION_HEADER_BOLD_RE.test(l) &&
+        !WHOLE_EMPHASIS_LINE_RE.test(l) &&
+        !IMAGE_ONLY_LINE_RE.test(l),
     )
     .map((l) => l.trimEnd())
     .join('\n')

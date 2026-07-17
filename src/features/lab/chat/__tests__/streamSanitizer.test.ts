@@ -350,3 +350,27 @@ describe('streamSanitizer — orphaned section header (device-observed)', () => 
     );
   });
 });
+
+describe('streamSanitizer — whole-line emphasis field dump (device-observed)', () => {
+  it('strips "*Condition: X | Location: Y*" italic field lines next to a results card', () => {
+    const prod = [
+      'Here are some CNC machines available:',
+      '',
+      '*Condition: Used Functional | Location: Taiwan*',
+      '*Condition: Working | Location: Taiwan*',
+      '*Condition: Working | Location: Nashik, MH, India*',
+      '',
+      'Want me to save this and alert you when new ones are listed?',
+    ].join('\n');
+    const cards = [{ type: 'product_list' }];
+    expect(streamSafeText(prod, cards, true)).toBe(
+      'Here are some CNC machines available:\n\nWant me to save this and alert you when new ones are listed?',
+    );
+  });
+  it('keeps a genuine mid-sentence italic (not a whole-line span)', () => {
+    const cards = [{ type: 'product_list' }];
+    expect(streamSafeText('Found a *great* match for you.', cards, true)).toBe(
+      'Found a *great* match for you.',
+    );
+  });
+});

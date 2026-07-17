@@ -12,7 +12,7 @@
 //
 // Flow: home → chat. Tab bar HIDDEN (pushed full-screen). Static path (flag off)
 // never reaches this screen — Home keeps its Processing navigation.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, {
   Easing,
@@ -98,6 +98,18 @@ function LabChatScreen() {
   const draggingRef = useRef(false);
   const followScheduledRef = useRef(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  // Pin-to-top (ChatGPT/Claude style): on send, the user's latest message is
+  // scrolled to the TOP of the viewport and the answer streams in BELOW it,
+  // instead of the whole view yanking to the bottom (which scrolled the user's
+  // message — and any image they attached — off-screen; user-reported). A
+  // viewport-tall trailing spacer lets that message actually reach the top even
+  // when the answer is short, and `pinActiveRef` suppresses the stream's
+  // auto-follow so the pinned message never gets dragged away.
+  const [viewportH, setViewportH] = useState(0);
+  const pinScrolledRef = useRef<string | null>(null); // last user id we've pinned
+  const pinActiveRef = useRef(false);
+  const pinSpacerRef = useRef(0); // current trailing-spacer height (for distance math)
+  const contentHeightRef = useRef(0);
   // Live composer height so the scroll-to-bottom pill sits just above it rather
   // than over a fixed 92pt guess (the composer grows with multiline text +
   // staged attachments).
@@ -120,18 +132,12 @@ function LabChatScreen() {
     paddingBottom: Math.max(keyboardInset.value, insets.bottom),
   }));
 
-  const scrollToEnd = useCallback((animated = false) => {
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated }));
-  }, []);
-
-  // View side-effect fired after a send is accepted (was inline in the old
-  // send()): pin to bottom + scroll. Identity-stable so the controller's `send`
-  // stays memoized.
+  // On send we no longer yank to the bottom — the pin effect scrolls the user's
+  // new message to the TOP instead. Just hide the scroll-to-bottom pill (the
+  // user is, by definition, looking at their fresh message).
   const onDidSend = useCallback(() => {
-    atBottomRef.current = true;
     setShowScrollDown(false);
-    scrollToEnd(true);
-  }, [scrollToEnd]);
+  }, []);
 
   // Present the edit sheet on the next tick so the freshly-set seed is read.
   const onPresentEditSheet = useCallback(() => {
@@ -143,6 +149,19 @@ function LabChatScreen() {
   const initialQuery = typeof params.q === 'string' ? params.q : '';
   const chat = useChatController({ initialQuery, onDidSend, onPresentEditSheet });
   const { mode, apiMode } = chat;
+
+  // The id of the most-recent USER message — the one to pin to the top. Changes
+  // on every send (and covers the initial `?q=` seed), which re-arms the pin.
+  const latestUserId = useMemo(() => {
+    const ms = chat.viewMessages;
+    for (let i = ms.length - 1; i >= 0; i--) if (ms[i].role === 'user') return ms[i].id;
+    return null;
+  }, [chat.viewMessages]);
+  useEffect(() => {
+    pinActiveRef.current = latestUserId != null;
+    pinSpacerRef.current = latestUserId != null ? viewportH : 0;
+  }, [latestUserId, viewportH]);
+
   const accent = useColor(mode === 'sell' ? 'mode.sell' : 'mode.buy');
   const inkColor = useColor('input.text');
   const utilIconColor = useColor('icon.util');
@@ -161,7 +180,11 @@ function LabChatScreen() {
   const onScroll = useCallback(
     (e: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
       const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-      const distanceFromBottom = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+      // Measure distance to the end of REAL content, not the pin spacer's empty
+      // tail — otherwise the scroll-to-bottom pill would show (and jump) into
+      // blank space below the answer.
+      const distanceFromBottom =
+        contentSize.height - pinSpacerRef.current - (contentOffset.y + layoutMeasurement.height);
       // Widen the "following" band during a live turn so ordinary streaming
       // reflow + taller image cards still count as at-bottom (no false yank-off).
       const NEAR = chat.liveActive ? 120 : 80;
@@ -186,7 +209,12 @@ function LabChatScreen() {
   // Anti-jump follow: only pin when already at-bottom AND not dragging; rAF
   // coalesces token bursts in a frame to ONE non-animated scroll (continuous
   // glide, never the overlapping-animated-scroll jump).
-  const onContentSizeChange = useCallback(() => {
+  const onContentSizeChange = useCallback((_w: number, h: number) => {
+    contentHeightRef.current = h;
+    // Pin model: once there's a user message on screen we never auto-follow the
+    // stream to the bottom — the pinned message stays at the top and the answer
+    // grows below it. (The scroll-to-bottom pill still lets the user jump down.)
+    if (pinActiveRef.current) return;
     if (atBottomRef.current && !draggingRef.current && !followScheduledRef.current) {
       followScheduledRef.current = true;
       requestAnimationFrame(() => {
@@ -252,9 +280,18 @@ function LabChatScreen() {
           // scrolls normally (paddingTop still clears the header).
           contentContainerStyle={[
             styles.threadContent,
-            { flexGrow: 1, justifyContent: 'flex-end', paddingBottom: spacing.md },
+            {
+              flexGrow: 1,
+              // Empty/idle thread hugs the composer (flex-end kills the dead white
+              // area). Once a turn exists we TOP-align so the pinned message's
+              // measured y is stable — flex-end would bottom-shift content on the
+              // send frame and the pin would scroll into the spacer (blank screen).
+              justifyContent: latestUserId ? 'flex-start' : 'flex-end',
+              paddingBottom: spacing.md,
+            },
           ]}
           keyboardShouldPersistTaps="handled"
+          onLayout={(e) => setViewportH(e.nativeEvent.layout.height)}
           onScroll={onScroll}
           scrollEventThrottle={16}
           onScrollBeginDrag={onScrollBeginDrag}
@@ -263,19 +300,37 @@ function LabChatScreen() {
           onContentSizeChange={onContentSizeChange}
         >
           {chat.viewMessages.map((m) => (
-            <ChatMessage
+            <View
               key={m.id}
-              msg={m}
-              mode={apiMode}
-              onSend={chat.onCardSend}
-              onRetry={chat.onRetry}
-              onUploadPress={chat.handleUploadPress}
-              onEditDraft={chat.onEditDraft}
-              // The just-committed row replaces the streaming bubble's identical
-              // pixels in the same frame → mount it with no entrance (D3).
-              handoff={m.id === chat.justSettledId}
-              {...chat.batchCtx}
-            />
+              // Pin the latest user message to the top exactly once (guarded by
+              // pinScrolledRef so a later relayout — e.g. keyboard, image load —
+              // can't re-yank it). `y` is the row's offset in content coords.
+              onLayout={
+                m.id === latestUserId
+                  ? (e) => {
+                      if (pinScrolledRef.current === m.id) return;
+                      pinScrolledRef.current = m.id;
+                      const y = e.nativeEvent.layout.y;
+                      requestAnimationFrame(() =>
+                        scrollRef.current?.scrollTo({ y: Math.max(0, y - spacing.md), animated: true }),
+                      );
+                    }
+                  : undefined
+              }
+            >
+              <ChatMessage
+                msg={m}
+                mode={apiMode}
+                onSend={chat.onCardSend}
+                onRetry={chat.onRetry}
+                onUploadPress={chat.handleUploadPress}
+                onEditDraft={chat.onEditDraft}
+                // The just-committed row replaces the streaming bubble's identical
+                // pixels in the same frame → mount it with no entrance (D3).
+                handoff={m.id === chat.justSettledId}
+                {...chat.batchCtx}
+              />
+            </View>
           ))}
 
           {/* Live streaming bubble (not yet committed) — self-subscribes the
@@ -288,6 +343,12 @@ function LabChatScreen() {
             onEditDraft={chat.onEditDraft}
             {...chat.batchCtx}
           />
+
+          {/* Pin spacer: a viewport-tall tail so the latest user message can sit
+              at the TOP with the answer below it, even for a short answer. Only
+              present once a turn exists (keeps the empty state hugging the
+              composer via the container's flex-end). */}
+          <View style={{ height: latestUserId ? viewportH : 0 }} />
         </ScrollView>
 
         {/* Scroll-to-bottom pill — anchored just above the measured composer. */}
@@ -298,7 +359,15 @@ function LabChatScreen() {
               haptics.tap();
               atBottomRef.current = true;
               setShowScrollDown(false);
-              scrollToEnd(true);
+              // Jump to the end of REAL content (the answer), stopping just above
+              // the pin spacer's empty tail rather than scrolling into blank space.
+              const target = Math.max(
+                0,
+                contentHeightRef.current - pinSpacerRef.current - viewportH + spacing.md,
+              );
+              requestAnimationFrame(() =>
+                scrollRef.current?.scrollTo({ y: target, animated: true }),
+              );
             }}
           />
         ) : null}
@@ -350,7 +419,6 @@ function LabChatScreen() {
               placeholder={mode === 'sell' ? t('mobile.labChat.placeholder.sell') : t('mobile.labChat.placeholder.buy')}
               placeholderTextColor={placeholderColor}
               multiline
-              onFocus={() => scrollToEnd(true)}
             />
             {/* One persistent circle that MORPHS Send↔Stop (never remounts).
                 Unconditional (both flag states): while a turn streams it is a
