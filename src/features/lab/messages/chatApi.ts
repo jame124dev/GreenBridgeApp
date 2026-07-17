@@ -61,6 +61,31 @@ const asArray = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 
 /* ── REST reads ────────────────────────────────────────────────────────────── */
 
+/** Resolve a listing's seller (user id + display name) from its batch id.
+ *  Used when a "Contact seller" entry point (WTB matches / wants) knows the
+ *  batch but NOT the seller — the WTB match snapshot doesn't carry seller_id, so
+ *  we look it up here rather than opening the Messages inbox as a fallback. The
+ *  batch endpoint returns `data.batch.seller_id` + `data.sellerData`. */
+export async function fetchBatchSeller(
+  batchId: number,
+): Promise<{ sellerId: number | null; sellerName: string | null }> {
+  const res = await greenbidz.get(`/batch/${batchId}/products`, {
+    params: { platform: PLATFORM, marketplace: 'all' },
+    timeout: 30_000,
+  });
+  const data = (res.data?.data ?? {}) as Record<string, unknown>;
+  const batch = (data.batch ?? {}) as Record<string, unknown>;
+  const sellerData = (data.sellerData ?? {}) as Record<string, unknown>;
+  const rawId = batch.seller_id ?? sellerData.ID ?? sellerData.id;
+  const sellerId = rawId != null && Number.isFinite(Number(rawId)) ? Number(rawId) : null;
+  const name =
+    (sellerData.display_name as string) ||
+    (sellerData.user_nicename as string) ||
+    (sellerData.user_login as string) ||
+    null;
+  return { sellerId, sellerName: name };
+}
+
 /** The buyer's inbox: every seller they have a conversation with (per batch). */
 export async function listBuyerConversations(buyerId: number | string): Promise<ConversationRow[]> {
   const res = await greenbidz.get(`/chat/buyer/${buyerId}/sellers`, { params: { platform: PLATFORM } });

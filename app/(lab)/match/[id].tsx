@@ -32,7 +32,6 @@ import { EmptyState } from '@/components/ui';
 import { brand, fonts, greenMedium, buyBlue } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { usePop, useRise, usePressScale } from '@/animations/recipes';
-import { useComposer } from '@/features/lab/stores/composerStore';
 import { WTB_ENABLED } from '@/lib/flags';
 // Phase-1 static source (used verbatim when WTB_ENABLED is OFF — no regression).
 import { MATCH_DETAIL_FIXTURE, type MatchDetailFixture } from '@/features/lab/data/demo';
@@ -89,9 +88,12 @@ export default function LabMatch() {
   // else the live-composed detail (same MatchDetailFixture shape).
   const match: MatchDetailFixture | null = WTB_ENABLED ? detail : MATCH_DETAIL_FIXTURE;
 
-  // Mode only affects the "You ·" framing + CTA verb (spec §4).
-  const mode = useComposer((s) => s.mode);
-  const youIsBuyer = mode === 'buy';
+  // Match Detail is ALWAYS reached from My Wants (the buyer's own want-match
+  // view), so "you" are the buyer here — regardless of the Home composer toggle.
+  // (Tying this to the composer mode was a bug: with "I'm selling" toggled it
+  // flipped the CTA to "talk to buyer" and routed "Contact" to the Messages
+  // inbox instead of the seller thread.)
+  const youIsBuyer = true;
   const ctaLabel = youIsBuyer
     ? t('mobile.labMatch.confirmInterest.buy')
     : t('mobile.labMatch.confirmInterest.sell');
@@ -105,28 +107,32 @@ export default function LabMatch() {
     }
   }, [router]);
 
-  // "Contact seller" opens the DIRECT buyer↔seller thread (the same Messages
-  // surface as the Deals tab). It needs the seller's user id + the listing's
-  // batch id: batch id comes from the matched product (wts.id); seller id comes
-  // from the enriched snapshot (wts.sellerId). The backend snapshot doesn't emit
-  // seller_id yet, so until it does we land on the Messages inbox (same surface)
-  // — the moment the snapshot carries seller_id this opens the exact thread with
-  // zero further change.
+  // "Contact seller" opens the DIRECT buyer↔seller thread. It needs the batch id
+  // (from the matched product, wts.id) + the seller's user id. The WTB snapshot
+  // doesn't carry seller_id, so we open the thread with just the batch — the
+  // deal screen resolves the seller from the batch on-demand. (If the snapshot
+  // ever does carry seller_id, we pass it through and skip the lookup.)
   const sellerId = match?.wts?.sellerId ?? null;
   const batchId = match?.wts?.id ?? '';
   const sellerName = match?.wts?.org || t('mobile.labMatch.sellerFallback');
   const onConfirm = useCallback(() => {
     haptics.impact(); // MEDIUM confirm thump (bespoke CTA — no Button haptic)
-    if (youIsBuyer && sellerId != null && batchId) {
+    if (youIsBuyer && batchId) {
       // Replace so the confirmed match can't be re-opened by Back (funnel moves
       // forward into the conversation).
       router.replace({
         pathname: '/(lab)/deal/[id]',
-        params: { id: String(batchId), sellerId: String(sellerId), name: sellerName },
+        params: {
+          id: String(batchId),
+          ...(sellerId != null ? { sellerId: String(sellerId) } : {}),
+          // Only pass a REAL seller name; `wts.org` is the country fallback, so
+          // omit it and let the deal screen resolve the seller's display name.
+          ...(sellerId != null ? { name: sellerName } : {}),
+        },
       });
       return;
     }
-    // Fallback: the Messages surface (seller thread not yet resolvable).
+    // No batch to resolve a thread from → the Messages surface.
     router.push('/(lab)/(tabs)/deals');
     toast(t('mobile.labMatch.openMessagesToast'));
   }, [router, youIsBuyer, sellerId, batchId, sellerName, t]);

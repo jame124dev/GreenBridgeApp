@@ -14,7 +14,7 @@
 // QuickReplies → Composer, inside a bottom-safe KeyboardAvoidingView. Tab bar
 // HIDDEN (stack-level route). The socket/data logic is untouched — this screen
 // only elevates the chrome to the redesign mockup.
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +28,7 @@ import { Text } from '@/components/ui';
 import { brand, fonts, greenDarkest, greenLight, greenMedium, lab, radius, spacing } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { useChatThread } from '@/features/lab/messages/useChatThread';
+import { fetchBatchSeller } from '@/features/lab/messages/chatApi';
 import { useSocketConnected } from '@/features/lab/messages/socket';
 import { ProductThumb } from '@/features/lab/components';
 import { MessageBubble } from '@/features/lab/messages/components/MessageBubble';
@@ -74,8 +75,36 @@ export default function LabConversation() {
   }>();
 
   const batchId = Number(params.id);
-  const otherPartyId = Number(params.sellerId);
-  const counterparty = typeof params.name === 'string' && params.name.trim() ? params.name : t('mobile.labDeal.sellerFallback');
+  const paramSellerId = Number(params.sellerId);
+  // "Contact seller" from the WTB matches/wants flow knows the batch but NOT the
+  // seller (the match snapshot omits seller_id), so it navigates here with just
+  // the batch. Resolve the seller from the batch on-demand so the thread opens
+  // the RIGHT conversation instead of bouncing to the Messages inbox.
+  const [resolvedSeller, setResolvedSeller] = useState<{ id: number; name: string | null } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (Number.isFinite(paramSellerId) && paramSellerId > 0) return; // seller already known
+    if (!Number.isFinite(batchId)) return;
+    let alive = true;
+    fetchBatchSeller(batchId)
+      .then((s) => {
+        if (alive && s.sellerId != null) setResolvedSeller({ id: s.sellerId, name: s.sellerName });
+      })
+      .catch(() => {
+        /* leave otherPartyId invalid → thread shows its error state, not a wrong room */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [batchId, paramSellerId]);
+
+  const otherPartyId =
+    Number.isFinite(paramSellerId) && paramSellerId > 0 ? paramSellerId : resolvedSeller?.id ?? NaN;
+  const counterparty =
+    typeof params.name === 'string' && params.name.trim()
+      ? params.name
+      : resolvedSeller?.name ?? t('mobile.labDeal.sellerFallback');
   const listingTitle = typeof params.listingTitle === 'string' && params.listingTitle.trim() ? params.listingTitle : null;
   const listingImage = typeof params.listingImage === 'string' && params.listingImage.trim() ? params.listingImage : null;
   // First name for the composer placeholder / privacy note.

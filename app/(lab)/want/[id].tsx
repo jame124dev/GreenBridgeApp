@@ -120,21 +120,26 @@ export default function LabWantMatches() {
     [router],
   );
 
-  // Same seller-thread bridge as app/(lab)/match/[id].tsx: open the exact thread
-  // when the snapshot carries a seller_id (+ batch id), else land on the Messages
-  // inbox with a nudge. seller_id is null today → always the fallback for now.
+  // Same seller-thread bridge as app/(lab)/match/[id].tsx: open the DIRECT
+  // buyer↔seller thread for the matched listing. The snapshot doesn't carry
+  // seller_id, so we open with just the batch id and let the deal screen resolve
+  // the seller on-demand (pass seller_id through if a future snapshot has it).
   const messageSeller = useCallback(
     (m: WtbMatch) => {
       const s = m.product_snapshot ?? {};
       const sellerId = typeof s.seller_id === 'number' ? s.seller_id : null;
       const batchId = s.batch_id ?? m.product_id ?? 0;
-      if (sellerId != null && batchId) {
+      if (batchId) {
         router.push({
           pathname: '/(lab)/deal/[id]',
           params: {
             id: String(batchId),
-            sellerId: String(sellerId),
-            name: (s.name && String(s.name).trim()) || t('mobile.labMatch.sellerFallback'),
+            // `s.name` is the PRODUCT name (not the seller's), so pass it only as
+            // a name when we also have the seller id; otherwise let the deal
+            // screen resolve the seller's real display name from the batch.
+            ...(sellerId != null
+              ? { sellerId: String(sellerId), name: (s.name && String(s.name).trim()) || '' }
+              : {}),
           },
         });
         return;
