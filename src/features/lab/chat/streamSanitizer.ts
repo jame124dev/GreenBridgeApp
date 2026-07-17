@@ -28,6 +28,12 @@ export function messageHasDraftCard(cards?: { type: string }[]): boolean {
 }
 
 const FIELD_BULLET_RE = /^\s*[-*]\s+\*\*[^*]+:\*\*/; // "- **Label:** value"
+// A line that is ONLY a bold section label ("**Preview Matches:**", "###
+// **Matches:**") — when its list items get stripped next to a card, the
+// orphaned header must go with them (device-observed dangling "Preview
+// Matches:" above the WTB card). Deliberately requires the ** wrapper so
+// ordinary short prose lines ending in ":" are never touched.
+const SECTION_HEADER_BOLD_RE = /^\s*(?:#{1,6}\s+)?\*\*[^*\n]{1,40}:?\*\*:?\s*$/;
 /** Collapse the redundant field-dump when a draft card accompanies the prose:
  *  drop the "**Label:** value" bullets and the dangling "…here are the details:"
  *  lead-in, leaving just the opening + closing sentence (e.g. "Your draft is
@@ -50,7 +56,11 @@ export function stripDraftFieldDump(text: string): string {
     // same shape-variance as the result-card dump) — with a draft card present,
     // every prose list item mirrors the card/preview, so drop them all.
     .filter(
-      (l) => !FIELD_BULLET_RE.test(l) && !LIST_ITEM_RE.test(l) && !IMAGE_ONLY_LINE_RE.test(l),
+      (l) =>
+        !FIELD_BULLET_RE.test(l) &&
+        !LIST_ITEM_RE.test(l) &&
+        !SECTION_HEADER_BOLD_RE.test(l) &&
+        !IMAGE_ONLY_LINE_RE.test(l),
     )
     .map((l) => l.trimEnd())
     .join('\n')
@@ -90,7 +100,9 @@ const LIST_ITEM_RE = /^\s*(?:[-*]|\d+\.)\s+/;
 export function stripCardFieldDump(text: string): string {
   return text
     .split('\n')
-    .filter((l) => !LIST_ITEM_RE.test(l) && !IMAGE_ONLY_LINE_RE.test(l))
+    .filter(
+      (l) => !LIST_ITEM_RE.test(l) && !SECTION_HEADER_BOLD_RE.test(l) && !IMAGE_ONLY_LINE_RE.test(l),
+    )
     .map((l) => l.trimEnd())
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')

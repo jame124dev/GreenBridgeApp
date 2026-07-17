@@ -4107,6 +4107,7 @@
       "sources": "แหล่งที่มา:"
     },
     "labChat": {
+      "newChat": "แชทใหม่",
       "genericError": "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง",
       "back": "กลับ",
       "headerTitle": {

@@ -4123,6 +4123,7 @@
       "sources": "ソース："
     },
     "labChat": {
+      "newChat": "新しいチャット",
       "genericError": "問題が発生しました。もう一度お試しください。",
       "back": "戻る",
       "headerTitle": {

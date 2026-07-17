@@ -4194,6 +4194,7 @@
       "sources": "來源："
     },
     "labChat": {
+      "newChat": "新對話",
       "genericError": "出了點問題，請重試。",
       "back": "返回",
       "headerTitle": {

@@ -29,7 +29,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
-import { ArrowUp, Camera, ChevronDown, ChevronLeft, Paperclip, Square } from 'lucide-react-native';
+import { ArrowUp, Camera, ChevronDown, ChevronLeft, Paperclip, Square, SquarePen } from 'lucide-react-native';
 
 import { fonts, radius, spacing } from '@/constants/theme';
 import { usePop } from '@/animations/recipes';
@@ -216,7 +216,25 @@ function LabChatScreen() {
         <Text style={styles.headerTitle}>
           {mode === 'sell' ? t('mobile.labChat.headerTitle.sell') : t('mobile.labChat.headerTitle.buy')}
         </Text>
-        <View style={styles.backBtn} />
+        {/* New chat — mint a fresh conversation_id and remount. Without this the
+            MMKV-persisted id lives FOREVER and the assistant's Redis memory drags
+            old context into every new question (device-observed: a days-old draft
+            flow biased "I want a cnc machine" away from search-first). replace()
+            without params so a stale ?q= can't re-send its query. */}
+        <Pressable
+          onPress={() => {
+            haptics.tap();
+            chat.stop();
+            useSession.getState().reset();
+            router.replace('/(lab)/chat');
+          }}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('mobile.labChat.newChat')}
+          style={styles.backBtn}
+        >
+          <SquarePen size={20} color={inkColor} />
+        </Pressable>
       </View>
 
       {/* Keyboard avoidance = flex column + a bottom padding equal to the live

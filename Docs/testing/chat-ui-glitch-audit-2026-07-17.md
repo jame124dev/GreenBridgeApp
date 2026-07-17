@@ -201,3 +201,27 @@ written, burying the conversation. Shipped (emulator-verified end-to-end):
 
 Suite: 29 suites / 361 tests green, tsc + eslint clean. i18n ×6 locales
 (viewAllResults/pagerOf/openListing + labCommon.close).
+
+
+---
+
+## Round 3 — history contamination (same day, user-driven)
+
+User observed: in a long-lived conversation, "I want a cnc machine" skipped the
+search and produced a draft (sometimes card-less, dumping Title/Keywords prose
+with an orphaned "**Preview Matches:**" header). Fresh conversations behaved
+correctly 3/3 — the model weighs conversation history over the routing rules.
+
+Fixes (all verified: SSE on dev+prod, emulator end-to-end):
+1. **Backend search-before-draft conversation gate** (assistant 2144726, LIVE on
+   prod): `search_products` marks the conversation "results shown" in Redis;
+   `draft_want_to_buy` defers for any conversation that has never shown results
+   — the model is forced to search first. Confirm flows ("yes, save the alert")
+   pass because the prior search set the flag. Hardest case verified: pure
+   alert phrasing on a fresh conv → model tried to draft → deferred → searched.
+2. **Client strip: orphaned bold section headers** ("**Preview Matches:**")
+   dropped next to cards, both strip families + regression tests.
+3. **"New chat" header button** — the MMKV conversation_id previously lived
+   FOREVER with no reset caller; users could never escape a contaminated
+   conversation. The pencil button mints a fresh id (session reset + param-less
+   route replace). i18n ×6.

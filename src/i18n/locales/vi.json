@@ -4208,6 +4208,7 @@
       "sources": "Nguồn:"
     },
     "labChat": {
+      "newChat": "Cuộc trò chuyện mới",
       "genericError": "Đã xảy ra lỗi. Vui lòng thử lại.",
       "back": "Quay lại",
       "headerTitle": {

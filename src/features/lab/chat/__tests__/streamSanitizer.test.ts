@@ -326,3 +326,27 @@ describe('streamSanitizer — draft-card plain-bullet leak (emulator-observed)',
     );
   });
 });
+
+describe('streamSanitizer — orphaned section header (device-observed)', () => {
+  it('drops a dangling "**Preview Matches:**" header whose list was stripped (draft card)', () => {
+    const prod = [
+      "Here's your draft for a Want-To-Buy request for a CNC machine:",
+      '',
+      '**Preview Matches:**',
+      '- **2017 JIH-I Milling Machine**',
+      '- Condition: Used',
+      '',
+      'You can review or refine it, then save to get alerts.',
+    ].join('\n');
+    const cards = [{ type: 'wtb_draft' }];
+    expect(streamSafeText(prod, cards, true)).toBe(
+      "Here's your draft for a Want-To-Buy request for a CNC machine:\n\nYou can review or refine it, then save to get alerts.",
+    );
+  });
+  it('drops "### Matches:" style bold headers next to a results card, keeps normal prose colons', () => {
+    const cards = [{ type: 'product_list' }];
+    expect(streamSafeText('Found these:\n\n### **Matches:**\n- **X**\n\nAnything else?', cards, true)).toBe(
+      'Found these:\n\nAnything else?',
+    );
+  });
+});

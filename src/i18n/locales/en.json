@@ -4237,6 +4237,7 @@
       "sources": "Sources:"
     },
     "labChat": {
+      "newChat": "New chat",
       "genericError": "Something went wrong. Please try again.",
       "back": "Back",
       "headerTitle": {
