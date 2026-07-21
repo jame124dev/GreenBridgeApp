@@ -626,6 +626,7 @@ export const useScanDraft = create<ScanDraftState>((set, get) => ({
       queuedItems: migratedQueued,
       sessionVisibility: blob.sessionVisibility ?? 'PUBLIC',
       networkSellers: blob.networkSellers ?? [],
+      editingGroupedItem: blob.editingGroupedItem ?? false,
       mergedSingle: blob.mergedSingle ?? null,
       detectionSummary: blob.detectionSummary,
       detectionConfidence: blob.detectionConfidence,
@@ -634,7 +635,7 @@ export const useScanDraft = create<ScanDraftState>((set, get) => ({
       pendingDetection: null,
       hydrated: true,
     });
-    persistSession(get());
+    persistSession(snapshot(get));
   },
   setListingMode: (mode) => {
     const next = { ...snapshot(get), mode };

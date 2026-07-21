@@ -42,4 +42,29 @@ describe('hydrateFromServer', () => {
     expect(useScanDraft.getState().current?.title).toBe('Centrifuge');
     expect(useScanDraft.getState().mode).toBe('single');
   });
+
+  it('resets a stale editingGroupedItem flag from a prior grouped-edit session', async () => {
+    // Put the store into a grouped-edit state first.
+    const groupedBlob: any = {
+      mode: 'grouped',
+      queuedItems: [],
+      current: { id: 'i0', title: 'Old Grouped Item', photos: [], productIds: [] },
+      sessionVisibility: 'public',
+      networkSellers: [],
+      editingGroupedItem: true,
+    };
+    await useScanDraft.getState().hydrateFromServer(groupedBlob);
+    expect(useScanDraft.getState().editingGroupedItem).toBe(true);
+
+    // Now hydrate a fresh (non-grouped-edit) blob — the stale flag must not survive.
+    const blob: any = {
+      mode: 'single',
+      queuedItems: [],
+      current: { id: 'i1', title: 'Centrifuge', photos: [], productIds: [] },
+      sessionVisibility: 'public',
+      networkSellers: [],
+    };
+    await useScanDraft.getState().hydrateFromServer(blob);
+    expect(useScanDraft.getState().editingGroupedItem).toBe(false);
+  });
 });
