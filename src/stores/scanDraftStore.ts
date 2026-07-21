@@ -184,7 +184,7 @@ export type DraftGcs = {
   objectNameByPhotoUri: Record<string, string>;
 };
 
-type PersistedScan = {
+export type PersistedScan = {
   mode: ListingMode;
   queuedItems: DraftItem[];
   current: DraftItem | null;
