@@ -535,6 +535,15 @@ type ScanDraftState = {
    * takes the session directly instead of reading it from MMKV.
    */
   hydrateFromServer: (blob: PersistedScan) => Promise<void>;
+  /**
+   * Task 8: an up-to-date, server-shippable snapshot of the current scan
+   * session. Flushes any in-flight debounced `patch()` write first (same
+   * reasoning as `flushPendingPatch()` call sites elsewhere in this file —
+   * without it, a keystroke-triggered patch still sitting in the 250ms
+   * debounce window could lose the race against a "Save as draft" tap and
+   * ship a stale snapshot to the server).
+   */
+  snapshotForServer: () => PersistedScan;
   setListingMode: (mode: ListingMode) => void;
   patchSession: (partial: {
     sessionVisibility?: BatchVisibility;
@@ -636,6 +645,10 @@ export const useScanDraft = create<ScanDraftState>((set, get) => ({
       hydrated: true,
     });
     persistSession(snapshot(get));
+  },
+  snapshotForServer: () => {
+    flushPendingPatch();
+    return snapshot(get);
   },
   setListingMode: (mode) => {
     const next = { ...snapshot(get), mode };

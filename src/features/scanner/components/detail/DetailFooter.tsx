@@ -1,6 +1,8 @@
 import { Alert, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { draftsEnabled } from '@/lib/flags';
+
 import { FooterButton } from './FooterButton';
 
 interface Props {
@@ -13,6 +15,12 @@ interface Props {
   onAddAnother: () => void;
   onReviewGroup: () => void;
   onSaveAndReturnToReview: () => void;
+  /** Task 8 — AI-scan drafts. Save the in-progress single-mode listing to the
+   *  server as a resumable draft. Optional: only rendered (in place of the
+   *  Preview button) when `draftsEnabled()` is true AND a handler is passed —
+   *  the detail screen omits it entirely when the flag is off. */
+  onSaveDraft?: () => void;
+  savingDraft?: boolean;
 }
 
 /**
@@ -35,6 +43,8 @@ export function DetailFooter({
   onAddAnother,
   onReviewGroup,
   onSaveAndReturnToReview,
+  onSaveDraft,
+  savingDraft,
 }: Props) {
   const { t } = useTranslation();
 
@@ -76,18 +86,28 @@ export function DetailFooter({
 
   return (
     <View className={footerCls}>
-      <FooterButton
-        label={t('mobile.detail.preview', { defaultValue: 'Preview' })}
-        onPress={() =>
-          Alert.alert(
-            t('mobile.detail.preview', { defaultValue: 'Preview' }),
-            t('mobile.detail.previewSoon', {
-              defaultValue: 'Listing preview is coming soon.',
-            }),
-          )
-        }
-        flex={1}
-      />
+      {draftsEnabled() && onSaveDraft ? (
+        <FooterButton
+          label={t('mobile.detail.saveDraft', { defaultValue: 'Save as draft' })}
+          onPress={onSaveDraft}
+          loading={!!savingDraft}
+          disabled={!!submitting}
+          flex={1}
+        />
+      ) : (
+        <FooterButton
+          label={t('mobile.detail.preview', { defaultValue: 'Preview' })}
+          onPress={() =>
+            Alert.alert(
+              t('mobile.detail.preview', { defaultValue: 'Preview' }),
+              t('mobile.detail.previewSoon', {
+                defaultValue: 'Listing preview is coming soon.',
+              }),
+            )
+          }
+          flex={1}
+        />
+      )}
       <FooterButton
         label={t('mobile.detail.submitListing')}
         onPress={onSubmitSingle}

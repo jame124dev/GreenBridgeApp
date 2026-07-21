@@ -1,8 +1,10 @@
+import { useCallback, useState } from 'react';
 import { FormProvider } from 'react-hook-form';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner-native';
 
 import { getRequiredStatus } from '@/features/scanner/requiredStatus';
 import {
@@ -23,6 +25,9 @@ import {
 } from '@/features/scanner/components/detail';
 import { routes } from '@/lib/routes';
 import { useScanDraft } from '@/stores/scanDraftStore';
+import { useCreateDraft, useUpdateDraft } from '@/services/drafts/draftHooks';
+import { buildScanDraftPayload } from '@/services/drafts/draftPayload';
+import { getSiteType } from '@/services/scanner/buildFormData';
 
 /**
  * Scan detail route — thin composition. Form ownership, submit modes, photo
@@ -46,6 +51,57 @@ export default function DetailScreen() {
 
   const controller = useDetailController();
   const { form, submitting, addMorePhotos, onSubmitSingle, onAddAnother, onReviewGroup, onSaveAndReturnToReview } = controller;
+
+  // Task 8 — "Save as draft". First save on a session calls `createDraft`;
+  // once we have a server id + updated_at, subsequent saves switch to
+  // `updateDraft` (optimistic-concurrency PUT keyed on expectedUpdatedAt).
+  // Both mutations return METADATA ONLY (id + updated_at, no payload/
+  // session_uuid echoed back) — see draftApi.ts's verified-against-live-
+  // backend note, so we never read anything else off the response.
+  const createDraft = useCreateDraft();
+  const updateDraft = useUpdateDraft();
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [serverDraftId, setServerDraftId] = useState<string | null>(null);
+  const [serverUpdatedAt, setServerUpdatedAt] = useState<string | null>(null);
+
+  const handleSaveDraft = useCallback(async () => {
+    const snapshot = useScanDraft.getState().snapshotForServer();
+    const gcs = snapshot.gcs;
+    const imagesOrdered = gcs
+      ? Object.entries(gcs.objectNameByPhotoUri).map(([uri, objectName]) => ({ url: uri, objectName }))
+      : [];
+    const built = buildScanDraftPayload(snapshot, imagesOrdered);
+    const siteType = getSiteType();
+    const sessionUuid = serverDraftId ?? snapshot.current?.id ?? `temp-${snapshot.mode}-${Date.now()}`;
+    try {
+      setSavingDraft(true);
+      if (serverDraftId && serverUpdatedAt) {
+        const res = await updateDraft.mutateAsync({
+          id: serverDraftId,
+          expectedUpdatedAt: serverUpdatedAt,
+          patch: { title: built.title, product_count: built.product_count, payload: built.payload },
+        });
+        setServerUpdatedAt(res.updated_at);
+      } else {
+        const res = await createDraft.mutateAsync({
+          session_uuid: sessionUuid,
+          flow: 'ai',
+          mode: built.mode,
+          title: built.title,
+          site_type: siteType,
+          product_count: built.product_count,
+          payload: built.payload,
+        });
+        setServerDraftId(res.id);
+        setServerUpdatedAt(res.updated_at);
+      }
+      toast.success(t('mobile.drafts.saved', { defaultValue: 'Draft saved' }));
+    } catch {
+      toast.error(t('mobile.drafts.saveFailed', { defaultValue: 'Could not save draft' }));
+    } finally {
+      setSavingDraft(false);
+    }
+  }, [serverDraftId, serverUpdatedAt, createDraft, updateDraft, t]);
 
   if (!draft) return null;
 
@@ -92,6 +148,8 @@ export default function DetailScreen() {
           onAddAnother={onAddAnother}
           onReviewGroup={onReviewGroup}
           onSaveAndReturnToReview={onSaveAndReturnToReview}
+          onSaveDraft={handleSaveDraft}
+          savingDraft={savingDraft}
         />
       </SafeAreaView>
     </FormProvider>
