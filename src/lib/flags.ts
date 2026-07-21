@@ -72,3 +72,16 @@ export const DETECT_STREAM_ENABLED = process.env.EXPO_PUBLIC_DETECT_STREAM === '
  * `EXPO_PUBLIC_MARKETPLACE_PREWARM=0` in `.env` and restart Metro to disable.
  */
 export const MARKETPLACE_PREWARM_ENABLED = process.env.EXPO_PUBLIC_MARKETPLACE_PREWARM !== '0';
+
+// --- AI-scan drafts + background recognition (opt-in, default OFF) ---
+export const DRAFTS_ENABLED = process.env.EXPO_PUBLIC_DRAFTS === '1';
+export const BACKGROUND_RECOGNITION_ENABLED =
+  process.env.EXPO_PUBLIC_BACKGROUND_RECOGNITION === '1';
+
+/** Function indirection so these can later be remote-config driven. */
+export function draftsEnabled(): boolean {
+  return DRAFTS_ENABLED;
+}
+export function backgroundRecognitionEnabled(): boolean {
+  return BACKGROUND_RECOGNITION_ENABLED;
+}
