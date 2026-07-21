@@ -37,7 +37,7 @@ import {
 } from '@/constants/theme';
 import { pop, reducedFade, rise, usePressScale } from '@/animations/recipes';
 import { haptics } from '@/lib/haptics';
-import { LAB_CHAT_ENABLED } from '@/lib/flags';
+import { LAB_CHAT_ENABLED, draftsEnabled } from '@/lib/flags';
 import { useComposer } from '@/features/lab/stores/composerStore';
 import { useThread } from '@/features/lab/stores/threadStore';
 import { useLabTurn } from '@/features/lab/hooks/useLabTurn';
@@ -47,6 +47,9 @@ import {
   DraftEquipmentGlyph,
   DraftSparkle,
 } from '@/features/lab/components/draftGlyphs';
+import { useCreateDraft } from '@/services/drafts/draftHooks';
+import { buildLabDraftPayload } from '@/services/drafts/draftPayload';
+import { getSiteType } from '@/services/scanner/buildFormData';
 
 /* -------------------------------------------------------------------------- */
 /*  Local constants — one-off prototype greys + shadows (co-located, not tokens)*/
@@ -144,6 +147,7 @@ const DELAY = {
   demand: 400,
   ctaPrimary: 450,
   ctaSecondary: 530,
+  ctaTertiary: 610,
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -277,6 +281,40 @@ export default function LabDraft() {
     haptics.tap();
     toast(t('mobile.labDraft.editComingSoon'));
   };
+
+  // ── Save as draft (Task 12) ────────────────────────────────────────────
+  // Persists the current lab draft frame via the shared drafts API (Task 3).
+  // The backend's top-level `createDraft` `mode` field only ever accepts
+  // 'single' | 'multi' (a lab listing/request is always one product) — the
+  // real sell/buy distinction travels inside `payload.mode`, stamped by
+  // `buildLabDraftPayload` (Task 6). That is how Task 13 tells lab drafts
+  // apart from scan drafts. Independent of Publish/CONFIRM CREATE: saving a
+  // draft never writes the listing/request itself.
+  const createDraft = useCreateDraft();
+  const [savingDraft, setSavingDraft] = useState(false);
+
+  const onSaveDraft = useCallback(async () => {
+    haptics.tap();
+    const built = buildLabDraftPayload(liveDraftFrame, mode);
+    const siteType = getSiteType();
+    try {
+      setSavingDraft(true);
+      await createDraft.mutateAsync({
+        session_uuid: `lab-${mode}-${Date.now()}`,
+        flow: 'ai',
+        mode: 'single', // top-level contract — NOT the lab sell/buy mode, see note above
+        title: built.title,
+        site_type: siteType,
+        product_count: 1,
+        payload: built.payload,
+      });
+      toast.success(t('mobile.drafts.saved', { defaultValue: 'Draft saved' }));
+    } catch {
+      toast.error(t('mobile.drafts.saveFailed', { defaultValue: 'Could not save draft' }));
+    } finally {
+      setSavingDraft(false);
+    }
+  }, [liveDraftFrame, mode, createDraft, t]);
 
   const publishHint = t(`mobile.labDraft.publishHint.${mode}`);
 
@@ -476,6 +514,26 @@ export default function LabDraft() {
             }}
           />
         </Animated.View>
+        {draftsEnabled() && (
+          <Animated.View entering={enterPop(DELAY.ctaTertiary)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              haptic={false}
+              loading={savingDraft}
+              disabled={submitting}
+              label={t('mobile.drafts.saveDraft', { defaultValue: 'Save as draft' })}
+              onPress={onSaveDraft}
+              style={{
+                borderWidth: 1.4,
+                borderColor: DRAFT_COLORS.secondaryBorder,
+                backgroundColor: '#fff',
+                height: 54,
+                borderRadius: 16,
+              }}
+            />
+          </Animated.View>
+        )}
       </View>
     </Screen>
   );
