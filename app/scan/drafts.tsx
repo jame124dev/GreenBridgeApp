@@ -15,6 +15,9 @@ import { safeBack } from '@/lib/safeBack';
 import { haptics } from '@/lib/haptics';
 import { brand } from '@/constants/theme';
 import DraftCard from '@/features/scanner/components/drafts/DraftCard';
+import { isLabDraft, labResumeRoute } from '@/features/lab/labResumeRoute';
+import { useComposer } from '@/features/lab/stores/composerStore';
+import { useThread } from '@/features/lab/stores/threadStore';
 
 /**
  * Task 9 — the drafts list surface (`/scan/drafts`), reached from the
@@ -31,6 +34,16 @@ import DraftCard from '@/features/scanner/components/drafts/DraftCard';
  * A `pending-ai` draft (background recognition, Task 11) doesn't carry a
  * `PersistedScan` blob — that mapping is finished in Task 11/12; here we
  * degrade gracefully instead of guessing at a shape.
+ *
+ * Task 13 (scope-changed): this list ALSO serves the (lab) customer-app AI
+ * drafts saved from `app/(lab)/draft.tsx` (Task 12's "Save as draft"). Every
+ * draft row — seller and lab alike — carries a top-level `mode:
+ * 'single'|'multi'` (Task 2); the real sell/buy distinction only lives in the
+ * FETCHED `payload.mode`, stamped by `buildLabDraftPayload`
+ * (`src/services/drafts/draftPayload.ts`). `isLabDraft(detail)`
+ * (`src/features/lab/labResumeRoute.ts`) inspects that payload — never the
+ * summary's top-level `mode` — which is why it can only run here, after
+ * `getDraft(id)`, not against the list's `DraftSummary` rows.
  */
 export default function DraftsScreen() {
   const { t } = useTranslation();
@@ -44,6 +57,35 @@ export default function DraftsScreen() {
       setResumingId(id);
       try {
         const detail = await getDraft(id);
+
+        if (isLabDraft(detail)) {
+          // (lab) draft — branch to the lab draft screen instead of the
+          // seller scan-form hydrate below. `payload.mode` (sell/buy, NOT the
+          // draft's top-level 'single'/'multi' mode) drives the composer
+          // mode; `payload.labDraft` is the raw frame `buildLabDraftPayload`
+          // captured from `turn.draft` at save time (Task 12).
+          const p = detail.payload as { mode?: 'sell' | 'buy'; labDraft?: unknown };
+          const labMode: 'sell' | 'buy' = p.mode === 'buy' ? 'buy' : 'sell';
+          useComposer.getState().setMode(labMode);
+          // `reset()`, not `startTurn()`: `startTurn()` sets `turn.state` to
+          // 'STREAMING', and nothing here ever opens a real stream to carry it
+          // to a terminal frame — that state would be stuck forever, which
+          // silently no-ops the NEXT chat send in `app/(lab)/chat.tsx`
+          // (`send()` early-returns while `turn.status === 'streaming'`).
+          // `reset()` gives a clean IDLE turn; the reducer's `data` case
+          // (`turnReducer.ts` ~150-169) never touches `state`, so applying the
+          // frame below leaves `turn.status === 'idle'` while still setting
+          // `turn.draft` — exactly what `app/(lab)/draft.tsx`'s
+          // `liveDraftFrame` (`turn.draft`) renders from.
+          useThread.getState().reset();
+          useThread.getState().applyFrame({
+            type: 'data',
+            data: { type: labMode === 'buy' ? 'wtb_draft' : 'listing_draft', data: p.labDraft },
+          });
+          router.push(labResumeRoute() as never);
+          return;
+        }
+
         const kind = (detail.payload as { kind?: string } | undefined)?.kind;
         if (kind === 'pending-ai') {
           // Task 11/12 completes the pending-ai resume mapping — background
