@@ -3620,7 +3620,10 @@
       "continueWithoutAi": "Continue without AI",
       "subStatus_specs": "Looking up model specs…",
       "errorTitle": "We couldn't read your photos",
-      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2"
+      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2",
+      "continueInBackground": "Continue in background",
+      "leftToast": "We'll notify you when it's ready",
+      "failed": "Recognition failed — try again"
     },
     "review": {
       "heading": "Review AI results",
@@ -3740,6 +3743,7 @@
       "potentialProfit": "Potential profit",
       "profitInsight": "Selling on {{marketplace}} could earn you {{percent}}% more than scrap value alone.",
       "aiBadge": "AI",
+      "saveDraft": "Save as draft",
       "installOption": {
         "installed": {
           "label": "Installed",
@@ -3838,6 +3842,27 @@
       "expiredTitle": "Draft expired",
       "expiredBody": "Saved photos or documents are no longer on this device. Start a new scan."
     },
+    "drafts": {
+      "saved": "Draft saved",
+      "saveFailed": "Could not save draft",
+      "saveDraft": "Save as draft",
+      "continue": "Continue",
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete draft?",
+      "deleteConfirmBody": "\"{{title}}\" will be removed. This can't be undone.",
+      "deleteFailed": "Could not delete draft",
+      "empty": "No saved drafts yet",
+      "flowAi": "🤖 AI",
+      "flowManual": "✏️ Manual",
+      "itemCount_one": "{{count}} item",
+      "itemCount_other": "{{count}} items",
+      "loadError": "Could not load drafts",
+      "pendingAiNotReady": "This draft is still processing — check back soon.",
+      "readyToast": "Your draft is ready",
+      "resumeFailed": "Could not open this draft",
+      "yourDrafts": "Your drafts",
+      "yourDraftsDesc": "Resume a saved listing or request"
+    },
     "auth": {
       "welcomeBack": "Welcome back",
       "signInSubtitle": "Sign in to keep listing",
@@ -3871,7 +3896,8 @@
       "heading": "Profile",
       "role": "Role: {{role}}",
       "signOut": "Sign out",
-      "signingOut": "Signing out…"
+      "signingOut": "Signing out…",
+      "sectionActivity": "Activity"
     },
     "settings": {
       "title": "Settings",

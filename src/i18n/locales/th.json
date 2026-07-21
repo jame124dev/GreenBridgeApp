@@ -3523,7 +3523,10 @@
       "continueWithoutAi": "ทำต่อโดยไม่ใช้ AI",
       "subStatus_specs": "กำลังค้นหาข้อมูลจำเพาะของรุ่น…",
       "errorTitle": "เราไม่สามารถอ่านภาพของคุณได้",
-      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2"
+      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2",
+      "continueInBackground": "ทำงานต่อในพื้นหลัง",
+      "leftToast": "เราจะแจ้งเตือนเมื่อพร้อมแล้ว",
+      "failed": "การจดจำล้มเหลว — กรุณาลองใหม่อีกครั้ง"
     },
     "review": {
       "heading": "ตรวจสอบผลลัพธ์ของ AI",
@@ -3643,6 +3646,7 @@
       "potentialProfit": "กำไรที่อาจได้รับ",
       "profitInsight": "การขายบน {{marketplace}} อาจทำให้คุณได้กำไรมากกว่าการขายเป็นเศษวัสดุ {{percent}}%",
       "aiBadge": "AI",
+      "saveDraft": "บันทึกเป็นฉบับร่าง",
       "installOption": {
         "installed": {
           "label": "ติดตั้งแล้ว",
@@ -3737,6 +3741,27 @@
       "expiredTitle": "ฉบับร่างหมดอายุ",
       "expiredBody": "ไม่พบรูปหรือเอกสารที่บันทึกไว้บนเครื่องนี้ กรุณาเริ่มสแกนใหม่"
     },
+    "drafts": {
+      "saved": "บันทึกฉบับร่างแล้ว",
+      "saveFailed": "ไม่สามารถบันทึกฉบับร่างได้",
+      "saveDraft": "บันทึกเป็นฉบับร่าง",
+      "continue": "ดำเนินการต่อ",
+      "delete": "ลบ",
+      "deleteConfirmTitle": "ลบฉบับร่างนี้?",
+      "deleteConfirmBody": "\"{{title}}\" จะถูกลบออก และไม่สามารถย้อนกลับได้",
+      "deleteFailed": "ไม่สามารถลบฉบับร่างได้",
+      "empty": "ยังไม่มีฉบับร่างที่บันทึกไว้",
+      "flowAi": "🤖 AI",
+      "flowManual": "✏️ ด้วยตนเอง",
+      "itemCount_one": "{{count}} รายการ",
+      "itemCount_other": "{{count}} รายการ",
+      "loadError": "ไม่สามารถโหลดฉบับร่างได้",
+      "pendingAiNotReady": "ฉบับร่างนี้ยังอยู่ระหว่างประมวลผล — กรุณาตรวจสอบอีกครั้งในภายหลัง",
+      "readyToast": "ฉบับร่างของคุณพร้อมแล้ว",
+      "resumeFailed": "ไม่สามารถเปิดฉบับร่างนี้ได้",
+      "yourDrafts": "ฉบับร่างของคุณ",
+      "yourDraftsDesc": "ดำเนินการต่อกับประกาศหรือคำขอที่บันทึกไว้"
+    },
     "auth": {
       "welcomeBack": "ยินดีต้อนรับกลับมา",
       "signInSubtitle": "เข้าสู่ระบบเพื่อประกาศต่อ",
@@ -3770,7 +3795,8 @@
       "heading": "โปรไฟล์",
       "role": "บทบาท: {{role}}",
       "signOut": "ออกจากระบบ",
-      "signingOut": "กำลังออก…"
+      "signingOut": "กำลังออก…",
+      "sectionActivity": "กิจกรรม"
     },
     "settings": {
       "title": "ตั้งค่า",

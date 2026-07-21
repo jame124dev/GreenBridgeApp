@@ -3620,7 +3620,10 @@
       "continueWithoutAi": "Tiếp tục không dùng AI",
       "subStatus_specs": "Đang tra cứu thông số kỹ thuật…",
       "errorTitle": "Chúng tôi không đọc được ảnh của bạn",
-      "poweredBy": "ĐƯỢC HỖ TRỢ BỞI GREENBIDZ INDUSTRIAL VISION AI V4.2"
+      "poweredBy": "ĐƯỢC HỖ TRỢ BỞI GREENBIDZ INDUSTRIAL VISION AI V4.2",
+      "continueInBackground": "Tiếp tục ở chế độ nền",
+      "leftToast": "Chúng tôi sẽ thông báo khi sẵn sàng",
+      "failed": "Nhận diện thất bại — vui lòng thử lại"
     },
     "review": {
       "heading": "Xem lại kết quả AI",
@@ -3740,6 +3743,7 @@
       "potentialProfit": "Lợi nhuận tiềm năng",
       "profitInsight": "Bán trên {{marketplace}} có thể giúp bạn kiếm thêm {{percent}}% so với chỉ bán phế liệu.",
       "aiBadge": "AI",
+      "saveDraft": "Lưu dưới dạng bản nháp",
       "installOption": {
         "installed": {
           "label": "Đã lắp đặt",
@@ -3838,6 +3842,27 @@
       "expiredTitle": "Bản nháp đã hết hạn",
       "expiredBody": "Ảnh hoặc tài liệu đã lưu không còn trên thiết bị này. Hãy bắt đầu quét mới."
     },
+    "drafts": {
+      "saved": "Đã lưu bản nháp",
+      "saveFailed": "Không thể lưu bản nháp",
+      "saveDraft": "Lưu dưới dạng bản nháp",
+      "continue": "Tiếp tục",
+      "delete": "Xóa",
+      "deleteConfirmTitle": "Xóa bản nháp?",
+      "deleteConfirmBody": "\"{{title}}\" sẽ bị xóa. Không thể hoàn tác.",
+      "deleteFailed": "Không thể xóa bản nháp",
+      "empty": "Chưa có bản nháp nào được lưu",
+      "flowAi": "🤖 AI",
+      "flowManual": "✏️ Thủ công",
+      "itemCount_one": "{{count}} sản phẩm",
+      "itemCount_other": "{{count}} sản phẩm",
+      "loadError": "Không thể tải bản nháp",
+      "pendingAiNotReady": "Bản nháp này vẫn đang được xử lý — vui lòng quay lại sau.",
+      "readyToast": "Bản nháp của bạn đã sẵn sàng",
+      "resumeFailed": "Không thể mở bản nháp này",
+      "yourDrafts": "Bản nháp của bạn",
+      "yourDraftsDesc": "Tiếp tục tin đăng hoặc yêu cầu đã lưu"
+    },
     "auth": {
       "welcomeBack": "Chào mừng trở lại",
       "signInSubtitle": "Đăng nhập để tiếp tục đăng tin",
@@ -3871,7 +3896,8 @@
       "heading": "Hồ sơ",
       "role": "Vai trò: {{role}}",
       "signOut": "Đăng xuất",
-      "signingOut": "Đang đăng xuất…"
+      "signingOut": "Đang đăng xuất…",
+      "sectionActivity": "Hoạt động"
     },
     "settings": {
       "title": "Cài đặt",

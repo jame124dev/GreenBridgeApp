@@ -3539,7 +3539,10 @@
       "continueWithoutAi": "AI を使わずに進む",
       "subStatus_specs": "モデル仕様を検索中…",
       "errorTitle": "写真を読み取れませんでした",
-      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2"
+      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2",
+      "continueInBackground": "バックグラウンドで続ける",
+      "leftToast": "準備ができたらお知らせします",
+      "failed": "認識に失敗しました — もう一度お試しください"
     },
     "review": {
       "heading": "AI 結果を確認",
@@ -3659,6 +3662,7 @@
       "potentialProfit": "潜在的な利益",
       "profitInsight": "{{marketplace}} で出品すれば、廃材として売るより {{percent}}% 多く稼げます。",
       "aiBadge": "AI",
+      "saveDraft": "下書きとして保存",
       "installOption": {
         "installed": {
           "label": "設置済み",
@@ -3753,6 +3757,27 @@
       "expiredTitle": "下書きの有効期限切れ",
       "expiredBody": "この端末に保存された写真・書類が見つかりません。新しくスキャンしてください。"
     },
+    "drafts": {
+      "saved": "下書きを保存しました",
+      "saveFailed": "下書きを保存できませんでした",
+      "saveDraft": "下書きとして保存",
+      "continue": "続ける",
+      "delete": "削除",
+      "deleteConfirmTitle": "下書きを削除しますか？",
+      "deleteConfirmBody": "「{{title}}」が削除されます。この操作は元に戻せません。",
+      "deleteFailed": "下書きを削除できませんでした",
+      "empty": "保存された下書きはまだありません",
+      "flowAi": "🤖 AI",
+      "flowManual": "✏️ 手動",
+      "itemCount_one": "{{count}} 件",
+      "itemCount_other": "{{count}} 件",
+      "loadError": "下書きを読み込めませんでした",
+      "pendingAiNotReady": "この下書きはまだ処理中です — しばらくしてから確認してください。",
+      "readyToast": "下書きの準備ができました",
+      "resumeFailed": "この下書きを開けませんでした",
+      "yourDrafts": "下書き一覧",
+      "yourDraftsDesc": "保存した出品や依頼を再開します"
+    },
     "auth": {
       "welcomeBack": "おかえりなさい",
       "signInSubtitle": "サインインして出品を続行",
@@ -3786,7 +3811,8 @@
       "heading": "プロフィール",
       "role": "役割：{{role}}",
       "signOut": "サインアウト",
-      "signingOut": "サインアウト中…"
+      "signingOut": "サインアウト中…",
+      "sectionActivity": "アクティビティ"
     },
     "settings": {
       "title": "設定",

@@ -3604,7 +3604,10 @@
       "continueWithoutAi": "不使用 AI 繼續",
       "subStatus_specs": "查詢型號規格…",
       "errorTitle": "無法讀取您的照片",
-      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2"
+      "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2",
+      "continueInBackground": "在背景中繼續",
+      "leftToast": "準備好後我們會通知您",
+      "failed": "辨識失敗 — 請再試一次"
     },
     "review": {
       "heading": "檢視 AI 結果",
@@ -3724,6 +3727,7 @@
       "potentialProfit": "潛在獲利",
       "profitInsight": "在 {{marketplace}} 上架可比直接賣廢料多賺 {{percent}}%。",
       "aiBadge": "AI",
+      "saveDraft": "儲存為草稿",
       "installOption": {
         "installed": {
           "label": "已安裝",
@@ -3818,6 +3822,27 @@
       "expiredTitle": "草稿已過期",
       "expiredBody": "本機已找不到先前儲存的照片或檔案，請重新掃描。"
     },
+    "drafts": {
+      "saved": "草稿已儲存",
+      "saveFailed": "無法儲存草稿",
+      "saveDraft": "儲存為草稿",
+      "continue": "繼續",
+      "delete": "刪除",
+      "deleteConfirmTitle": "刪除草稿？",
+      "deleteConfirmBody": "「{{title}}」將被移除，此操作無法復原。",
+      "deleteFailed": "無法刪除草稿",
+      "empty": "尚無已儲存的草稿",
+      "flowAi": "🤖 AI",
+      "flowManual": "✏️ 手動",
+      "itemCount_one": "{{count}} 件",
+      "itemCount_other": "{{count}} 件",
+      "loadError": "無法載入草稿",
+      "pendingAiNotReady": "此草稿仍在處理中 — 請稍後再查看。",
+      "readyToast": "您的草稿已就緒",
+      "resumeFailed": "無法開啟此草稿",
+      "yourDrafts": "您的草稿",
+      "yourDraftsDesc": "繼續已儲存的刊登或需求"
+    },
     "auth": {
       "welcomeBack": "歡迎回來",
       "signInSubtitle": "登入以繼續刊登",
@@ -3851,7 +3876,8 @@
       "heading": "個人資料",
       "role": "身分：{{role}}",
       "signOut": "登出",
-      "signingOut": "登出中…"
+      "signingOut": "登出中…",
+      "sectionActivity": "活動"
     },
     "settings": {
       "title": "設定",
