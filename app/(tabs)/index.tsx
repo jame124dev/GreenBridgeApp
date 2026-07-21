@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import type { Href } from 'expo-router';
 import { Camera, MapPin, Globe } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,7 +22,7 @@ cssInterop(LinearGradient, {
 import { Screen, Text, LanguageSheet } from '@/components/ui';
 import { RecentSubmissionsList } from '@/components/scanner/RecentSubmissionsList';
 import { haptics } from '@/lib/haptics';
-import { SMART_DETECT_ENABLED } from '@/lib/flags';
+import { SMART_DETECT_ENABLED, draftsEnabled } from '@/lib/flags';
 import { useAuth } from '@/stores/authStore';
 import { useScanDraft } from '@/stores/scanDraftStore';
 import { useSellerLocation } from '@/features/location/useSellerLocation';
@@ -226,6 +227,30 @@ export default function ScanHomeScreen() {
           >
             <Text variant="bodySm" tone="brand" className="font-semibold text-center">
               {t('mobile.home.scanOneByOne')}
+            </Text>
+          </Pressable>
+        )}
+
+        {/* Task 9 — resume saved drafts. Deliberately does NOT call
+            `useScanDraft.getState().reset()` (that's `startScan`'s "new
+            scan" behavior) — this surface exists specifically to let the
+            user pick back up an in-progress session. */}
+        {draftsEnabled() && (
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              // Not added to `routes.ts` (Task 9 brief scopes edits to
+              // app/scan/drafts.tsx, DraftCard.tsx, this file, and its test —
+              // a `routes.scanDrafts` entry can follow whenever routes.ts is
+              // next touched).
+              router.push('/scan/drafts' as unknown as Href);
+            }}
+            hitSlop={8}
+            accessibilityRole="button"
+            className="self-center py-md mt-xs active:opacity-80"
+          >
+            <Text variant="bodySm" tone="brand" className="font-semibold text-center">
+              {t('mobile.drafts.yourDrafts', { defaultValue: 'Your drafts' })}
             </Text>
           </Pressable>
         )}
