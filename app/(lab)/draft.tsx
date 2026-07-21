@@ -297,13 +297,19 @@ export default function LabDraft() {
     haptics.tap();
     const built = buildLabDraftPayload(liveDraftFrame, mode);
     const siteType = getSiteType();
+    // `buildLabDraftPayload` only reads `frame.title` (top level), but the lab
+    // chat frame nests it at `draft.fields.product_title.value` — so its own
+    // guess falls through to "Untitled listing"/"Buying request".
+    // `draftFromFrame` already defensively extracts a real display title off
+    // that nested shape (it's what `vm` above renders), so prefer that.
+    const title = draftFromFrame(liveDraftFrame, mode)?.title || built.title;
     try {
       setSavingDraft(true);
       await createDraft.mutateAsync({
         session_uuid: `lab-${mode}-${Date.now()}`,
         flow: 'ai',
         mode: 'single', // top-level contract — NOT the lab sell/buy mode, see note above
-        title: built.title,
+        title,
         site_type: siteType,
         product_count: 1,
         payload: built.payload,

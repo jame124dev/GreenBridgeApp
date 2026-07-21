@@ -13,7 +13,7 @@
 // Flow: home → chat. Tab bar HIDDEN (pushed full-screen). Static path (flag off)
 // never reaches this screen — Home keeps its Processing navigation.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -28,6 +28,7 @@ import { useKeyboardInset } from '@/features/lab/chat/hooks/useKeyboardInset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner-native';
 import i18n from '@/i18n';
 import { ArrowUp, Camera, ChevronDown, ChevronLeft, Paperclip, Square, SquarePen } from 'lucide-react-native';
 
@@ -45,6 +46,7 @@ import {
   type LabListingEditSheetRef,
 } from '@/features/lab/chat/LabListingEditSheet';
 import { LabListingGapFiller } from '@/features/lab/chat/LabListingGapFiller';
+import { buildLabChatDraftReq } from '@/features/lab/chat/draftReq';
 import { useSession } from '@/features/lab/stores/sessionStore';
 import {
   ChatThemeProvider,
@@ -54,7 +56,9 @@ import {
   useColor,
 } from '@/features/lab/chat/theme';
 import { useChatController } from '@/features/lab/chat/controllers/useChatController';
-import { CHAT_UI_V2 } from '@/lib/flags';
+import { CHAT_UI_V2, draftsEnabled } from '@/lib/flags';
+import { useCreateDraft } from '@/services/drafts/draftHooks';
+import { getSiteType } from '@/services/scanner/buildFormData';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -149,6 +153,30 @@ function LabChatScreen() {
   const initialQuery = typeof params.q === 'string' ? params.q : '';
   const chat = useChatController({ initialQuery, onDidSend, onPresentEditSheet });
   const { mode, apiMode } = chat;
+
+  // ── Save as draft (Task 17) ────────────────────────────────────────────
+  // Task 12's Save button lives on draft.tsx, which this live chat flow never
+  // navigates to (the draft streams in as an inline card here instead) — so
+  // without this a lab customer using the flow they actually reach from Home
+  // "List it" has no way to save. Reuses the same shared drafts API + payload
+  // contract as draft.tsx (buildLabChatDraftReq wraps buildLabDraftPayload):
+  // the top-level `mode` createDraft accepts is always 'single' (never the lab
+  // sell/buy mode) — that distinction rides in `payload.mode` instead.
+  const createDraft = useCreateDraft();
+  const [savingDraft, setSavingDraft] = useState(false);
+  const onSaveDraft = useCallback(async () => {
+    if (!chat.latestDraft) return;
+    haptics.tap();
+    try {
+      setSavingDraft(true);
+      await createDraft.mutateAsync(buildLabChatDraftReq(chat.latestDraft, mode, getSiteType()));
+      toast.success(t('mobile.drafts.saved', { defaultValue: 'Draft saved' }));
+    } catch {
+      toast.error(t('mobile.drafts.saveFailed', { defaultValue: 'Could not save draft' }));
+    } finally {
+      setSavingDraft(false);
+    }
+  }, [chat.latestDraft, mode, createDraft, t]);
 
   // The id of the most-recent USER message — the one to pin to the top. Changes
   // on every send (and covers the initial `?q=` seed), which re-arms the pin.
@@ -383,6 +411,17 @@ function LabChatScreen() {
           ]}
           onLayout={(e) => setComposerHeight(e.nativeEvent.layout.height)}
         >
+          {/* Save as draft (Task 17) — independent of showGapFiller so it stays
+              available once every gap is filled (the gap filler unmounts, but
+              the draft is still there to save). Flag-gated same as draft.tsx's
+              button; only needs a draft to exist. */}
+          {draftsEnabled() && chat.latestDraft ? (
+            <SaveDraftBar
+              label={t('mobile.drafts.saveDraft', { defaultValue: 'Save as draft' })}
+              saving={savingDraft}
+              onPress={onSaveDraft}
+            />
+          ) : null}
           {/* In-chat listing gap filler (sell mode, draft still has gaps). A
               slide-through stepper anchored to draft state — asks only for the
               missing/low-confidence fields, PUTs each single field, and calls
@@ -464,6 +503,40 @@ function ScrollDownPill({ onPress, bottom }: { onPress: () => void; bottom: numb
         <ChevronDown size={20} color={inkColor} />
       </Pressable>
     </Animated.View>
+  );
+}
+
+/** Screen-level "Save as draft" affordance for the live chat flow (Task 17) —
+ *  a slim outlined bar above the gap filler/composer row, matching the
+ *  gap-filler's own bordered-pill styling. Shows a spinner in place of the
+ *  label while the mutation is in flight; disabled for the same duration so a
+ *  second tap can't fire a duplicate create. */
+function SaveDraftBar({
+  label,
+  saving,
+  onPress,
+}: {
+  label: string;
+  saving: boolean;
+  onPress: () => void;
+}) {
+  const styles = useChromeStyles();
+  const accentPressedColor = useColor('accent.pressed');
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={saving}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: saving, busy: saving }}
+      accessibilityLabel={label}
+      style={[styles.saveDraftBtn, saving && styles.saveDraftBtnDisabled]}
+    >
+      {saving ? (
+        <ActivityIndicator size="small" color={accentPressedColor} />
+      ) : (
+        <Text style={styles.saveDraftText}>{label}</Text>
+      )}
+    </Pressable>
   );
 }
 
@@ -659,6 +732,21 @@ const useChromeStyles = createThemedStyles((t) => ({
     elevation: 8,
   },
   chips: { marginBottom: spacing.sm },
+  saveDraftBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 40,
+    borderWidth: 1,
+    borderColor: t.color['border.subtle'],
+    borderRadius: radius.md,
+    backgroundColor: t.color['surface.raised'],
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    marginBottom: spacing.sm,
+  },
+  saveDraftBtnDisabled: { opacity: 0.6 },
+  saveDraftText: { fontFamily: fonts.semibold, fontSize: 13, color: t.color['accent.pressed'] },
   composerRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
