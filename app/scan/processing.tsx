@@ -393,9 +393,12 @@ export default function ProcessingScreen() {
             // Seller already left for background — this result belongs to an
             // abandoned on-screen attempt; ignore it (don't navigate, don't
             // patch state). The stored job id from the background kickoff is
-            // what Task 11 reattaches to, not this stale result.
+            // what Task 11 reattaches to, not this stale result. NOTE: this
+            // callback `await`s below (applySmartDetection/updatePhotos), so
+            // the seller can tap "Continue in background" AFTER this check
+            // passes but BEFORE we navigate — hence the re-check immediately
+            // before each `router.replace` further down, not just here.
             if (leftInBackgroundRef.current) return;
-            clearStoredJobId();
             try {
               // Augment the local photos array with any PDF-derived page
               // images the backend extracted (`mapped.responseImageUrls`
@@ -430,6 +433,12 @@ export default function ProcessingScreen() {
                 const mode = await useScanDraft
                   .getState()
                   .applySmartDetection(mapped, augmentedPhotos);
+                // Re-check: the seller may have tapped "Continue in
+                // background" while the `await` above was in flight — that
+                // handler already toasted + navigated Home. Don't yank them
+                // back into the sync flow now that they've left.
+                if (leftInBackgroundRef.current) return;
+                if (backgroundRecognitionEnabled()) clearStoredJobId();
                 setApplyError(null);
                 setIsNavigating(true);
                 router.replace(
@@ -442,7 +451,10 @@ export default function ProcessingScreen() {
                 if (augmentedPhotos.length > photos.length) {
                   await useScanDraft.getState().updatePhotos(augmentedPhotos);
                 }
+                // Re-check for the same reason as the `skip` branch above.
+                if (leftInBackgroundRef.current) return;
                 useScanDraft.getState().setPendingDetection(mapped);
+                if (backgroundRecognitionEnabled()) clearStoredJobId();
                 setApplyError(null);
                 setIsNavigating(true);
                 router.replace(routes.scanDetection);
@@ -458,7 +470,7 @@ export default function ProcessingScreen() {
             if (leftInBackgroundRef.current) return;
             haptics.error();
             setApplyError(null);
-            clearStoredJobId();
+            if (backgroundRecognitionEnabled()) clearStoredJobId();
           },
         },
       );
@@ -468,7 +480,6 @@ export default function ProcessingScreen() {
         {
           onSuccess: (ai) => {
             if (leftInBackgroundRef.current) return;
-            clearStoredJobId();
             setIsNavigating(true);
             setAiRef.current(ai);
             patchRef.current({
@@ -511,13 +522,20 @@ export default function ProcessingScreen() {
                 : {}),
               lastStep: 'detail',
             });
+            // Re-check for consistency with the useSmart branch above — this
+            // callback has no `await` today (so this can't actually differ
+            // from the check at the top), but mirrors the same
+            // immediately-before-navigate guard defensively in case that
+            // ever changes.
+            if (leftInBackgroundRef.current) return;
+            if (backgroundRecognitionEnabled()) clearStoredJobId();
             router.replace(routes.scanDetail);
           },
           onError: () => {
             if (leftInBackgroundRef.current) return;
             haptics.error();
             setApplyError(null);
-            clearStoredJobId();
+            if (backgroundRecognitionEnabled()) clearStoredJobId();
           },
         },
       );
