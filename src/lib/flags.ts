@@ -60,3 +60,15 @@ export const CHAT_UI_V2 = process.env.EXPO_PUBLIC_CHAT_UI_V2 === '1';
 
 /** P2 attachment turns → ASSISTANT `POST /detect/stream`. Backend: `detect_stream_enabled`. Default OFF. */
 export const DETECT_STREAM_ENABLED = process.env.EXPO_PUBLIC_DETECT_STREAM === '1';
+
+/**
+ * Background prewarm of the buyer-marketplace WebView (Approach A). When ON, the
+ * (lab) layout mounts a hidden 1×1 WebView shortly after launch that loads
+ * `/buyer-marketplace?app=1` with the native session injected, then tears itself
+ * down once the page loads. This pays the one-time WebView renderer-process spawn
+ * and warms the shared HTTP cache (Next.js JS/CSS/font chunks) + session cookie,
+ * so the visible Browse tab and the product-detail screen (opened from a chat
+ * card) reach first paint faster. **On by default** — set
+ * `EXPO_PUBLIC_MARKETPLACE_PREWARM=0` in `.env` and restart Metro to disable.
+ */
+export const MARKETPLACE_PREWARM_ENABLED = process.env.EXPO_PUBLIC_MARKETPLACE_PREWARM !== '0';
