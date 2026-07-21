@@ -514,7 +514,7 @@ export default function LabDraft() {
             }}
           />
         </Animated.View>
-        {draftsEnabled() && (
+        {draftsEnabled() && isLivePublish && (
           <Animated.View entering={enterPop(DELAY.ctaTertiary)}>
             <Button
               variant="secondary"
