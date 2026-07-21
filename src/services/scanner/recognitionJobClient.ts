@@ -89,18 +89,31 @@ export interface RecognitionJobStatus {
  * `POST /recognition-jobs` — starts a server-side background recognition run
  * over already-uploaded image/document URLs (the seller is leaving, or has
  * left, the processing screen). Fast response — just an id to poll/tail.
+ *
+ * Verified against the live Node controller
+ * (`101recycle-greenbidz-backend/controller/recognitionController.js:124`):
+ * `res.status(202).json({ success: true, job_id, status: "queued" })` — the
+ * body is FLAT (no `data` envelope), unlike the sibling `/drafts` endpoints.
  */
 export async function createRecognitionJob(
   input: CreateRecognitionJobInput,
 ): Promise<{ job_id: string }> {
   const res = await greenbidz.post('/recognition-jobs', input);
-  return res.data.data as { job_id: string };
+  return { job_id: res.data.job_id as string };
 }
 
-/** `GET /recognition-jobs/:id` — cheap poll used by the reattach-on-return flow (Task 11). */
+/**
+ * `GET /recognition-jobs/:id` — cheap poll used by the reattach-on-return
+ * flow (Task 11).
+ *
+ * Verified against the live Node controller
+ * (`101recycle-greenbidz-backend/controller/recognitionController.js:257`):
+ * `res.json({ success: true, status, draft_id, error })` — also a FLAT body,
+ * no `data` envelope. The extra `success` field is harmless to carry through.
+ */
 export async function getRecognitionJobStatus(jobId: string): Promise<RecognitionJobStatus> {
   const res = await greenbidz.get(`/recognition-jobs/${jobId}`);
-  return res.data.data as RecognitionJobStatus;
+  return res.data as RecognitionJobStatus;
 }
 
 export type TailRecognitionJobOptions = {

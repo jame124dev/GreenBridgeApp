@@ -122,8 +122,12 @@ function startTail(
 }
 
 describe('createRecognitionJob', () => {
-  it('posts to /recognition-jobs and unwraps the { success, data } envelope', async () => {
-    mockPost.mockResolvedValue({ data: { success: true, data: { job_id: 'job-9' } } });
+  // Verified against the live controller (recognitionController.js:124):
+  // `res.status(202).json({ success: true, job_id, status: "queued" })` — a
+  // FLAT top-level body, NOT nested under `data` like the sibling /drafts
+  // endpoints.
+  it('posts to /recognition-jobs and reads job_id off the flat top-level body', async () => {
+    mockPost.mockResolvedValue({ data: { success: true, job_id: 'j1', status: 'queued' } });
     const out = await createRecognitionJob({
       image_urls: ['https://gcs/img1.png'],
       language: 'en',
@@ -134,18 +138,22 @@ describe('createRecognitionJob', () => {
       language: 'en',
       platform: 'LabGreenbidz',
     });
-    expect(out).toEqual({ job_id: 'job-9' });
+    expect(out.job_id).toBe('j1');
   });
 });
 
 describe('getRecognitionJobStatus', () => {
-  it('gets /recognition-jobs/:id and unwraps the { success, data } envelope', async () => {
+  // Verified against the live controller (recognitionController.js:257):
+  // `res.json({ success: true, status, draft_id, error })` — also a FLAT
+  // top-level body, no `data` envelope.
+  it('gets /recognition-jobs/:id and reads status/draft_id off the flat top-level body', async () => {
     mockGet.mockResolvedValue({
-      data: { success: true, data: { status: 'draft_ready', draft_id: 'd1' } },
+      data: { success: true, status: 'draft_ready', draft_id: 'd9' },
     });
     const out = await getRecognitionJobStatus('job-9');
     expect(mockGet).toHaveBeenCalledWith('/recognition-jobs/job-9');
-    expect(out).toEqual({ status: 'draft_ready', draft_id: 'd1' });
+    expect(out.status).toBe('draft_ready');
+    expect(out.draft_id).toBe('d9');
   });
 });
 
