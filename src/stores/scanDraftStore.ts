@@ -529,6 +529,12 @@ type ScanDraftState = {
   pendingDetection: MappedSmartDetection | null;
   hydrated: boolean;
   hydrate: () => void;
+  /**
+   * Task 7: loads a server-fetched draft blob (e.g. from the drafts list,
+   * Task 9) into live state so it can be resumed — mirrors `hydrate()` but
+   * takes the session directly instead of reading it from MMKV.
+   */
+  hydrateFromServer: (blob: PersistedScan) => Promise<void>;
   setListingMode: (mode: ListingMode) => void;
   patchSession: (partial: {
     sessionVisibility?: BatchVisibility;
@@ -610,6 +616,25 @@ export const useScanDraft = create<ScanDraftState>((set, get) => ({
       gcs: persisted.gcs ?? null,
       hydrated: true,
     });
+  },
+  hydrateFromServer: async (blob: PersistedScan) => {
+    const migratedCurrent = blob.current ? migrateDraft(blob.current) : null;
+    const migratedQueued = (blob.queuedItems ?? []).map(migrateDraft);
+    set({
+      mode: blob.mode ?? 'single',
+      current: migratedCurrent,
+      queuedItems: migratedQueued,
+      sessionVisibility: blob.sessionVisibility ?? 'PUBLIC',
+      networkSellers: blob.networkSellers ?? [],
+      mergedSingle: blob.mergedSingle ?? null,
+      detectionSummary: blob.detectionSummary,
+      detectionConfidence: blob.detectionConfidence,
+      gcs: blob.gcs ?? null,
+      pendingPhotos: [],
+      pendingDetection: null,
+      hydrated: true,
+    });
+    persistSession(get());
   },
   setListingMode: (mode) => {
     const next = { ...snapshot(get), mode };
