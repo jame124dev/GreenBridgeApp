@@ -3,6 +3,7 @@ import { Animated, Easing, Pressable, ScrollView, Text, View } from 'react-nativ
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { toast } from 'sonner-native';
 import {
   AlertCircle,
   Check,
@@ -16,14 +17,26 @@ import { AppImage, Button, Screen, Stack } from '@/components/ui';
 import { brand, fonts } from '@/constants/theme';
 import { manualEntryDefaults } from '@/features/scanner/constants';
 import { shouldSkipDetectionChoice } from '@/features/scanner/smartDetectionRouting';
+import { shouldOfferBackground } from '@/features/scanner/backgroundAffordance';
+import { startBackgroundRecognition } from '@/features/scanner/backgroundRecognition';
 import type {
   SmartStreamEvent,
   StagePhase,
 } from '@/features/scanner/smartDetectStreamTypes';
 import { useSmartDetect } from '@/features/scanner/useSmartDetect';
+import { backgroundRecognitionEnabled } from '@/lib/flags';
 import { haptics } from '@/lib/haptics';
 import { routes } from '@/lib/routes';
 import { useScanDraft } from '@/stores/scanDraftStore';
+import { useAuth } from '@/stores/authStore';
+import { clearStoredJobId } from '@/stores/recognitionJobStore';
+import {
+  uploadGcsDocuments,
+  uploadGcsPhotos,
+  type GcsUploadedFile,
+} from '@/services/scanner/uploadGcsPhotos';
+import { gcsUrlForAnalyze } from '@/services/scanner/gcsUrl';
+import { getSiteType } from '@/services/scanner/buildFormData';
 
 /**
  * Scan processing — v2 (SSE streaming).
@@ -212,6 +225,14 @@ export default function ProcessingV2Screen() {
   const controllerRef = useRef<AbortController | null>(null);
   const startedForDraftRef = useRef<string | null>(null);
 
+  // Task 10 — "Continue in background": flipped true the instant the seller
+  // taps the affordance, BEFORE navigating away. Read by (1) the run-once
+  // effect's unmount cleanup, to SKIP `controller.abort()` so the in-flight
+  // stream is left running server-side (a later reattach can pick it up), and
+  // (2) the mutation's onSuccess/onError below, so a late result from that
+  // abandoned on-screen attempt can't hijack navigation after the seller left.
+  const leftInBackgroundRef = useRef(false);
+
   const phaseIndex = PHASE_ORDER.indexOf(phase);
   const productTotal = detection?.count;
   const stepNum = Math.min(phaseIndex + 1, TIMELINE.length);
@@ -313,6 +334,12 @@ export default function ProcessingV2Screen() {
       },
       {
         onSuccess: async (mapped) => {
+          // Seller already left for background — this result belongs to an
+          // abandoned on-screen attempt; ignore it. This callback `await`s
+          // below (applySmartDetection / updatePhotos), so the seller can also
+          // tap "Continue in background" AFTER this check but BEFORE we
+          // navigate — hence the re-check right before each `router.replace`.
+          if (leftInBackgroundRef.current) return;
           try {
             // Augment local photos with PDF-derived page images (parity with
             // processing.tsx) so product image_indexes resolve on docs-only scans.
@@ -338,13 +365,21 @@ export default function ProcessingV2Screen() {
             const skip = shouldSkipDetectionChoice(mapped, augmentedPhotos.length);
             if (skip) {
               const m = await useScanDraft.getState().applySmartDetection(mapped, augmentedPhotos);
+              // Re-check: the seller may have tapped "Continue in background"
+              // while the await above was in flight (that handler already
+              // toasted + navigated Home) — don't yank them back.
+              if (leftInBackgroundRef.current) return;
+              if (backgroundRecognitionEnabled()) clearStoredJobId();
               setIsNavigating(true);
               router.replace(m === 'single' ? routes.scanDetail : routes.scanGroupedReview);
             } else {
               if (augmentedPhotos.length > photos.length) {
                 await useScanDraft.getState().updatePhotos(augmentedPhotos);
               }
+              // Re-check for the same reason as the skip branch above.
+              if (leftInBackgroundRef.current) return;
               useScanDraft.getState().setPendingDetection(mapped);
+              if (backgroundRecognitionEnabled()) clearStoredJobId();
               setIsNavigating(true);
               router.replace(routes.scanDetection);
             }
@@ -354,13 +389,24 @@ export default function ProcessingV2Screen() {
           }
         },
         onError: (err) => {
+          // Late failure of an attempt the seller already abandoned for
+          // background — swallow it (no error UI, no state churn).
+          if (leftInBackgroundRef.current) return;
           haptics.error();
           setApplyError((err as Error)?.message ?? null);
+          if (backgroundRecognitionEnabled()) clearStoredJobId();
         },
       },
     );
 
-    return () => controller.abort();
+    return () => {
+      // Task 10: "Continue in background" leaves the in-flight stream running
+      // (server-side) instead of cancelling it — see `leftInBackgroundRef`.
+      // Every other unmount path still aborts exactly as before.
+      if (!leftInBackgroundRef.current) {
+        controller.abort();
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft?.id, draft?.ai, isNavigating]);
 
@@ -374,6 +420,60 @@ export default function ProcessingV2Screen() {
     useScanDraft.getState().patch({ ...manualEntryDefaults(), lastStep: 'detail' });
     router.replace(routes.scanDetail);
   };
+
+  // Task 10 — "Continue in background". Toasts + navigates Home immediately
+  // (the seller shouldn't wait), then best-effort mints a server-side
+  // recognition job from the same photos/documents so the reattach flow has a
+  // job id to poll. Deliberately uses its OWN upload (NOT the in-flight
+  // `controllerRef` stream, no shared AbortSignal) so it can't be cancelled by
+  // this screen's unmount — mirrors processing.tsx (v1). The on-screen stream
+  // is left running but its result is now ignored (`leftInBackgroundRef`
+  // guards the onSuccess/onError above). Known tradeoff: a duplicate upload +
+  // recognition, since the background job doesn't reuse the in-flight request.
+  const handleContinueInBackground = useCallback(() => {
+    leftInBackgroundRef.current = true;
+    toast.success(
+      t('mobile.processing.leftToast', { defaultValue: "We'll notify you when it's ready" }),
+    );
+    router.replace(routes.scanHome);
+
+    void (async () => {
+      try {
+        const sellerId = useAuth.getState().profile?.id;
+        if (!sellerId) return; // no auth context — nothing to upload/create with
+        const photos = draft?.photos ?? [];
+        const documents = draft?.documents ?? [];
+        if (photos.length === 0 && documents.length === 0) return;
+
+        let sessionId: string | undefined;
+        let imageFiles: GcsUploadedFile[] = [];
+        if (photos.length > 0) {
+          const r = await uploadGcsPhotos(photos, { sellerId });
+          sessionId = r.sessionId;
+          imageFiles = r.files;
+        }
+        let documentFiles: GcsUploadedFile[] = [];
+        if (documents.length > 0) {
+          const r = await uploadGcsDocuments(documents, { sellerId, sessionId });
+          documentFiles = r.files;
+        }
+
+        await startBackgroundRecognition({
+          image_urls: imageFiles.map((f) => gcsUrlForAnalyze(f)),
+          document_urls: documentFiles.map((f) => gcsUrlForAnalyze(f)),
+          language: i18n.language,
+          platform: getSiteType(),
+        });
+      } catch (err) {
+        // Best-effort — the seller has already left; nothing on-screen to show
+        // an error on. Worst case the reattach finds no job and they re-scan.
+        if (__DEV__) {
+          console.warn('[processing-v2] background recognition job failed to start', err);
+        }
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft?.photos, draft?.documents]);
 
   // Resolve a product's thumbnail: the first local photo it references, else
   // the GCS URL of the first PDF page it references. Falls back to a sparkle.
@@ -615,6 +715,32 @@ export default function ProcessingV2Screen() {
             );
           })}
         </View>
+
+        {/* Task 10 — "Continue in background". Shown ONLY while streaming
+            (steps 1-4) and while not yet navigating to results; hidden at
+            `done` and whenever the flag is off (flag-off ⇒ never rendered, so
+            the unmount abort behaves exactly as before). */}
+        {shouldOfferBackground({
+          flagEnabled: backgroundRecognitionEnabled(),
+          phase,
+          isNavigating,
+        }) && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleContinueInBackground}
+            hitSlop={8}
+            style={{ marginTop: 24 }}
+          >
+            <Text
+              className="text-center"
+              style={{ fontFamily: fonts.semibold, fontSize: 14, color: brand.primary }}
+            >
+              {t('mobile.processing.continueInBackground', {
+                defaultValue: 'Continue in background',
+              })}
+            </Text>
+          </Pressable>
+        )}
 
         {/* Detection banner */}
         {detection ? (
