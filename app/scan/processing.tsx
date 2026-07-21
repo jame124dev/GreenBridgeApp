@@ -16,7 +16,7 @@ import { toast } from 'sonner-native';
 import { AppImage, Button, Screen, Stack } from '@/components/ui';
 import { manualEntryDefaults } from '@/features/scanner/constants';
 import { routes } from '@/lib/routes';
-import { SMART_DETECT_ENABLED, backgroundRecognitionEnabled } from '@/lib/flags';
+import { SMART_DETECT_ENABLED, backgroundRecognitionEnabled, IS_CUSTOMER } from '@/lib/flags';
 import { useAnalyzeImages } from '@/features/scanner/useAnalyzeImages';
 import { useSmartDetect } from '@/features/scanner/useSmartDetect';
 import { smartDetectV2Enabled } from '@/features/scanner/smartDetectV2Enabled';
@@ -576,7 +576,10 @@ export default function ProcessingScreen() {
     toast.success(
       t('mobile.processing.leftToast', { defaultValue: "We'll notify you when it's ready" }),
     );
-    router.replace(routes.scanHome);
+    // Launched from the lab chat (launchSellerScan) in the customer fork, so
+    // return to the lab home — the seller tab group scanHome (/(tabs)) points
+    // at is disabled there. Mirrors app/scan/success.tsx.
+    router.replace(IS_CUSTOMER ? '/(lab)/(tabs)/home' : routes.scanHome);
 
     void (async () => {
       try {

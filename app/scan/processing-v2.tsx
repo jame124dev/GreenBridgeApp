@@ -24,7 +24,7 @@ import type {
   StagePhase,
 } from '@/features/scanner/smartDetectStreamTypes';
 import { useSmartDetect } from '@/features/scanner/useSmartDetect';
-import { backgroundRecognitionEnabled } from '@/lib/flags';
+import { backgroundRecognitionEnabled, IS_CUSTOMER } from '@/lib/flags';
 import { haptics } from '@/lib/haptics';
 import { routes } from '@/lib/routes';
 import { useScanDraft } from '@/stores/scanDraftStore';
@@ -435,7 +435,10 @@ export default function ProcessingV2Screen() {
     toast.success(
       t('mobile.processing.leftToast', { defaultValue: "We'll notify you when it's ready" }),
     );
-    router.replace(routes.scanHome);
+    // Launched from the lab chat (launchSellerScan) in the customer fork, so
+    // return to the lab home — the seller tab group scanHome (/(tabs)) points
+    // at is disabled there. Mirrors app/scan/success.tsx.
+    router.replace(IS_CUSTOMER ? '/(lab)/(tabs)/home' : routes.scanHome);
 
     void (async () => {
       try {
