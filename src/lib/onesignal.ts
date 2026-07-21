@@ -14,7 +14,10 @@
  * dev-client that predates the OneSignal install, so every call is guarded and
  * never throws. Adding/changing the app id needs a dev-client REBUILD.
  */
+import { router } from 'expo-router';
 import { Platform } from 'react-native';
+
+import { routeForType } from '@/features/lab/notifications/notificationNav';
 
 const APP_ID = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID ?? '';
 
@@ -45,6 +48,19 @@ export function initOneSignal(): void {
     // Foundation: prompt now so we can confirm a subscription from the panel.
     // (A production build should make this contextual, mirroring the web rule.)
     OneSignal.Notifications.requestPermission(true).catch(() => {});
+
+    // Push-tap deep-link: route to the screen for the notification's `type`
+    // (e.g. recognition_draft_ready → /scan/drafts). Best-effort — an unknown
+    // or missing type just leaves the app on its current screen.
+    try {
+      OneSignal.Notifications.addEventListener('click', (event: any) => {
+        const type = event?.notification?.additionalData?.type;
+        const route = typeof type === 'string' ? routeForType(type) : null;
+        if (route) router.push(route as never);
+      });
+    } catch {
+      /* listener is best-effort */
+    }
 
     // In-App Messages need NO FCM/APNs — they display inside the running app
     // over OneSignal's session sync, so they're testable from the panel even

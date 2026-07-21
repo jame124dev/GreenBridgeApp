@@ -3,6 +3,7 @@
 // Unknown types return null → tap just marks read + closes.
 export function routeForType(type: string): string | null {
   if (type === 'chat') return '/(lab)/(tabs)/deals';
+  if (type === 'recognition_draft_ready') return '/scan/drafts';
   if (type === 'Bid Accepted' || type === 'Offer Accepted') return '/(lab)/(tabs)/matches';
   if (
     type === 'Listing Approved' ||
