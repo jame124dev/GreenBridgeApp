@@ -20,7 +20,7 @@ jest.mock('@/api/greenbidzClient', () => ({
 }));
 
 import { greenbidz } from '@/api/greenbidzClient';
-import { createDraft, listDrafts } from '@/services/drafts/draftApi';
+import { createDraft, getDraft, listDrafts } from '@/services/drafts/draftApi';
 
 // Explicit generic: the default `jest.Mock` (T = UnknownFunction, returning
 // `unknown`) makes `mockResolvedValue`'s parameter type `never` (jest-mock's
@@ -37,20 +37,28 @@ beforeEach(() => {
 });
 
 describe('draftApi', () => {
-  it('createDraft posts to /drafts and unwraps data', async () => {
+  // Real backend shape (verified against draftController.js `createDraftController` +
+  // its `formatDraftMetadata()` helper, 101recycle-greenbidz-backend): the response
+  // `data` is METADATA ONLY — id, share_token, title, flow, draft_kind, mode,
+  // site_type, product_count, status, thumbnail_object, schema_version,
+  // share_enabled, created_at, updated_at. It never includes `session_uuid`
+  // (not in the whitelist) or `payload` (only `getDraft` returns a parsed
+  // payload, via `formatDraftFull`). This mock intentionally omits both so the
+  // test doesn't validate a shape the real backend never sends.
+  it('createDraft posts to /drafts and unwraps the metadata-only response', async () => {
     mockPost.mockResolvedValue({
       data: {
         success: true,
         data: {
           id: 'd1',
-          session_uuid: 's1',
           flow: 'ai',
           mode: 'single',
           title: 'X',
           product_count: 1,
           status: 'active',
+          draft_kind: 'form-blob',
+          thumbnail_object: null,
           updated_at: 't',
-          payload: { kind: 'form-blob' },
         },
       },
     });
@@ -65,6 +73,37 @@ describe('draftApi', () => {
     });
     expect(mockPost).toHaveBeenCalledWith('/drafts', expect.objectContaining({ session_uuid: 's1' }));
     expect(out.id).toBe('d1');
+    // Documents the real gap: the create response has no payload/session_uuid,
+    // even though the DraftDetail/DraftSummary types declare them as required.
+    expect(out.payload).toBeUndefined();
+    expect(out.session_uuid).toBeUndefined();
+  });
+
+  // getDraft is the ONLY endpoint whose response includes a parsed `payload`
+  // (formatDraftFull = {...formatDraftMetadata(draft), payload}). This test
+  // enforces that claim rather than leaving it comment-only.
+  it('getDraft fetches /drafts/:id and unwraps data including payload', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        success: true,
+        data: {
+          id: 'd1',
+          flow: 'ai',
+          mode: 'single',
+          title: 'X',
+          product_count: 1,
+          status: 'active',
+          draft_kind: 'form-blob',
+          thumbnail_object: null,
+          updated_at: 't',
+          payload: { kind: 'form-blob', title: 'X' },
+        },
+      },
+    });
+    const out = await getDraft('d1');
+    expect(mockGet).toHaveBeenCalledWith('/drafts/d1');
+    expect(out.id).toBe('d1');
+    expect(out.payload).toEqual({ kind: 'form-blob', title: 'X' });
   });
 
   // Real backend shape (verified against draftController.js `listDraftsController`,
