@@ -73,19 +73,29 @@ export default function ScanHomeScreen() {
   // AbortSignal here (deliberately — a still-running job should keep being
   // watched even if the seller blurs Home), so without this guard, a
   // blur-then-refocus before the first tail settles would open a second SSE
-  // connection to the same job. The `cancelled` flag additionally stops a
-  // late resolve from acting on a screen the seller has since left.
+  // connection to the same job.
+  //
+  // No `cancelled`/screen-liveness guard on the outcome handling below —
+  // deliberately. `queryClient` is a module singleton and `toast` (sonner-
+  // native) is a global overlay; both are safe to fire after this screen has
+  // blurred, and this effect makes no component `setState` call. Fix-pass
+  // note: an earlier version gated the toast/invalidate behind a `cancelled`
+  // flag set on blur, which could silently and PERMANENTLY drop the mandated
+  // notification — `reattachRecognition` already clears the stored job id
+  // before the caller gets to check `cancelled`, so a fast blur→refocus
+  // during the sub-second status round-trip would flip `cancelled` true,
+  // skip the toast, and leave nothing to retry (id gone, ref no longer
+  // blocking). Delivering unconditionally fixes that; it's still exactly-once
+  // because a refocused reattach after the id is cleared just returns 'none'.
   const reattachInFlightRef = useRef(false);
   useFocusEffect(
     useCallback(() => {
       if (!backgroundRecognitionEnabled()) return;
       if (reattachInFlightRef.current) return;
-      let cancelled = false;
       reattachInFlightRef.current = true;
       (async () => {
         try {
           const outcome = await reattachRecognition({});
-          if (cancelled) return;
           if (outcome === 'ready') {
             queryClient.invalidateQueries({ queryKey: draftKeys.all });
             toast.success(
@@ -108,9 +118,6 @@ export default function ScanHomeScreen() {
           reattachInFlightRef.current = false;
         }
       })();
-      return () => {
-        cancelled = true;
-      };
     }, [t])
   );
 
