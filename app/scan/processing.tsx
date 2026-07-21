@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, ScrollView, Text, View } from 'react-native';
+import { Animated, Pressable, ScrollView, Text, View } from 'react-native';
 import RNAnimated, {
   Easing as RNEasing,
   useAnimatedStyle,
@@ -11,14 +11,16 @@ import RNAnimated, {
 import { AlertCircle, Check, Cog } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner-native';
 
 import { AppImage, Button, Screen, Stack } from '@/components/ui';
 import { manualEntryDefaults } from '@/features/scanner/constants';
 import { routes } from '@/lib/routes';
-import { SMART_DETECT_ENABLED } from '@/lib/flags';
+import { SMART_DETECT_ENABLED, backgroundRecognitionEnabled } from '@/lib/flags';
 import { useAnalyzeImages } from '@/features/scanner/useAnalyzeImages';
 import { useSmartDetect } from '@/features/scanner/useSmartDetect';
 import { smartDetectV2Enabled } from '@/features/scanner/smartDetectV2Enabled';
+import { startBackgroundRecognition } from '@/features/scanner/backgroundRecognition';
 import type {
   SmartStreamEvent,
   StagePhase,
@@ -26,6 +28,15 @@ import type {
 import { shouldSkipDetectionChoice } from '@/features/scanner/smartDetectionRouting';
 import { haptics } from '@/lib/haptics';
 import { useScanDraft } from '@/stores/scanDraftStore';
+import { useAuth } from '@/stores/authStore';
+import { clearStoredJobId } from '@/stores/recognitionJobStore';
+import {
+  uploadGcsDocuments,
+  uploadGcsPhotos,
+  type GcsUploadedFile,
+} from '@/services/scanner/uploadGcsPhotos';
+import { gcsUrlForAnalyze } from '@/services/scanner/gcsUrl';
+import { getSiteType } from '@/services/scanner/buildFormData';
 import { brand, fonts } from '@/constants/theme';
 
 /**
@@ -326,6 +337,15 @@ export default function ProcessingScreen() {
 
   const startedForDraftRef = useRef<string | null>(null);
 
+  // Task 10 — "Continue in background": set true the instant the seller taps
+  // the affordance, BEFORE navigating away. Read by (1) this effect's unmount
+  // cleanup, to skip `controller.abort()` (the in-flight request is left
+  // running rather than cancelled — it may still land a usable draft even
+  // though nobody's watching), and (2) both mutate() onSuccess/onError
+  // callbacks below, so a late-arriving result from that abandoned request
+  // can't hijack navigation after the seller has already left this screen.
+  const leftInBackgroundRef = useRef(false);
+
   useEffect(() => {
     const draftId = draft?.id;
     if (isNavigating) return;
@@ -370,6 +390,12 @@ export default function ProcessingScreen() {
         },
         {
           onSuccess: async (mapped) => {
+            // Seller already left for background — this result belongs to an
+            // abandoned on-screen attempt; ignore it (don't navigate, don't
+            // patch state). The stored job id from the background kickoff is
+            // what Task 11 reattaches to, not this stale result.
+            if (leftInBackgroundRef.current) return;
+            clearStoredJobId();
             try {
               // Augment the local photos array with any PDF-derived page
               // images the backend extracted (`mapped.responseImageUrls`
@@ -429,8 +455,10 @@ export default function ProcessingScreen() {
             }
           },
           onError: () => {
+            if (leftInBackgroundRef.current) return;
             haptics.error();
             setApplyError(null);
+            clearStoredJobId();
           },
         },
       );
@@ -439,6 +467,8 @@ export default function ProcessingScreen() {
         { photos, language: langRef.current, signal: controller.signal },
         {
           onSuccess: (ai) => {
+            if (leftInBackgroundRef.current) return;
+            clearStoredJobId();
             setIsNavigating(true);
             setAiRef.current(ai);
             patchRef.current({
@@ -484,15 +514,21 @@ export default function ProcessingScreen() {
             router.replace(routes.scanDetail);
           },
           onError: () => {
+            if (leftInBackgroundRef.current) return;
             haptics.error();
             setApplyError(null);
+            clearStoredJobId();
           },
         },
       );
     }
 
     return () => {
-      controller.abort();
+      // Task 10: "Continue in background" leaves the in-flight request
+      // running instead of cancelling it — see `leftInBackgroundRef` above.
+      if (!leftInBackgroundRef.current) {
+        controller.abort();
+      }
       clearTimeout(slowTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -504,6 +540,64 @@ export default function ProcessingScreen() {
   };
 
   const retake = () => router.replace(routes.scanCamera);
+
+  // Task 10 — "Continue in background". Toasts + navigates Home immediately
+  // (the seller shouldn't wait), then best-effort mints a server-side
+  // recognition job from the same photos/documents so Task 11's reattach
+  // flow has a job id to poll. Deliberately uses its OWN upload (no shared
+  // AbortSignal with `controller` above, no reuse of `useSmartDetect`'s
+  // internal upload) so it can't be cancelled by this screen's unmount —
+  // see the brief: reuse the same GCS helpers `useSmartDetect` uses, don't
+  // refactor that hook. The in-flight on-screen request (if any) is left
+  // running but its result is now ignored (`leftInBackgroundRef` guards in
+  // both mutate() onSuccess/onError above) — a known duplicate-upload/
+  // duplicate-recognition tradeoff of not restructuring the main effect to
+  // route through the background job from the start; see task-10-report.md.
+  const handleContinueInBackground = useCallback(() => {
+    leftInBackgroundRef.current = true;
+    toast.success(
+      t('mobile.processing.leftToast', { defaultValue: "We'll notify you when it's ready" }),
+    );
+    router.replace(routes.scanHome);
+
+    void (async () => {
+      try {
+        const sellerId = useAuth.getState().profile?.id;
+        if (!sellerId) return; // no auth context — nothing to upload/create with
+        const photos = draft?.photos ?? [];
+        const documents = draft?.documents ?? [];
+        if (photos.length === 0 && documents.length === 0) return;
+
+        let sessionId: string | undefined;
+        let imageFiles: GcsUploadedFile[] = [];
+        if (photos.length > 0) {
+          const r = await uploadGcsPhotos(photos, { sellerId });
+          sessionId = r.sessionId;
+          imageFiles = r.files;
+        }
+        let documentFiles: GcsUploadedFile[] = [];
+        if (documents.length > 0) {
+          const r = await uploadGcsDocuments(documents, { sellerId, sessionId });
+          documentFiles = r.files;
+        }
+
+        await startBackgroundRecognition({
+          image_urls: imageFiles.map((f) => gcsUrlForAnalyze(f)),
+          document_urls: documentFiles.map((f) => gcsUrlForAnalyze(f)),
+          language: langRef.current,
+          platform: getSiteType(),
+        });
+      } catch (err) {
+        // Best-effort — the seller has already left this screen; there's
+        // nothing left on-screen to show an error on. Worst case Task 11
+        // finds no job to reattach to and the seller re-scans.
+        if (__DEV__) {
+          console.warn('[processing] background recognition job failed to start', err);
+        }
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft?.photos, draft?.documents]);
 
   const laserTranslateX = laserSweepVal.interpolate({
     inputRange: [0, 1],
@@ -899,6 +993,28 @@ export default function ProcessingScreen() {
             );
           })}
         </View>
+
+        {backgroundRecognitionEnabled() && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleContinueInBackground}
+            hitSlop={8}
+            style={{ marginBottom: 12 }}
+          >
+            <Text
+              className="text-center"
+              style={{
+                fontFamily: fonts.semibold,
+                fontSize: 14,
+                color: brand.primary,
+              }}
+            >
+              {t('mobile.processing.continueInBackground', {
+                defaultValue: 'Continue in background',
+              })}
+            </Text>
+          </Pressable>
+        )}
 
         {slowMsg ? (
           <Text
