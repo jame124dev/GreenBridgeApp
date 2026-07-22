@@ -28,6 +28,37 @@ function endpointForMarketplace(marketplace: MarketplaceKey | undefined): string
   return '/product/lab/category';
 }
 
+/**
+ * Client-side stopgap for untranslated category names in the EN tree.
+ *
+ * WordPress (WPML/Polylang) keeps a separate term row per language; the
+ * ENGLISH translation of a term can be left holding its Chinese source name.
+ * As of 2026-07-22 the lab tree's "Testing & Measurement" parent (EN term id
+ * 5373) still returns `測試與測量` from `/product/lab/category?language=en`
+ * (its 8 children ARE translated — only the parent is missing), so the
+ * category picker showed one Chinese entry among English ones.
+ *
+ * Keyed by the EN-tree term id (stable; WPML gives the zh tree a DIFFERENT id
+ * for the same category, so this can never touch a legitimately-Chinese
+ * label) and applied ONLY to the `en` fetch. This is a band-aid over backend
+ * content — the real fix is renaming the EN term in WP admin; remove this map
+ * once that's done.
+ */
+const EN_CATEGORY_NAME_FIXUPS: Record<number, string> = {
+  5373: 'Testing & Measurement',
+};
+
+export function applyEnCategoryFixups(categories: LabCategory[]): LabCategory[] {
+  return categories.map((cat) => ({
+    ...cat,
+    name: EN_CATEGORY_NAME_FIXUPS[cat.id] ?? cat.name,
+    subcategories: (cat.subcategories ?? []).map((sub) => ({
+      ...sub,
+      name: EN_CATEGORY_NAME_FIXUPS[sub.id] ?? sub.name,
+    })),
+  }));
+}
+
 export async function fetchLabCategories(
   language: string,
   marketplace?: MarketplaceKey,
@@ -37,7 +68,8 @@ export async function fetchLabCategories(
   const res = await greenbidz.get(`${endpoint}?language=${encodeURIComponent(lang)}`, {
     timeout: 60_000,
   });
-  return (res.data?.data ?? []) as LabCategory[];
+  const data = (res.data?.data ?? []) as LabCategory[];
+  return lang === 'en' ? applyEnCategoryFixups(data) : data;
 }
 
 /**
