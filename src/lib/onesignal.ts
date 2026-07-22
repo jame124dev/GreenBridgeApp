@@ -82,6 +82,56 @@ export function initOneSignal(): void {
   }
 }
 
+/**
+ * A "recognition draft ready" push arriving while the app is in the FOREGROUND.
+ * The backend sends this via `sendPushToUser({ type: 'recognition_draft_ready',
+ * job_id, draft_id, … })`; on the wire those ride in the notification's
+ * `additionalData`. Delivery still depends on FCM/APNs push credentials being
+ * live for the OneSignal app — until then no push arrives and this simply never
+ * fires (the socket + polling layers cover the in-app case regardless).
+ */
+export interface PushDraftReady {
+  jobId?: string;
+  draftId?: string | number;
+}
+
+/**
+ * Register a handler for foreground `recognition_draft_ready` pushes. OneSignal
+ * still displays the system notification (we don't `preventDefault`); this just
+ * lets the app react in-line — refresh the drafts list + raise the same toast
+ * as the other layers. Returns an unsubscribe fn. No-op (returns a noop) on web
+ * / a dev-client without the native module.
+ */
+export function registerForegroundPushHandler(cb: (p: PushDraftReady) => void): () => void {
+  const mod = getSDK();
+  if (!mod) return () => {};
+  const { OneSignal } = mod;
+  const handler = (event: any) => {
+    try {
+      const data = event?.notification?.additionalData ?? {};
+      if (data.type !== 'recognition_draft_ready') return;
+      cb({
+        jobId: data.job_id != null ? String(data.job_id) : undefined,
+        draftId: data.draft_id,
+      });
+    } catch {
+      /* best-effort */
+    }
+  };
+  try {
+    OneSignal.Notifications.addEventListener('foregroundWillDisplay', handler);
+  } catch {
+    return () => {};
+  }
+  return () => {
+    try {
+      OneSignal.Notifications.removeEventListener('foregroundWillDisplay', handler);
+    } catch {
+      /* best-effort */
+    }
+  };
+}
+
 /** Set an In-App Message trigger (e.g. addOneSignalTrigger('screen','home')) so
  *  dashboard messages can target specific app states. Best-effort. */
 export function addOneSignalTrigger(key: string, value: string): void {

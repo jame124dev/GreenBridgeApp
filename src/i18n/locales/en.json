@@ -3862,6 +3862,7 @@
       "loadError": "Could not load drafts",
       "pendingAiNotReady": "This draft is still processing — check back soon.",
       "readyToast": "Your draft is ready",
+      "readyToastBody": "We finished analyzing your upload. Tap to review and publish.",
       "resumeFailed": "Could not open this draft",
       "yourDrafts": "Your drafts",
       "yourDraftsDesc": "Resume a saved listing or request"

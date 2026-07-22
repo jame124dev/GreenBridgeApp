@@ -31,6 +31,7 @@ import { Toaster } from 'sonner-native';
 
 import { setUnauthorizedHandler } from '@/api/interceptors';
 import { AppSplash } from '@/components/AppSplash';
+import { BackgroundRecognitionWatcher } from '@/features/scanner/BackgroundRecognitionWatcher';
 import { isSessionExpired } from '@/lib/authSession';
 import { warnMissingEnvInDev } from '@/lib/env';
 import { IS_CUSTOMER } from '@/lib/flags';
@@ -147,6 +148,10 @@ export default function RootLayout() {
               <AuthGuard>
                 <Stack screenOptions={{ headerShown: false }} />
               </AuthGuard>
+              {/* Headless: surfaces a finished background-recognition draft
+                  (list refresh + toast) on ANY screen — must live under the
+                  QueryClientProvider so it can invalidate the drafts query. */}
+              <BackgroundRecognitionWatcher />
             </QueryClientProvider>
             {/* Bottom-anchored so the notification card floats over content
                 and clears the top header; offset lifts it above the tab bar. */}

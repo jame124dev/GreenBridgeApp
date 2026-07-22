@@ -12,6 +12,7 @@ import {
   PackageCheck,
   PartyPopper,
   ShoppingBag,
+  Sparkles,
   UserPlus,
   Users,
 } from 'lucide-react-native';
@@ -39,6 +40,9 @@ export interface NotificationTypeMeta {
 
 const META: Record<string, NotificationTypeMeta> = {
   chat: { Icon: MessageSquare, labelKey: 'message', accent: 'blue' },
+  // AI background recognition → "your listing draft is ready". Amber + sparkles
+  // to match the DRAFT / AI badge language on the drafts cards.
+  recognition: { Icon: Sparkles, labelKey: 'recognitionReady', accent: 'amber' },
   'Bid Accepted': { Icon: PartyPopper, labelKey: 'bidAccepted', accent: 'green' },
   'Offer Accepted': { Icon: CheckCircle2, labelKey: 'offerAccepted', accent: 'green' },
   'Batch Updated': { Icon: Calendar, labelKey: 'batchUpdate', accent: 'amber' },

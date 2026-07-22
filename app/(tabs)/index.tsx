@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Pressable, ScrollView, ActivityIndicator } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import type { Href } from 'expo-router';
 import { Camera, MapPin, Globe } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -22,15 +22,12 @@ cssInterop(LinearGradient, {
 import { Screen, Text, LanguageSheet } from '@/components/ui';
 import { RecentSubmissionsList } from '@/components/scanner/RecentSubmissionsList';
 import { haptics } from '@/lib/haptics';
-import { SMART_DETECT_ENABLED, draftsEnabled, backgroundRecognitionEnabled } from '@/lib/flags';
+import { SMART_DETECT_ENABLED, draftsEnabled } from '@/lib/flags';
 import { useAuth } from '@/stores/authStore';
 import { useScanDraft } from '@/stores/scanDraftStore';
 import { useSellerLocation } from '@/features/location/useSellerLocation';
 import { routes } from '@/lib/routes';
 import { languageBadge } from '@/i18n';
-import { reattachRecognition } from '@/features/scanner/reattachRecognition';
-import { queryClient } from '@/lib/queryClient';
-import { draftKeys } from '@/services/drafts/draftHooks';
 
 
 export default function ScanHomeScreen() {
@@ -62,64 +59,11 @@ export default function ScanHomeScreen() {
     hydrate();
   }, [hydrate]);
 
-  // Task 11 — reattach-on-return. On every Home focus (tab switch, coming
-  // back from another screen, cold-start landing here), pick back up a
-  // "Continue in background" recognition job the seller left running
-  // (`app/scan/processing.tsx`'s `handleContinueInBackground`). Flag-gated —
-  // a no-op when `EXPO_PUBLIC_BACKGROUND_RECOGNITION` is off.
-  //
-  // `reattachInFlightRef` guards against a second overlapping attempt if the
-  // seller flips tabs quickly: `tailRecognitionJob` isn't given an
-  // AbortSignal here (deliberately — a still-running job should keep being
-  // watched even if the seller blurs Home), so without this guard, a
-  // blur-then-refocus before the first tail settles would open a second SSE
-  // connection to the same job.
-  //
-  // No `cancelled`/screen-liveness guard on the outcome handling below —
-  // deliberately. `queryClient` is a module singleton and `toast` (sonner-
-  // native) is a global overlay; both are safe to fire after this screen has
-  // blurred, and this effect makes no component `setState` call. Fix-pass
-  // note: an earlier version gated the toast/invalidate behind a `cancelled`
-  // flag set on blur, which could silently and PERMANENTLY drop the mandated
-  // notification — `reattachRecognition` already clears the stored job id
-  // before the caller gets to check `cancelled`, so a fast blur→refocus
-  // during the sub-second status round-trip would flip `cancelled` true,
-  // skip the toast, and leave nothing to retry (id gone, ref no longer
-  // blocking). Delivering unconditionally fixes that; it's still exactly-once
-  // because a refocused reattach after the id is cleared just returns 'none'.
-  const reattachInFlightRef = useRef(false);
-  useFocusEffect(
-    useCallback(() => {
-      if (!backgroundRecognitionEnabled()) return;
-      if (reattachInFlightRef.current) return;
-      reattachInFlightRef.current = true;
-      (async () => {
-        try {
-          const outcome = await reattachRecognition({});
-          if (outcome === 'ready') {
-            queryClient.invalidateQueries({ queryKey: draftKeys.all });
-            toast.success(
-              t('mobile.drafts.readyToast', { defaultValue: 'Your draft is ready' })
-            );
-          } else if (outcome === 'failed') {
-            toast.error(
-              t('mobile.processing.failed', {
-                defaultValue: 'Recognition failed — try again',
-              })
-            );
-          }
-          // 'running' (a still-in-flight job that we re-tailed to completion
-          // just now) and 'none' (nothing stored) intentionally get no
-          // toast/navigation here — see task-11-report.md for why the
-          // 'running' → onResult apply-and-route-into-review path was kept
-          // minimal. The background job's draft already exists server-side
-          // once its tail resolves; it surfaces next time "Your drafts" opens.
-        } finally {
-          reattachInFlightRef.current = false;
-        }
-      })();
-    }, [t])
-  );
+  // Reattach-on-return used to live here as a Home-focus effect, but a finished
+  // background draft must surface on ANY screen (and in BOTH forks — this seller
+  // Home isn't even mounted in the customer build). That now lives app-wide in
+  // `BackgroundRecognitionWatcher` (mounted at the root layout): poll + live
+  // socket + OneSignal foreground push, all deduped through `surfaceDraftReady`.
 
   useEffect(() => {
     scale.value = withRepeat(
