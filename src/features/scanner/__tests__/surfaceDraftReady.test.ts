@@ -11,6 +11,9 @@ jest.mock('@/features/lab/notifications/NotificationToast', () => ({
 }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('@/services/drafts/draftHooks', () => ({ draftKeys: { all: ['drafts'] } }));
+// The toast's "View" calls resumeDraftById; stub it so its heavy import chain
+// (draftApi → axios → mmkv native) doesn't load in the jest env.
+jest.mock('@/features/scanner/useResumeDraft', () => ({ resumeDraftById: jest.fn() }));
 
 import {
   parseRecognitionReady,

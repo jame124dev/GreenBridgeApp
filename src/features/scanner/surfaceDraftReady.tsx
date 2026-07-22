@@ -4,6 +4,7 @@ import { toast } from 'sonner-native';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { NotificationToast } from '@/features/lab/notifications/NotificationToast';
+import { resumeDraftById } from '@/features/scanner/useResumeDraft';
 import { draftKeys } from '@/services/drafts/draftHooks';
 import { routes } from '@/lib/routes';
 
@@ -85,7 +86,12 @@ export function surfaceDraftReady(
   // Auto-add: any mounted drafts/listings query refetches → the draft appears.
   deps.queryClient.invalidateQueries({ queryKey: draftKeys.all });
 
+  // Tap "View" → open THIS draft straight into its review editor (the finished
+  // background scan is a pending-ai draft, so `resumeDraftById` maps it and
+  // pushes the item-review page). Only fall back to the drafts list when we
+  // somehow have no draft id to open.
   const toastId = `recognition:${key}`;
+  const draftId = ready.draftId != null ? String(ready.draftId) : null;
   toast.custom(
     <NotificationToast
       toastId={toastId}
@@ -94,7 +100,9 @@ export function surfaceDraftReady(
         defaultValue: 'We finished analyzing your upload. Tap to review and publish.',
       })}
       type="recognition"
-      onView={() => router.push(routes.scanDrafts)}
+      onView={() =>
+        draftId ? void resumeDraftById(draftId, deps.t) : router.push(routes.scanDrafts)
+      }
     />,
     { id: toastId, duration: 8000 },
   );
