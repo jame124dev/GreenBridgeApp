@@ -3844,6 +3844,8 @@
       "expiredBody": "Saved photos or documents are no longer on this device. Start a new scan."
     },
     "drafts": {
+      "allDrafts": "All drafts",
+      "draftBadge": "DRAFT",
       "saved": "Draft saved",
       "saveFailed": "Could not save draft",
       "saveDraft": "Save as draft",

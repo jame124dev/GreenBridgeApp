@@ -25,22 +25,39 @@ const draft: any = {
 };
 
 describe('DraftCard', () => {
-  it('renders the title and fires onResume', () => {
+  it('renders the title and fires onResume when the card is tapped', () => {
     const onResume = jest.fn();
-    const { getByText } = render(
+    // The whole card taps to Resume (mirrors a listing row tapping to detail);
+    // it's labelled with the title + "Continue".
+    const { getByText, getByLabelText } = render(
       <DraftCard draft={draft} onResume={onResume} onDelete={() => {}} />,
     );
     expect(getByText('Vacuum Pump')).toBeTruthy();
-    fireEvent.press(getByText(/continue/i));
+    fireEvent.press(getByLabelText(/vacuum pump/i));
     expect(onResume).toHaveBeenCalled();
   });
 
   it('fires onDelete when the delete action is pressed', () => {
     const onDelete = jest.fn();
-    const { getByText } = render(
+    // Delete is the trash button in the right slot, labelled "Delete".
+    const { getByLabelText } = render(
       <DraftCard draft={draft} onResume={() => {}} onDelete={onDelete} />,
     );
-    fireEvent.press(getByText(/delete/i));
+    fireEvent.press(getByLabelText(/delete/i));
     expect(onDelete).toHaveBeenCalled();
+  });
+
+  it('shows a spinner instead of delete while resuming, and locks when disabled', () => {
+    const onResume = jest.fn();
+    const onDelete = jest.fn();
+    const { queryByLabelText } = render(
+      <DraftCard draft={draft} onResume={onResume} onDelete={onDelete} resuming disabled />,
+    );
+    // While resuming, the delete action is replaced by the spinner.
+    expect(queryByLabelText(/delete/i)).toBeNull();
+    // The card is disabled → tapping it does nothing.
+    const card = queryByLabelText(/vacuum pump/i);
+    if (card) fireEvent.press(card);
+    expect(onResume).not.toHaveBeenCalled();
   });
 });

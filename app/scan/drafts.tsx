@@ -1,50 +1,56 @@
 import { useCallback } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toast } from 'sonner-native';
 
-import { Screen } from '@/components/ui';
+import { Screen, Text } from '@/components/ui';
 import { useListDrafts, useDeleteDraft } from '@/services/drafts/draftHooks';
 import { useResumeDraft } from '@/features/scanner/useResumeDraft';
+import DraftCard from '@/features/scanner/components/drafts/DraftCard';
+import { LabScreenBg } from '@/features/lab/components';
+import { IS_CUSTOMER } from '@/lib/flags';
 import { safeBack } from '@/lib/safeBack';
 import { haptics } from '@/lib/haptics';
-import { brand } from '@/constants/theme';
-import DraftCard from '@/features/scanner/components/drafts/DraftCard';
+import { brand, greenDarkest, spacing } from '@/constants/theme';
 
 /**
- * Task 9 — the drafts list surface (`/scan/drafts`), reached from the
- * "Your drafts" entry point on Home (`app/(tabs)/index.tsx`) when
- * `draftsEnabled()` is on. Auto-registered by expo-router's file-based
- * routing (`app/scan/_layout.tsx` is a bare `<Stack>` with no explicit
- * `Stack.Screen` children — no registration needed here).
+ * The drafts list surface (`/scan/drafts`), reached from the "Your drafts" /
+ * "Your items → See all" entry points when `draftsEnabled()` is on.
  *
- * Resume: `getDraft(id)` returns the full payload (list rows are metadata
- * only). For a `form-blob` draft (the common case — Task 8's "Save as
- * draft"), the payload hydrates straight into the scan store via
- * `hydrateScanDraftFromPayload` + `hydrateFromServer`, then
- * `getScanResumeRoute` picks the right screen off the now-live store state.
- * A `pending-ai` draft (background recognition) carries the raw AI `result`
- * + canonical GCS image URLs instead of a `PersistedScan` blob;
- * `mapPendingAiDraft` (Follow-up #1) maps it through the live-scan transform
- * and we take the same apply/route path as `processing-v2.tsx`.
+ * Design mirrors the seller listings "See all" (`app/(lab)/(tabs)/listings.tsx`
+ * + `RecentSubmissionsList`) so the two "See all" pages read as one family:
+ * the customer build gets the same `LabScreenBg`, header row, and uppercase
+ * section header + count pill, and each `DraftCard` mirrors a listing row
+ * (amber-accented for the draft state — see DraftCard).
  *
- * Task 13 (scope-changed): this list ALSO serves the (lab) customer-app AI
- * drafts saved from `app/(lab)/draft.tsx` (Task 12's "Save as draft"). Every
- * draft row — seller and lab alike — carries a top-level `mode:
- * 'single'|'multi'` (Task 2); the real sell/buy distinction only lives in the
- * FETCHED `payload.mode`, stamped by `buildLabDraftPayload`
- * (`src/services/drafts/draftPayload.ts`). `isLabDraft(detail)`
- * (`src/features/lab/labResumeRoute.ts`) inspects that payload — never the
- * summary's top-level `mode` — which is why it can only run here, after
- * `getDraft(id)`, not against the list's `DraftSummary` rows.
+ * Resume routing (getDraft → lab | pending-ai | form-blob branch + nav) is the
+ * shared `useResumeDraft`, identical to the Home "Your items" draft rows.
  */
+function SectionHeader({ title, countLabel }: { title: string; countLabel?: string }) {
+  return (
+    <View className="flex-row items-center justify-between mb-lg">
+      <Text variant="caption" tone="secondary" className="font-bold uppercase tracking-wider">
+        {title}
+      </Text>
+      {countLabel ? (
+        <View className="bg-success/10 rounded-full px-lg py-[3px]">
+          <Text variant="caption" className="font-bold text-success text-[11px] uppercase tracking-widest">
+            {countLabel}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export default function DraftsScreen() {
   const { t } = useTranslation();
-  const { data, isLoading, isError, refetch, isRefetching } = useListDrafts();
+  const insets = useSafeAreaInsets();
+  const { data, isLoading, isError, refetch } = useListDrafts();
   const deleteDraft = useDeleteDraft();
-  // Resume (getDraft → lab | pending-ai | form-blob branch + navigation) is now
-  // shared with the Home "Your items" draft rows — see `useResumeDraft`.
+  // Shared with the Home "Your items" draft rows — one resume path.
   const { resume, resumingId } = useResumeDraft();
 
   const onDelete = useCallback(
@@ -65,9 +71,7 @@ export default function DraftsScreen() {
               deleteDraft.mutate(id, {
                 onError: () => {
                   haptics.error();
-                  toast.error(
-                    t('mobile.drafts.deleteFailed', { defaultValue: 'Could not delete draft' }),
-                  );
+                  toast.error(t('mobile.drafts.deleteFailed', { defaultValue: 'Could not delete draft' }));
                 },
               });
             },
@@ -79,69 +83,82 @@ export default function DraftsScreen() {
   );
 
   const drafts = data?.drafts ?? [];
+  const sectionTitle = t('mobile.drafts.allDrafts', { defaultValue: 'All drafts' });
 
-  return (
-    <Screen padded={false} scroll={false} edges={['top', 'bottom']}>
-      <View className="flex-row items-center gap-md px-lg py-2.5 border-b border-brand-border-strong bg-brand-background">
+  const inner = (
+    <Screen
+      scroll
+      padded={false}
+      edges={['top']}
+      style={{ backgroundColor: IS_CUSTOMER ? 'transparent' : brand.background }}
+      contentContainerStyle={{
+        paddingTop: spacing.sm,
+        paddingHorizontal: 22,
+        paddingBottom: insets.bottom + spacing.xl,
+      }}
+    >
+      {/* Page header — matches the listings "See all" header row. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <Pressable
-          onPress={() => safeBack()}
           hitSlop={10}
-          className="p-xs"
+          onPress={() => safeBack()}
           accessibilityRole="button"
           accessibilityLabel={t('mobile.common.back', { defaultValue: 'Back' })}
         >
-          <ChevronLeft color={brand.foreground} size={22} />
+          <ChevronLeft size={26} color={greenDarkest} />
         </Pressable>
-        <Text className="font-heading text-5xl text-brand-foreground">
+        <Text variant="title" tone="primary" style={{ fontWeight: '700' }}>
           {t('mobile.drafts.yourDrafts', { defaultValue: 'Your drafts' })}
         </Text>
       </View>
 
-      {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={brand.primary} />
-        </View>
-      ) : isError ? (
-        <View className="flex-1 items-center justify-center px-2xl gap-md">
-          <Text className="text-brand-text-muted text-center">
-            {t('mobile.drafts.loadError', { defaultValue: 'Could not load drafts' })}
-          </Text>
-          <Pressable onPress={() => refetch()} accessibilityRole="button">
-            <Text className="text-brand-primary font-semibold">
-              {t('mobile.common.retry', { defaultValue: 'Retry' })}
-            </Text>
-          </Pressable>
-        </View>
-      ) : (
-        <FlatList
-          data={drafts}
-          keyExtractor={(d) => d.id}
-          contentContainerClassName="p-lg gap-md"
-          contentContainerStyle={{ flexGrow: 1 }}
-          onRefresh={refetch}
-          refreshing={isRefetching}
-          ListEmptyComponent={
-            <View className="flex-1 items-center justify-center mt-4xl">
-              <Text className="text-brand-text-muted text-center">
-                {t('mobile.drafts.empty', { defaultValue: 'No saved drafts yet' })}
-              </Text>
+      <View className="mt-3xl">
+        {isLoading ? (
+          <>
+            <SectionHeader title={sectionTitle} />
+            <View className="mt-xl">
+              <ActivityIndicator color={greenDarkest} />
             </View>
-          }
-          renderItem={({ item }) => (
-            <DraftCard
-              draft={item}
-              onResume={() => resume(item.id)}
-              onDelete={() => onDelete(item.id, item.title)}
+          </>
+        ) : isError ? (
+          <>
+            <SectionHeader title={sectionTitle} />
+            <Pressable onPress={() => refetch()} accessibilityRole="button">
+              <Text variant="body" tone="brand" className="font-semibold text-center mt-md">
+                {t('mobile.drafts.loadError', { defaultValue: 'Could not load drafts' })}
+              </Text>
+            </Pressable>
+          </>
+        ) : drafts.length === 0 ? (
+          <>
+            <SectionHeader title={sectionTitle} />
+            <Text variant="body" tone="tertiary" className="text-center mt-xl">
+              {t('mobile.drafts.empty', { defaultValue: 'No saved drafts yet' })}
+            </Text>
+          </>
+        ) : (
+          <>
+            <SectionHeader
+              title={sectionTitle}
+              countLabel={t('mobile.home.itemsCount', { count: drafts.length })}
             />
-          )}
-        />
-      )}
-
-      {resumingId ? (
-        <View className="absolute inset-0 items-center justify-center bg-black/20">
-          <ActivityIndicator color={brand.primary} size="large" />
-        </View>
-      ) : null}
+            {drafts.map((item) => (
+              <DraftCard
+                key={item.id}
+                draft={item}
+                onResume={() => resume(item.id)}
+                onDelete={() => onDelete(item.id, item.title)}
+                resuming={resumingId === item.id}
+                disabled={resumingId != null}
+              />
+            ))}
+          </>
+        )}
+      </View>
     </Screen>
   );
+
+  // Customer (lab) build gets the lab background so this page matches the
+  // listings "See all"; the seller build keeps its plain screen background.
+  return IS_CUSTOMER ? <LabScreenBg>{inner}</LabScreenBg> : inner;
 }
