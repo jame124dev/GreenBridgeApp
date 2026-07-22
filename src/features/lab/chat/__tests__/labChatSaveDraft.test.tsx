@@ -33,23 +33,28 @@ function labFrame(title: string) {
   };
 }
 
+// Fixed per-conversation id these tests pass explicitly (follow-up #4) — a
+// stable stand-in for `useSession.getState().getConversationId()`, which the
+// real callers (chat.tsx, draft.tsx) supply from the persisted MMKV session.
+const CONV_ID = 'lab-test-conv-id';
+
 describe('buildLabChatDraftReq', () => {
   it('sends the single-product top-level mode contract, regardless of sell/buy', () => {
-    const sell = buildLabChatDraftReq(labFrame('Agilent 1260 HPLC'), 'sell', '101lab');
-    const buy = buildLabChatDraftReq(labFrame('−80°C Freezer'), 'buy', '101lab');
+    const sell = buildLabChatDraftReq(labFrame('Agilent 1260 HPLC'), 'sell', '101lab', CONV_ID);
+    const buy = buildLabChatDraftReq(labFrame('−80°C Freezer'), 'buy', '101lab', CONV_ID);
     expect(sell.mode).toBe('single');
     expect(buy.mode).toBe('single');
   });
 
   it('flags the request as an AI-flow, single-product draft', () => {
-    const req = buildLabChatDraftReq(labFrame('Agilent 1260 HPLC'), 'sell', '101lab');
+    const req = buildLabChatDraftReq(labFrame('Agilent 1260 HPLC'), 'sell', '101lab', CONV_ID);
     expect(req.flow).toBe('ai');
     expect(req.product_count).toBe(1);
   });
 
   it('extracts a real title from the frame nested product_title, not "Untitled…"', () => {
-    const sell = buildLabChatDraftReq(labFrame('Agilent 1260 HPLC'), 'sell', '101lab');
-    const buy = buildLabChatDraftReq(labFrame('−80°C Freezer'), 'buy', '101lab');
+    const sell = buildLabChatDraftReq(labFrame('Agilent 1260 HPLC'), 'sell', '101lab', CONV_ID);
+    const buy = buildLabChatDraftReq(labFrame('−80°C Freezer'), 'buy', '101lab', CONV_ID);
     expect(sell.title).toBe('Agilent 1260 HPLC');
     expect(sell.title).not.toBe('Untitled listing');
     expect(buy.title).toBe('−80°C Freezer');
@@ -63,8 +68,8 @@ describe('buildLabChatDraftReq', () => {
   // handler, which reads title the same way). Non-empty + mode-coherent is
   // what actually matters here — never the literal generic string.
   it('falls back to the static mode-shell title when the frame has no title anywhere', () => {
-    const sell = buildLabChatDraftReq({}, 'sell', '101lab');
-    const buy = buildLabChatDraftReq(undefined, 'buy', '101lab');
+    const sell = buildLabChatDraftReq({}, 'sell', '101lab', CONV_ID);
+    const buy = buildLabChatDraftReq(undefined, 'buy', '101lab', CONV_ID);
     expect(sell.title.length).toBeGreaterThan(0);
     expect(buy.title.length).toBeGreaterThan(0);
     expect(sell.title).not.toBe('Untitled listing');
@@ -72,8 +77,8 @@ describe('buildLabChatDraftReq', () => {
   });
 
   it('stamps the real sell/buy distinction onto payload.mode (not the top-level mode)', () => {
-    const sell = buildLabChatDraftReq(labFrame('Agilent 1260 HPLC'), 'sell', '101lab');
-    const buy = buildLabChatDraftReq(labFrame('−80°C Freezer'), 'buy', '101lab');
+    const sell = buildLabChatDraftReq(labFrame('Agilent 1260 HPLC'), 'sell', '101lab', CONV_ID);
+    const buy = buildLabChatDraftReq(labFrame('−80°C Freezer'), 'buy', '101lab', CONV_ID);
     expect((sell.payload as { mode: string }).mode).toBe('sell');
     expect((buy.payload as { mode: string }).mode).toBe('buy');
     expect((sell.payload as { kind: string }).kind).toBe('form-blob');
@@ -81,13 +86,18 @@ describe('buildLabChatDraftReq', () => {
 
   it('carries the raw frame through as payload.labDraft and passes site_type through', () => {
     const frame = labFrame('Agilent 1260 HPLC');
-    const req = buildLabChatDraftReq(frame, 'sell', '101lab');
+    const req = buildLabChatDraftReq(frame, 'sell', '101lab', CONV_ID);
     expect((req.payload as { labDraft: unknown }).labDraft).toBe(frame);
     expect(req.site_type).toBe('101lab');
   });
 
-  it('mints a session_uuid namespaced by the lab mode', () => {
-    const req = buildLabChatDraftReq(labFrame('Agilent 1260 HPLC'), 'sell', '101lab');
-    expect(req.session_uuid.startsWith('lab-sell-')).toBe(true);
+  // Follow-up #4: session_uuid must be the STABLE per-conversation id (not
+  // `Date.now()`) so repeat "Save as draft" taps in the same conversation
+  // UPSERT one backend row instead of minting duplicates.
+  it('derives a stable session_uuid from the conversation id (no Date.now())', () => {
+    const req = buildLabChatDraftReq(labFrame('Agilent 1260 HPLC'), 'sell', '101lab', CONV_ID);
+    expect(req.session_uuid).toBe(CONV_ID); // conversation id is already lab-namespaced; used directly
+    const again = buildLabChatDraftReq(labFrame('Agilent 1260 HPLC'), 'sell', '101lab', CONV_ID);
+    expect(again.session_uuid).toBe(req.session_uuid); // stable across repeat calls
   });
 });

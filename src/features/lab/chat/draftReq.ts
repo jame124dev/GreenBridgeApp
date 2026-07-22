@@ -25,11 +25,17 @@ export function buildLabChatDraftReq(
   frame: unknown,
   mode: ComposerMode,
   siteType: string,
+  conversationId: string,
 ): CreateDraftReq {
   const built = buildLabDraftPayload(frame, mode);
   const title = draftFromFrame(frame, mode)?.title || built.title;
   return {
-    session_uuid: `lab-${mode}-${Date.now()}`,
+    // Stable per-conversation id (not `Date.now()`) — the lab session is
+    // one-conversation-builds-one-listing, so repeat taps of "Save as draft"
+    // in the same conversation UPSERT the same backend row instead of minting
+    // a fresh one every time (the backend upserts by session_uuid). The
+    // conversation id is already `lab-`-namespaced, so use it directly.
+    session_uuid: conversationId,
     flow: 'ai',
     mode: 'single', // top-level contract — NOT the lab sell/buy mode, see note above
     title,

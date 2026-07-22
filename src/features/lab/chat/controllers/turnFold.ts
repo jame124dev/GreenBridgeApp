@@ -64,18 +64,21 @@ export function collapseSupersededCards(messages: Message[], liveTypes: Set<stri
   });
 }
 
-/** The most-recent listing_draft card payload (live turn first, else the last
- *  committed one in history), or null when no draft exists yet. Same live-first-
+/** The most-recent listing_draft/wtb_draft card payload (live turn first, else
+ *  the last committed one in history), or null when no draft exists yet. Both
+ *  sell (listing_draft) and buy (wtb_draft) drafts count. Same live-first-
  *  then-last-committed scan the old location strip used — now general-purpose so
  *  the gap filler can derive its full gap list from it. */
 export function computeLatestDraft(liveCards: Turn['cards'], messages: Message[]): DraftPayload | null {
-  const liveDraft = [...liveCards].reverse().find((c) => c.type === 'listing_draft');
+  const liveDraft = [...liveCards]
+    .reverse()
+    .find((c) => c.type === 'listing_draft' || c.type === 'wtb_draft');
   if (liveDraft) return (liveDraft.data as DraftPayload | undefined) ?? null;
   for (let i = messages.length - 1; i >= 0; i--) {
     const cards = messages[i].cards;
     if (!cards) continue;
     for (let j = cards.length - 1; j >= 0; j--) {
-      if (cards[j].type === 'listing_draft') {
+      if (cards[j].type === 'listing_draft' || cards[j].type === 'wtb_draft') {
         return (cards[j].data as DraftPayload | undefined) ?? null;
       }
     }

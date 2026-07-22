@@ -169,7 +169,14 @@ function LabChatScreen() {
     haptics.tap();
     try {
       setSavingDraft(true);
-      await createDraft.mutateAsync(buildLabChatDraftReq(chat.latestDraft, mode, getSiteType()));
+      await createDraft.mutateAsync(
+        buildLabChatDraftReq(
+          chat.latestDraft,
+          mode,
+          getSiteType(),
+          useSession.getState().getConversationId(),
+        ),
+      );
       toast.success(t('mobile.drafts.saved', { defaultValue: 'Draft saved' }));
     } catch {
       toast.error(t('mobile.drafts.saveFailed', { defaultValue: 'Could not save draft' }));

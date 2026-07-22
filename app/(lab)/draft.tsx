@@ -39,6 +39,7 @@ import { pop, reducedFade, rise, usePressScale } from '@/animations/recipes';
 import { haptics } from '@/lib/haptics';
 import { LAB_CHAT_ENABLED, draftsEnabled } from '@/lib/flags';
 import { useComposer } from '@/features/lab/stores/composerStore';
+import { useSession } from '@/features/lab/stores/sessionStore';
 import { useThread } from '@/features/lab/stores/threadStore';
 import { useLabTurn } from '@/features/lab/hooks/useLabTurn';
 import { DRAFT_DATA, type DraftData } from '@/features/lab/data/demo';
@@ -306,7 +307,11 @@ export default function LabDraft() {
     try {
       setSavingDraft(true);
       await createDraft.mutateAsync({
-        session_uuid: `lab-${mode}-${Date.now()}`,
+        // Stable per-conversation id (not `Date.now()`) — repeat taps of "Save
+        // as draft" in the same conversation UPSERT one backend row instead of
+        // minting a fresh one every time (the backend upserts by session_uuid).
+        // The conversation id is already `lab-`-namespaced, so use it directly.
+        session_uuid: useSession.getState().getConversationId(),
         flow: 'ai',
         mode: 'single', // top-level contract — NOT the lab sell/buy mode, see note above
         title,
