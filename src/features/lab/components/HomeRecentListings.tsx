@@ -1,41 +1,54 @@
-// HomeRecentListings — the (lab) Home "Recent listings" section (mockup: a mini
-// seller dashboard under the composer). Real data via the seller
-// `useRecentSubmissions` hook (same source as the History tab); each row shows
-// the listing's thumbnail/icon, title, price · category, and a status/offers
-// badge. Tap a row → listing detail; "See all" → submission history.
+// HomeRecentListings — the (lab) Home sell-mode "Your items" section: one place
+// for a seller's stuff, presented as image-forward HORIZONTAL RAILS you scan by
+// picture rather than read. When drafts are enabled it leads with a "Pick up
+// where you left off" rail (unfinished drafts — highest intent to act), then a
+// published-listings rail. A draft is fenced off from a live listing (amber
+// accent + DRAFT chip + Resume overlay, vs. the listing's status/offer badge)
+// so an unfinished draft never reads as something already live.
 //
-// Rendered only in SELL mode (see home.tsx) — "my listings" is a seller concept.
-// Hidden entirely when signed-out / empty / errored so the Home stays calm for a
-// brand-new user (the composer is the focus).
-import { ActivityIndicator, Pressable, View } from 'react-native';
+// Each group owns ONE "See all" in its own header (consistent position) — there
+// is no section-level "See all" and no bottom "View all drafts" link (both were
+// confusing). Data: useRecentSubmissions (listings) + useListDrafts (drafts);
+// resume routing is the shared useResumeDraft (identical to /scan/drafts).
+//
+// Flag: the DRAFTS rail only appears when `draftsEnabled()` — with the flag off
+// this is just the listings rail titled "Recent listings". Sell-mode only (see
+// home.tsx); hidden entirely when signed-out / empty / errored.
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, Package } from 'lucide-react-native';
+import { ChevronRight, Package, RotateCw, Sparkles } from 'lucide-react-native';
 
 import { AppImage, Badge, Text } from '@/components/ui';
 import type { BadgeVariant } from '@/components/ui/Badge';
 import { useRecentSubmissions } from '@/features/scanner/useRecentSubmissions';
 import { classifyStatus, type StatusTone } from '@/features/scanner/batchStatus';
+import { useResumeDraft } from '@/features/scanner/useResumeDraft';
+import { useListDrafts } from '@/services/drafts/draftHooks';
+import type { DraftSummary } from '@/services/drafts/draftApi';
+import { draftsEnabled } from '@/lib/flags';
 import { routes } from '@/lib/routes';
 import { greenDarkest, lab } from '@/constants/theme';
+import { useAuth } from '@/stores/authStore';
 import type { SellerBatch } from '@/types/batch';
 
-/** How many listings to preview on Home (the rest live behind "See all"). */
-const PREVIEW_LIMIT = 4;
+/** How many of each to load into the rail (the rest live behind "See all"). */
+const PREVIEW_LIMIT = 8; // published listings
+const PREVIEW_DRAFTS = 8; // drafts
+
+const CARD_W = 150;
+const IMG_H = 108;
+
+// Draft "in progress" accent — amber sits apart from the app's green (live)
+// world, the common convention for pending / needs-attention. Muted so it
+// doesn't fight the brand. Inline (only used here).
+const AMBER = '#d99413';
+const AMBER_TINT = '#fbf1da';
+const AMBER_LINE = '#f0dca0';
+const AMBER_INK = '#8a5d09';
 
 function pickTitle(item: SellerBatch): string {
-  return (
-    item.titleI18n?.en ||
-    item.title ||
-    item.category ||
-    `Batch #${item.batchId}`
-  );
-}
-
-/** Price (runtime `priceLabel`, not on the typed shape) · category. */
-function metaLine(item: SellerBatch): string {
-  const priceLabel = (item as { priceLabel?: string }).priceLabel;
-  return [priceLabel, item.category].filter(Boolean).join(' · ');
+  return item.titleI18n?.en || item.title || item.category || `Batch #${item.batchId}`;
 }
 
 // tone → i18n key suffix under mobile.labHome.status.*
@@ -49,8 +62,7 @@ const STATUS_KEY: Record<StatusTone, string> = {
   submitted: 'submitted',
 };
 
-/** One badge per row: offers take priority (more actionable), else status.
- *  Returns the offer COUNT (label resolved via t()) or a status key. */
+/** One badge per listing: offers take priority (more actionable), else status. */
 function badgeFor(item: SellerBatch): { variant: BadgeVariant; offers?: number; statusKey?: string } {
   const bids = item.bidsCount ?? 0;
   if (bids > 0) return { variant: 'warning', offers: bids };
@@ -58,94 +70,330 @@ function badgeFor(item: SellerBatch): { variant: BadgeVariant; offers?: number; 
   return { variant: tone, statusKey: STATUS_KEY[tone] };
 }
 
-function ListingRow({ item }: { item: SellerBatch }) {
+/** Compact universal relative time for the card meta ("23m" / "18h" / "2d"). */
+function compactAgo(iso?: string): string {
+  if (!iso) return '';
+  const then = Date.parse(iso);
+  if (Number.isNaN(then)) return '';
+  const m = Math.max(0, Math.round((Date.now() - then) / 60000));
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.round(h / 24)}d`;
+}
+
+function DraftRailCard({
+  draft,
+  onResume,
+  resuming,
+  anyResuming,
+}: {
+  draft: DraftSummary;
+  onResume: () => void;
+  resuming: boolean;
+  anyResuming: boolean;
+}) {
+  const { t } = useTranslation();
+  const flowLabel =
+    draft.flow === 'ai'
+      ? t('mobile.drafts.flowAi', { defaultValue: '🤖 AI' })
+      : t('mobile.drafts.flowManual', { defaultValue: '✏️ Manual' });
+  const ago = compactAgo(draft.updated_at);
+  const meta = [flowLabel, ago].filter(Boolean).join(' · ');
+  const thumb =
+    typeof draft.thumbnail_object === 'string' && /^https?:\/\//.test(draft.thumbnail_object)
+      ? draft.thumbnail_object
+      : null;
+
+  return (
+    <Pressable
+      onPress={onResume}
+      // Lock EVERY draft while any resume is in flight (parity with the
+      // /scan/drafts full-screen overlay) so a second tap can't double-navigate.
+      disabled={anyResuming}
+      accessibilityRole="button"
+      accessibilityState={{ busy: resuming, disabled: anyResuming }}
+      accessibilityLabel={`${draft.title}. ${t('mobile.labHome.resume', { defaultValue: 'Resume' })}`}
+      style={{ width: CARD_W }}
+      className="active:opacity-90"
+    >
+      <View
+        style={{
+          width: CARD_W,
+          height: IMG_H,
+          borderRadius: 14,
+          overflow: 'hidden',
+          borderWidth: 2,
+          borderColor: AMBER,
+          backgroundColor: AMBER_TINT,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {thumb ? (
+          <AppImage source={{ uri: thumb }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+        ) : (
+          <Sparkles size={26} color={AMBER} strokeWidth={1.7} />
+        )}
+
+        {/* DRAFT chip — state lives on the image */}
+        <View
+          style={{
+            position: 'absolute',
+            top: 6,
+            left: 6,
+            backgroundColor: AMBER,
+            borderRadius: 6,
+            paddingHorizontal: 6,
+            paddingVertical: 2,
+          }}
+        >
+          <Text style={{ fontSize: 9, fontWeight: '800', letterSpacing: 0.4, color: '#fff' }}>
+            {t('mobile.labHome.draftChip', { defaultValue: 'DRAFT' })}
+          </Text>
+        </View>
+
+        {/* Resume affordance (or spinner while resuming) */}
+        {resuming ? (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.32)', alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color="#fff" />
+          </View>
+        ) : (
+          <View
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              paddingVertical: 5,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
+            }}
+          >
+            <RotateCw size={12} color="#fff" strokeWidth={2.4} />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>
+              {t('mobile.labHome.resume', { defaultValue: 'Resume' })}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <Text variant="bodySm" tone="primary" className="font-semibold mt-xs" numberOfLines={1}>
+        {draft.title}
+      </Text>
+      {meta ? (
+        <Text variant="caption" tone="tertiary" numberOfLines={1}>
+          {meta}
+        </Text>
+      ) : null}
+    </Pressable>
+  );
+}
+
+function ListingRailCard({ item }: { item: SellerBatch }) {
   const { t } = useTranslation();
   const badge = badgeFor(item);
   const badgeLabel =
     badge.offers != null
-      ? t(badge.offers === 1 ? 'mobile.labHome.offerOne' : 'mobile.labHome.offerOther', {
-          count: badge.offers,
-        })
+      ? t(badge.offers === 1 ? 'mobile.labHome.offerOne' : 'mobile.labHome.offerOther', { count: badge.offers })
       : t(`mobile.labHome.status.${badge.statusKey}`);
   return (
     <Pressable
-      className="flex-row items-center gap-md bg-white rounded-2xl border border-neutral-200 shadow-sm p-md mb-md active:opacity-90"
       onPress={() => router.push(routes.listingDetail(item.batchPk))}
       accessibilityRole="button"
       accessibilityLabel={`${pickTitle(item)}. ${badgeLabel}`}
+      style={{ width: CARD_W }}
+      className="active:opacity-90"
     >
-      {/* Icon / thumbnail tile */}
       <View
-        className="w-11 h-11 rounded-xl overflow-hidden items-center justify-center"
-        style={{ backgroundColor: lab.pillBg }}
+        style={{
+          width: CARD_W,
+          height: IMG_H,
+          borderRadius: 14,
+          overflow: 'hidden',
+          backgroundColor: lab.pillBg,
+          borderWidth: 1,
+          borderColor: '#e4e9e4',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
         {item.thumbnailUrl ? (
-          <AppImage
-            source={{ uri: item.thumbnailUrl }}
-            style={{ width: '100%', height: '100%' }}
-          />
+          <AppImage source={{ uri: item.thumbnailUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
         ) : (
-          <Package size={20} color={greenDarkest} strokeWidth={1.8} />
+          <Package size={26} color={greenDarkest} strokeWidth={1.7} />
         )}
+        {/* Status / offers badge — top-right on the image */}
+        <View style={{ position: 'absolute', top: 6, right: 6 }}>
+          <Badge variant={badge.variant} label={badgeLabel} size="sm" />
+        </View>
       </View>
 
-      {/* Title + meta */}
-      <View className="flex-1">
-        <Text variant="subtitle" tone="primary" className="font-semibold" numberOfLines={1}>
-          {pickTitle(item)}
+      <Text variant="bodySm" tone="primary" className="font-semibold mt-xs" numberOfLines={1}>
+        {pickTitle(item)}
+      </Text>
+      {item.category ? (
+        <Text variant="caption" tone="tertiary" numberOfLines={1}>
+          {item.category}
         </Text>
-        {metaLine(item) ? (
-          <Text variant="bodySm" tone="tertiary" numberOfLines={1} className="mt-[2px]">
-            {metaLine(item)}
-          </Text>
+      ) : null}
+    </Pressable>
+  );
+}
+
+/** Group header: label (+ optional amber count) on the left, one "See all" right. */
+function GroupHeader({
+  label,
+  count,
+  onSeeAll,
+}: {
+  label: string;
+  count?: number;
+  onSeeAll: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <View className="flex-row items-center justify-between mb-sm mt-md">
+      <View className="flex-row items-center gap-xs">
+        <Text variant="caption" tone="tertiary" className="font-bold uppercase" style={{ letterSpacing: 0.8 }}>
+          {label}
+        </Text>
+        {count != null && count > 0 ? (
+          <View style={{ backgroundColor: AMBER_TINT, borderColor: AMBER_LINE, borderWidth: 1, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 }}>
+            <Text variant="caption" style={{ color: AMBER_INK, fontWeight: '700' }}>
+              {count}
+            </Text>
+          </View>
         ) : null}
       </View>
+      <Pressable
+        className="flex-row items-center active:opacity-70"
+        hitSlop={8}
+        onPress={onSeeAll}
+        accessibilityRole="button"
+        accessibilityLabel={t('mobile.labHome.seeAll')}
+      >
+        <Text variant="bodySm" className="font-semibold" style={{ color: greenDarkest }}>
+          {t('mobile.labHome.seeAll')}
+        </Text>
+        <ChevronRight size={16} color={greenDarkest} />
+      </Pressable>
+    </View>
+  );
+}
 
-      <Badge variant={badge.variant} label={badgeLabel} size="sm" />
-    </Pressable>
+function Rail({ children }: { children: React.ReactNode }) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ gap: 12, paddingRight: 22 }}
+    >
+      {children}
+    </ScrollView>
   );
 }
 
 export function HomeRecentListings() {
   const { t } = useTranslation();
-  const { data, isLoading, isError } = useRecentSubmissions(PREVIEW_LIMIT);
+  const profile = useAuth((s) => s.profile);
+  const { resume, resumingId } = useResumeDraft();
 
-  // Silent while loading the first time (a spinner under the composer would be
-  // noisier than just letting the section pop in). Hide on error/empty/signed-out
-  // so the Home stays clean — nothing actionable to show.
-  if (isError) return null;
-  if (isLoading) {
+  const { data: listingsData, isLoading: listingsLoading, isError: listingsError } =
+    useRecentSubmissions(PREVIEW_LIMIT);
+  // Gated on the flag + sign-in so it never fires when it can't be used / 401s.
+  const draftsGateOn = draftsEnabled() && !!profile?.id;
+  const { data: draftsData, isLoading: draftsLoading } = useListDrafts({ enabled: draftsGateOn });
+
+  const allDrafts = draftsGateOn ? (draftsData?.drafts ?? []) : [];
+  const drafts = allDrafts.slice(0, PREVIEW_DRAFTS);
+  const listings = listingsError ? [] : (listingsData ?? []);
+
+  // Wait for BOTH queries before first paint (when drafts are gated on) so the
+  // header doesn't flip "Recent listings" → "Your items" and the drafts rail
+  // doesn't pop in above the listings after the fact.
+  const draftsPending = draftsGateOn && draftsLoading;
+  if (listingsLoading || draftsPending) {
     return (
       <View className="mt-2xl">
         <ActivityIndicator color={greenDarkest} />
       </View>
     );
   }
-  if (!data?.length) return null;
+  if (!listings.length && !allDrafts.length) return null;
+
+  const hasDraftGroup = drafts.length > 0;
+  // "Your items" once drafts share the section; else the familiar "Recent listings".
+  const title = hasDraftGroup
+    ? t('mobile.labHome.yourItems', { defaultValue: 'Your items' })
+    : t('mobile.labHome.recentListings', { defaultValue: 'Recent listings' });
 
   return (
     <View className="mt-2xl">
-      <View className="flex-row items-center justify-between mb-md">
-        <Text variant="body" tone="primary" className="font-bold">
-          {t('mobile.labHome.recentListings')}
-        </Text>
-        <Pressable
-          className="flex-row items-center active:opacity-70"
-          hitSlop={8}
-          onPress={() => router.push(routes.labListings)}
-          accessibilityRole="button"
-          accessibilityLabel={t('mobile.labHome.seeAll')}
-        >
-          <Text variant="bodySm" className="font-semibold" style={{ color: greenDarkest }}>
-            {t('mobile.labHome.seeAll')}
-          </Text>
-          <ChevronRight size={16} color={greenDarkest} />
-        </Pressable>
-      </View>
+      <Text variant="body" tone="primary" className="font-bold px-[2px]">
+        {title}
+      </Text>
 
-      {data.map((item) => (
-        <ListingRow key={item.batchPk} item={item} />
-      ))}
+      {/* Drafts rail — "pick up where you left off". Leads the section. */}
+      {hasDraftGroup ? (
+        <>
+          <GroupHeader
+            label={t('mobile.labHome.draftsGroup', { defaultValue: 'Pick up where you left off' })}
+            count={allDrafts.length}
+            onSeeAll={() => router.push(routes.scanDrafts)}
+          />
+          <Rail>
+            {drafts.map((d) => (
+              <DraftRailCard
+                key={d.id}
+                draft={d}
+                onResume={() => resume(d.id)}
+                resuming={resumingId === d.id}
+                anyResuming={resumingId != null}
+              />
+            ))}
+          </Rail>
+        </>
+      ) : null}
+
+      {/* Listings rail. A group header only when the drafts rail is also present
+          (otherwise the section title already names them) — but it still gets a
+          "See all" via the header when grouped; when solo, the title stands in
+          and "See all" rides on the listings header below. */}
+      {listings.length > 0 ? (
+        <>
+          {hasDraftGroup ? (
+            <GroupHeader
+              label={t('mobile.labHome.listingsGroup', { defaultValue: 'Listings' })}
+              onSeeAll={() => router.push(routes.labListings)}
+            />
+          ) : (
+            <View className="flex-row items-center justify-end mb-sm mt-md">
+              <Pressable
+                className="flex-row items-center active:opacity-70"
+                hitSlop={8}
+                onPress={() => router.push(routes.labListings)}
+                accessibilityRole="button"
+                accessibilityLabel={t('mobile.labHome.seeAll')}
+              >
+                <Text variant="bodySm" className="font-semibold" style={{ color: greenDarkest }}>
+                  {t('mobile.labHome.seeAll')}
+                </Text>
+                <ChevronRight size={16} color={greenDarkest} />
+              </Pressable>
+            </View>
+          )}
+          <Rail>
+            {listings.map((item) => (
+              <ListingRailCard key={item.batchPk} item={item} />
+            ))}
+          </Rail>
+        </>
+      ) : null}
     </View>
   );
 }

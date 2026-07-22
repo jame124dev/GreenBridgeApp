@@ -30,6 +30,8 @@ export const routes = {
   scanProcessingV2: '/scan/processing-v2' as Href,
   activityHistory: '/activity/history' as Href,
   scanDetail: '/scan/detail' as Href,
+  /** Saved-drafts list ("Your drafts" / Home "View all drafts"). */
+  scanDrafts: '/scan/drafts' as Href,
   listingDetail: (batchPk: number) => `/listing/${batchPk}` as Href,
   scanSuccess: (
     batchPk: number,

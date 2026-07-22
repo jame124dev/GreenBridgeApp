@@ -10,8 +10,15 @@ export const draftKeys = {
   detail: (id: string) => [...draftKeys.all, 'detail', id] as const,
 };
 
-export function useListDrafts() {
-  return useQuery({ queryKey: draftKeys.list(), queryFn: () => api.listDrafts(), staleTime: 15_000 });
+export function useListDrafts(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: draftKeys.list(),
+    queryFn: () => api.listDrafts(),
+    staleTime: 15_000,
+    // Callers (e.g. the Home "Your items" section) gate on the drafts flag +
+    // sign-in so the list isn't fetched when it can't be used / would 401.
+    enabled: options?.enabled ?? true,
+  });
 }
 
 export function useGetDraft(id: string | undefined, enabled = true) {
