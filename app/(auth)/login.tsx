@@ -13,7 +13,7 @@ import { Button, Card, Input, LanguageSheet, Screen, Text } from '@/components/u
 import { loginSchema, type LoginInput } from '@/features/auth/schema';
 import { useLogin } from '@/features/auth/useLogin';
 import { IS_CUSTOMER } from '@/lib/flags';
-import { LoginError } from '@/services/auth/login';
+import { LoginError, type ApprovalStateExtra } from '@/services/auth/login';
 import { toast } from 'sonner-native';
 import { useAuth } from '@/stores/authStore';
 import { getBranding } from '@/theme/branding';
@@ -75,6 +75,7 @@ export default function LoginScreen() {
   });
   const mut = useLogin();
   const setPending = useAuth((s) => s.setPending);
+  const setApproval = useAuth((s) => s.setApproval);
 
   const onSubmit = (values: LoginInput) =>
     mut.mutate(values, {
@@ -87,6 +88,7 @@ export default function LoginScreen() {
           }
           if (err.code === 'ACCOUNT_PENDING') {
             setPending(true);
+            setApproval((err.extra as ApprovalStateExtra | undefined)?.approval ?? null);
             return router.replace('/(auth)/pending');
           }
           if (err.code === 'BUYER_NOT_ALLOWED') {

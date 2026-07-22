@@ -3,9 +3,14 @@ import { getAuthConfigError } from '@/lib/env';
 import { IS_CUSTOMER } from '@/lib/flags';
 import { mmkv } from '@/lib/mmkv';
 import { getSecureItem, setSecureItem } from '@/lib/secureStorage';
+import type { ApprovalState } from '@/stores/authStore';
 import { logout } from './logout';
 
 export { logout };
+
+/** Shape of the `extra` carried on an ACCOUNT_PENDING LoginError — the pending
+ *  response body, which includes the per-step `approval` facts. */
+export type ApprovalStateExtra = { approval?: ApprovalState };
 
 export type LoginPayload = { email: string; password: string };
 
@@ -68,6 +73,7 @@ export async function login(payload: LoginPayload): Promise<LoginSuccess> {
         userId: body.userId as number,
       });
       mmkv.set('auth.pending', true);
+      if (body.approval) mmkv.set('auth.approval', JSON.stringify(body.approval));
       throw new LoginError('ACCOUNT_PENDING', (body.message as string) ?? 'Account pending approval', body);
     }
     if (!axiosErr.response) {
@@ -161,7 +167,8 @@ export async function recheckApproval(): Promise<LoginSuccess> {
     const body = axiosErr.response?.data;
 
     if (status === 403 && body?.code === 'ACCOUNT_PENDING') {
-      throw new LoginError('ACCOUNT_PENDING', (body.message as string) ?? 'Still pending approval');
+      if (body.approval) mmkv.set('auth.approval', JSON.stringify(body.approval));
+      throw new LoginError('ACCOUNT_PENDING', (body.message as string) ?? 'Still pending approval', body);
     }
     if (status === 401) {
       // The interceptor already logged out on 401; surface a clear message.
