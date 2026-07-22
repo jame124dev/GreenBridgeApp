@@ -10,7 +10,7 @@ export const draftKeys = {
   detail: (id: string) => [...draftKeys.all, 'detail', id] as const,
 };
 
-export function useListDrafts(options?: { enabled?: boolean }) {
+export function useListDrafts(options?: { enabled?: boolean; retry?: number | boolean }) {
   return useQuery({
     queryKey: draftKeys.list(),
     queryFn: () => api.listDrafts(),
@@ -18,6 +18,10 @@ export function useListDrafts(options?: { enabled?: boolean }) {
     // Callers (e.g. the Home "Your items" section) gate on the drafts flag +
     // sign-in so the list isn't fetched when it can't be used / would 401.
     enabled: options?.enabled ?? true,
+    // Home passes `retry: 0` so a failing /drafts (e.g. 404 where it isn't
+    // deployed) fails FAST instead of retry-backoff hiding already-loaded
+    // listings behind the shared first-paint spinner. undefined → client default.
+    ...(options?.retry !== undefined ? { retry: options.retry } : null),
   });
 }
 

@@ -194,7 +194,7 @@ function DraftRailCard({
   );
 }
 
-function ListingRailCard({ item }: { item: SellerBatch }) {
+function ListingRailCard({ item, anyResuming }: { item: SellerBatch; anyResuming: boolean }) {
   const { t } = useTranslation();
   const badge = badgeFor(item);
   const badgeLabel =
@@ -204,7 +204,11 @@ function ListingRailCard({ item }: { item: SellerBatch }) {
   return (
     <Pressable
       onPress={() => router.push(routes.listingDetail(item.batchPk))}
+      // Locked while a draft resume is navigating, so a stray tap can't
+      // double-navigate (parity with the drafts-list overlay).
+      disabled={anyResuming}
       accessibilityRole="button"
+      accessibilityState={{ disabled: anyResuming }}
       accessibilityLabel={`${pickTitle(item)}. ${badgeLabel}`}
       style={{ width: CARD_W }}
       className="active:opacity-90"
@@ -227,8 +231,9 @@ function ListingRailCard({ item }: { item: SellerBatch }) {
         ) : (
           <Package size={26} color={greenDarkest} strokeWidth={1.7} />
         )}
-        {/* Status / offers badge — top-right on the image */}
-        <View style={{ position: 'absolute', top: 6, right: 6 }}>
+        {/* Status / offers badge — top-right on the image. maxWidth so a long
+            localized status can't extend past the card's clipped left edge. */}
+        <View style={{ position: 'absolute', top: 6, right: 6, maxWidth: CARD_W - 12 }}>
           <Badge variant={badge.variant} label={badgeLabel} size="sm" />
         </View>
       </View>
@@ -259,11 +264,20 @@ function GroupHeader({
   return (
     <View className="flex-row items-center justify-between mb-sm mt-md">
       <View className="flex-row items-center gap-xs">
-        <Text variant="caption" tone="tertiary" className="font-bold uppercase" style={{ letterSpacing: 0.8 }}>
+        <Text
+          variant="caption"
+          tone="tertiary"
+          className="font-bold uppercase"
+          style={{ letterSpacing: 0.8 }}
+          accessibilityRole="header"
+        >
           {label}
         </Text>
         {count != null && count > 0 ? (
-          <View style={{ backgroundColor: AMBER_TINT, borderColor: AMBER_LINE, borderWidth: 1, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 }}>
+          <View
+            style={{ backgroundColor: AMBER_TINT, borderColor: AMBER_LINE, borderWidth: 1, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 }}
+            accessibilityLabel={t('mobile.labHome.draftCount', { defaultValue: '{{count}} drafts', count })}
+          >
             <Text variant="caption" style={{ color: AMBER_INK, fontWeight: '700' }}>
               {count}
             </Text>
@@ -288,10 +302,15 @@ function GroupHeader({
 
 function Rail({ children }: { children: React.ReactNode }) {
   return (
+    // Full-bleed: break out of the Home's 22px horizontal padding so cards
+    // reach the screen edges and "peek" (signals there's more to scroll),
+    // while the content still aligns to the 22px gutter. -22 mirrors
+    // home.tsx's contentContainerStyle.paddingHorizontal.
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 12, paddingRight: 22 }}
+      style={{ marginHorizontal: -22 }}
+      contentContainerStyle={{ gap: 12, paddingHorizontal: 22 }}
     >
       {children}
     </ScrollView>
@@ -307,7 +326,11 @@ export function HomeRecentListings() {
     useRecentSubmissions(PREVIEW_LIMIT);
   // Gated on the flag + sign-in so it never fires when it can't be used / 401s.
   const draftsGateOn = draftsEnabled() && !!profile?.id;
-  const { data: draftsData, isLoading: draftsLoading } = useListDrafts({ enabled: draftsGateOn });
+  const { data: draftsData, isLoading: draftsLoading } = useListDrafts({
+    enabled: draftsGateOn,
+    // Fail fast: a down/404 /drafts must not delay the (healthy) listings paint.
+    retry: 0,
+  });
 
   const allDrafts = draftsGateOn ? (draftsData?.drafts ?? []) : [];
   const drafts = allDrafts.slice(0, PREVIEW_DRAFTS);
@@ -334,7 +357,7 @@ export function HomeRecentListings() {
 
   return (
     <View className="mt-2xl">
-      <Text variant="body" tone="primary" className="font-bold px-[2px]">
+      <Text variant="body" tone="primary" className="font-bold px-[2px]" accessibilityRole="header">
         {title}
       </Text>
 
@@ -389,7 +412,7 @@ export function HomeRecentListings() {
           )}
           <Rail>
             {listings.map((item) => (
-              <ListingRailCard key={item.batchPk} item={item} />
+              <ListingRailCard key={item.batchPk} item={item} anyResuming={resumingId != null} />
             ))}
           </Rail>
         </>

@@ -4004,6 +4004,7 @@
       "recentWants": "Recent wants",
       "yourItems": "Your items",
       "draftsGroup": "Pick up where you left off",
+      "draftCount": "{{count}} drafts",
       "listingsGroup": "Listings",
       "draftChip": "DRAFT",
       "resume": "Resume",
