@@ -9,8 +9,12 @@ import { Screen } from '@/components/ui';
 import { useListDrafts, useDeleteDraft } from '@/services/drafts/draftHooks';
 import { getDraft, type FormBlobPayload } from '@/services/drafts/draftApi';
 import { hydrateScanDraftFromPayload } from '@/services/drafts/draftPayload';
+import { mapPendingAiDraft } from '@/services/drafts/pendingAiResume';
+import { getSiteType } from '@/services/scanner/buildFormData';
+import { shouldSkipDetectionChoice } from '@/features/scanner/smartDetectionRouting';
 import { useScanDraft } from '@/stores/scanDraftStore';
 import { getScanResumeRoute } from '@/lib/scanResume';
+import { routes } from '@/lib/routes';
 import { safeBack } from '@/lib/safeBack';
 import { haptics } from '@/lib/haptics';
 import { brand } from '@/constants/theme';
@@ -31,9 +35,10 @@ import { useThread } from '@/features/lab/stores/threadStore';
  * draft"), the payload hydrates straight into the scan store via
  * `hydrateScanDraftFromPayload` + `hydrateFromServer`, then
  * `getScanResumeRoute` picks the right screen off the now-live store state.
- * A `pending-ai` draft (background recognition, Task 11) doesn't carry a
- * `PersistedScan` blob — that mapping is finished in Task 11/12; here we
- * degrade gracefully instead of guessing at a shape.
+ * A `pending-ai` draft (background recognition) carries the raw AI `result`
+ * + canonical GCS image URLs instead of a `PersistedScan` blob;
+ * `mapPendingAiDraft` (Follow-up #1) maps it through the live-scan transform
+ * and we take the same apply/route path as `processing-v2.tsx`.
  *
  * Task 13 (scope-changed): this list ALSO serves the (lab) customer-app AI
  * drafts saved from `app/(lab)/draft.tsx` (Task 12's "Save as draft"). Every
@@ -88,15 +93,37 @@ export default function DraftsScreen() {
 
         const kind = (detail.payload as { kind?: string } | undefined)?.kind;
         if (kind === 'pending-ai') {
-          // Task 11/12 completes the pending-ai resume mapping — background
-          // recognition drafts carry the raw AI result + ordered image refs,
-          // not a `PersistedScan` blob, so there's nothing safe to hydrate
-          // yet. No-op-with-note rather than risk applying a wrong shape.
-          toast.info(
-            t('mobile.drafts.pendingAiNotReady', {
-              defaultValue: 'This draft is still processing — check back soon.',
-            }),
-          );
+          // Background-recognition draft (Follow-up #1): the server persisted
+          // the raw AI `result` + canonical GCS image URLs, not a form blob.
+          // `mapPendingAiDraft` runs the SAME `mapSmartDetection` transform the
+          // live v2 stream uses, then we take the IDENTICAL apply/route path as
+          // `processing-v2.tsx`'s onSuccess so a resumed background draft lands
+          // exactly where a fresh on-screen scan would. `null` means the
+          // payload isn't resumable (still processing / no images) — degrade to
+          // a note rather than guess.
+          const resume = mapPendingAiDraft(detail.payload, getSiteType());
+          if (!resume) {
+            toast.info(
+              t('mobile.drafts.pendingAiNotReady', {
+                defaultValue: 'This draft is still processing — check back soon.',
+              }),
+            );
+            return;
+          }
+          const store = useScanDraft.getState();
+          if (shouldSkipDetectionChoice(resume.mapped, resume.sourcePhotos.length)) {
+            // High-confidence single / clearly-multiple → straight to the
+            // editable result, no detection-choice screen (parity with sync).
+            const m = await store.applySmartDetection(resume.mapped, resume.sourcePhotos);
+            router.push(m === 'single' ? routes.scanDetail : routes.scanGroupedReview);
+          } else {
+            // Ambiguous → the 2-step detection wizard, which reads its photos
+            // off `current`. Establish that draft FIRST (start() clears any
+            // stale pendingDetection), THEN stash the mapped detection.
+            await store.start(resume.sourcePhotos);
+            store.setPendingDetection(resume.mapped);
+            router.push(routes.scanDetection);
+          }
           return;
         }
         const blob = hydrateScanDraftFromPayload(detail.payload as FormBlobPayload);
