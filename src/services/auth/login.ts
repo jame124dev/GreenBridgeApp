@@ -2,7 +2,7 @@ import { greenbidz } from '@/api/greenbidzClient';
 import { getAuthConfigError } from '@/lib/env';
 import { IS_CUSTOMER } from '@/lib/flags';
 import { mmkv } from '@/lib/mmkv';
-import { setSecureItem } from '@/lib/secureStorage';
+import { getSecureItem, setSecureItem } from '@/lib/secureStorage';
 import { logout } from './logout';
 
 export { logout };
@@ -76,7 +76,17 @@ export async function login(payload: LoginPayload): Promise<LoginSuccess> {
     throw new LoginError('UNKNOWN', (body?.message as string) ?? 'Login failed');
   }
 
-  const payloadData = res.data?.data;
+  return finalizeAuthSuccess(res.data?.data);
+}
+
+/**
+ * Persist a successful auth `data` envelope (from `loginV3` OR
+ * `recheck-approval`, which return the same shape) and return the typed
+ * success. Enforces the build's role fork, clears the pending flag, stores
+ * tokens + the slim profile. Throws (and logs out) for a role the build
+ * doesn't accept.
+ */
+async function finalizeAuthSuccess(payloadData: any): Promise<LoginSuccess> {
   const user = payloadData?.data?.user;
   const role = user?.role;
 
@@ -124,6 +134,46 @@ export async function login(payload: LoginPayload): Promise<LoginSuccess> {
     refreshToken: payloadData.refreshToken,
     company: payloadData.userDetail?.company ?? null,
   };
+}
+
+/**
+ * Re-check a PENDING account's approval without re-entering credentials, using
+ * the pending refresh token saved when `login()` hit ACCOUNT_PENDING. Powers
+ * the pending screen's "Check approval status" + its auto-check on open.
+ *
+ *   • approved        → persists full tokens + profile (via finalizeAuthSuccess)
+ *                       and resolves; the caller then enters the app.
+ *   • still pending   → throws LoginError('ACCOUNT_PENDING').
+ *   • dead/expired    → 401 → the axios interceptor logs out + routes to login.
+ */
+export async function recheckApproval(): Promise<LoginSuccess> {
+  const refreshToken = await getSecureItem('auth.refreshToken');
+  if (!refreshToken) {
+    throw new LoginError('UNKNOWN', 'No pending session found. Please sign in again.');
+  }
+
+  let res;
+  try {
+    res = await greenbidz.post('/auth/recheck-approval', { refreshToken });
+  } catch (err: unknown) {
+    const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> } };
+    const status = axiosErr.response?.status;
+    const body = axiosErr.response?.data;
+
+    if (status === 403 && body?.code === 'ACCOUNT_PENDING') {
+      throw new LoginError('ACCOUNT_PENDING', (body.message as string) ?? 'Still pending approval');
+    }
+    if (status === 401) {
+      // The interceptor already logged out on 401; surface a clear message.
+      throw new LoginError('INVALID_CREDENTIALS', 'Session expired — please sign in again');
+    }
+    if (!axiosErr.response) {
+      throw new LoginError('NETWORK', 'Network error — check your connection');
+    }
+    throw new LoginError('UNKNOWN', (body?.message as string) ?? 'Could not check approval');
+  }
+
+  return finalizeAuthSuccess(res.data?.data);
 }
 
 async function persist({

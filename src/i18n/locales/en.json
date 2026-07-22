@@ -3891,6 +3891,9 @@
       "pending": {
         "heading": "Awaiting approval",
         "body": "Your account is awaiting approval. Visit greenbidz.com to upload missing documents or check your application status.",
+        "checkStatus": "Check approval status",
+        "checking": "Checking…",
+        "notApprovedYet": "Not approved yet — we'll let you in the moment an admin approves your account.",
         "openSite": "Open website",
         "signOut": "Sign out",
         "signingOut": "Signing out…"
