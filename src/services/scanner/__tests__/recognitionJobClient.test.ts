@@ -37,6 +37,7 @@ import {
   createRecognitionJob,
   getRecognitionJobStatus,
   tailRecognitionJob,
+  detachRecognitionJob,
 } from '../recognitionJobClient';
 
 // jest-mock's default `jest.Mock` generic collapses `mockResolvedValue`'s
@@ -139,6 +140,39 @@ describe('createRecognitionJob', () => {
       platform: 'LabGreenbidz',
     });
     expect(out.job_id).toBe('j1');
+  });
+
+  it('passes foreground:true through to the body when set (Follow-up #2)', async () => {
+    mockPost.mockResolvedValue({ data: { success: true, job_id: 'j2', status: 'queued' } });
+    await createRecognitionJob({
+      image_urls: ['https://gcs/img1.png'],
+      language: 'en',
+      platform: 'LabGreenbidz',
+      foreground: true,
+    });
+    expect(mockPost).toHaveBeenCalledWith(
+      '/recognition-jobs',
+      expect.objectContaining({ foreground: true }),
+    );
+  });
+});
+
+describe('detachRecognitionJob', () => {
+  // POST /recognition-jobs/:id/detach — "Continue in background". FLAT body
+  // `{ success, status, draft_id }` like the sibling status endpoint.
+  it('posts to /recognition-jobs/:id/detach and reads status/draft_id off the flat body', async () => {
+    mockPost.mockResolvedValue({ data: { success: true, status: 'draft_ready', draft_id: 77 } });
+    const out = await detachRecognitionJob('job-5');
+    expect(mockPost).toHaveBeenCalledWith('/recognition-jobs/job-5/detach');
+    expect(out.status).toBe('draft_ready');
+    expect(out.draft_id).toBe(77);
+  });
+
+  it('defaults draft_id to null when the run has not persisted a draft yet', async () => {
+    mockPost.mockResolvedValue({ data: { success: true, status: 'running' } });
+    const out = await detachRecognitionJob('job-6');
+    expect(out.status).toBe('running');
+    expect(out.draft_id).toBeNull();
   });
 });
 

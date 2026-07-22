@@ -77,6 +77,14 @@ export interface CreateRecognitionJobInput {
   document_urls?: string[];
   language: string;
   platform: string;
+  /**
+   * Foreground (on-screen) job — the seller is watching the live result via
+   * `tailRecognitionJob`, so the backend DEFERS the pending-ai draft + "ready"
+   * bell for this job until a `detachRecognitionJob` call ("Continue in
+   * background"). Omit/false for a true background job (original always-persist
+   * behavior). See Follow-up #2 (transport-swap).
+   */
+  foreground?: boolean;
 }
 
 export interface RecognitionJobStatus {
@@ -114,6 +122,20 @@ export async function createRecognitionJob(
 export async function getRecognitionJobStatus(jobId: string): Promise<RecognitionJobStatus> {
   const res = await greenbidz.get(`/recognition-jobs/${jobId}`);
   return res.data as RecognitionJobStatus;
+}
+
+/**
+ * `POST /recognition-jobs/:id/detach` — "Continue in background" for a
+ * foreground (on-screen) job. Promotes it to a real background job so the
+ * backend persists its pending-ai draft + fires the bell (immediately if the
+ * run already finished, else on completion). Idempotent server-side. Returns
+ * the job's current status + draft_id (null until the draft is persisted).
+ */
+export async function detachRecognitionJob(
+  jobId: string,
+): Promise<{ status: string; draft_id: number | null }> {
+  const res = await greenbidz.post(`/recognition-jobs/${jobId}/detach`);
+  return { status: res.data?.status, draft_id: res.data?.draft_id ?? null };
 }
 
 export type TailRecognitionJobOptions = {

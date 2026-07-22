@@ -18,23 +18,29 @@ import { brand, fonts } from '@/constants/theme';
 import { manualEntryDefaults } from '@/features/scanner/constants';
 import { shouldSkipDetectionChoice } from '@/features/scanner/smartDetectionRouting';
 import { shouldOfferBackground } from '@/features/scanner/backgroundAffordance';
-import { startBackgroundRecognition } from '@/features/scanner/backgroundRecognition';
 import type {
   SmartStreamEvent,
   StagePhase,
 } from '@/features/scanner/smartDetectStreamTypes';
+import type { MappedSmartDetection } from '@/features/scanner/smartDetectionTypes';
 import { useSmartDetect } from '@/features/scanner/useSmartDetect';
 import { backgroundRecognitionEnabled, IS_CUSTOMER } from '@/lib/flags';
 import { haptics } from '@/lib/haptics';
 import { routes } from '@/lib/routes';
-import { useScanDraft } from '@/stores/scanDraftStore';
+import { useScanDraft, type Photo } from '@/stores/scanDraftStore';
 import { useAuth } from '@/stores/authStore';
-import { clearStoredJobId } from '@/stores/recognitionJobStore';
+import { clearStoredJobId, storeJobId } from '@/stores/recognitionJobStore';
 import {
   uploadGcsDocuments,
   uploadGcsPhotos,
   type GcsUploadedFile,
 } from '@/services/scanner/uploadGcsPhotos';
+import {
+  createRecognitionJob,
+  detachRecognitionJob,
+  tailRecognitionJob,
+  RecognitionJobStreamError,
+} from '@/services/scanner/recognitionJobClient';
 import { gcsUrlForAnalyze } from '@/services/scanner/gcsUrl';
 import { getSiteType } from '@/services/scanner/buildFormData';
 
@@ -233,6 +239,12 @@ export default function ProcessingV2Screen() {
   // abandoned on-screen attempt can't hijack navigation after the seller left.
   const leftInBackgroundRef = useRef(false);
 
+  // Follow-up #2 (transport-swap): when the flag is on, the on-screen scan runs
+  // AS a foreground recognition job we tail. This holds its id so
+  // `handleContinueInBackground` can `detach` the SAME job (persist its draft +
+  // stop tailing) instead of starting a duplicate. Null until the job is created.
+  const jobIdRef = useRef<string | null>(null);
+
   const phaseIndex = PHASE_ORDER.indexOf(phase);
   const productTotal = detection?.count;
   const stepNum = Math.min(phaseIndex + 1, TIMELINE.length);
@@ -303,6 +315,145 @@ export default function ProcessingV2Screen() {
     // pdf_fetch / gcs fatal errors: surfaced on the final result, not here.
   }, [t]);
 
+  // Apply a mapped detection to the scan store + route — SHARED by both
+  // transports (sync stream and foreground recognition job) so they behave
+  // identically. Extracted verbatim from the old `smart.mutate` onSuccess. The
+  // `leftInBackgroundRef` re-checks stop a late apply from yanking the seller
+  // back after they tapped "Continue in background"; `clearStoredJobId()` on
+  // success drops the stored id (the run finished on-screen — nothing to reattach).
+  const applyMappedAndRoute = useCallback(
+    async (mapped: MappedSmartDetection, basePhotos: Photo[]) => {
+      if (leftInBackgroundRef.current) return;
+      try {
+        const augmentedPhotos =
+          mapped.responseImageUrls.length > basePhotos.length
+            ? [
+                ...basePhotos,
+                ...mapped.responseImageUrls.slice(basePhotos.length).map((url, i) => {
+                  const docPage = mapped.documentPages.find(
+                    (p) => p.url === url || p.index === basePhotos.length + i,
+                  );
+                  return {
+                    uri: url,
+                    width: docPage?.width ?? 0,
+                    height: docPage?.height ?? 0,
+                    sourceLabel: docPage?.sourceLabel,
+                  };
+                }),
+              ]
+            : basePhotos;
+        const skip = shouldSkipDetectionChoice(mapped, augmentedPhotos.length);
+        if (skip) {
+          const m = await useScanDraft.getState().applySmartDetection(mapped, augmentedPhotos);
+          if (leftInBackgroundRef.current) return;
+          if (backgroundRecognitionEnabled()) clearStoredJobId();
+          setIsNavigating(true);
+          router.replace(m === 'single' ? routes.scanDetail : routes.scanGroupedReview);
+        } else {
+          if (augmentedPhotos.length > basePhotos.length) {
+            await useScanDraft.getState().updatePhotos(augmentedPhotos);
+          }
+          if (leftInBackgroundRef.current) return;
+          useScanDraft.getState().setPendingDetection(mapped);
+          if (backgroundRecognitionEnabled()) clearStoredJobId();
+          setIsNavigating(true);
+          router.replace(routes.scanDetection);
+        }
+      } catch (err) {
+        if (leftInBackgroundRef.current) return;
+        haptics.error();
+        setApplyError((err as Error)?.message ?? t('mobile.processing.errorFallback'));
+      }
+    },
+    [t],
+  );
+
+  // Follow-up #2 — the FOREGROUND recognition-job transport (flag ON). Uploads
+  // to GCS ONCE, creates the job as `foreground` (backend DEFERS its draft +
+  // bell), stores its id, then tails it to drive the SAME on-screen progress
+  // UI. "Continue in background" later just `detach`es this job + stops
+  // tailing — no duplicate upload, no duplicate recognition. If the seller
+  // backgrounds before the job exists, we promote it the moment it's created.
+  // The upload is NOT tied to `signal` (the job must survive a background-leave
+  // that aborts the tail); aborting the tail never kills the server-side job.
+  const runViaRecognitionJob = useCallback(
+    async (
+      basePhotos: Photo[],
+      documents: { uri: string; name: string; mimeType: string }[],
+      signal: AbortSignal,
+    ) => {
+      try {
+        const sellerId = useAuth.getState().profile?.id;
+        if (!sellerId) {
+          setApplyError(t('mobile.processing.errorFallback'));
+          return;
+        }
+        let sessionId: string | undefined;
+        let imageFiles: GcsUploadedFile[] = [];
+        if (basePhotos.length > 0) {
+          const r = await uploadGcsPhotos(basePhotos, { sellerId });
+          sessionId = r.sessionId;
+          imageFiles = r.files;
+        }
+        let documentFiles: GcsUploadedFile[] = [];
+        if (documents.length > 0) {
+          const r = await uploadGcsDocuments(documents, { sellerId, sessionId });
+          documentFiles = r.files;
+        }
+        if (sessionId && imageFiles.length > 0) {
+          const entries: Record<string, string> = {};
+          for (let i = 0; i < basePhotos.length; i++) {
+            const f = imageFiles[i];
+            if (f) entries[basePhotos[i].uri] = f.objectName;
+          }
+          if (Object.keys(entries).length > 0) {
+            useScanDraft.getState().mergeGcs(sessionId, entries);
+          }
+        }
+        if (imageFiles.length === 0 && documentFiles.length === 0) {
+          if (!leftInBackgroundRef.current) setApplyError(t('mobile.processing.errorFallback'));
+          return;
+        }
+
+        const { job_id } = await createRecognitionJob({
+          image_urls: imageFiles.map((f) => gcsUrlForAnalyze(f)),
+          document_urls: documentFiles.map((f) => gcsUrlForAnalyze(f)),
+          language: i18n.language,
+          platform: getSiteType(),
+          foreground: true,
+        });
+        jobIdRef.current = job_id;
+        storeJobId(job_id);
+
+        // Backgrounded before/while the job was created → promote it now (so its
+        // draft persists) and skip tailing.
+        if (leftInBackgroundRef.current) {
+          void detachRecognitionJob(job_id).catch(() => {});
+          return;
+        }
+
+        let mapped: MappedSmartDetection;
+        try {
+          mapped = await tailRecognitionJob(job_id, {
+            signal,
+            onEvent: (name, data) => onStreamEvent({ type: name, data } as SmartStreamEvent),
+          });
+        } catch (e) {
+          const code = (e as RecognitionJobStreamError)?.code;
+          if (code === 'cancelled' || signal.aborted || leftInBackgroundRef.current) return;
+          throw e;
+        }
+        await applyMappedAndRoute(mapped, basePhotos);
+      } catch (err) {
+        if (leftInBackgroundRef.current || signal.aborted) return;
+        haptics.error();
+        setApplyError((err as Error)?.message ?? t('mobile.processing.errorFallback'));
+        if (backgroundRecognitionEnabled()) clearStoredJobId();
+      }
+    },
+    [applyMappedAndRoute, i18n.language, onStreamEvent, t],
+  );
+
   // ── Run the mutation once per draft ─────────────────────────────────────────
   useEffect(() => {
     const draftId = draft?.id;
@@ -324,85 +475,46 @@ export default function ProcessingV2Screen() {
     controllerRef.current = controller;
     setApplyError(null);
 
-    smart.mutate(
-      {
-        photos,
-        documents,
-        language: i18n.language,
-        signal: controller.signal,
-        onEvent: onStreamEvent,
-      },
-      {
-        onSuccess: async (mapped) => {
-          // Seller already left for background — this result belongs to an
-          // abandoned on-screen attempt; ignore it. This callback `await`s
-          // below (applySmartDetection / updatePhotos), so the seller can also
-          // tap "Continue in background" AFTER this check but BEFORE we
-          // navigate — hence the re-check right before each `router.replace`.
-          if (leftInBackgroundRef.current) return;
-          try {
-            // Augment local photos with PDF-derived page images (parity with
-            // processing.tsx) so product image_indexes resolve on docs-only scans.
-            const augmentedPhotos =
-              mapped.responseImageUrls.length > photos.length
-                ? [
-                    ...photos,
-                    ...mapped.responseImageUrls.slice(photos.length).map((url, i) => {
-                      const docPage = mapped.documentPages.find(
-                        (p) => p.url === url || p.index === photos.length + i,
-                      );
-                      return {
-                        uri: url,
-                        width: docPage?.width ?? 0,
-                        height: docPage?.height ?? 0,
-                        // P4 — office-doc origin label flows into PhotosCard +
-                        // detection thumbnail captions.
-                        sourceLabel: docPage?.sourceLabel,
-                      };
-                    }),
-                  ]
-                : photos;
-            const skip = shouldSkipDetectionChoice(mapped, augmentedPhotos.length);
-            if (skip) {
-              const m = await useScanDraft.getState().applySmartDetection(mapped, augmentedPhotos);
-              // Re-check: the seller may have tapped "Continue in background"
-              // while the await above was in flight (that handler already
-              // toasted + navigated Home) — don't yank them back.
-              if (leftInBackgroundRef.current) return;
-              if (backgroundRecognitionEnabled()) clearStoredJobId();
-              setIsNavigating(true);
-              router.replace(m === 'single' ? routes.scanDetail : routes.scanGroupedReview);
-            } else {
-              if (augmentedPhotos.length > photos.length) {
-                await useScanDraft.getState().updatePhotos(augmentedPhotos);
-              }
-              // Re-check for the same reason as the skip branch above.
-              if (leftInBackgroundRef.current) return;
-              useScanDraft.getState().setPendingDetection(mapped);
-              if (backgroundRecognitionEnabled()) clearStoredJobId();
-              setIsNavigating(true);
-              router.replace(routes.scanDetection);
-            }
-          } catch (err) {
+    if (backgroundRecognitionEnabled() && useAuth.getState().profile?.id) {
+      // Follow-up #2 transport-swap: run the on-screen scan AS a foreground
+      // recognition job and tail it. "Continue in background" then detaches +
+      // stops tailing — the SAME job finishes server-side, no duplicate upload
+      // or recognition. (Needs a seller to upload as; falls back to the sync
+      // stream below when there's none — same guard as `useSmartDetect`.)
+      void runViaRecognitionJob(photos, documents, controller.signal);
+    } else {
+      // Synchronous SSE stream — UNCHANGED. Used when the flag is off (the
+      // default) or there's no seller profile to upload as.
+      smart.mutate(
+        {
+          photos,
+          documents,
+          language: i18n.language,
+          signal: controller.signal,
+          onEvent: onStreamEvent,
+        },
+        {
+          onSuccess: (mapped) => {
+            // Late result from an attempt the seller abandoned for background is
+            // ignored inside `applyMappedAndRoute` (leftInBackgroundRef guard).
+            void applyMappedAndRoute(mapped, photos);
+          },
+          onError: (err) => {
+            // Late failure of an attempt the seller already abandoned for
+            // background — swallow it (no error UI, no state churn).
+            if (leftInBackgroundRef.current) return;
             haptics.error();
-            setApplyError((err as Error)?.message ?? t('mobile.processing.errorFallback'));
-          }
+            setApplyError((err as Error)?.message ?? null);
+            if (backgroundRecognitionEnabled()) clearStoredJobId();
+          },
         },
-        onError: (err) => {
-          // Late failure of an attempt the seller already abandoned for
-          // background — swallow it (no error UI, no state churn).
-          if (leftInBackgroundRef.current) return;
-          haptics.error();
-          setApplyError((err as Error)?.message ?? null);
-          if (backgroundRecognitionEnabled()) clearStoredJobId();
-        },
-      },
-    );
+      );
+    }
 
     return () => {
-      // Task 10: "Continue in background" leaves the in-flight stream running
-      // (server-side) instead of cancelling it — see `leftInBackgroundRef`.
-      // Every other unmount path still aborts exactly as before.
+      // "Continue in background" aborts the tail itself (job survives); every
+      // other unmount path aborts here. Aborting a foreground job's tail never
+      // kills the server-side job, so this is always safe.
       if (!leftInBackgroundRef.current) {
         controller.abort();
       }
@@ -421,62 +533,30 @@ export default function ProcessingV2Screen() {
     router.replace(routes.scanDetail);
   };
 
-  // Task 10 — "Continue in background". Toasts + navigates Home immediately
-  // (the seller shouldn't wait), then best-effort mints a server-side
-  // recognition job from the same photos/documents so the reattach flow has a
-  // job id to poll. Deliberately uses its OWN upload (NOT the in-flight
-  // `controllerRef` stream, no shared AbortSignal) so it can't be cancelled by
-  // this screen's unmount — mirrors processing.tsx (v1). The on-screen stream
-  // is left running but its result is now ignored (`leftInBackgroundRef`
-  // guards the onSuccess/onError above). Known tradeoff: a duplicate upload +
-  // recognition, since the background job doesn't reuse the in-flight request.
+  // Follow-up #2 — "Continue in background". The on-screen scan IS already a
+  // foreground recognition job (`runViaRecognitionJob` created it + stored its
+  // id), so this just: (1) flags the leave so a late tail result can't hijack
+  // nav, (2) `detach`es the job → the backend now persists its pending-ai draft
+  // + fires the bell on completion, (3) aborts the tail (the job keeps running
+  // server-side), (4) navigates home. NO re-upload, NO duplicate job. If the
+  // job id isn't ready yet (still uploading), `runViaRecognitionJob` sees
+  // `leftInBackgroundRef` right after it creates the job and detaches there.
   const handleContinueInBackground = useCallback(() => {
     leftInBackgroundRef.current = true;
     toast.success(
       t('mobile.processing.leftToast', { defaultValue: "We'll notify you when it's ready" }),
     );
+    const jobId = jobIdRef.current;
+    if (jobId) {
+      // Persist-on-completion (best-effort) + stop tailing now.
+      void detachRecognitionJob(jobId).catch(() => {});
+      controllerRef.current?.abort();
+    }
     // Launched from the lab chat (launchSellerScan) in the customer fork, so
     // return to the lab home — the seller tab group scanHome (/(tabs)) points
     // at is disabled there. Mirrors app/scan/success.tsx.
     router.replace(IS_CUSTOMER ? '/(lab)/(tabs)/home' : routes.scanHome);
-
-    void (async () => {
-      try {
-        const sellerId = useAuth.getState().profile?.id;
-        if (!sellerId) return; // no auth context — nothing to upload/create with
-        const photos = draft?.photos ?? [];
-        const documents = draft?.documents ?? [];
-        if (photos.length === 0 && documents.length === 0) return;
-
-        let sessionId: string | undefined;
-        let imageFiles: GcsUploadedFile[] = [];
-        if (photos.length > 0) {
-          const r = await uploadGcsPhotos(photos, { sellerId });
-          sessionId = r.sessionId;
-          imageFiles = r.files;
-        }
-        let documentFiles: GcsUploadedFile[] = [];
-        if (documents.length > 0) {
-          const r = await uploadGcsDocuments(documents, { sellerId, sessionId });
-          documentFiles = r.files;
-        }
-
-        await startBackgroundRecognition({
-          image_urls: imageFiles.map((f) => gcsUrlForAnalyze(f)),
-          document_urls: documentFiles.map((f) => gcsUrlForAnalyze(f)),
-          language: i18n.language,
-          platform: getSiteType(),
-        });
-      } catch (err) {
-        // Best-effort — the seller has already left; nothing on-screen to show
-        // an error on. Worst case the reattach finds no job and they re-scan.
-        if (__DEV__) {
-          console.warn('[processing-v2] background recognition job failed to start', err);
-        }
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft?.photos, draft?.documents]);
+  }, [t]);
 
   // Resolve a product's thumbnail: the first local photo it references, else
   // the GCS URL of the first PDF page it references. Falls back to a sparkle.
