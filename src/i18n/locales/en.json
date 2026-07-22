@@ -3622,6 +3622,7 @@
       "errorTitle": "We couldn't read your photos",
       "poweredBy": "POWERED BY GREENBIDZ INDUSTRIAL VISION AI V4.2",
       "continueInBackground": "Continue in background",
+      "backgroundHint": "Keep using the app — we'll notify you when it's ready.",
       "leftToast": "We'll notify you when it's ready",
       "failed": "Recognition failed — try again"
     },

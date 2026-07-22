@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toast } from 'sonner-native';
 import {
   AlertCircle,
+  Bell,
   Check,
   FileText,
   RefreshCw,
@@ -578,6 +579,15 @@ export default function ProcessingV2Screen() {
     return Math.max(0, Math.min(4, productTotal - products.length));
   }, [productTotal, products.length, phase]);
 
+  // Offer "Continue in background" only while streaming (steps 1-4), before we
+  // navigate to results, and only when the flag is on. Drives the sticky footer
+  // action (see the footer below) — flag-off ⇒ footer shows just timer + Cancel.
+  const offerBackground = shouldOfferBackground({
+    flagEnabled: backgroundRecognitionEnabled(),
+    phase,
+    isNavigating,
+  });
+
   if (!draft) return null;
 
   if (showError) {
@@ -614,7 +624,12 @@ export default function ProcessingV2Screen() {
   return (
     <Screen scroll={false} contentContainerStyle={{ flex: 1, backgroundColor: brand.background }}>
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingTop: 12, paddingBottom: 110 + insets.bottom }}
+        contentContainerStyle={{
+          padding: 20,
+          paddingTop: 12,
+          // Clear the sticky footer — taller when the background action shows.
+          paddingBottom: (offerBackground ? 190 : 96) + insets.bottom,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {/* Non-fatal rejection banners (Phase 2 — office docs rejected mid-stream). */}
@@ -799,31 +814,9 @@ export default function ProcessingV2Screen() {
           })}
         </View>
 
-        {/* Task 10 — "Continue in background". Shown ONLY while streaming
-            (steps 1-4) and while not yet navigating to results; hidden at
-            `done` and whenever the flag is off (flag-off ⇒ never rendered, so
-            the unmount abort behaves exactly as before). */}
-        {shouldOfferBackground({
-          flagEnabled: backgroundRecognitionEnabled(),
-          phase,
-          isNavigating,
-        }) && (
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleContinueInBackground}
-            hitSlop={8}
-            style={{ marginTop: 24 }}
-          >
-            <Text
-              className="text-center"
-              style={{ fontFamily: fonts.semibold, fontSize: 14, color: brand.primary }}
-            >
-              {t('mobile.processing.continueInBackground', {
-                defaultValue: 'Continue in background',
-              })}
-            </Text>
-          </Pressable>
-        )}
+        {/* "Continue in background" moved OUT of the scroll flow into the
+            sticky footer action bar below (it drifted here as products
+            streamed in, and read as a bare link). */}
 
         {/* Detection banner */}
         {detection ? (
@@ -1009,47 +1002,96 @@ export default function ProcessingV2Screen() {
         ) : null}
       </ScrollView>
 
-      {/* Footer */}
+      {/* Footer — sticky action bar. The "Continue in background" escape is the
+          prominent (but not pushy) affordance here; Cancel stays a quiet
+          destructive text; the timer + provenance drop to a muted meta row. */}
       <View
         style={{
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
           paddingHorizontal: 20,
-          paddingTop: 12,
-          // Lift above the Android nav bar / home indicator (was a fixed 28,
-          // which blended into the 3-button nav). Matches the safe-area
-          // handling used on the other scan screens.
-          paddingBottom: insets.bottom + 14,
+          paddingTop: 14,
+          // Lift above the Android nav bar / home indicator.
+          paddingBottom: insets.bottom + 12,
           backgroundColor: brand.surface,
           borderTopWidth: 1,
           borderTopColor: brand.border,
+          gap: 12,
         }}
       >
-        <View>
-          <Text style={{ fontFamily: fonts.mono, fontSize: 9, letterSpacing: 1, color: brand.placeholder }}>
-            POWERED BY GREENBIDZ INDUSTRIAL VISION AI
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+        {offerBackground ? (
+          <View style={{ gap: 6 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('mobile.processing.continueInBackground', {
+                defaultValue: 'Continue in background',
+              })}
+              accessibilityHint={t('mobile.processing.backgroundHint', {
+                defaultValue: "Keep using the app — we'll notify you when it's ready.",
+              })}
+              onPress={handleContinueInBackground}
+              // Emerald-tinted outline ties the action to this screen's AI accent
+              // (progress bar / checks / detection), reading as "let the AI keep
+              // working" rather than a generic CTA.
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                borderWidth: 1,
+                borderColor: 'rgba(16,185,129,0.35)',
+                backgroundColor: 'rgba(16,185,129,0.08)',
+                borderRadius: 10,
+                paddingVertical: 13,
+              }}
+            >
+              <Bell size={16} color={EMERALD} />
+              <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: '#0f9b6c' }}>
+                {t('mobile.processing.continueInBackground', {
+                  defaultValue: 'Continue in background',
+                })}
+              </Text>
+            </Pressable>
+            <Text
+              style={{
+                fontFamily: fonts.regular,
+                fontSize: 12,
+                lineHeight: 16,
+                color: brand.mutedForeground,
+                textAlign: 'center',
+              }}
+            >
+              {t('mobile.processing.backgroundHint', {
+                defaultValue: "Keep using the app — we'll notify you when it's ready.",
+              })}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Meta row — timer + provenance (muted) · Cancel (quiet destructive). */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Timer size={12} color={brand.mutedForeground} />
             <Text style={{ fontFamily: fonts.mono, fontSize: 11, color: brand.mutedForeground }}>
               {mmss(elapsed)}
             </Text>
+            <Text style={{ fontFamily: fonts.mono, fontSize: 9, letterSpacing: 0.8, color: brand.placeholder }}>
+              · GREENBIDZ VISION AI
+            </Text>
           </View>
+          <Pressable
+            onPress={cancel}
+            accessibilityRole="button"
+            hitSlop={8}
+            style={{ paddingHorizontal: 10, paddingVertical: 6 }}
+          >
+            <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: brand.destructive }}>
+              {t('common.cancel', 'Cancel')}
+            </Text>
+          </Pressable>
         </View>
-        <Pressable
-          onPress={cancel}
-          accessibilityRole="button"
-          style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6 }}
-        >
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: brand.destructive }}>
-            {t('common.cancel', 'Cancel')}
-          </Text>
-        </Pressable>
       </View>
     </Screen>
   );
