@@ -56,8 +56,7 @@ import {
   useColor,
 } from '@/features/lab/chat/theme';
 import { useChatController } from '@/features/lab/chat/controllers/useChatController';
-import { StreamingChatList } from '@/features/lab/chat/StreamingChatList';
-import { CHAT_UI_V2, STREAMING_CHAT_LIST, draftsEnabled } from '@/lib/flags';
+import { CHAT_UI_V2, draftsEnabled } from '@/lib/flags';
 import { useCreateDraft } from '@/services/drafts/draftHooks';
 import { getSiteType } from '@/services/scanner/buildFormData';
 
@@ -306,10 +305,6 @@ function LabChatScreen() {
           above the keyboard when open and drops to the bottom when closed, with
           no risk of stale padding stranding it mid-screen. */}
       <Animated.View style={[styles.flex, keyboardAvoidStyle]}>
-        {STREAMING_CHAT_LIST ? (
-          <StreamingChatList chat={chat} />
-        ) : (
-          <>
         <ScrollView
           ref={scrollRef}
           style={styles.flex}
@@ -411,8 +406,6 @@ function LabChatScreen() {
             }}
           />
         ) : null}
-          </>
-        )}
 
         {/* Composer */}
         <View
