@@ -59,7 +59,9 @@ import { getSiteType } from '@/services/scanner/buildFormData';
  * mapped result is byte-identical between v1 and v2).
  */
 
-const EMERALD = '#10b981'; // AI / active accent (matches the rest of the scan flow)
+// AI / active accent — fork-aware so the scan flow matches the app it's in:
+// forest-green brand in the customer (lab) app, emerald in the seller app.
+const ACCENT = IS_CUSTOMER ? brand.primary : '#10b981';
 
 // 5-phase timeline, mapped from the backend SSE `stage.phase` enum. Phase 2
 // (office docs) renamed `preparing_pdfs` → `preparing_documents`; the backend
@@ -156,12 +158,12 @@ function PulseDot() {
           width: 12,
           height: 12,
           borderRadius: 6,
-          backgroundColor: EMERALD,
+          backgroundColor: ACCENT,
           transform: [{ scale: ringScale }],
           opacity: ringOpacity,
         }}
       />
-      <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: EMERALD }} />
+      <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: ACCENT }} />
     </View>
   );
 }
@@ -195,7 +197,7 @@ function AnimatedBar({ progress }: { progress: number }) {
   const width = v.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
     <View style={{ height: 8, borderRadius: 999, backgroundColor: '#e3e7ee', overflow: 'hidden' }}>
-      <Animated.View style={{ height: '100%', width, borderRadius: 999, backgroundColor: EMERALD }} />
+      <Animated.View style={{ height: '100%', width, borderRadius: 999, backgroundColor: ACCENT }} />
     </View>
   );
 }
@@ -216,6 +218,9 @@ export default function ProcessingV2Screen() {
   const [elapsed, setElapsed] = useState(0);
   const [applyError, setApplyError] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
+  // Bumped by `retry()` to re-arm the run-once effect on the SAME photos after a
+  // (often transient) failure — so a network blip doesn't force a re-shoot.
+  const [retryNonce, setRetryNonce] = useState(0);
   // Per-file non-fatal rejections from the SSE `error` stream (e.g. one .docm
   // rejected mid-batch; the scan continues with the survivors). Banner stack
   // persists for the lifetime of the screen so the user sees what got dropped.
@@ -521,11 +526,30 @@ export default function ProcessingV2Screen() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft?.id, draft?.ai, isNavigating]);
+  }, [draft?.id, draft?.ai, isNavigating, retryNonce]);
 
   const cancel = () => {
     controllerRef.current?.abort();
     router.replace(routes.scanCamera);
+  };
+
+  // Re-run the AI on the SAME photos after a failure. Reset the stream state +
+  // the once-guard so the timeline restarts clean, clear the mutation error,
+  // then bump the nonce to re-fire the run-once effect.
+  const retry = () => {
+    haptics.tap();
+    controllerRef.current?.abort();
+    setApplyError(null);
+    setPhase('validating');
+    setPhaseMsg('');
+    setDetection(null);
+    setProducts([]);
+    setDocInfo(null);
+    setPageUrls({});
+    setNonFatalRejections([]);
+    smart.reset();
+    startedForDraftRef.current = null;
+    setRetryNonce((n) => n + 1);
   };
 
   const retake = () => router.replace(routes.scanCamera);
@@ -613,8 +637,9 @@ export default function ProcessingV2Screen() {
                 {errorMessage}
               </Text>
             </View>
-            <Button label={t('mobile.processing.retake')} onPress={retake} variant="secondary" fullWidth />
-            <Button label={t('mobile.processing.continueWithoutAi')} onPress={skipToDetail} fullWidth />
+            <Button label={t('mobile.processing.tryAgain', { defaultValue: 'Try again' })} onPress={retry} fullWidth />
+            <Button label={t('mobile.processing.continueWithoutAi')} onPress={skipToDetail} variant="secondary" fullWidth />
+            <Button label={t('mobile.processing.retake')} onPress={retake} variant="ghost" fullWidth />
           </Stack>
         </View>
       </Screen>
@@ -692,7 +717,7 @@ export default function ProcessingV2Screen() {
             borderRadius: 999,
           }}
         >
-          <Sparkles size={13} color={EMERALD} />
+          <Sparkles size={13} color={ACCENT} />
           <Text style={{ fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.5, color: '#0f9b6c' }}>
             {t('mobile.processingV2.aiAnalyzing', 'AI ANALYZING')}
           </Text>
@@ -776,7 +801,7 @@ export default function ProcessingV2Screen() {
                         width: 24,
                         height: 24,
                         borderRadius: 12,
-                        backgroundColor: EMERALD,
+                        backgroundColor: ACCENT,
                         alignItems: 'center',
                         justifyContent: 'center',
                         borderWidth: 3,
@@ -803,8 +828,8 @@ export default function ProcessingV2Screen() {
                 </Text>
                 {current && (phaseMsg || productSub) ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 }}>
-                    <RefreshCw size={12} color={EMERALD} />
-                    <Text style={{ fontFamily: fonts.regular, fontSize: 13, color: EMERALD }}>
+                    <RefreshCw size={12} color={ACCENT} />
+                    <Text style={{ fontFamily: fonts.regular, fontSize: 13, color: ACCENT }}>
                       {productSub ?? phaseMsg}
                     </Text>
                   </View>
@@ -834,7 +859,7 @@ export default function ProcessingV2Screen() {
                 gap: 12,
               }}
             >
-              <Sparkles size={18} color={EMERALD} />
+              <Sparkles size={18} color={ACCENT} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: brand.foreground }}>
                   {t('mobile.processingV2.foundCount', {
@@ -853,7 +878,7 @@ export default function ProcessingV2Screen() {
               </View>
               {/* Prominent confidence */}
               <View style={{ alignItems: 'center', minWidth: 52 }}>
-                <Text style={{ fontFamily: fonts.heading, fontSize: 22, color: EMERALD, lineHeight: 24 }}>
+                <Text style={{ fontFamily: fonts.heading, fontSize: 22, color: ACCENT, lineHeight: 24 }}>
                   {Math.round(detection.confidence * 100)}%
                 </Text>
                 <Text style={{ fontFamily: fonts.mono, fontSize: 8, letterSpacing: 0.5, color: brand.mutedForeground }}>
@@ -929,7 +954,7 @@ export default function ProcessingV2Screen() {
                         {uri ? (
                           <AppImage source={{ uri }} style={{ width: 64, height: 64 }} contentFit="cover" />
                         ) : (
-                          <Sparkles size={20} color={EMERALD} />
+                          <Sparkles size={20} color={ACCENT} />
                         )}
                       </View>
                       <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -1047,7 +1072,7 @@ export default function ProcessingV2Screen() {
                 paddingVertical: 13,
               }}
             >
-              <Bell size={16} color={EMERALD} />
+              <Bell size={16} color={ACCENT} />
               <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: '#0f9b6c' }}>
                 {t('mobile.processing.continueInBackground', {
                   defaultValue: 'Continue in background',

@@ -46,6 +46,10 @@ import { brand, fonts } from '@/constants/theme';
  * Strategy: className for layout/colors that map; inline `style={{...}}` for
  * the rest. Shared values pulled to `const` objects at top.
  */
+// AI / active accent — fork-aware so the scan flow matches the app it's in:
+// forest-green brand in the customer (lab) app, emerald in the seller app.
+const ACCENT = IS_CUSTOMER ? brand.primary : '#10b981';
+
 const checkCircleBase = {
   width: 22,
   height: 22,
@@ -902,10 +906,10 @@ export default function ProcessingScreen() {
               : isActive
               ? '#ffffff'
               : 'rgba(255, 255, 255, 0.4)';
-            const stepBorder = isCompleted ? '#e2e8f0' : isActive ? '#10b981' : '#f1f5f9';
+            const stepBorder = isCompleted ? '#e2e8f0' : isActive ? ACCENT : '#f1f5f9';
             const stepShadow = isActive
               ? {
-                  shadowColor: '#10b981',
+                  shadowColor: ACCENT,
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.12,
                   shadowRadius: 10,
@@ -944,7 +948,7 @@ export default function ProcessingScreen() {
                   <Animated.View
                     style={{
                       ...checkCircleBase,
-                      backgroundColor: '#10b981',
+                      backgroundColor: ACCENT,
                       alignItems: 'center',
                       justifyContent: 'center',
                       transform: [{ scale: step.scale }],
@@ -957,7 +961,7 @@ export default function ProcessingScreen() {
                     style={{
                       ...checkCircleBase,
                       borderWidth: 2.5,
-                      borderColor: '#10b981',
+                      borderColor: ACCENT,
                       backgroundColor: 'transparent',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -968,7 +972,7 @@ export default function ProcessingScreen() {
                         width: 8,
                         height: 8,
                         borderRadius: 4,
-                        backgroundColor: '#10b981',
+                        backgroundColor: ACCENT,
                         opacity: activeDotOpacity,
                       }}
                     />
@@ -1005,7 +1009,7 @@ export default function ProcessingScreen() {
                       width: 40,
                       backgroundColor: 'rgba(16, 185, 129, 0.12)',
                       borderRightWidth: 2,
-                      borderRightColor: '#10b981',
+                      borderRightColor: ACCENT,
                       transform: [{ translateX: laserTranslateX }],
                     }}
                   />
