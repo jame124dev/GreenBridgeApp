@@ -3501,6 +3501,15 @@
     }
   },
   "mobile": {
+    "splash": {
+      "tagline": "THE CIRCULAR ECONOMY LEADER",
+      "from": "FROM"
+    },
+    "notFound": {
+      "title": "Not found",
+      "heading": "Page not found",
+      "goHome": "Go home"
+    },
     "home": {
       "greeting": "Hi, {{name}}.",
       "scanTitle": "Scan & Upload",
@@ -3617,6 +3626,7 @@
       "slow": "Still working — large photos can take up to 2 minutes.",
       "errorFallback": "AI could not read the photos",
       "retake": "Retake photos",
+      "tryAgain": "Try again",
       "continueWithoutAi": "Continue without AI",
       "subStatus_specs": "Looking up model specs…",
       "errorTitle": "We couldn't read your photos",
@@ -3869,6 +3879,7 @@
     },
     "auth": {
       "welcomeBack": "Welcome back",
+      "welcomeSubtitle": "Sign in to buy and sell used lab & industrial equipment.",
       "signInSubtitle": "Sign in to keep listing",
       "email": "Email",
       "emailPlaceholder": "you@example.com",
@@ -4046,6 +4057,7 @@
       "recentListings": "Recent listings",
       "recentWants": "Recent wants",
       "yourItems": "Your items",
+      "listingsError": "Couldn't load your items.",
       "draftsGroup": "Pick up where you left off",
       "draftCount": "{{count}} drafts",
       "listingsGroup": "Listings",
@@ -4350,6 +4362,21 @@
         "share": "Share",
         "helpful": "Helpful",
         "notHelpful": "Not helpful"
+      },
+      "stillWorking": "Still working — one moment…",
+      "empty": {
+        "sellTitle": "What are you selling?",
+        "buyTitle": "What are you looking for?",
+        "sellBody": "Describe your item or add a photo — I’ll draft the listing for you.",
+        "buyBody": "Tell me what you need and I’ll search the marketplace."
+      },
+      "starter": {
+        "sell1": "I have a used CNC machine to sell",
+        "sell2": "Help me price my lab equipment",
+        "sell3": "List several items from photos",
+        "buy1": "Find an HPLC system",
+        "buy2": "I need a used centrifuge",
+        "buy3": "Show me what's available"
       }
     },
     "labMatch": {
