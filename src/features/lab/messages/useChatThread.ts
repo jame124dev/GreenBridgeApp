@@ -8,8 +8,10 @@
 // `seller.batch_id`) and the match "Contact seller" CTA (sellerId + product
 // batch). `conversationId` is resolved by joinChat, not required as input.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/stores/authStore';
+import { labKeys } from '@/features/lab/data/labQueryKeys';
 import { getLabSocket } from './socket';
 import {
   getConversationMessages,
@@ -60,6 +62,7 @@ export function useChatThread(params: {
   const profile = useAuth((s) => s.profile);
   const userId = profile?.id;
   const role: ChatRole = profile?.role === 'seller' ? 'seller' : 'buyer';
+  const qc = useQueryClient();
 
   const [raw, setRaw] = useState<ChatMessageRow[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -88,13 +91,17 @@ export function useChatThread(params: {
         if (!alive) return;
         setRaw(page.messages);
         setHasMore(page.hasMore);
-        // Buyer marks the seller thread read on open (mirrors the web).
+        // Mark the thread read on open (mirrors the web), then refresh the
+        // inbox so its unread badge clears immediately instead of lingering
+        // until an unrelated inbound message arrives.
         void markConversationRead({
           batchId,
           buyerId: role === 'buyer' ? userId : otherPartyId,
           sellerId: role === 'buyer' ? otherPartyId : userId,
           role,
-        });
+        })
+          .then(() => qc.invalidateQueries({ queryKey: labKeys.conversations() }))
+          .catch(() => {});
       } catch {
         if (alive) setIsError(true);
       } finally {

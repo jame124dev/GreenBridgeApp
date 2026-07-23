@@ -41,7 +41,6 @@ import { getSiteType } from '@/services/scanner/buildFormData';
  */
 export default function DetailScreen() {
 
-  console.log('Rendering DetailScreen — phone HMR @ 16:53:55');
   const { t } = useTranslation();
   const draft = useScanDraft((s) => s.current);
   const mode = useScanDraft((s) => s.mode);

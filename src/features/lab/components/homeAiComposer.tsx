@@ -28,6 +28,8 @@ type Props = {
   onSend: () => void;
   onPhoto: () => void;
   onAttach: () => void;
+  /** Whether there's anything to send (text or staged attachments). */
+  canSend?: boolean;
 };
 
 export function AiComposer({
@@ -39,6 +41,7 @@ export function AiComposer({
   onSend,
   onPhoto,
   onAttach,
+  canSend = true,
 }: Props) {
   const { t } = useTranslation();
   const isBuy = mode === 'buy';
@@ -102,6 +105,7 @@ export function AiComposer({
           accentColor={accentColor}
           accentShadow={accentShadow}
           onPress={onSend}
+          disabled={!canSend}
         />
       </HStack>
     </Animated.View>

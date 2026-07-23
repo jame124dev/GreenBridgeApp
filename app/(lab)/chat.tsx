@@ -205,7 +205,9 @@ function LabChatScreen() {
   // Android back → cancel the in-flight turn + leave.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      chat.abort();
+      // stop() (not abort()) so the shared turn store is reset on leave — abort
+      // only kills the network and left turn.status stuck 'streaming'.
+      chat.stop();
       router.back();
       return true;
     });
@@ -266,7 +268,7 @@ function LabChatScreen() {
         <Pressable
           onPress={() => {
             haptics.tap();
-            chat.abort();
+            chat.stop();
             router.back();
           }}
           hitSlop={10}

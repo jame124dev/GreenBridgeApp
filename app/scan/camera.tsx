@@ -118,7 +118,6 @@ const bracketBase = {
 };
 
 export default function CameraScreen() {
-  console.log('Rendering CameraScreen');
   const { t } = useTranslation();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -437,7 +436,7 @@ export default function CameraScreen() {
         facing={facing}
         enableTorch={flash}
         zoom={zoom}
-        autofocus="off"
+        autofocus="on"
       />
 
       <GestureDetector gesture={previewGesture}>

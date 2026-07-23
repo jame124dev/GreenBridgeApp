@@ -102,9 +102,13 @@ describe('ChatMessage — behavior', () => {
     expect(getByText('Docs')).toBeTruthy(); // label, never the raw URL
   });
 
-  it('shows the thinking indicator when a bot turn has no text or cards', () => {
-    const { getByTestId } = renderMessage(buildBotMessage({ text: '' }));
-    expect(getByTestId('thinking-dots')).toBeTruthy();
+  it('renders nothing for a committed bot message with no text and no cards', () => {
+    // A settled bot message that ended up empty (e.g. a gap-filler save whose
+    // card got collapsed away) is a superseded placeholder — it must NOT paint
+    // a frozen "AI is working" thinking bubble in history. The live thinking
+    // indicator belongs to StreamingMessage (the streaming leaf), not here.
+    const { queryByTestId } = renderMessage(buildBotMessage({ text: '' }));
+    expect(queryByTestId('thinking-dots')).toBeNull();
   });
 
   it('dispatches a card to renderCard by type', () => {

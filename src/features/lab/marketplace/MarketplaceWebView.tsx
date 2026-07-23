@@ -292,7 +292,10 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
                 setErrored(true);
               }
             }}
-            style={styles.web}
+            // iOS honors `contentInset`; Android does NOT, so there the last
+            // product row scrolled under the floating tab bar. Shrink the
+            // WebView by the inset on Android so its content clears the bar.
+            style={[styles.web, Platform.OS === 'android' && bottomInset ? { marginBottom: bottomInset } : null]}
             contentInset={{ bottom: bottomInset }}
           />
         ) : null}

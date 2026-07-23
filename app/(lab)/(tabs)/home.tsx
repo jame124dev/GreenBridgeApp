@@ -186,6 +186,7 @@ export default function LabHome() {
           onSend={onSend}
           onPhoto={onPhoto}
           onAttach={onAttach}
+          canSend={input.trim().length > 0 || hasAttachments}
         />
       </View>
 

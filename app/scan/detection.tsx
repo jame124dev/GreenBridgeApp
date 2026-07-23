@@ -294,7 +294,13 @@ export default function DetectionScreen() {
           }
           onPress={step === 'capture' ? onContinueFromCapture : onSubmit}
           loading={submitting}
-          disabled={submitting || sourcePhotos.length === 0}
+          // Capture step gates on the detected GROUPS (deleting every photo
+          // from every group leaves sourcePhotos non-empty but nothing to
+          // continue with); submit step keeps the source-photo guard.
+          disabled={
+            submitting ||
+            (step === 'capture' ? editedProducts.length === 0 : sourcePhotos.length === 0)
+          }
           fullWidth
         />
       </View>

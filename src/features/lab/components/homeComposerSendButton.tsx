@@ -15,22 +15,27 @@ type Props = {
   accentColor: string;
   accentShadow: string;
   onPress: () => void;
+  /** Nothing to send (no text + no attachments) → dim + non-interactive so an
+   *  empty tap can't dead-fire (flag on) or navigate to an empty flow (off). */
+  disabled?: boolean;
 };
 
-export function ComposerSendButton({ label, accentColor, accentShadow, onPress }: Props) {
+export function ComposerSendButton({ label, accentColor, accentShadow, onPress, disabled = false }: Props) {
   const { style, onPressIn, onPressOut } = usePressScale();
 
   return (
     <AnimatedPressable
-      onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
+      onPress={disabled ? undefined : onPress}
+      onPressIn={disabled ? undefined : onPressIn}
+      onPressOut={disabled ? undefined : onPressOut}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled }}
       style={[
         styles.btn,
         style,
-        { backgroundColor: accentColor },
+        { backgroundColor: accentColor, opacity: disabled ? 0.45 : 1 },
         Platform.select({
           ios: {
             shadowColor: accentShadow,

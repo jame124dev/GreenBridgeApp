@@ -122,14 +122,20 @@ export default function LabConversation() {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated }));
   }, []);
 
-  // Autoscroll on new messages (and on first load).
-  const lastCount = useRef(0);
+  // Follow only when a NEW message lands at the TAIL (send/receive) — NOT when
+  // "Load earlier" PREPENDS older messages (which also grows the count but must
+  // preserve the reader's position). Track the last tail key, not the count.
+  const lastTailKey = useRef<string | null>(null);
   useEffect(() => {
-    if (messages.length !== lastCount.current) {
-      lastCount.current = messages.length;
-      scrollToEnd(true);
+    const tailKey = messages.length ? messages[messages.length - 1].key : null;
+    if (tailKey && tailKey !== lastTailKey.current) {
+      const first = lastTailKey.current === null;
+      lastTailKey.current = tailKey;
+      scrollToEnd(!first);
+    } else {
+      lastTailKey.current = tailKey;
     }
-  }, [messages.length, scrollToEnd]);
+  }, [messages, scrollToEnd]);
 
   const goBack = useCallback(() => {
     haptics.tap();

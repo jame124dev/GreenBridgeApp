@@ -283,7 +283,12 @@ export function AssistantMessage({
 }) {
   const styles = useChatMessageStyles();
   const hasCards = !!cards && cards.length > 0;
-  const isThinking = !text && (streaming || !hasCards);
+  // A committed assistant message with neither text nor cards is a superseded
+  // placeholder (a gap-filler save whose card got collapsed away) — render
+  // nothing instead of a frozen ghost "AI is working" bubble in history.
+  if (!text && !hasCards && !streaming) return null;
+  // The thinking indicator is ONLY for the live leaf before its first token.
+  const isThinking = !text && streaming;
   // EVERY card is an artifact the assistant "presents" — while streaming, hold
   // it until the intro text has begun so it slides in BELOW the prose instead
   // of popping in first (originally draft-only; generalized after user testing:
