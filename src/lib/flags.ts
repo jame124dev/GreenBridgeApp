@@ -85,3 +85,13 @@ export function draftsEnabled(): boolean {
 export function backgroundRecognitionEnabled(): boolean {
   return BACKGROUND_RECOGNITION_ENABLED;
 }
+
+// --- Experiment: virtualized streaming chat list (opt-in, default OFF) ---
+// Swaps the lab AI chat's hand-built pin-to-top ScrollView for
+// react-native-streaming-message-list (Legend List) so we can A/B whether the
+// library's scroll behavior beats ours. OFF ⇒ the exact current ScrollView path
+// (behavior-neutral). Set EXPO_PUBLIC_STREAMING_LIST=1 + restart Metro to trial.
+export const STREAMING_CHAT_LIST = process.env.EXPO_PUBLIC_STREAMING_LIST === '1';
+export function streamingChatListEnabled(): boolean {
+  return STREAMING_CHAT_LIST;
+}
