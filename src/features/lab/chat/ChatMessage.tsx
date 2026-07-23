@@ -336,7 +336,9 @@ export function AssistantMessage({
         </View>
       )}
 
-      {committed && CHAT_UI_V2 && !!text ? <MessageActions text={text} /> : null}
+      {/* Copy/share/feedback is a general utility — show it on every committed
+          answer, not only under the (off-by-default) dark-theme flag. */}
+      {committed && !!text ? <MessageActions text={text} /> : null}
 
       {/* Streaming: cards fade/slide in (smooth entrance, no pop). Committed: plain
           View — the row already animates, and this keeps snapshots byte-identical. */}

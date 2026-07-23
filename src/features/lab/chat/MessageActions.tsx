@@ -119,6 +119,7 @@ export function MessageActions({ text }: { text: string }) {
 }
 
 const useActionStyles = createThemedStyles(() => ({
-  row: { flexDirection: 'row', gap: 2, marginTop: 6, marginLeft: 2 },
-  btn: { padding: 6, borderRadius: 8 },
+  row: { flexDirection: 'row', gap: 4, marginTop: 6, marginLeft: 2 },
+  // ≥44pt touch target (icon stays 15px, centered) — was ~27px.
+  btn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
 }));

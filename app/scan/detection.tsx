@@ -575,7 +575,7 @@ function ProductGroupEditor({
                   hitSlop so the 18px target is comfortable to tap. */}
               <Pressable
                 onPress={() => onDeletePhoto(imageIdx)}
-                hitSlop={8}
+                hitSlop={12}
                 accessibilityRole="button"
                 accessibilityLabel={t('mobile.detection.removePhoto', {
                   defaultValue: 'Remove this photo',

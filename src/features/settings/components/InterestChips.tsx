@@ -43,7 +43,7 @@ export function InterestChips({ selected, onRemove }: Props) {
           </Text>
           <Pressable
             onPress={() => onRemove(slug)}
-            hitSlop={6}
+            hitSlop={16}
             accessibilityRole="button"
             accessibilityLabel={t('mobile.settings.removeInterest', {
               name: labelFor(slug),

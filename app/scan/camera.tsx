@@ -650,7 +650,7 @@ export default function CameraScreen() {
                           justifyContent: 'center',
                         }}
                         onPress={() => removePhoto(i)}
-                        hitSlop={6}
+                        hitSlop={14}
                         accessibilityRole="button"
                         accessibilityLabel={t('mobile.common.remove', { defaultValue: 'Remove photo' })}
                       >
