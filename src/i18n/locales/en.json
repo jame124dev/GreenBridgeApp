@@ -4435,6 +4435,7 @@
       "privateNote": "Messages here are private between you and {{name}}",
       "sendQuick": "Send: {{text}}",
       "composerPlaceholder": "Message {{name}}…",
+      "offlineSend": "You're offline — reconnecting. Your message is saved; tap send again in a moment.",
       "listingSoon": "Full listing view coming soon.",
       "today": "Today",
       "yesterday": "Yesterday",

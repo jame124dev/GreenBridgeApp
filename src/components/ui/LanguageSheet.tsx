@@ -54,6 +54,7 @@ export function LanguageSheet({ visible, onClose }: Props) {
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet} pointerEvents="box-none">
         <View style={styles.sheetInner}>
+          <View style={styles.grabber} accessibilityElementsHidden importantForAccessibility="no" />
           <Text style={styles.title}>{t('mobile.home.languageTitle')}</Text>
           <Text style={styles.subtitle}>{t('mobile.home.languageSubtitle')}</Text>
 
@@ -109,11 +110,19 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
-    paddingTop: 18,
+    paddingTop: 10,
     paddingBottom: 28,
     maxWidth: 460,
     width: '100%',
     alignSelf: 'center',
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#cbd5e1',
+    marginBottom: 12,
   },
   title: {
     fontFamily: fonts.bold,

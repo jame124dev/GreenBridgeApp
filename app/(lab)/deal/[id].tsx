@@ -157,6 +157,21 @@ export default function LabConversation() {
     toast(t('mobile.labDeal.listingSoon'));
   }, [t]);
 
+  // Guarded send: the thread has NO optimistic bubble (it waits for the server
+  // echo), so sending while the socket is down would vanish silently. Block it
+  // with clear feedback and return `false` so the composer keeps the text.
+  const handleSend = useCallback(
+    (text: string): boolean | void => {
+      if (!connected) {
+        haptics.tap();
+        toast(t('mobile.labDeal.offlineSend'));
+        return false;
+      }
+      send(text);
+    },
+    [connected, send, t],
+  );
+
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Header — back · avatar (online dot) · name + verified + status · info */}
@@ -267,7 +282,7 @@ export default function LabConversation() {
                   key={k}
                   onPress={() => {
                     haptics.impact();
-                    send(r);
+                    handleSend(r);
                   }}
                   accessibilityRole="button"
                   accessibilityLabel={t('mobile.labDeal.sendQuick', { text: r })}
@@ -282,7 +297,8 @@ export default function LabConversation() {
         <ChatComposer
           placeholder={t('mobile.labDeal.composerPlaceholder', { name: firstName })}
           disabled={!canSend}
-          onSend={send}
+          offline={!connected}
+          onSend={handleSend}
         />
         <View style={{ height: Math.max(insets.bottom, 8), backgroundColor: brand.surface }} />
       </KeyboardAvoidingView>

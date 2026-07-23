@@ -11,11 +11,17 @@ import { haptics } from '@/lib/haptics';
 export function ChatComposer({
   placeholder,
   disabled = false,
+  offline = false,
   onSend,
 }: {
   placeholder?: string;
   disabled?: boolean;
-  onSend: (text: string) => void;
+  /** Socket is disconnected: keep the input editable (let them draft) but tint
+   *  the send button muted so it reads "can't deliver yet". */
+  offline?: boolean;
+  /** Return `false` to signal the message was NOT sent (e.g. offline) so the
+   *  composer keeps the typed text for a retry instead of clearing it. */
+  onSend: (text: string) => boolean | void;
 }) {
   const { t } = useTranslation();
   const [text, setText] = useState('');
@@ -24,8 +30,8 @@ export function ChatComposer({
   const submit = () => {
     if (!canSend) return;
     haptics.impact();
-    onSend(text);
-    setText('');
+    const result = onSend(text);
+    if (result !== false) setText('');
   };
 
   return (
@@ -42,7 +48,11 @@ export function ChatComposer({
       <Pressable
         onPress={submit}
         disabled={!canSend}
-        style={[styles.send, { opacity: canSend ? 1 : 0.45 }]}
+        style={[
+          styles.send,
+          offline && styles.sendOffline,
+          { opacity: canSend ? (offline ? 0.6 : 1) : 0.45 },
+        ]}
         accessibilityRole="button"
         accessibilityLabel={t('mobile.labMessages.sendMessage')}
       >
@@ -85,5 +95,8 @@ const styles = StyleSheet.create({
     backgroundColor: greenDarkest,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  sendOffline: {
+    backgroundColor: lab.inkMeta,
   },
 });

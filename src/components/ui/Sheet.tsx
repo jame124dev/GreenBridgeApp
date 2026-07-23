@@ -1,5 +1,8 @@
+import { useEffect, useRef } from 'react';
 import {
+  Animated,
   Modal,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -31,6 +34,45 @@ type SheetProps = {
 
 export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, children }: SheetProps) {
   const { t } = useTranslation();
+  // Swipe-down-to-dismiss. Translate the inner card with the drag; past a
+  // threshold, animate it out then close. Bound only to the grabber/header
+  // region so it never fights the inner ScrollView. `onClose` is read through a
+  // ref so the (stable) PanResponder never captures a stale handler.
+  const translateY = useRef(new Animated.Value(0)).current;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (visible) translateY.setValue(0);
+  }, [visible, translateY]);
+
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_e, g) => g.dy > 6 && g.dy > Math.abs(g.dx),
+      onPanResponderMove: (_e, g) => {
+        if (g.dy > 0) translateY.setValue(g.dy);
+      },
+      onPanResponderRelease: (_e, g) => {
+        if (g.dy > 90 || g.vy > 0.6) {
+          Animated.timing(translateY, {
+            toValue: 600,
+            duration: 180,
+            useNativeDriver: true,
+          }).start(() => {
+            translateY.setValue(0);
+            onCloseRef.current();
+          });
+        } else {
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 4,
+          }).start();
+        }
+      },
+    }),
+  ).current;
+
   return (
     <Modal
       visible={visible}
@@ -42,9 +84,13 @@ export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, chil
       <Pressable style={styles.backdrop} onPress={onClose} />
 
       <View style={styles.sheet} pointerEvents="box-none">
-        <View style={styles.sheetInner}>
-          {title ? <RNText style={styles.title}>{title}</RNText> : null}
-          {subtitle ? <RNText style={styles.subtitle}>{subtitle}</RNText> : null}
+        <Animated.View style={[styles.sheetInner, { transform: [{ translateY }] }]}>
+          {/* Grabber + title share the drag region; the ScrollView below scrolls freely. */}
+          <View {...pan.panHandlers}>
+            <View style={styles.grabber} accessibilityElementsHidden importantForAccessibility="no" />
+            {title ? <RNText style={styles.title}>{title}</RNText> : null}
+            {subtitle ? <RNText style={styles.subtitle}>{subtitle}</RNText> : null}
+          </View>
 
           <ScrollView style={{ maxHeight }} showsVerticalScrollIndicator={false}>
             {children}
@@ -59,7 +105,7 @@ export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, chil
               {t('mobile.home.cancel', { defaultValue: 'Cancel' })}
             </RNText>
           </Pressable>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -159,11 +205,19 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
-    paddingTop: 18,
+    paddingTop: 10,
     paddingBottom: 28,
     maxWidth: 460,
     width: '100%',
     alignSelf: 'center',
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#cbd5e1',
+    marginBottom: 12,
   },
   title: {
     fontFamily: fonts.bold,
