@@ -30,7 +30,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner-native';
 import i18n from '@/i18n';
-import { ArrowUp, Camera, ChevronDown, ChevronLeft, Paperclip, Square, SquarePen } from 'lucide-react-native';
+import { ArrowUp, Camera, ChevronDown, ChevronLeft, Paperclip, Sparkles, Square, SquarePen } from 'lucide-react-native';
 
 import { fonts, radius, spacing } from '@/constants/theme';
 import { usePop } from '@/animations/recipes';
@@ -197,6 +197,26 @@ function LabChatScreen() {
     pinSpacerRef.current = latestUserId != null ? viewportH : 0;
   }, [latestUserId, viewportH]);
 
+  // Fresh conversation (e.g. after "New chat"): no committed messages and no
+  // live turn. Show a welcoming empty state with mode-aware starter prompts
+  // instead of a blank void above the composer.
+  const isEmpty = chat.viewMessages.length === 0 && !chat.liveActive;
+  const starterPrompts = useMemo(
+    () =>
+      mode === 'sell'
+        ? [
+            t('mobile.labChat.starter.sell1', { defaultValue: 'I have a used CNC machine to sell' }),
+            t('mobile.labChat.starter.sell2', { defaultValue: 'Help me price my lab equipment' }),
+            t('mobile.labChat.starter.sell3', { defaultValue: 'List several items from photos' }),
+          ]
+        : [
+            t('mobile.labChat.starter.buy1', { defaultValue: 'Find an HPLC system' }),
+            t('mobile.labChat.starter.buy2', { defaultValue: 'I need a used centrifuge' }),
+            t('mobile.labChat.starter.buy3', { defaultValue: "Show me what's available" }),
+          ],
+    [mode, t],
+  );
+
   const accent = useColor(mode === 'sell' ? 'mode.sell' : 'mode.buy');
   const inkColor = useColor('input.text');
   const utilIconColor = useColor('icon.util');
@@ -336,6 +356,45 @@ function LabChatScreen() {
           onMomentumScrollEnd={onMomentumScrollEnd}
           onContentSizeChange={onContentSizeChange}
         >
+          {isEmpty ? (
+            <View style={styles.empty}>
+              <View style={styles.emptyIcon}>
+                <Sparkles size={26} color={accent} strokeWidth={1.8} />
+              </View>
+              <Text style={styles.emptyTitle}>
+                {mode === 'sell'
+                  ? t('mobile.labChat.empty.sellTitle', { defaultValue: 'What are you selling?' })
+                  : t('mobile.labChat.empty.buyTitle', { defaultValue: 'What are you looking for?' })}
+              </Text>
+              <Text style={styles.emptySubtitle}>
+                {mode === 'sell'
+                  ? t('mobile.labChat.empty.sellBody', {
+                      defaultValue: 'Describe your item or add a photo — I’ll draft the listing for you.',
+                    })
+                  : t('mobile.labChat.empty.buyBody', {
+                      defaultValue: 'Tell me what you need and I’ll search the marketplace.',
+                    })}
+              </Text>
+              <View style={styles.emptyChips}>
+                {starterPrompts.map((p) => (
+                  <Pressable
+                    key={p}
+                    onPress={() => {
+                      haptics.tap();
+                      chat.setInput(p);
+                      inputRef.current?.focus();
+                    }}
+                    style={styles.emptyChip}
+                    accessibilityRole="button"
+                    accessibilityLabel={p}
+                  >
+                    <Text style={styles.emptyChipText}>{p}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
           {chat.viewMessages.map((m) => (
             <View
               key={m.id}
@@ -707,6 +766,49 @@ const useChromeStyles = createThemedStyles((t) => ({
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontFamily: fonts.bold, fontSize: 16, color: t.color['input.text'] },
   threadContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md },
+
+  // New-chat empty state — centered guidance + tappable starter prompts.
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, paddingBottom: spacing['2xl'] },
+  emptyIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: radius.full,
+    backgroundColor: t.color['surface.alt'],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  emptyTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 19,
+    color: t.color['text.primary'],
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontFamily: fonts.regular,
+    fontSize: 13.5,
+    lineHeight: 19,
+    color: t.color['text.secondary'],
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    maxWidth: 300,
+    marginBottom: spacing.xl,
+  },
+  emptyChips: { alignSelf: 'stretch', gap: spacing.sm },
+  emptyChip: {
+    borderWidth: 1,
+    borderColor: t.color['border.subtle'],
+    backgroundColor: t.color['surface.raised'],
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 12,
+  },
+  emptyChipText: {
+    fontFamily: fonts.semibold,
+    fontSize: 13.5,
+    color: t.color['text.primary'],
+    textAlign: 'center',
+  },
 
   pillWrap: { position: 'absolute', right: 18 },
   pill: {

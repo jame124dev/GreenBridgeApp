@@ -322,8 +322,13 @@ export function HomeRecentListings() {
   const profile = useAuth((s) => s.profile);
   const { resume, resumingId } = useResumeDraft();
 
-  const { data: listingsData, isLoading: listingsLoading, isError: listingsError } =
-    useRecentSubmissions(PREVIEW_LIMIT);
+  const {
+    data: listingsData,
+    isLoading: listingsLoading,
+    isError: listingsError,
+    isRefetching: listingsRefetching,
+    refetch: refetchListings,
+  } = useRecentSubmissions(PREVIEW_LIMIT);
   // Gated on the flag + sign-in so it never fires when it can't be used / 401s.
   const draftsGateOn = draftsEnabled() && !!profile?.id;
   const { data: draftsData, isLoading: draftsLoading } = useListDrafts({
@@ -344,6 +349,41 @@ export function HomeRecentListings() {
     return (
       <View className="mt-2xl">
         <ActivityIndicator color={greenDarkest} />
+      </View>
+    );
+  }
+  // Load failed with nothing else to show: surface a compact retry instead of
+  // silently vanishing the section (the seller would just see their items gone).
+  // A genuinely empty account (no error) still renders nothing.
+  if (listingsError && !allDrafts.length) {
+    return (
+      <View className="mt-2xl">
+        <Text variant="body" tone="primary" className="font-bold px-[2px]" accessibilityRole="header">
+          {t('mobile.labHome.yourItems', { defaultValue: 'Your items' })}
+        </Text>
+        <View className="mt-sm flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white px-lg py-md">
+          <Text variant="bodySm" tone="secondary" className="flex-1 mr-md">
+            {t('mobile.labHome.listingsError', { defaultValue: "Couldn't load your items." })}
+          </Text>
+          <Pressable
+            onPress={() => refetchListings()}
+            disabled={listingsRefetching}
+            hitSlop={8}
+            className="flex-row items-center gap-xs active:opacity-70"
+            accessibilityRole="button"
+            accessibilityState={{ busy: listingsRefetching }}
+            accessibilityLabel={t('mobile.labHome.retry', { defaultValue: 'Retry' })}
+          >
+            {listingsRefetching ? (
+              <ActivityIndicator size="small" color={greenDarkest} />
+            ) : (
+              <RotateCw size={15} color={greenDarkest} strokeWidth={2.2} />
+            )}
+            <Text variant="bodySm" className="font-semibold" style={{ color: greenDarkest }}>
+              {t('mobile.labHome.retry', { defaultValue: 'Retry' })}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     );
   }

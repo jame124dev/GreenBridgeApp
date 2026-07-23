@@ -13,7 +13,6 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner-native';
 
@@ -26,6 +25,7 @@ import {
   LabHeader,
   LabScreenBg,
   ModeToggle,
+  useTabBarHeight,
 } from '@/features/lab/components';
 import { useComposer } from '@/features/lab/stores/composerStore';
 import { useThread } from '@/features/lab/stores/threadStore';
@@ -39,7 +39,7 @@ import { haptics } from '@/lib/haptics';
 
 export default function LabHome() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const tabBarHeight = useTabBarHeight();
   const { width } = useWindowDimensions();
 
   const { t } = useTranslation();
@@ -145,7 +145,9 @@ export default function LabHome() {
           // the header hugs the status bar like a standard app (no double inset).
           paddingTop: spacing.sm,
           paddingHorizontal: 22,
-          paddingBottom: insets.bottom + 110,
+          // Clear the frosted tab bar (its live height) + a content gap, rather
+          // than a magic 110 that silently breaks if the tab bar height changes.
+          paddingBottom: tabBarHeight + spacing['2xl'] + spacing.xl,
         }}
       >
       <LabHeader

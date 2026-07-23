@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
+import { useTabBarHeight } from '@/features/lab/components';
 import { useLogout } from '@/features/auth/useLogout';
 import { useUserProfile } from '@/features/auth/useUserProfile';
 import {
@@ -53,6 +54,7 @@ export default function LabAccount() {
   const profile      = useAuth((s) => s.profile);
   const profileQuery = useUserProfile();
   const logoutMut    = useLogout();
+  const tabBarHeight = useTabBarHeight();
 
   const handleSignOut = () => {
     haptics.warning();
@@ -67,9 +69,10 @@ export default function LabAccount() {
         padded={false}
         scroll
         edges={['top']}
-        // Clear the FrostedTabBar (absolute, bottom:0) plus the seller screen's
-        // usual 4xl breathing room so the last card isn't hidden under the nav.
-        contentContainerStyle={{ paddingBottom: spacing['4xl'] + 72 }}
+        // Clear the FrostedTabBar (its live height incl. the bottom safe-area
+        // inset) plus 4xl breathing room so the last card isn't hidden under the
+        // nav — the old flat `+72` ignored insets and clipped on gesture-nav.
+        contentContainerStyle={{ paddingBottom: tabBarHeight + spacing['4xl'] }}
       >
         <ProfileHero
           firstName={profileQuery.data?.personalInfo.firstName || profile?.name || ''}
@@ -86,7 +89,7 @@ export default function LabAccount() {
         {profileQuery.isLoading ? (
           <ProfileSkeleton />
         ) : profileQuery.data ? (
-          <View className="mx-8">
+          <View className="mx-lg">
             {/* Account — Verification card leads so the trust signal sits above the fold */}
             <SectionHeader label={t('mobile.profile.sectionAccount', { defaultValue: 'Account' })} />
             <View className="gap-6">
