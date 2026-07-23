@@ -10,7 +10,9 @@
 // Messages remain component-local `useState` here until PR-7 moves them into
 // `conversationStore`; the reducer/effches split lands in PR-5.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner-native';
 
+import i18n from '@/i18n';
 import { haptics } from '@/lib/haptics';
 import { DETECT_STREAM_ENABLED } from '@/lib/flags';
 import { useComposer } from '@/features/lab/stores/composerStore';
@@ -116,7 +118,12 @@ export function useChatController({
   // appends the user bubble, opens a new turn against the same conversation_id.
   const send = useCallback(
     (text: string) => {
-      if (useThread.getState().turn.status === 'streaming') return; // no silent abort-restart
+      if (useThread.getState().turn.status === 'streaming') {
+        // A card CTA (Publish / quick-reply) tapped mid-stream would otherwise
+        // be silently swallowed (no abort-restart). Give feedback instead.
+        toast(i18n.t('mobile.labChat.stillWorking', { defaultValue: 'Still working — one moment…' }));
+        return;
+      }
       const message = text.trim();
       const staged = useComposer.getState().attachments;
       if (!message && staged.length === 0) return;

@@ -140,7 +140,14 @@ export function LabProductCard({
   // never "$0"): a priced row shows the amount, everything else "Price on request".
   const priced = typeof row.price === 'number' && row.price > 0;
   return (
-    <AnimatedPressable style={style} onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut}>
+    <AnimatedPressable
+      style={style}
+      onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      accessibilityRole="button"
+      accessibilityLabel={row.name || t('mobile.labCards.untitledListing')}
+    >
       <View style={styles.card}>
         {/* Image-first media band — a constant 4/3 tile so there is ZERO layout
             shift when the backend image fast-follow lands. Today every row is
@@ -1712,6 +1719,9 @@ function EntryOption({
       }}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
+      accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
     >
       <View style={[styles.entryOption, disabled && { opacity: 0.6 }]}>
         <View style={styles.entryIcon}>{icon}</View>
@@ -1786,6 +1796,9 @@ export function PrimaryButton({
       onPressOut={onPressOut}
       disabled={disabled}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
+      accessibilityLabel={label}
     >
       <View style={[styles.primaryBtn, disabled && { opacity: 0.6 }]}>
         {icon}
@@ -1815,6 +1828,8 @@ export function GhostButton({
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      accessibilityRole="button"
+      accessibilityLabel={label}
     >
       <View style={[styles.ghostBtn, small && styles.ghostBtnSmall, icon != null && styles.ghostBtnIcon]}>
         {icon}

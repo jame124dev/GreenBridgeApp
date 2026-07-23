@@ -17,7 +17,7 @@
 // screen (stack route `/(lab)/match/<wtb_id:product_id>`); "View all N" on a
 // WantCard opens the per-want All-matches screen (`/(lab)/want/<id>`).
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -53,7 +53,7 @@ export default function LabMyWants() {
   const [addOpen, setAddOpen] = useState(false);
   const [filter, setFilter] = useState<WantFilter>('all');
 
-  const { wants, isLoading, isError, isEmpty, refetch } = useWants();
+  const { wants, isLoading, isRefetching, isError, isEmpty, refetch } = useWants();
 
   // Aggregate matches across every want — reads straight from the SAME cache the
   // WantCards fill (`labKeys.wantMatches`), so this adds no network round-trips.
@@ -112,6 +112,9 @@ export default function LabMyWants() {
       padded={false}
       edges={['top']}
       keyboardAware={false}
+      refreshControl={
+        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={greenDarkest} colors={[greenDarkest]} />
+      }
       style={{ backgroundColor: 'transparent' }}
       contentContainerStyle={{
         paddingTop: 16,

@@ -21,6 +21,8 @@ type Props = {
   keyboardShouldPersistTaps?: ScrollViewProps['keyboardShouldPersistTaps'];
   /** Wrap in KeyboardAvoidingView (login / forms). */
   keyboardAware?: boolean;
+  /** Pull-to-refresh control forwarded to the scroll view. */
+  refreshControl?: ScrollViewProps['refreshControl'];
   contentContainerStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
 };
@@ -32,6 +34,7 @@ export function Screen({
   edges = ['top'],
   keyboardShouldPersistTaps = 'handled',
   keyboardAware = false,
+  refreshControl,
   contentContainerStyle,
   style,
 }: Props) {
@@ -40,6 +43,7 @@ export function Screen({
   const body = scroll ? (
     <ScrollView
       keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+      refreshControl={refreshControl}
       contentContainerStyle={[
         { flexGrow: 1, paddingBottom: 48 },
         contentContainerStyle,

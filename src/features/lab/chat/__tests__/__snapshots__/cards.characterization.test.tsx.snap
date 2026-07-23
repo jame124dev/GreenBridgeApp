@@ -1472,11 +1472,13 @@ exports[`cards — characterization (representative families) listing_batch_resu
       }
     >
       <View
+        accessibilityLabel="mobile.labCards.fixRemaining"
+        accessibilityRole="button"
         accessibilityState={
           {
             "busy": undefined,
             "checked": undefined,
-            "disabled": undefined,
+            "disabled": false,
             "expanded": undefined,
             "selected": undefined,
           }
@@ -2241,11 +2243,13 @@ exports[`cards — characterization (representative families) listing_entry_opti
   }
 >
   <View
+    accessibilityLabel="mobile.labCards.uploadPhotos. mobile.labCards.uploadPhotosSub"
+    accessibilityRole="button"
     accessibilityState={
       {
         "busy": undefined,
         "checked": undefined,
-        "disabled": undefined,
+        "disabled": false,
         "expanded": undefined,
         "selected": undefined,
       }
@@ -2379,11 +2383,13 @@ exports[`cards — characterization (representative families) listing_entry_opti
     </View>
   </View>
   <View
+    accessibilityLabel="mobile.labCards.enterManually. mobile.labCards.enterManuallySub"
+    accessibilityRole="button"
     accessibilityState={
       {
         "busy": undefined,
         "checked": undefined,
-        "disabled": undefined,
+        "disabled": false,
         "expanded": undefined,
         "selected": undefined,
       }
@@ -2651,6 +2657,8 @@ exports[`cards — characterization (representative families) listing_group_choi
     }
   >
     <View
+      accessibilityLabel="mobile.labCards.reviewSeparately. mobile.labCards.reviewSeparatelySub"
+      accessibilityRole="button"
       accessibilityState={
         {
           "busy": undefined,
@@ -2815,6 +2823,8 @@ exports[`cards — characterization (representative families) listing_group_choi
       </View>
     </View>
     <View
+      accessibilityLabel="mobile.labCards.combineListing. mobile.labCards.combineListingSub"
+      accessibilityRole="button"
       accessibilityState={
         {
           "busy": undefined,
@@ -3580,11 +3590,13 @@ exports[`cards — characterization (representative families) listing_queue gold
     }
   >
     <View
+      accessibilityLabel="mobile.labCards.publishAllReady"
+      accessibilityRole="button"
       accessibilityState={
         {
           "busy": undefined,
           "checked": undefined,
-          "disabled": undefined,
+          "disabled": false,
           "expanded": undefined,
           "selected": undefined,
         }
@@ -4165,6 +4177,8 @@ exports[`cards — characterization (representative families) product_list golde
     mobile.labCards.resultsCount
   </Text>
   <View
+    accessibilityLabel="Haas VF-2 Vertical Machining Center"
+    accessibilityRole="button"
     accessibilityState={
       {
         "busy": undefined,
@@ -4383,6 +4397,8 @@ exports[`cards — characterization (representative families) product_list golde
     mobile.labCards.resultsCount
   </Text>
   <View
+    accessibilityLabel="CNC Lathe"
+    accessibilityRole="button"
     accessibilityState={
       {
         "busy": undefined,
@@ -5576,6 +5592,8 @@ exports[`cards — characterization (representative families) wtb_draft golden (
     }
   >
     <View
+      accessibilityLabel="mobile.labCards.saveAlertMe"
+      accessibilityRole="button"
       accessibilityState={
         {
           "busy": undefined,

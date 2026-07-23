@@ -44,7 +44,7 @@ export function CodeBlock({ code, language = 'text' }: CodeBlockProps) {
         <Text style={styles.langText}>{language.toLowerCase()}</Text>
         <Pressable
           onPress={onCopy}
-          hitSlop={8}
+          hitSlop={14}
           accessibilityRole="button"
           accessibilityLabel={t('mobile.labChat.actions.copy')}
           style={styles.copyBtn}
