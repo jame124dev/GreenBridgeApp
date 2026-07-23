@@ -1,16 +1,24 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { Leaf } from 'lucide-react-native';
+
+import i18n from '@/i18n';
+import { IS_CUSTOMER } from '@/lib/flags';
 
 const logo = require('../../assets/images/greenbidz_logo.png');
 
-const NAVY_DEEP = '#001430';
-const NAVY = '#002855';
-const TEAL = '#1ABC9C';
+// Forest brand (matches the rest of the shipping app), not the old seller navy.
+const FOREST_DEEP = '#0c2f20';
+const FOREST = '#14452f';
+const LEAF = '#34d399';
 const TEXT = '#FFFFFF';
-const TEXT_MUTED = 'rgba(255,255,255,0.62)';
+const TEXT_MUTED = 'rgba(255,255,255,0.66)';
 const RULE = 'rgba(255,255,255,0.18)';
+
+// The customer bundle is "101LAB"; the seller bundle keeps its name.
+const APP_NAME = IS_CUSTOMER ? '101LAB' : 'GreenBidz Seller';
 
 export function AppSplash() {
   const fade = useRef(new Animated.Value(0)).current;
@@ -56,8 +64,10 @@ export function AppSplash() {
 
   return (
     <View style={styles.root}>
+      {/* Dark forest ground → light status-bar icons. */}
+      <StatusBar style="light" />
       <LinearGradient
-        colors={[NAVY_DEEP, NAVY, NAVY_DEEP]}
+        colors={[FOREST_DEEP, FOREST, FOREST_DEEP]}
         locations={[0, 0.55, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -78,17 +88,19 @@ export function AppSplash() {
           <Image source={logo} style={styles.logo} resizeMode="contain" />
         </View>
 
-        <Text style={styles.title}>GreenBidz Seller</Text>
+        <Text style={styles.title}>{APP_NAME}</Text>
 
         <View style={styles.tagline}>
-          <Leaf size={12} color={TEAL} strokeWidth={2.2} />
-          <Text style={styles.taglineText}>THE CIRCULAR ECONOMY LEADER</Text>
+          <Leaf size={12} color={LEAF} strokeWidth={2.2} />
+          <Text style={styles.taglineText}>
+            {i18n.t('mobile.splash.tagline', { defaultValue: 'THE CIRCULAR ECONOMY LEADER' })}
+          </Text>
         </View>
       </Animated.View>
 
       <Animated.View style={[styles.footer, { opacity: fade }]}>
         <View style={styles.footerPill} />
-        <Text style={styles.footerHint}>FROM</Text>
+        <Text style={styles.footerHint}>{i18n.t('mobile.splash.from', { defaultValue: 'FROM' })}</Text>
         <Text style={styles.footerBrand}>GreenBidz</Text>
       </Animated.View>
     </View>
@@ -98,7 +110,7 @@ export function AppSplash() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: NAVY,
+    backgroundColor: FOREST,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -119,7 +131,7 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 110,
-    backgroundColor: TEAL,
+    backgroundColor: LEAF,
     opacity: 0.3,
   },
   logo: {

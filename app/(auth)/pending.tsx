@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, Linking, ScrollView, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import Animated, {
   Easing,
@@ -101,6 +102,7 @@ const MEDALLION: Record<StepState, { bg: string; fg: string; border: string }> =
 
 export default function PendingScreen() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const logoutMut = useLogout();
   const recheck = useRecheckApproval();
   const approval = useAuth((s) => s.approval);
@@ -174,7 +176,9 @@ export default function PendingScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={[FOREST_MID, FOREST, FOREST_DEEP]} style={styles.hero}>
+      {/* Dark forest hero → light status-bar icons; top pad follows the notch. */}
+      <StatusBar style="light" />
+      <LinearGradient colors={[FOREST_MID, FOREST, FOREST_DEEP]} style={[styles.hero, { paddingTop: insets.top + 24 }]}>
         <View style={styles.emblem}>
           <Ripple delay={0} />
           <Ripple delay={1000} />

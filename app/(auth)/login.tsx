@@ -30,7 +30,7 @@ const CONTACT_URL = 'https://seller.greenbidz.com/contact';
 async function openInAppBrowser(url: string, errorMessage: string) {
   try {
     await WebBrowser.openBrowserAsync(url, {
-      toolbarColor: '#002855',
+      toolbarColor: '#14452f',
       controlsColor: '#FFFFFF',
       presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
     });
@@ -50,7 +50,6 @@ const HOME_ROUTE = IS_CUSTOMER ? '/(lab)/(tabs)/home' : '/(tabs)';
 // authority navy for primary actions, eco-teal as the card accent + footer badge.
 // Kept inline for this screen; promote to design tokens when other screens adopt
 // the navy/teal direction (brand-identity reconciliation tracked in me_plan inbox).
-const NAVY = '#002855';
 const ECO_TEAL = '#00B289';
 const TEAL_SURFACE = '#E6F7F1';
 const TEXT_PRIMARY = '#1A1C1F';
@@ -163,7 +162,7 @@ export default function LoginScreen() {
             borderRadius: 12,
             paddingVertical: 8,
             paddingHorizontal: 16,
-            shadowColor: NAVY,
+            shadowColor: '#14452f',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.06,
             shadowRadius: 12,
@@ -200,7 +199,9 @@ export default function LoginScreen() {
             marginTop: 6,
           }}
         >
-          Sign in to manage your inventory and auctions.
+          {t('mobile.auth.welcomeSubtitle', {
+            defaultValue: 'Sign in to buy and sell used lab & industrial equipment.',
+          })}
         </RNText>
       </View>
 
@@ -327,18 +328,16 @@ export default function LoginScreen() {
             />
           </View>
 
-          {/* Sign In — navy authority button (Stitch redesign).
-              Reuses the themed Button primitive (handles layout, press anim,
-              haptics, loading spinner) but overrides bg via the style prop to
-              the Stitch navy. Variant stays "primary" so the text tone stays
-              inverse (white). */}
+          {/* Sign In — uses the themed Button primitive's forest primary (the
+              shipping brand), matching the rest of the app instead of the old
+              seller navy. */}
           <Button
             label={t('mobile.auth.signIn')}
             onPress={handleSubmit(onSubmit)}
             loading={mut.isPending}
             size="md"
             fullWidth
-            style={{ backgroundColor: NAVY, marginTop: 4 }}
+            style={{ marginTop: 4 }}
           />
         </Card>
       </View>

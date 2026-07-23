@@ -76,7 +76,10 @@ module.exports = {
       },
       fontFamily: {
         sans:   ['Inter_400Regular'],
-        medium: ['Inter_500Medium'],
+        // Inter_500Medium isn't in the useFonts list, so it silently fell back
+        // to the system font wherever `font-medium` was used (every form label).
+        // Map to the loaded 600 face — matches `sans-medium`.
+        medium: ['Inter_600SemiBold'],
         semi:   ['Inter_600SemiBold'],
         bold:   ['Inter_700Bold'],
         'sans-medium': ['Inter_600SemiBold'],

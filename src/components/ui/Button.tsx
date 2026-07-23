@@ -10,7 +10,7 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Text } from './Text';
-import { motion } from '@/constants/theme';
+import { brand, motion } from '@/constants/theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -28,7 +28,7 @@ type Props = Omit<PressableProps, 'style' | 'children'> & {
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary:     'bg-primary-500 active:bg-primary-600',
+  primary:     'bg-brand-primary active:bg-brand-primary-dim',
   secondary:   'bg-neutral-100 active:bg-neutral-200',
   ghost:       'bg-transparent active:bg-neutral-100',
   destructive: 'bg-danger active:opacity-90',
@@ -110,7 +110,7 @@ export function Button({
       accessibilityLabel={label}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' || variant === 'destructive' || variant === 'danger' ? '#fff' : '#10B981'} />
+        <ActivityIndicator color={variant === 'primary' || variant === 'destructive' || variant === 'danger' ? '#fff' : brand.primary} />
       ) : (
         <View className="flex-row items-center gap-sm">
           {leftIcon ? <View className="mr-xs">{leftIcon}</View> : null}

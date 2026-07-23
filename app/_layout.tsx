@@ -102,7 +102,7 @@ export default function RootLayout() {
   const hydrate = useAuth((s) => s.hydrate);
   const reset = useAuth((s) => s.reset);
   const hydrated = useAuth((s) => s.hydrated);
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,
     Inter_700Bold,
@@ -133,10 +133,12 @@ export default function RootLayout() {
   }, [profileId]);
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
+    // Hide on EITHER success or error — a flaky font CDN on first run must not
+    // pin the app on the splash forever (fontsLoaded would stay false).
+    if (fontsLoaded || fontError) SplashScreen.hideAsync();
+  }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded || !hydrated) return <AppSplash />;
+  if ((!fontsLoaded && !fontError) || !hydrated) return <AppSplash />;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
