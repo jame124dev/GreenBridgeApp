@@ -3,7 +3,7 @@ import { Pressable, Text as RNText, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Eye, EyeOff, Globe, Leaf, Lock, Mail } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
@@ -18,13 +18,13 @@ import { toast } from 'sonner-native';
 import { useAuth } from '@/stores/authStore';
 import { getBranding } from '@/theme/branding';
 
-// The forgot-password reset flow lives on the seller web app (not the mobile
-// API). Open it in an in-app browser (Chrome Custom Tabs on Android,
-// SFSafariViewController on iOS) so the user stays inside the app shell and
-// can tap the system X to return to login after submitting the reset email.
-// `expo-web-browser` is the standard market pattern (Stripe, Linear, Slack
-// all do this for OAuth + password reset flows).
-const FORGOT_PASSWORD_URL = 'https://seller.greenbidz.com/forgot-password';
+// The "Request an account" hand-off still lives on the seller web app (not
+// the mobile API). Open it in an in-app browser (Chrome Custom Tabs on
+// Android, SFSafariViewController on iOS) so the user stays inside the app
+// shell and can tap the system X to return to login. `expo-web-browser` is
+// the standard market pattern (Stripe, Linear, Slack all do this for OAuth /
+// contact hand-offs). The forgot-password flow itself is now native — see
+// `/(auth)/forgot-password` — so it no longer uses this helper.
 const CONTACT_URL = 'https://seller.greenbidz.com/contact';
 
 // Carry the app's current UI language to the (web) reset / contact pages so a
@@ -73,6 +73,7 @@ export default function LoginScreen() {
   const [langSheetOpen, setLangSheetOpen] = useState(false);
   const langLabel = languageBadge(i18n.language);
 
+  const params = useLocalSearchParams<{ email?: string }>();
   const {
     control,
     handleSubmit,
@@ -80,7 +81,7 @@ export default function LoginScreen() {
     setError,
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: typeof params.email === 'string' ? params.email : '', password: '' },
   });
   const mut = useLogin();
   const setPending = useAuth((s) => s.setPending);
@@ -282,14 +283,7 @@ export default function LoginScreen() {
                 {t('mobile.auth.password')}
               </Text>
               <Pressable
-                onPress={() =>
-                  openInAppBrowser(
-                    withLang(FORGOT_PASSWORD_URL, i18n.language),
-                    t('mobile.auth.forgotOpenFailed', {
-                      defaultValue: 'Open the link from your browser instead.',
-                    }),
-                  )
-                }
+                onPress={() => router.push('/(auth)/forgot-password')}
                 hitSlop={6}
                 accessibilityRole="button"
                 accessibilityLabel={t('mobile.auth.forgotPassword')}
