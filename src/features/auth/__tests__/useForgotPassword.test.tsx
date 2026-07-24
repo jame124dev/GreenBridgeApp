@@ -51,12 +51,14 @@ afterEach(() => {
 describe('useForgotPassword', () => {
   it('advances email → otp on send success, trimming the email and starting timers', async () => {
     const { result } = renderHook(() => useForgotPassword());
-    await act(async () => { await result.current.submitEmail('  a@b.com  '); });
+    let resolved: boolean | undefined;
+    await act(async () => { resolved = await result.current.submitEmail('  a@b.com  '); });
     expect(mockSendResetOtp).toHaveBeenCalledWith('a@b.com');
     expect(result.current.step).toBe('otp');
     expect(result.current.email).toBe('a@b.com');
     expect(result.current.secondsLeft).toBe(600);
     expect(result.current.resendCooldown).toBe(30);
+    expect(resolved).toBe(true);
   });
 
   it('advances otp → password on verify success', async () => {
@@ -71,9 +73,11 @@ describe('useForgotPassword', () => {
     // @ts-expect-error jest mock type inference
     mockSendResetOtp.mockRejectedValueOnce(new ResetErrorClass('NO_ACCOUNT', 'x'));
     const { result } = renderHook(() => useForgotPassword());
-    await act(async () => { await result.current.submitEmail('x@y.com'); });
+    let resolved: boolean | undefined;
+    await act(async () => { resolved = await result.current.submitEmail('x@y.com'); });
     expect(result.current.step).toBe('email');
     expect(result.current.error).toBe('NO_ACCOUNT');
+    expect(resolved).toBe(false);
   });
 
   it('bounces back to otp and rethrows when reset returns INVALID_OTP', async () => {
@@ -93,8 +97,10 @@ describe('useForgotPassword', () => {
     const { result } = renderHook(() => useForgotPassword());
     await act(async () => { await result.current.submitEmail('a@b.com'); });
     expect(mockSendResetOtp).toHaveBeenCalledTimes(1);
-    await act(async () => { await result.current.resend(); }); // cooldown = 30 → no-op
+    let resolved: boolean | undefined;
+    await act(async () => { resolved = await result.current.resend(); }); // cooldown = 30 → no-op
     expect(mockSendResetOtp).toHaveBeenCalledTimes(1);
+    expect(resolved).toBe(false);
   });
 
   it('counts the resend cooldown down each second', async () => {

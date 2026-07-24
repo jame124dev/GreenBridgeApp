@@ -20,10 +20,10 @@ export interface UseForgotPasswordResult {
   error: ResetErrorCode | null;
   secondsLeft: number;
   resendCooldown: number;
-  submitEmail: (email: string) => Promise<void>;
+  submitEmail: (email: string) => Promise<boolean>;
   submitOtp: (otp: string) => Promise<void>;
   submitNewPassword: (newPassword: string) => Promise<void>;
-  resend: () => Promise<void>;
+  resend: () => Promise<boolean>;
   back: () => void;
   clearError: () => void;
 }
@@ -63,8 +63,10 @@ export function useForgotPassword(): UseForgotPasswordResult {
       setEmail(trimmed);
       setStep('otp');
       startTimers();
+      return true;
     } catch (e) {
       setError(codeOf(e));
+      return false;
     } finally {
       setIsPending(false);
     }
@@ -105,14 +107,16 @@ export function useForgotPassword(): UseForgotPasswordResult {
   }, [email, otp]);
 
   const resend = useCallback(async () => {
-    if (resendCooldown > 0) return;
+    if (resendCooldown > 0) return false;
     setIsPending(true);
     setError(null);
     try {
       await sendResetOtp(email);
       startTimers();
+      return true;
     } catch (e) {
       setError(codeOf(e));
+      return false;
     } finally {
       setIsPending(false);
     }

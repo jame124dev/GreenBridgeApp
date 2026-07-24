@@ -94,8 +94,8 @@ function EmailStep({ fp, errText }: StepProps) {
     defaultValues: { email: '' },
   });
   const onSubmit = handleSubmit(async ({ email }) => {
-    await fp.submitEmail(email);
-    if (!fp.error) toast(t('mobile.auth.reset.codeSent'));
+    const ok = await fp.submitEmail(email);
+    if (ok) toast(t('mobile.auth.reset.codeSent'));
   });
   const serverErr = errText(fp.error);
   return (
@@ -146,7 +146,7 @@ function OtpStep({ fp, errText }: StepProps) {
       <Button label={t('mobile.auth.reset.verify')} onPress={() => fp.submitOtp(otp)} loading={fp.isPending} fullWidth />
       <Pressable
         disabled={fp.resendCooldown > 0}
-        onPress={() => fp.resend().then(() => toast(t('mobile.auth.reset.newCodeSent')))}
+        onPress={() => fp.resend().then((ok) => { if (ok) toast(t('mobile.auth.reset.newCodeSent')); })}
         style={{ marginTop: 14, alignItems: 'center', opacity: fp.resendCooldown > 0 ? 0.5 : 1 }}
       >
         <RNText style={styles.resend}>
