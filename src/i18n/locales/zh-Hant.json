@@ -3870,7 +3870,32 @@
         "openSite": "開啟網站",
         "signOut": "登出",
         "signingOut": "登出中…"
-      }
+      },
+    "reset": {
+      "emailTitle": "重設您的密碼",
+      "emailSubtitle": "輸入您的帳戶電子郵件，我們會寄送 6 位數驗證碼。",
+      "emailLabel": "電子郵件",
+      "sendCode": "傳送驗證碼",
+      "codeSent": "驗證碼已寄出，請查看您的電子郵件。",
+      "noAccount": "找不到使用此電子郵件的帳戶。",
+      "otpTitle": "輸入驗證碼",
+      "otpSubtitle": "我們已將 6 位數驗證碼寄至 {{email}}。",
+      "verify": "驗證",
+      "resend": "重新傳送驗證碼",
+      "resendIn": "{{seconds}} 秒後可重新傳送",
+      "useRecentCode": "請輸入我們最近寄送的驗證碼。",
+      "codeExpired": "驗證碼可能已過期，請重新取得。",
+      "invalidCode": "驗證碼無效或已過期，請重新取得。",
+      "newCodeSent": "已傳送新的驗證碼。",
+      "passwordTitle": "設定新密碼",
+      "newPassword": "新密碼",
+      "confirmPassword": "確認密碼",
+      "passwordTooShort": "請至少使用 8 個字元。",
+      "passwordMismatch": "兩次輸入的密碼不一致。",
+      "resetPassword": "重設密碼",
+      "resetSuccess": "密碼已更新，請使用新密碼登入。",
+      "networkError": "網路錯誤，請檢查您的連線。"
+    }
     },
     "profile": {
       "heading": "個人資料",

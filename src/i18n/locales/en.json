@@ -3946,7 +3946,32 @@
           "tagWaiting": "Waiting",
           "tagApproved": "Approved"
         }
-      }
+      },
+    "reset": {
+      "emailTitle": "Reset your password",
+      "emailSubtitle": "Enter your account email and we'll send you a 6-digit code.",
+      "emailLabel": "Email address",
+      "sendCode": "Send code",
+      "codeSent": "Code sent — check your email.",
+      "noAccount": "No account found with that email.",
+      "otpTitle": "Enter the code",
+      "otpSubtitle": "We sent a 6-digit code to {{email}}.",
+      "verify": "Verify",
+      "resend": "Resend code",
+      "resendIn": "Resend in {{seconds}}s",
+      "useRecentCode": "Enter the most recent code we sent.",
+      "codeExpired": "That code may have expired. Request a new one.",
+      "invalidCode": "Invalid or expired code. Request a new one.",
+      "newCodeSent": "New code sent.",
+      "passwordTitle": "Set a new password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "passwordTooShort": "Use at least 8 characters.",
+      "passwordMismatch": "Passwords don't match.",
+      "resetPassword": "Reset password",
+      "resetSuccess": "Password updated — sign in with your new password.",
+      "networkError": "Network error — check your connection."
+    }
     },
     "profile": {
       "heading": "Profile",

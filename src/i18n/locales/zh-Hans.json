@@ -3870,7 +3870,32 @@
         "openSite": "打开网站",
         "signOut": "注销",
         "signingOut": "注销中…"
-      }
+      },
+    "reset": {
+      "emailTitle": "重置您的密码",
+      "emailSubtitle": "输入您的账户电子邮件，我们会发送 6 位数验证码。",
+      "emailLabel": "电子邮件",
+      "sendCode": "发送验证码",
+      "codeSent": "验证码已发送，请查看您的电子邮件。",
+      "noAccount": "找不到使用此电子邮件的账户。",
+      "otpTitle": "输入验证码",
+      "otpSubtitle": "我们已将 6 位数验证码发送至 {{email}}。",
+      "verify": "验证",
+      "resend": "重新发送验证码",
+      "resendIn": "{{seconds}} 秒后可重新发送",
+      "useRecentCode": "请输入我们最近发送的验证码。",
+      "codeExpired": "验证码可能已过期，请重新获取。",
+      "invalidCode": "验证码无效或已过期，请重新获取。",
+      "newCodeSent": "已发送新的验证码。",
+      "passwordTitle": "设置新密码",
+      "newPassword": "新密码",
+      "confirmPassword": "确认密码",
+      "passwordTooShort": "请至少使用 8 个字符。",
+      "passwordMismatch": "两次输入的密码不一致。",
+      "resetPassword": "重置密码",
+      "resetSuccess": "密码已更新，请使用新密码登录。",
+      "networkError": "网络错误，请检查您的连接。"
+    }
     },
     "profile": {
       "heading": "个人数据",
