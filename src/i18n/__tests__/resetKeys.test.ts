@@ -8,7 +8,7 @@ const KEYS = [
   'otpTitle', 'otpSubtitle', 'verify', 'resend', 'resendIn', 'useRecentCode',
   'codeExpired', 'invalidCode', 'newCodeSent', 'passwordTitle', 'newPassword',
   'confirmPassword', 'passwordTooShort', 'passwordMismatch', 'resetPassword',
-  'resetSuccess', 'networkError',
+  'resetSuccess', 'networkError', 'emailInvalid', 'unknownError',
 ] as const;
 
 const reset = (bundle: any) => bundle?.mobile?.auth?.reset ?? {};

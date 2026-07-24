@@ -3970,7 +3970,9 @@
       "passwordMismatch": "Passwords don't match.",
       "resetPassword": "Reset password",
       "resetSuccess": "Password updated — sign in with your new password.",
-      "networkError": "Network error — check your connection."
+      "networkError": "Network error — check your connection.",
+      "emailInvalid": "Enter a valid email address.",
+      "unknownError": "Something went wrong. Please try again."
     }
     },
     "profile": {

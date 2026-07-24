@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   ResetError,
@@ -36,6 +36,7 @@ export function useForgotPassword(): UseForgotPasswordResult {
   const [error, setError] = useState<ResetErrorCode | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const inFlightOtpRef = useRef(false);
 
   // One ticker drives both countdowns; runs only while something is counting.
   useEffect(() => {
@@ -73,6 +74,8 @@ export function useForgotPassword(): UseForgotPasswordResult {
   }, []);
 
   const submitOtp = useCallback(async (code: string) => {
+    if (inFlightOtpRef.current) return;
+    inFlightOtpRef.current = true;
     setIsPending(true);
     setError(null);
     try {
@@ -83,6 +86,7 @@ export function useForgotPassword(): UseForgotPasswordResult {
       setError(codeOf(e));
     } finally {
       setIsPending(false);
+      inFlightOtpRef.current = false;
     }
   }, [email]);
 

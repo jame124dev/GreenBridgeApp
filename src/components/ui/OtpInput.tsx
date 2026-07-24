@@ -14,12 +14,20 @@ type Props = {
 // focuses the input; the OS one-time-code autofill lands in the same field.
 export function OtpInput({ value, onChange, onComplete, length = 6 }: Props) {
   const inputRef = useRef<TextInput>(null);
+  const completedRef = useRef(false);
   const cells = Array.from({ length });
 
   const handleChange = (raw: string) => {
     const digits = raw.replace(/[^0-9]/g, '').slice(0, length);
     onChange(digits);
-    if (digits.length === length) onComplete?.(digits);
+    if (digits.length === length) {
+      if (!completedRef.current) {
+        completedRef.current = true;
+        onComplete?.(digits);
+      }
+    } else {
+      completedRef.current = false;
+    }
   };
 
   return (
@@ -39,7 +47,7 @@ export function OtpInput({ value, onChange, onComplete, length = 6 }: Props) {
         value={value}
         onChangeText={handleChange}
         keyboardType="number-pad"
-        maxLength={length}
+        maxLength={length * 2}
         autoFocus
         textContentType="oneTimeCode"
         autoComplete="one-time-code"

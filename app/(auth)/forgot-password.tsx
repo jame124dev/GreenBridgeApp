@@ -51,7 +51,7 @@ export default function ForgotPasswordScreen() {
     if (code === 'NO_ACCOUNT') return t('mobile.auth.reset.noAccount');
     if (code === 'INVALID_OTP') return t('mobile.auth.reset.invalidCode');
     if (code === 'NETWORK') return t('mobile.auth.reset.networkError');
-    return t('mobile.auth.reset.networkError');
+    return t('mobile.auth.reset.unknownError');
   };
 
   // Hardware back: step within the flow; exit to login from the first step.
@@ -120,7 +120,7 @@ function EmailStep({ fp, errText }: StepProps) {
           />
         )}
       />
-      {errors.email ? <RNText style={styles.err}>{errors.email.message}</RNText> : null}
+      {errors.email?.message ? <RNText style={styles.err}>{t(errors.email.message)}</RNText> : null}
       {serverErr ? <RNText style={styles.err}>{serverErr}</RNText> : null}
       <Button label={t('mobile.auth.reset.sendCode')} onPress={onSubmit} loading={fp.isPending} fullWidth />
     </View>
@@ -142,7 +142,7 @@ function OtpStep({ fp, errText }: StepProps) {
       <OtpInput value={otp} onChange={setOtp} onComplete={(v) => fp.submitOtp(v)} />
       <RNText style={styles.timer}>{mm(fp.secondsLeft)}</RNText>
       {serverErr ? <RNText style={styles.err}>{serverErr}</RNText> : null}
-      <RNText style={styles.hint}>{t('mobile.auth.reset.useRecentCode')}</RNText>
+      <RNText style={styles.hint}>{fp.secondsLeft === 0 ? t('mobile.auth.reset.codeExpired') : t('mobile.auth.reset.useRecentCode')}</RNText>
       <Button label={t('mobile.auth.reset.verify')} onPress={() => fp.submitOtp(otp)} loading={fp.isPending} fullWidth />
       <Pressable
         disabled={fp.resendCooldown > 0}
@@ -186,7 +186,7 @@ function PasswordStep({ fp, errText }: StepProps) {
           <TextInput style={styles.input} value={value} onChangeText={onChange} onBlur={onBlur} secureTextEntry autoCapitalize="none" />
         )}
       />
-      {errors.newPassword ? <RNText style={styles.err}>{errors.newPassword.message}</RNText> : null}
+      {errors.newPassword?.message ? <RNText style={styles.err}>{t(errors.newPassword.message)}</RNText> : null}
       <RNText style={styles.label}>{t('mobile.auth.reset.confirmPassword')}</RNText>
       <Controller
         control={control}
@@ -195,7 +195,7 @@ function PasswordStep({ fp, errText }: StepProps) {
           <TextInput style={styles.input} value={value} onChangeText={onChange} onBlur={onBlur} secureTextEntry autoCapitalize="none" />
         )}
       />
-      {errors.confirmPassword ? <RNText style={styles.err}>{errors.confirmPassword.message}</RNText> : null}
+      {errors.confirmPassword?.message ? <RNText style={styles.err}>{t(errors.confirmPassword.message)}</RNText> : null}
       {serverErr ? <RNText style={styles.err}>{serverErr}</RNText> : null}
       <Button label={t('mobile.auth.reset.resetPassword')} onPress={onSubmit} loading={fp.isPending} fullWidth />
     </View>

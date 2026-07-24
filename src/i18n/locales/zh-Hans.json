@@ -3894,7 +3894,9 @@
       "passwordMismatch": "两次输入的密码不一致。",
       "resetPassword": "重置密码",
       "resetSuccess": "密码已更新，请使用新密码登录。",
-      "networkError": "网络错误，请检查您的连接。"
+      "networkError": "网络错误，请检查您的连接。",
+      "emailInvalid": "请输入有效的电子邮件地址。",
+      "unknownError": "发生错误，请稍后再试。"
     }
     },
     "profile": {
