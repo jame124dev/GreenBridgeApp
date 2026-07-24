@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { fonts, greenDarkest, lab, radius } from '@/constants/theme';
@@ -16,6 +16,13 @@ export function OtpInput({ value, onChange, onComplete, length = 6 }: Props) {
   const inputRef = useRef<TextInput>(null);
   const completedRef = useRef(false);
   const cells = Array.from({ length });
+
+  // Re-arm the one-shot onComplete guard whenever the value is externally
+  // shortened/cleared (e.g. parent resets the field on a wrong code), so a
+  // subsequent single-shot autofill of a corrected code still fires onComplete.
+  useEffect(() => {
+    if (value.length < length) completedRef.current = false;
+  }, [value, length]);
 
   const handleChange = (raw: string) => {
     const digits = raw.replace(/[^0-9]/g, '').slice(0, length);

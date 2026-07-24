@@ -23,4 +23,22 @@ describe('OtpInput', () => {
     fireEvent.changeText(getByTestId('otp-input'), '12');
     expect(onComplete).not.toHaveBeenCalled();
   });
+
+  it('fires onComplete once, not again, for the same full value', () => {
+    const onComplete = jest.fn();
+    const { getByTestId } = render(<OtpInput value="" onChange={() => {}} onComplete={onComplete} />);
+    fireEvent.changeText(getByTestId('otp-input'), '123456');
+    fireEvent.changeText(getByTestId('otp-input'), '123456');
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-fires onComplete after the value is externally cleared (retry autofill)', () => {
+    const onComplete = jest.fn();
+    const { getByTestId, rerender } = render(<OtpInput value="" onChange={() => {}} onComplete={onComplete} />);
+    fireEvent.changeText(getByTestId('otp-input'), '123456');           // fires #1, guard set
+    rerender(<OtpInput value="123456" onChange={() => {}} onComplete={onComplete} />); // reflects full value, guard stays
+    rerender(<OtpInput value="" onChange={() => {}} onComplete={onComplete} />);       // external clear → useEffect re-arms
+    fireEvent.changeText(getByTestId('otp-input'), '654321');           // fires #2
+    expect(onComplete).toHaveBeenCalledTimes(2);
+  });
 });
