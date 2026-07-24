@@ -3880,6 +3880,7 @@
     "auth": {
       "welcomeBack": "Welcome back",
       "welcomeSubtitle": "Sign in to buy and sell used lab & industrial equipment.",
+      "requestAccount": "Request an account",
       "signInSubtitle": "Sign in to keep listing",
       "email": "Email",
       "emailPlaceholder": "you@example.com",

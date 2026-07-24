@@ -27,6 +27,16 @@ import { getBranding } from '@/theme/branding';
 const FORGOT_PASSWORD_URL = 'https://seller.greenbidz.com/forgot-password';
 const CONTACT_URL = 'https://seller.greenbidz.com/contact';
 
+// Carry the app's current UI language to the (web) reset / contact pages so a
+// Chinese-language user isn't dropped onto an English page. Harmless if the page
+// ignores it — the web side must read `lang` for the language to actually switch
+// (tracked as a web follow-up; the app's part is done here).
+function withLang(url: string, lang: string): string {
+  const code = (lang || 'en').trim();
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}lang=${encodeURIComponent(code)}`;
+}
+
 async function openInAppBrowser(url: string, errorMessage: string) {
   try {
     await WebBrowser.openBrowserAsync(url, {
@@ -274,7 +284,7 @@ export default function LoginScreen() {
               <Pressable
                 onPress={() =>
                   openInAppBrowser(
-                    FORGOT_PASSWORD_URL,
+                    withLang(FORGOT_PASSWORD_URL, i18n.language),
                     t('mobile.auth.forgotOpenFailed', {
                       defaultValue: 'Open the link from your browser instead.',
                     }),
@@ -383,9 +393,11 @@ export default function LoginScreen() {
         </Text>
       </View>
 
-      {/* Contact / account help — opens the seller web's contact page in the
-          same in-app browser as the forgot-password link. Common B2B pattern:
-          new sellers can request access without leaving the app. */}
+      {/* Account registration entry. Accounts are approved by the team (no
+          self-serve signup page exists), so this opens the web "request an
+          account" / contact page in the in-app browser. Labeled "Request an
+          account" — not "Contact us" — so new users actually recognize it as
+          the way to register (client feedback: couldn't find how to sign up). */}
       <View className="items-center mt-2xl flex-row justify-center" style={{ gap: 4 }}>
         <RNText
           style={{
@@ -400,7 +412,7 @@ export default function LoginScreen() {
         <Pressable
           onPress={() =>
             openInAppBrowser(
-              CONTACT_URL,
+              withLang(CONTACT_URL, i18n.language),
               t('mobile.auth.contactOpenFailed', {
                 defaultValue: 'Open the link from your browser instead.',
               }),
@@ -408,7 +420,7 @@ export default function LoginScreen() {
           }
           hitSlop={6}
           accessibilityRole="button"
-          accessibilityLabel={t('mobile.auth.contactUs', { defaultValue: 'Contact us' })}
+          accessibilityLabel={t('mobile.auth.requestAccount', { defaultValue: 'Request an account' })}
         >
           <RNText
             style={{
@@ -419,7 +431,7 @@ export default function LoginScreen() {
               fontWeight: '600',
             }}
           >
-            {t('mobile.auth.contactUs', { defaultValue: 'Contact us' })}
+            {t('mobile.auth.requestAccount', { defaultValue: 'Request an account' })}
           </RNText>
         </Pressable>
       </View>
