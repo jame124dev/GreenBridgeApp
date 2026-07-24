@@ -87,7 +87,7 @@ is a UX gate (fail fast before the user types a password), not a security depend
 ## User flow — three steps, one route
 
 New route **`app/(auth)/forgot-password.tsx`** holds `step: 'email' | 'otp' | 'password'`
-in local state and carries `email` + the verified `otp` in state (no cross-route params).
+in local state and carries `email` + the verified `otp` in state (no params passed *between the wizard's own steps* — the only route param anywhere is the `email` handed to `login` on success, for pre-fill).
 `(auth)/_layout.tsx` is a file-based `<Stack>`, so adding the file auto-registers the route.
 
 ### Step 1 — Email
@@ -143,7 +143,7 @@ used by the "Request an account" link).
   Stitch styling matching login; Android hardware-back steps backward (and exits to login from step 1).
 
 **Modified**
-- `app/(auth)/login.tsx` — repoint "Forgot?" to the native route; drop `FORGOT_PASSWORD_URL` + its browser call.
+- `app/(auth)/login.tsx` — three changes: (1) repoint "Forgot?" to the native route; (2) drop `FORGOT_PASSWORD_URL` + its browser call; (3) **read an optional `email` route param** (`useLocalSearchParams`) and seed it into the form default so a completed reset pre-fills the field — today the form is `defaultValues: { email: '', password: '' }` (`login.tsx:83`) and reads no params, so without this the Step 3 pre-fill (above) is a no-op.
 - `src/i18n/locales/en.json` — add the `mobile.auth.reset.*` block (below).
 
 **No change:** `(auth)/_layout.tsx` (file-based route auto-registers); `_layout.tsx` AuthGuard
@@ -159,7 +159,7 @@ Step1  email ──sendResetOtp──▶ POST /user/forgot-password/send-otp {em
 Step2  email+otp ─verifyResetOtp▶ POST /verify-otp {email,otp}
                               ◀── 200 {verified:true}               (or 400 → INVALID_OTP)
 Step3  email+otp+newPassword ─resetPassword▶ POST /reset {email,otp,newPassword}
-                              ◀── 200 {message}  → router.replace('/(auth)/login')
+                              ◀── 200 {message}  → router.replace('/(auth)/login', params:{email})  // email pre-filled
 ```
 
 State lives in `useForgotPassword`; nothing is persisted to MMKV/secure-store (a reset is
@@ -186,9 +186,9 @@ return **400/404**, never 401, so the reset flow can't trigger an accidental log
 ## Edge cases
 
 - **Resend spam:** the backend has no rate-limit; the client enforces a 30s resend cooldown (button disabled + countdown).
-- **Expiry:** 10:00 countdown mirrors the backend's 10-minute window; at 0 the Verify button disables and copy prompts a resend.
+- **Expiry:** 10:00 countdown mirrors the backend's 10-minute window but is **advisory** (see Step 2) — at 0:00, keep Verify tappable and just show a "may have expired — resend" hint; the server's 400 is the authority.
 - **Android back:** steps backward within the flow; from Step 1, exits to Login.
-- **Email casing/whitespace:** **trim only — do NOT lowercase.** The lookup is exact-match on `user_email` (`otpService.js:10`) and login sends the email as-typed (no lowercasing in `login.ts` or its schema); lowercasing here could turn a valid `John@Co.com` into a false 404 on a case-sensitive collation. Match login exactly.
+- **Email casing/whitespace:** **do NOT lowercase.** The lookup is exact-match on `user_email` (`otpService.js:10`), and login sends the email as-typed — `loginSchema` only validates it (no trim, no lowercase) and `login.ts:52` posts it verbatim. Lowercasing here could turn a valid `John@Co.com` into a false 404 on a case-sensitive collation. A defensive `.trim()` is fine (whitespace is never part of a real address); casing must be preserved to stay consistent with login.
 - **Keyboard:** `KeyboardAvoidingView` (login already uses the pattern) so inputs aren't covered.
 
 ---
@@ -260,7 +260,7 @@ Also re-check the **mobile i18n zh gotcha** (lowercase locale codes, no `support
 ## Testing
 
 **Unit (jest)**
-- `passwordReset.ts`: each function maps 200 → resolve; 404 → `NO_ACCOUNT`; 400 → `INVALID_OTP`; no-response → `NETWORK`. Mock `greenbidz`. Assert `x-platform` header sent on `send-otp`.
+- `passwordReset.ts`: each function maps 200 → resolve; 404 → `NO_ACCOUNT`; 400 → `INVALID_OTP`; no-response → `NETWORK`. Mock `greenbidz`; assert each function hits the right path with the right body. (`x-platform` is a **default on the shared client instance**, not a per-call arg, so it belongs to a `greenbidzClient` config test — don't assert it here.)
 - `useForgotPassword.ts`: step machine — `submitEmail` success advances to `otp`; `submitOtp` success advances to `password`; a reset 400 bounces back to `otp`; resend cooldown blocks a second send within 30s.
 
 **Render (characterization)**
@@ -293,6 +293,8 @@ Also re-check the **mobile i18n zh gotcha** (lowercase locale codes, no `support
 - **Platform branding:** ✅ resolved — `SITE_TYPE=LabGreenbidz` → `labgreenbidz` → "101lab"
   (`brandingConfig.js:29-34`), and the `greenbidz` client already sends the header. No action needed.
 - **Password policy:** min-8 is chosen here; align with a signup policy if one is standardized later.
-- **Dev backend availability:** routes are on the backend `dev` branch (confirmed); verify the dev
-  deploy is reachable before QA (dev routes can lag main in this codebase).
+- **Dev backend availability:** the routes are committed on the backend `dev` branch **and**
+  `origin/main` (both confirmed via git), so prod and dev both carry them — no dev/main gap here.
+  Before QA, just confirm the running **dev server deploy** is caught up to the `dev` branch commit
+  (a deployed server can lag its branch in this codebase) and is reachable.
 ```

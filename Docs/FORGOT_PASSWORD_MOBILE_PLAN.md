@@ -849,6 +849,14 @@ function mm(seconds: number) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+// Privacy: show a***@domain, not the full address, in the "code sent to" hint.
+function maskEmail(email: string): string {
+  const [user, domain] = email.split('@');
+  if (!domain || !user) return email;
+  const first = user.slice(0, 1);
+  return `${first}${'*'.repeat(Math.max(1, user.length - 1))}@${domain}`;
+}
+
 export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -947,7 +955,7 @@ function OtpStep({ fp, errText }: StepProps) {
   return (
     <View style={styles.body}>
       <RNText style={styles.title}>{t('mobile.auth.reset.otpTitle')}</RNText>
-      <RNText style={styles.subtitle}>{t('mobile.auth.reset.otpSubtitle', { email: fp.email })}</RNText>
+      <RNText style={styles.subtitle}>{t('mobile.auth.reset.otpSubtitle', { email: maskEmail(fp.email) })}</RNText>
       <OtpInput value={otp} onChange={setOtp} onComplete={(v) => fp.submitOtp(v)} />
       <RNText style={styles.timer}>{mm(fp.secondsLeft)}</RNText>
       {serverErr ? <RNText style={styles.err}>{serverErr}</RNText> : null}
