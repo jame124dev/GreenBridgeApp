@@ -29,9 +29,9 @@ Reuse the exact conventions already in [app/(auth)/login.tsx](../app/(auth)/logi
 
 ## Global constraints
 
-- **Frontend-only.** No changes to `101recycle-greenbidz-backend`. The endpoints are already live in production and already used by the web.
-- The app targets the **production** backend. QA must use a **real, registered** test email that can receive the OTP; do **not** complete a reset on an account you don't own.
-- English copy only in `en.json` (with `defaultValue` fallbacks); `zh-Hant`/`zh-Hans`/`ja`/`th`/`vi` fall back to English until translated — matches the existing codebase pattern.
+- **Frontend-only.** No changes to `101recycle-greenbidz-backend`. The endpoints already exist (on the backend `dev` branch and in production; the web uses them).
+- **QA against the DEV backend, not prod** (dev-first policy). The routes are on the backend `dev` branch (confirmed). Point `GREENBIDZ_API_URL` at the dev API (`testapi…` / :6000) for testing — the mobile `.env` currently points at prod (`api.101recycle.greenbidz.com`), so switch it for QA. Use a **real, registered** test email that can receive the OTP; never complete a reset on an account you don't own.
+- **Chinese is a first-class deliverable of this ticket** — the client is Chinese-speaking, so an English-only native flow only half-fixes the complaint. Add `zh-Hant` + `zh-Hans` for every `mobile.auth.reset.*` key as part of this work (draft table below; native proofread before ship). `ja`/`th`/`vi` stay English-fallback, consistent with existing debt.
 - Keep files small and single-purpose (service / hook / screen / OTP component split).
 
 ---
@@ -39,7 +39,7 @@ Reuse the exact conventions already in [app/(auth)/login.tsx](../app/(auth)/logi
 ## Backend API contract (existing — verbatim)
 
 All routes are **public** (no auth middleware) and mounted under `/api/v1/user`
-(`101recycle-greenbidz-backend/routes/userRoutes.js`, controller `otpController.js`,
+(`101recycle-greenbidz-backend/routes/userRoutes.js`, `controller/otpController.js` — singular `controller/`,
 service `otpService.js`). The `greenbidz` client base already includes `/api/v1`,
 so the client-relative paths are `/user/forgot-password/*`.
 
@@ -49,7 +49,7 @@ so the client-relative paths are `/user/forgot-password/*`.
 | | |
 |---|---|
 | **Body** | `{ "email": string }` |
-| **Platform** | header `x-platform: <value>` **or** query `?type=<value>` (server lower-cases + trims). Pass the app's `SITE_TYPE` = `LabGreenbidz` → backend branding key `labgreenbidz` → OTP email branded **"101lab"**. Default if omitted: `recycle` (wrong brand). |
+| **Platform** | The `greenbidz` client **already** sends `x-platform: LabGreenbidz` as a default header on every request (`greenbidzClient.ts:8-11`) → backend key `labgreenbidz` → OTP email branded **"101lab"** (confirmed, `brandingConfig.js:29-34`). The service adds **no** per-call header, and it is never omitted, so the "default `recycle`" path never applies. |
 | **200** | `{ "message": "OTP sent to email" }` |
 | **404** | `{ "message": "User not found" }` — email is not registered |
 | **Behavior** | generates a **6-digit** numeric OTP, **10-minute** expiry, deletes any previous OTP for that email, emails a branded template. |
@@ -74,10 +74,10 @@ so the client-relative paths are `/user/forgot-password/*`.
 | **404** | `{ "message": "User not found" }` |
 | **Behavior** | re-validates the OTP, hashes `newPassword` with the WordPress hash (same scheme login verifies against), saves, deletes the OTP. |
 
-**Error body shape:** the backend `AppError` serializes to a JSON body carrying `message`
-(the login service already reads `error.response?.data?.message`). The service layer keys
-its typed error codes off the HTTP **status**, and uses the server `message` as the
-human string only as a fallback.
+**Error body shape:** the backend error middleware serializes to `{ success: false, message }`
+keyed off the HTTP status (`error.middleware.js:19-22`; the login service already reads
+`error.response?.data?.message`). The service keys its typed error codes off the HTTP
+**status**, using the server `message` only as a human-string fallback.
 
 **Note — verify-otp is advisory.** `reset` re-validates the OTP independently, so step 2
 is a UX gate (fail fast before the user types a password), not a security dependency.
@@ -100,8 +100,8 @@ in local state and carries `email` + the verified `otp` in state (no cross-route
 ### Step 2 — Enter code
 - Header: "Enter the code" + hint with masked email ("Sent to `a***@company.com`").
 - **`OtpInput`** — 6-digit segmented input (see Components). Auto-advances; supports paste and iOS SMS-autofill (`textContentType="oneTimeCode"`, `autoComplete="sms-otp"` / `"one-time-code"`).
-- **Countdown 10:00** (matches backend expiry). At 0:00, Verify is disabled and copy prompts a resend.
-- **"Resend code"** — disabled for a **30s** cooldown after each send; re-calls `send-otp`, resets timer, toast "New code sent."
+- **Countdown 10:00** — **advisory only**. Do NOT hard-disable Verify at 0:00: client/server clock drift or a backgrounded app can make a still-valid code un-submittable. Keep Verify tappable and let the **server's 400** be the authority; at 0:00 just show a "code may have expired — resend" hint.
+- **"Resend code"** — disabled for a **30s** cooldown after each send; re-calls `send-otp`, resets timer, toast "New code sent." A short hint tells the user to enter the **most recent** code — a resend invalidates the previous one (`otpService.js:18` deletes before insert).
 - Primary **"Verify"** button (enabled at 6 digits) → `verify-otp`.
   - `{verified:true}` → store `otp`, go to `step:'password'`.
   - **400** → inline error "Invalid or expired code. Request a new one." + clear the input.
@@ -112,7 +112,7 @@ in local state and carries `email` + the verified `otp` in state (no cross-route
 - **New password** + **Confirm password** fields, each with a show/hide eye (reuse the login screen's eye pattern).
 - Validation (zod): min **8** chars; the two must match. (Backend enforces nothing; the app owns the policy. 8 is a reasonable floor; adjust if a signup policy is later standardized.)
 - Primary **"Reset password"** → `reset` with `{ email, otp, newPassword }`.
-  - **200** → success toast "Password updated — sign in with your new password." → `router.replace('/(auth)/login')`.
+  - **200** → success toast "Password updated — sign in with your new password." → `router.replace({ pathname: '/(auth)/login', params: { email } })` so the email is **pre-filled** on return (login reads the param into its form default; saves a retype).
   - **400** (OTP expired between steps) → toast + jump back to `step:'otp'` to re-request.
 - Back → returns to `step:'otp'`.
 
@@ -129,7 +129,7 @@ used by the "Request an account" link).
 
 **New**
 - `src/services/auth/passwordReset.ts` — three typed async functions + `ResetError`:
-  - `sendResetOtp(email: string): Promise<void>` → `POST /user/forgot-password/send-otp` with `{ headers: { 'x-platform': SITE_TYPE } }`.
+  - `sendResetOtp(email: string): Promise<void>` → `POST /user/forgot-password/send-otp` (no per-call header — the `greenbidz` client already carries `x-platform: LabGreenbidz`).
   - `verifyResetOtp(email, otp): Promise<void>` (throws `ResetError('INVALID_OTP')` on 400).
   - `resetPassword(email, otp, newPassword): Promise<void>`.
   - Error mapping: 400→`INVALID_OTP`, 404→`NO_ACCOUNT`, no-response→`NETWORK`, else→`UNKNOWN`.
@@ -154,7 +154,7 @@ used by the "Request an account" link).
 ## Data flow
 
 ```
-Step1  email ──sendResetOtp──▶ POST /user/forgot-password/send-otp {email} + x-platform
+Step1  email ──sendResetOtp──▶ POST /user/forgot-password/send-otp {email}  (client default x-platform)
                               ◀── 200 {message}                     (or 404 → NO_ACCOUNT)
 Step2  email+otp ─verifyResetOtp▶ POST /verify-otp {email,otp}
                               ◀── 200 {verified:true}               (or 400 → INVALID_OTP)
@@ -188,7 +188,7 @@ return **400/404**, never 401, so the reset flow can't trigger an accidental log
 - **Resend spam:** the backend has no rate-limit; the client enforces a 30s resend cooldown (button disabled + countdown).
 - **Expiry:** 10:00 countdown mirrors the backend's 10-minute window; at 0 the Verify button disables and copy prompts a resend.
 - **Android back:** steps backward within the flow; from Step 1, exits to Login.
-- **Email casing/whitespace:** trim + lowercase before sending (the account lookup is exact-match on `user_email`).
+- **Email casing/whitespace:** **trim only — do NOT lowercase.** The lookup is exact-match on `user_email` (`otpService.js:10`) and login sends the email as-typed (no lowercasing in `login.ts` or its schema); lowercasing here could turn a valid `John@Co.com` into a false 404 on a case-sensitive collation. Match login exactly.
 - **Keyboard:** `KeyboardAvoidingView` (login already uses the pattern) so inputs aren't covered.
 
 ---
@@ -208,7 +208,8 @@ return **400/404**, never 401, so the reset flow can't trigger an accidental log
   "verify": "Verify",
   "resend": "Resend code",
   "resendIn": "Resend in {{seconds}}s",
-  "codeExpired": "That code expired. Request a new one.",
+  "useRecentCode": "Enter the most recent code we sent.",
+  "codeExpired": "That code may have expired. Request a new one.",
   "invalidCode": "Invalid or expired code. Request a new one.",
   "newCodeSent": "New code sent.",
   "passwordTitle": "Set a new password",
@@ -222,6 +223,38 @@ return **400/404**, never 401, so the reset flow can't trigger an accidental log
 }
 ```
 
+### Chinese translations (in-scope deliverable — draft, native proofread before ship)
+
+Add the same key set to `zh-Hant.json` and `zh-Hans.json` under `mobile.auth.reset`:
+
+| key | zh-Hant (Traditional) | zh-Hans (Simplified) |
+|---|---|---|
+| emailTitle | 重設您的密碼 | 重置您的密码 |
+| emailSubtitle | 輸入您的帳戶電子郵件，我們會寄送 6 位數驗證碼。 | 输入您的账户电子邮件，我们会发送 6 位数验证码。 |
+| emailLabel | 電子郵件 | 电子邮件 |
+| sendCode | 傳送驗證碼 | 发送验证码 |
+| codeSent | 驗證碼已寄出，請查看您的電子郵件。 | 验证码已发送，请查看您的电子邮件。 |
+| noAccount | 找不到使用此電子郵件的帳戶。 | 找不到使用此电子邮件的账户。 |
+| otpTitle | 輸入驗證碼 | 输入验证码 |
+| otpSubtitle | 我們已將 6 位數驗證碼寄至 {{email}}。 | 我们已将 6 位数验证码发送至 {{email}}。 |
+| verify | 驗證 | 验证 |
+| resend | 重新傳送驗證碼 | 重新发送验证码 |
+| resendIn | {{seconds}} 秒後可重新傳送 | {{seconds}} 秒后可重新发送 |
+| useRecentCode | 請輸入我們最近寄送的驗證碼。 | 请输入我们最近发送的验证码。 |
+| codeExpired | 驗證碼可能已過期，請重新取得。 | 验证码可能已过期，请重新获取。 |
+| invalidCode | 驗證碼無效或已過期，請重新取得。 | 验证码无效或已过期，请重新获取。 |
+| newCodeSent | 已傳送新的驗證碼。 | 已发送新的验证码。 |
+| passwordTitle | 設定新密碼 | 设置新密码 |
+| newPassword | 新密碼 | 新密码 |
+| confirmPassword | 確認密碼 | 确认密码 |
+| passwordTooShort | 請至少使用 8 個字元。 | 请至少使用 8 个字符。 |
+| passwordMismatch | 兩次輸入的密碼不一致。 | 两次输入的密码不一致。 |
+| resetPassword | 重設密碼 | 重置密码 |
+| resetSuccess | 密碼已更新，請使用新密碼登入。 | 密码已更新，请使用新密码登录。 |
+| networkError | 網路錯誤，請檢查您的連線。 | 网络错误，请检查您的连接。 |
+
+Also re-check the **mobile i18n zh gotcha** (lowercase locale codes, no `supportedLngs` drop) when adding these, so they don't silently fall back to English.
+
 ---
 
 ## Testing
@@ -233,8 +266,10 @@ return **400/404**, never 401, so the reset flow can't trigger an accidental log
 **Render (characterization)**
 - One snapshot per step (email / otp / password) confirming the right controls render and Verify is gated on 6 digits.
 
-**Manual (emulator, real test email)**
-- Full happy path with a real inbox; wrong code; expired code (wait >10 min or reuse an old code); unknown email → `NO_ACCOUNT`; offline behavior.
+**Manual (emulator, real test email — against the DEV backend)**
+- Point `GREENBIDZ_API_URL` at the dev API first (dev-first policy — do not reset real prod accounts).
+- Full happy path with a real inbox; wrong code; expired code (wait >10 min or reuse an old code); unknown email → `NO_ACCOUNT`; offline behavior; resend then enter the *old* code (should fail with the "most recent code" hint).
+- **Language check:** switch the app to 繁體中文 / 简体中文 and confirm all three screens render in Chinese (guards against the very fallback bug this feature exists to fix).
 
 ---
 
@@ -246,12 +281,18 @@ return **400/404**, never 401, so the reset flow can't trigger an accidental log
   whether an email is registered. This spec surfaces a clear "No account found" (better UX for a
   B2B app where accounts are team-approved). If enumeration becomes a concern, a future backend
   change would return **200** for all emails and the app would always advance to Step 2.
+- **OTP brute-force cap.** `verify-otp` / `reset` look up `(email, otp)` with no attempt limit or
+  lockout (`otpService.js`) — a 6-digit code is brute-forceable in principle. Backend concern (out
+  of scope here); the existing `loginLimiter` in the codebase could be applied to
+  `send-otp` / `verify-otp` cheaply later.
 - **The web page's `?lang`** support (separate web task; the app already appends `?lang`).
 - **Signup / registration** (tracked separately as issue #2).
 
 ## Risks / open items
 
-- **Platform branding key:** confirm `SITE_TYPE=LabGreenbidz` → backend `labgreenbidz` yields the
-  "101lab" OTP email (verified against `brandingConfig.js`; re-check on first real send).
+- **Platform branding:** ✅ resolved — `SITE_TYPE=LabGreenbidz` → `labgreenbidz` → "101lab"
+  (`brandingConfig.js:29-34`), and the `greenbidz` client already sends the header. No action needed.
 - **Password policy:** min-8 is chosen here; align with a signup policy if one is standardized later.
+- **Dev backend availability:** routes are on the backend `dev` branch (confirmed); verify the dev
+  deploy is reachable before QA (dev routes can lag main in this codebase).
 ```
