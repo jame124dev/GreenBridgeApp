@@ -136,6 +136,8 @@ export async function markConversationRead(args: {
 
 /** Open (or create) the conversation for (user, other-party, batch). Resolves the
  *  server `conversation_id` via the ack callback. Mirrors the web `joinChat`. */
+export const JOIN_CHAT_TIMEOUT_MS = 12_000;
+
 export function openConversation(args: {
   batchId: number;
   userId: number | string;
@@ -143,8 +145,19 @@ export function openConversation(args: {
   otherPartyId: number;
 }): Promise<string> {
   const { batchId, userId, role, otherPartyId } = args;
+  const socket = getLabSocket();
+  // Identify before joining. `joinRooms` is otherwise only emitted by
+  // useConversations / the notifications hook, so opening a thread without the
+  // inbox mounted could leave the socket connected but anonymous.
+  socket.emit('joinRooms', { user_id: String(userId), role });
   return new Promise((resolve, reject) => {
-    getLabSocket().emit(
+    // MUST be `.timeout(...)`. A bare `emit` with an ack callback and no timeout
+    // NEVER settles when the socket is down: socket.io silently buffers the
+    // event and the callback is simply never invoked. That left the thread stuck
+    // on its loading spinner with a permanently disabled composer and no error
+    // — the "send does nothing" report. A rejection here surfaces the real error
+    // state, which has a Retry.
+    socket.timeout(JOIN_CHAT_TIMEOUT_MS).emit(
       'joinChat',
       {
         batch_id: `batch-${batchId}`,
@@ -153,7 +166,14 @@ export function openConversation(args: {
         other_party_id: otherPartyId,
         platform: PLATFORM,
       },
-      (res: { conversation_id?: string; error?: string } | undefined) => {
+      (
+        timeoutErr: Error | null,
+        res: { conversation_id?: string; error?: string } | undefined,
+      ) => {
+        if (timeoutErr) {
+          reject(new Error('joinChat timed out — chat server unreachable'));
+          return;
+        }
         if (!res || res.error || res.conversation_id == null) {
           reject(new Error(res?.error ?? 'joinChat failed'));
           return;

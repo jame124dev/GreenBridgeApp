@@ -292,11 +292,21 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
                 setErrored(true);
               }
             }}
-            // iOS honors `contentInset`; Android does NOT, so there the last
-            // product row scrolled under the floating tab bar. Shrink the
-            // WebView by the inset on Android so its content clears the bar.
-            style={[styles.web, Platform.OS === 'android' && bottomInset ? { marginBottom: bottomInset } : null]}
-            contentInset={{ bottom: bottomInset }}
+            // Shrink the WebView by the tab-bar inset on BOTH platforms.
+            //
+            // `contentInset` alone (the previous iOS-only approach) adjusts the
+            // SCROLL inset, which does clear scrolled content — but it cannot
+            // move a `position: fixed`/`sticky` element, because those lay out
+            // against the viewport, not the scroll content. The marketplace's
+            // "Filters" bar is exactly that, so on iOS it rendered underneath
+            // the native tab bar and was unreachable, while Android (which
+            // already shrank the frame) was fine.
+            //
+            // Shrinking the frame moves the viewport bottom above the tab bar,
+            // which clears scrolled content AND fixed elements. contentInset is
+            // then 0 — keeping it would double the padding.
+            style={[styles.web, bottomInset ? { marginBottom: bottomInset } : null]}
+            contentInset={{ bottom: 0 }}
           />
         ) : null}
 
