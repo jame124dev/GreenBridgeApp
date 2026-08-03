@@ -9,7 +9,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/stores/authStore';
 import { labKeys } from '@/features/lab/data/labQueryKeys';
 import { getLabSocket, joinRooms } from './socket';
-import { listBuyerConversations, type ChatRole, type ConversationRow } from './chatApi';
+import {
+  listBuyerConversations,
+  MOBILE_CHAT_ROLE,
+  type ChatRole,
+  type ConversationRow,
+} from './chatApi';
 
 export interface UseConversationsResult {
   conversations: ConversationRow[];
@@ -23,7 +28,10 @@ export interface UseConversationsResult {
 export function useConversations(): UseConversationsResult {
   const profile = useAuth((s) => s.profile);
   const userId = profile?.id;
-  const role: ChatRole = profile?.role === 'seller' ? 'seller' : 'buyer';
+  // Always 'buyer' — see MOBILE_CHAT_ROLE. Deriving this from profile.role
+  // sent sender_role:'seller' for seller accounts and the server dropped
+  // the message.
+  const role: ChatRole = MOBILE_CHAT_ROLE;
   const qc = useQueryClient();
 
   const query = useQuery({

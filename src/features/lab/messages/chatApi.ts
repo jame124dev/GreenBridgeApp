@@ -136,6 +136,24 @@ export async function markConversationRead(args: {
 
 /** Open (or create) the conversation for (user, other-party, batch). Resolves the
  *  server `conversation_id` via the ack callback. Mirrors the web `joinChat`. */
+/**
+ * The role this app occupies in every Messages conversation: BUYER.
+ *
+ * Do NOT derive this from `profile.role`. The only inbox endpoint that exists is
+ * `GET /chat/buyer/:id/sellers`, so every conversation reachable from the Chat
+ * tab is one where this user is the buyer — by construction. Deriving the role
+ * from the profile instead sent `sender_role: 'seller'` for any account that is
+ * an approved seller (the common case: this app's home screen is "What are you
+ * selling?"). The server uses `sender_role` to decide which side of the
+ * conversation to write, so the emit was accepted and then dropped: the composer
+ * cleared, no bubble appeared, and reopening the thread showed nothing. That was
+ * the "send message doesn't work" report, verified on device.
+ *
+ * If a seller-side inbox is ever added it must pass its own role explicitly
+ * rather than reintroducing a profile-derived guess.
+ */
+export const MOBILE_CHAT_ROLE: ChatRole = 'buyer';
+
 export const JOIN_CHAT_TIMEOUT_MS = 12_000;
 
 export function openConversation(args: {

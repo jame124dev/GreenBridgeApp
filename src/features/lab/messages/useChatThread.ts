@@ -16,6 +16,7 @@ import { getLabSocket } from './socket';
 import {
   getConversationMessages,
   markConversationRead,
+  MOBILE_CHAT_ROLE,
   openConversation,
   sendChatMessage,
   type ChatMessageRow,
@@ -63,7 +64,10 @@ export function useChatThread(params: {
   const { batchId, otherPartyId } = params;
   const profile = useAuth((s) => s.profile);
   const userId = profile?.id;
-  const role: ChatRole = profile?.role === 'seller' ? 'seller' : 'buyer';
+  // Always 'buyer' — see MOBILE_CHAT_ROLE. Deriving this from profile.role
+  // sent sender_role:'seller' for seller accounts and the server dropped
+  // the message.
+  const role: ChatRole = MOBILE_CHAT_ROLE;
   const qc = useQueryClient();
 
   const [raw, setRaw] = useState<ChatMessageRow[]>([]);
