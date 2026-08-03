@@ -52,6 +52,8 @@ export interface UseChatThreadResult {
   loadOlder: () => void;
   send: (text: string) => void;
   canSend: boolean;
+  /** Retry opening the conversation after `isError`. */
+  reload: () => void;
 }
 
 export function useChatThread(params: {
@@ -71,6 +73,10 @@ export function useChatThread(params: {
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const convRef = useRef<string | null>(null);
+  // Bumped by reload() to re-run the open effect. Without it an `isError` state
+  // is terminal for the life of the screen — the only escape is navigating away,
+  // which is why the old error copy could only say "go back and try again".
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   // Open (joinChat) + load history on mount / when the target changes.
   useEffect(() => {
@@ -111,7 +117,13 @@ export function useChatThread(params: {
     return () => {
       alive = false;
     };
-  }, [userId, role, batchId, otherPartyId]);
+  }, [userId, role, batchId, otherPartyId, reloadNonce]);
+
+  /** Retry opening the conversation after an error. */
+  const reload = useCallback(() => {
+    setIsError(false);
+    setReloadNonce((n) => n + 1);
+  }, []);
 
   // Live inbound — append messages that belong to THIS conversation.
   useEffect(() => {
@@ -176,5 +188,6 @@ export function useChatThread(params: {
     loadOlder,
     send,
     canSend: conversationId != null,
+    reload,
   };
 }

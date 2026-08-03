@@ -83,21 +83,43 @@ export default function LabConversation() {
   const [resolvedSeller, setResolvedSeller] = useState<{ id: number; name: string | null } | null>(
     null,
   );
+  // Resolution has to be tracked explicitly. Leaving `otherPartyId` as NaN does
+  // NOT produce an error state: useChatThread's open effect early-returns on a
+  // non-finite id without ever setting isError, so the screen fell through to
+  // the "Start the conversation" empty state WITH a disabled composer — it
+  // invited the one action it could not perform, and tapping send did nothing.
+  // Both failure paths below have to be caught: the request rejecting, AND it
+  // resolving with a null sellerId.
+  const [sellerFailed, setSellerFailed] = useState(false);
+  const [resolveAttempt, setResolveAttempt] = useState(0);
+  const sellerKnown = Number.isFinite(paramSellerId) && paramSellerId > 0;
   useEffect(() => {
-    if (Number.isFinite(paramSellerId) && paramSellerId > 0) return; // seller already known
-    if (!Number.isFinite(batchId)) return;
+    if (sellerKnown) return; // seller already known
+    if (!Number.isFinite(batchId)) {
+      setSellerFailed(true);
+      return;
+    }
     let alive = true;
+    setSellerFailed(false);
     fetchBatchSeller(batchId)
       .then((s) => {
-        if (alive && s.sellerId != null) setResolvedSeller({ id: s.sellerId, name: s.sellerName });
+        if (!alive) return;
+        if (s.sellerId != null) setResolvedSeller({ id: s.sellerId, name: s.sellerName });
+        else setSellerFailed(true); // resolved, but the batch has no seller
       })
       .catch(() => {
-        /* leave otherPartyId invalid → thread shows its error state, not a wrong room */
+        if (alive) setSellerFailed(true); // never silently leave the composer dead
       });
     return () => {
       alive = false;
     };
-  }, [batchId, paramSellerId]);
+  }, [batchId, sellerKnown, resolveAttempt]);
+
+  const retryResolve = useCallback(() => {
+    setSellerFailed(false);
+    setResolvedSeller(null);
+    setResolveAttempt((n) => n + 1);
+  }, []);
 
   const otherPartyId =
     Number.isFinite(paramSellerId) && paramSellerId > 0 ? paramSellerId : resolvedSeller?.id ?? NaN;
@@ -111,8 +133,12 @@ export default function LabConversation() {
   const firstName = counterparty.trim().split(/\s+/)[0] || counterparty;
 
   const connected = useSocketConnected();
-  const { messages, isLoading, isError, hasMore, isLoadingOlder, loadOlder, send, canSend } =
+  const { messages, isLoading, isError, hasMore, isLoadingOlder, loadOlder, send, canSend, reload } =
     useChatThread({ batchId, otherPartyId });
+
+  // There is no counterparty to open a room with, so the thread can never work.
+  // Kept separate from `isError` (which means the API call itself failed).
+  const sellerUnresolved = sellerFailed && !Number.isFinite(otherPartyId);
 
   const avatarColor = AVATAR_BG[Math.abs((otherPartyId || 0) + (batchId || 0)) % AVATAR_BG.length];
   const dividerLabel = useMemo(() => dayLabel(t, messages[0]?.createdAt), [messages, t]);
@@ -230,7 +256,26 @@ export default function LabConversation() {
           contentContainerStyle={styles.threadContent}
           keyboardShouldPersistTaps="handled"
         >
-          {isLoading ? (
+          {sellerUnresolved ? (
+            // Distinct from isError: we never reached the conversation API at all
+            // because there is no counterparty to open a room with.
+            <View style={styles.centered}>
+              <Text style={styles.emptyTitle}>{t('mobile.labDeal.sellerUnresolvedTitle')}</Text>
+              <Text style={styles.centeredText}>{t('mobile.labDeal.sellerUnresolvedBody')}</Text>
+              <View style={styles.recoveryRow}>
+                <Pressable onPress={retryResolve} style={styles.recoveryBtn} accessibilityRole="button">
+                  <Text style={styles.recoveryBtnText}>{t('mobile.labCommon.retry')}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.replace('/(lab)/(tabs)/deals')}
+                  style={styles.recoveryBtnGhost}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.recoveryBtnGhostText}>{t('mobile.labDeal.goToMessages')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : isLoading ? (
             <View style={styles.centered}>
               <ActivityIndicator size="small" color={brand.primary} />
               <Text style={styles.centeredText}>{t('mobile.labDeal.loadingConversation')}</Text>
@@ -238,6 +283,11 @@ export default function LabConversation() {
           ) : isError ? (
             <View style={styles.centered}>
               <Text style={styles.centeredText}>{t('mobile.labDeal.errorOpen')}</Text>
+              <View style={styles.recoveryRow}>
+                <Pressable onPress={reload} style={styles.recoveryBtn} accessibilityRole="button">
+                  <Text style={styles.recoveryBtnText}>{t('mobile.labCommon.retry')}</Text>
+                </Pressable>
+              </View>
             </View>
           ) : messages.length === 0 ? (
             <View style={styles.centered}>
@@ -294,12 +344,17 @@ export default function LabConversation() {
             })}
           </ScrollView>
         ) : null}
-        <ChatComposer
-          placeholder={t('mobile.labDeal.composerPlaceholder', { name: firstName })}
-          disabled={!canSend}
-          offline={!connected}
-          onSend={handleSend}
-        />
+        {/* Hidden, not merely disabled, when there is no seller to send to —
+            the recovery block above owns the screen in that case and an inert
+            input next to it just re-invites the tap that does nothing. */}
+        {sellerUnresolved ? null : (
+          <ChatComposer
+            placeholder={t('mobile.labDeal.composerPlaceholder', { name: firstName })}
+            disabled={!canSend}
+            offline={!connected}
+            onSend={handleSend}
+          />
+        )}
         <View style={{ height: Math.max(insets.bottom, 8), backgroundColor: brand.surface }} />
       </KeyboardAvoidingView>
     </View>
@@ -395,4 +450,21 @@ const styles = StyleSheet.create({
   emptyTitle: { fontFamily: fonts.bold, fontSize: 15, color: lab.ink },
   loadOlder: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 14 },
   loadOlderText: { fontFamily: fonts.semibold, fontSize: 12.5, color: brand.primary },
+  // Recovery actions for the two dead-end states (no seller / open failed).
+  recoveryRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  recoveryBtn: {
+    backgroundColor: brand.primary,
+    borderRadius: 999,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  recoveryBtnText: { fontFamily: fonts.semibold, fontSize: 13, color: '#FFFFFF' },
+  recoveryBtnGhost: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: lab.utilBorder,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  recoveryBtnGhostText: { fontFamily: fonts.semibold, fontSize: 13, color: lab.inkSub },
 });
