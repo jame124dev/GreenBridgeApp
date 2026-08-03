@@ -55,6 +55,13 @@ const META: Record<string, NotificationTypeMeta> = {
   order_status_updated: { Icon: PackageCheck, labelKey: 'orderUpdate', accent: 'violet' },
 };
 
+/**
+ * Every server notification type we render a specific label for. Exported so
+ * the i18n test can walk it — a new entry in META then fails the locale check
+ * instead of shipping a raw key path to the notification list.
+ */
+export const NOTIFICATION_TYPES = Object.keys(META);
+
 const DEFAULT_META: NotificationTypeMeta = { Icon: Bell, labelKey: 'default', accent: 'neutral' };
 
 export function notificationMeta(type: string): NotificationTypeMeta {

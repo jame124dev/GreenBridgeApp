@@ -20,7 +20,14 @@ export function NotificationItem({
   const meta = notificationMeta(n.type);
   const { Icon } = meta;
   const accent = ACCENT[meta.accent];
-  const label = t(`mobile.labNotif.type.${meta.labelKey}`);
+  // Fall back to the generic label rather than letting i18next echo the key
+  // path. A missing key used to render literally ("mobile.labNotif.type.
+  // recognitionReady") in the notification list — see the recognitionReady
+  // regression. Degrading to "Notification" is wrong-but-harmless; printing an
+  // internal key to the user is not.
+  const label = t(`mobile.labNotif.type.${meta.labelKey}`, {
+    defaultValue: t('mobile.labNotif.type.default'),
+  });
   const time = relTime(n.createdAt ?? n.created_at);
   const batchLabel = n.batch_id != null ? t('mobile.labNotif.batch', { id: n.batch_id }) : null;
   const meta2 = [batchLabel, time].filter(Boolean).join(' · ');

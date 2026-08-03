@@ -4002,7 +4002,13 @@
       "networkError": "Network error — check your connection.",
       "emailInvalid": "Enter a valid email address.",
       "unknownError": "Something went wrong. Please try again."
-    }
+    },
+      "emailLabelCaps": "Email address",
+      "forgotShort": "Forgot?",
+      "noAccount": "Don't have an account?",
+      "sustainabilityFirst": "Sustainability first",
+      "tagline": "Empowering the circular economy through responsible industrial trade.",
+      "contactOpenFailed": "Open the link from your browser instead."
     },
     "profile": {
       "heading": "Profile",
@@ -4511,6 +4517,9 @@
       "tapToView": "Tap to view this listing",
       "view": "View",
       "loadingConversation": "Loading conversation…",
+      "sellerUnresolvedTitle": "Can't reach this seller",
+      "sellerUnresolvedBody": "We couldn't work out who to send this to. The listing may have been withdrawn.",
+      "goToMessages": "Go to Messages",
       "errorOpen": "Couldn't open this conversation. Go back and try again.",
       "startTitle": "Start the conversation",
       "startBody": "Send {{name}} a message about this listing.",
@@ -4867,6 +4876,7 @@
         "paymentReceived": "Payment received",
         "orderCreated": "New order",
         "orderUpdate": "Order update",
+        "recognitionReady": "Draft ready",
         "default": "Notification"
       },
       "group": {
