@@ -1,4 +1,4 @@
-# App Store submission — 101Lab (iOS)
+# App Store submission — GreenBidz (iOS)
 
 Playbook for shipping `GreenBridgeApp` to the App Store. Target: **TestFlight first**, then
 submit for review.
@@ -7,7 +7,9 @@ submit for review.
   `app/(lab)/` Home · Browse · Deals · Matches · Account, plus AI buy/sell chat.
   The seller fork (`app/(tabs)/`) is **not** what these store builds produce.
 - **EAS project:** `@jame124dev/greenbridge` (`57cd3db7-90b1-4b57-a723-679bfe81ef69`)
-- **Apple team:** Quippy AI Limited · App Store Connect currently has **no apps** (record must be created)
+- **Apple team:** Quippy AI Limited (Team ID `T642D4X34U`)
+- **App record:** **created 2026-08-03** — name **GreenBidz**, ASC App ID **`6797434238`**, SKU `GREENBIDZ-IOS-001`, iOS 1.0 "Prepare for Submission". Now set as `submit.production.ios.ascAppId` in `eas.json`, so `--auto-submit` works.
+- **Registered App ID:** `com.greenbidz.bridge` with Push Notifications enabled (portal description reads "101Lab" — an internal label only, harmless)
 - **Bundle ID:** `com.greenbidz.bridge` — ⚠️ **permanent once the first build is uploaded.** Change it now or never.
 - **Version:** `1.0.0`, build number auto-incremented by EAS (`appVersionSource: "remote"`)
 
@@ -98,7 +100,7 @@ scoped to the endpoints it actually calls and can be rotated independently.
 
 | Change | Why |
 |---|---|
-| `name`: `GreenBidz Seller` → `101Lab` | Config was named for the seller fork; we ship the customer app. This is the home-screen name. |
+| `name`: `GreenBidz Seller` → `GreenBidz` | Config was named for the seller *fork*. The store app is the **umbrella brand**: one app intended to serve 101lab, 101it, 101machines and 101recycle, which the codebase already scopes by `site_id`/`allowed_sites`/`SITE_TYPE`. This is the home-screen name. |
 | `version`: `0.1.0` → `1.0.0` | First public release. |
 | OneSignal `mode` → `production` (via `APNS_MODE`) | `development` = APNs **sandbox**; TestFlight and App Store builds are production-signed, so push would silently never arrive. `development` build profile still overrides it back to sandbox for dev clients. |
 | `ios.config.usesNonExemptEncryption: false` | Emits `ITSAppUsesNonExemptEncryption`, so App Store Connect stops asking export-compliance questions on every upload. App uses only standard HTTPS. |
@@ -200,10 +202,10 @@ in App Store Connect → TestFlight, install via the TestFlight app, and work §
 | Field | Value |
 |---|---|
 | Platform | iOS |
-| Name | `101Lab` — must be unique store-wide; if taken, `101Lab by GreenBidz` |
+| Name | `GreenBidz` — created 2026-08-03 |
 | Primary language | English (U.K.) or (U.S.) |
 | Bundle ID | `com.greenbidz.bridge` — appears once step 3 registers it |
-| SKU | `101LAB-IOS-001` (internal only, never shown) |
+| SKU | `GREENBIDZ-IOS-001` (internal only, never shown) |
 | User access | Full Access |
 
 **App Information:** Primary category **Business**, secondary **Shopping**.
@@ -218,10 +220,10 @@ Age rating **4+**. Copyright `2026 Quippy AI Limited`.
 - **Description** (4000):
 
 ```
-101Lab is a B2B marketplace for used laboratory and industrial equipment.
+GreenBidz is a B2B marketplace for used laboratory and industrial equipment.
 
 PHOTOGRAPH IT — THE AI WRITES THE LISTING
-Point your camera at a machine. 101Lab identifies it and drafts the listing for
+Point your camera at a machine. GreenBidz identifies it and drafts the listing for
 you: title, category, specifications and description. Review, adjust anything you
 like, and publish. Save a draft and pick it up later on any device.
 
@@ -231,7 +233,7 @@ condition, view full specifications and photo galleries, and see live auction
 lots alongside direct-sale listings.
 
 TELL US WHAT YOU NEED
-Can't find it? Post what you're looking for and 101Lab matches it against
+Can't find it? Post what you're looking for and GreenBidz matches it against
 incoming equipment, scoring how closely each one fits. You get notified when
 something relevant arrives.
 
@@ -246,8 +248,9 @@ helps you post a request — in plain language, in any of six languages.
 Available in English, Chinese (Simplified and Traditional), Japanese, Thai and
 Vietnamese.
 
-101Lab is operated by GreenBidz, supporting the circular economy through
-responsible industrial trade.
+GreenBidz supports the circular economy through responsible industrial trade.
+The app connects you to the 101lab marketplace, with 101machines, 101recycle
+and 101IT joining it.
 ```
 
 - **Support URL:** `https://101lab.co/faq` ✅ verified live — "Frequently Asked Questions |
@@ -333,8 +336,8 @@ This account is pre-approved. Accounts pending manual approval are shown a
 "pending approval" screen by design.
 
 ABOUT THE APP
-101Lab is a B2B marketplace for used laboratory and industrial equipment,
-operated by GreenBidz. Buyers browse and enquire about equipment; the AI
+GreenBidz is a B2B marketplace for used laboratory and industrial equipment.
+Buyers browse and enquire about equipment; the AI
 assistant drafts listings and purchase requests from photographs.
 
 ACCOUNT CREATION

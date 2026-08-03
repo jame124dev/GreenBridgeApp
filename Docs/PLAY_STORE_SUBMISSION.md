@@ -1,4 +1,4 @@
-# Google Play submission — 101Lab (Android)
+# Google Play submission — GreenBidz (Android)
 
 Companion to `Docs/APP_STORE_SUBMISSION.md`. Same app, same **customer / lab fork**
 (`EXPO_PUBLIC_USER_TYPE=customer`), same `eas.json` production profile.
@@ -66,7 +66,7 @@ Photo and Video Permissions policy entirely.
 
 ## 2. Store listing
 
-- **App name** (30): `101Lab`
+- **App name** (30): `GreenBidz`
 - **Short description** (80): `Buy and sell used lab and industrial equipment. Snap a photo, AI lists it.`
 - **Full description** (4000): reuse the App Store description in
   `Docs/APP_STORE_SUBMISSION.md` §4 verbatim — it is within Play's limit and needs no changes.

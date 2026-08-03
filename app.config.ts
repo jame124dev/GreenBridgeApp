@@ -12,7 +12,11 @@ import type { ExpoConfig } from 'expo/config';
 const APNS_MODE = process.env.APNS_MODE === 'development' ? 'development' : 'production';
 
 export default (): ExpoConfig => ({
-  name: '101Lab',
+  // Umbrella brand, not a single marketplace: this one app is intended to serve
+  // 101lab, 101it, 101machines and 101recycle, which the codebase already scopes
+  // by site_id / allowed_sites / SITE_TYPE. Hence the GreenBidz name and the
+  // matching com.greenbidz.bridge identifier.
+  name: 'GreenBidz',
   slug: 'greenbridge',
   scheme: 'greenbridge',
   version: '1.0.0',
@@ -31,9 +35,9 @@ export default (): ExpoConfig => ({
       // Purpose strings App Review reads verbatim. Be specific about WHY —
       // generic strings ("needs camera access") are a common rejection.
       NSCameraUsageDescription:
-        'Allow 101Lab to use the camera so you can photograph equipment and have the AI identify it and draft a listing or enquiry for you.',
+        'Allow GreenBidz to use the camera so you can photograph equipment and have the AI identify it and draft a listing or enquiry for you.',
       NSPhotoLibraryUsageDescription:
-        'Allow 101Lab to access your photos so you can attach existing equipment images to a listing, a request, or a message.',
+        'Allow GreenBidz to access your photos so you can attach existing equipment images to a listing, a request, or a message.',
     },
     // Apple ITMS-91053: SDKs that touch "required reason" APIs must be declared
     // or the upload is rejected by email. Covers React Native + MMKV + Expo FS.
@@ -94,7 +98,7 @@ export default (): ExpoConfig => ({
       'expo-camera',
       {
         cameraPermission:
-          'Allow 101Lab to use the camera so you can photograph equipment and have the AI identify it and draft a listing or enquiry for you.',
+          'Allow GreenBidz to use the camera so you can photograph equipment and have the AI identify it and draft a listing or enquiry for you.',
         // The scan flow captures stills only — never audio. `false` DELETES the
         // key (see IOSConfig.Permissions.applyPermissions) instead of falling
         // back to the plugin's generic default, so the store build does not
@@ -107,7 +111,7 @@ export default (): ExpoConfig => ({
       'expo-image-picker',
       {
         photosPermission:
-          'Allow 101Lab to access your photos so you can attach existing equipment images to a listing, a request, or a message.',
+          'Allow GreenBidz to access your photos so you can attach existing equipment images to a listing, a request, or a message.',
         // This plugin adds android.permission.RECORD_AUDIO unless explicitly told
         // not to — it was the source of the microphone permission in the release
         // manifest, not expo-camera. Passing `false` both skips it and makes the
@@ -132,7 +136,7 @@ export default (): ExpoConfig => ({
       {
         // Foreground only — used to auto-fill the listing's pickup address.
         locationWhenInUsePermission:
-          'Allow 101Lab to use your location to auto-fill the pickup address of a listing.',
+          'Allow GreenBidz to use your location to auto-fill the pickup address of a listing.',
         // `false` deletes these keys. App Review scrutinises "Always" location
         // hardest, and we never request always-authorization or background
         // location — declaring only WhenInUse keeps the ask honest. Motion is
