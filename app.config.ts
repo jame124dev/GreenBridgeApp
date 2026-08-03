@@ -176,6 +176,10 @@ export default (): ExpoConfig => ({
         mode: APNS_MODE,
       },
     ],
+    // MUST stay last: its mod has to run after expo-dev-launcher adds the
+    // local-network keys. Build 6 shipped them despite dev-launcher's own
+    // Release strip phase, so we remove them ourselves.
+    './plugins/withStripDevLauncherLocalNetwork',
   ],
   experiments: {
     typedRoutes: true,
