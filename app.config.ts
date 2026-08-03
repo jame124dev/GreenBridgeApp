@@ -23,6 +23,20 @@ export default (): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   userInterfaceStyle: 'light',
+  // EAS Update (OTA). Required because the `production` build profile declares
+  // `channel: "production"` — without these the build aborts, and EAS cannot
+  // write them itself into a dynamic app.config.ts.
+  //
+  // Lets us ship JS-only fixes without another App Store review. The
+  // `appVersion` runtime policy means an update only reaches clients on the
+  // SAME app version (1.0.0), so a JS bundle can never land on a binary whose
+  // native code it does not match.
+  updates: {
+    url: 'https://u.expo.dev/57cd3db7-90b1-4b57-a723-679bfe81ef69',
+  },
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
   ios: {
     bundleIdentifier: 'com.greenbidz.bridge',
     supportsTablet: false,
