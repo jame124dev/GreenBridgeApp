@@ -153,11 +153,18 @@ export default (): ExpoConfig => ({
           'Allow GreenBidz to use your location to auto-fill the pickup address of a listing.',
         // `false` deletes these keys. App Review scrutinises "Always" location
         // hardest, and we never request always-authorization or background
-        // location — declaring only WhenInUse keeps the ask honest. Motion is
-        // an expo-location default the app never uses.
+        // location — declaring only WhenInUse keeps the ask honest. Both trims
+        // were accepted by Apple's upload validation.
         locationAlwaysAndWhenInUsePermission: false,
         locationAlwaysPermission: false,
-        motionUsagePermission: false,
+        // MOTION MUST STAY DECLARED. Deleting it failed the build-6 upload with
+        // Apple error 90683: expo-location links CoreMotion, and Apple's static
+        // analysis requires a purpose string for any API *referenced in the
+        // binary* — "the app never calls it" is not the test. Their words:
+        // "While your app might not use these APIs, a purpose string is still
+        // required."
+        motionUsagePermission:
+          'Allow GreenBidz to use motion data to improve the accuracy of the location it suggests when auto-filling a listing’s pickup address.',
         isAndroidBackgroundLocationEnabled: false,
       },
     ],
