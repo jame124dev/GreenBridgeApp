@@ -8,10 +8,22 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
+        "APNS_MODE": "development",
         "GREENBIDZ_API_URL": "https://api.101recycle.greenbidz.com/api/v1",
-        "QUIPPY_API_URL": "https://quippy-staging.example.com",
+        "AI_BASE_URL": "https://ai.greenbidz.com",
         "X_SYSTEM_KEY": "fa39812fec",
-        "SITE_TYPE": "LabGreenbidz"
+        "SITE_TYPE": "LabGreenbidz",
+        "WEB_APP_URL": "https://101lab.co",
+        "EXPO_PUBLIC_MARKETPLACE_URL": "https://101lab.co",
+        "EXPO_PUBLIC_USER_TYPE": "customer",
+        "EXPO_PUBLIC_LAB_CHAT": "1",
+        "EXPO_PUBLIC_WTB": "1",
+        "EXPO_PUBLIC_SMART_DETECT": "1",
+        "EXPO_PUBLIC_SMART_DETECT_V2": "1",
+        "EXPO_PUBLIC_DETECT_STREAM": "1",
+        "EXPO_PUBLIC_DRAFTS": "1",
+        "EXPO_PUBLIC_BACKGROUND_RECOGNITION": "1",
+        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "a9a5c723-9a00-438f-a522-2bd9178ff99f"
       }
     },
     "preview": {
@@ -19,18 +31,41 @@
       "channel": "preview",
       "env": {
         "GREENBIDZ_API_URL": "https://api.101recycle.greenbidz.com/api/v1",
-        "QUIPPY_API_URL": "https://quippy-staging.example.com",
+        "AI_BASE_URL": "https://ai.greenbidz.com",
         "X_SYSTEM_KEY": "fa39812fec",
-        "SITE_TYPE": "LabGreenbidz"
+        "SITE_TYPE": "LabGreenbidz",
+        "WEB_APP_URL": "https://101lab.co",
+        "EXPO_PUBLIC_MARKETPLACE_URL": "https://101lab.co",
+        "EXPO_PUBLIC_USER_TYPE": "customer",
+        "EXPO_PUBLIC_LAB_CHAT": "1",
+        "EXPO_PUBLIC_WTB": "1",
+        "EXPO_PUBLIC_SMART_DETECT": "1",
+        "EXPO_PUBLIC_SMART_DETECT_V2": "1",
+        "EXPO_PUBLIC_DETECT_STREAM": "1",
+        "EXPO_PUBLIC_DRAFTS": "1",
+        "EXPO_PUBLIC_BACKGROUND_RECOGNITION": "1",
+        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "a9a5c723-9a00-438f-a522-2bd9178ff99f"
       }
     },
     "production": {
       "channel": "production",
+      "autoIncrement": true,
       "env": {
         "GREENBIDZ_API_URL": "https://api.101recycle.greenbidz.com/api/v1",
-        "QUIPPY_API_URL": "https://quippy-staging.example.com",
+        "AI_BASE_URL": "https://ai.greenbidz.com",
         "X_SYSTEM_KEY": "fa39812fec",
-        "SITE_TYPE": "LabGreenbidz"
+        "SITE_TYPE": "LabGreenbidz",
+        "WEB_APP_URL": "https://101lab.co",
+        "EXPO_PUBLIC_MARKETPLACE_URL": "https://101lab.co",
+        "EXPO_PUBLIC_USER_TYPE": "customer",
+        "EXPO_PUBLIC_LAB_CHAT": "1",
+        "EXPO_PUBLIC_WTB": "1",
+        "EXPO_PUBLIC_SMART_DETECT": "1",
+        "EXPO_PUBLIC_SMART_DETECT_V2": "1",
+        "EXPO_PUBLIC_DETECT_STREAM": "1",
+        "EXPO_PUBLIC_DRAFTS": "1",
+        "EXPO_PUBLIC_BACKGROUND_RECOGNITION": "1",
+        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "a9a5c723-9a00-438f-a522-2bd9178ff99f"
       }
     }
   },

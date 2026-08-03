@@ -1,17 +1,66 @@
 import 'dotenv/config';
 import type { ExpoConfig } from 'expo/config';
 
+/**
+ * APNs environment baked into the iOS entitlements by onesignal-expo-plugin.
+ * It MUST match the provisioning profile the build is signed with:
+ *   - EAS `development` profile (development cert)  → 'development' (APNs sandbox)
+ *   - EAS `preview` / `production` (ad-hoc, App Store) → 'production'
+ * TestFlight and App Store builds are production-signed, so 'production' is the
+ * default; the `development` build profile sets APNS_MODE=development.
+ */
+const APNS_MODE = process.env.APNS_MODE === 'development' ? 'development' : 'production';
+
 export default (): ExpoConfig => ({
-  name: 'GreenBidz Seller',
+  name: '101Lab',
   slug: 'greenbridge',
   scheme: 'greenbridge',
-  version: '0.1.0',
+  version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   userInterfaceStyle: 'light',
   ios: {
     bundleIdentifier: 'com.greenbidz.bridge',
     supportsTablet: false,
+    config: {
+      // No proprietary/non-exempt encryption — only standard HTTPS. Declaring it
+      // here stops App Store Connect asking for export compliance every upload.
+      usesNonExemptEncryption: false,
+    },
+    infoPlist: {
+      // Purpose strings App Review reads verbatim. Be specific about WHY —
+      // generic strings ("needs camera access") are a common rejection.
+      NSCameraUsageDescription:
+        'Allow 101Lab to use the camera so you can photograph equipment and have the AI identify it and draft a listing or enquiry for you.',
+      NSPhotoLibraryUsageDescription:
+        'Allow 101Lab to access your photos so you can attach existing equipment images to a listing, a request, or a message.',
+    },
+    // Apple ITMS-91053: SDKs that touch "required reason" APIs must be declared
+    // or the upload is rejected by email. Covers React Native + MMKV + Expo FS.
+    privacyManifests: {
+      NSPrivacyAccessedAPITypes: [
+        {
+          // File timestamps — expo-file-system / MMKV storage files.
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
+          NSPrivacyAccessedAPITypeReasons: ['C617.1'],
+        },
+        {
+          // NSUserDefaults — React Native core + OneSignal.
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+          NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+        },
+        {
+          // Free disk space — checked before writing image/document caches.
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryDiskSpace',
+          NSPrivacyAccessedAPITypeReasons: ['E174.1'],
+        },
+        {
+          // System boot time — used for monotonic timers.
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime',
+          NSPrivacyAccessedAPITypeReasons: ['35F9.1'],
+        },
+      ],
+    },
   },
   android: {
     package: 'com.greenbidz.bridge',
@@ -28,9 +77,34 @@ export default (): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
-    'expo-camera',
-    'expo-image-picker',
-    'expo-secure-store',
+    [
+      'expo-camera',
+      {
+        cameraPermission:
+          'Allow 101Lab to use the camera so you can photograph equipment and have the AI identify it and draft a listing or enquiry for you.',
+        // The scan flow captures stills only — never audio. `false` DELETES the
+        // key (see IOSConfig.Permissions.applyPermissions) instead of falling
+        // back to the plugin's generic default, so the store build does not
+        // declare a microphone permission it never requests.
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
+    [
+      'expo-image-picker',
+      {
+        photosPermission:
+          'Allow 101Lab to access your photos so you can attach existing equipment images to a listing, a request, or a message.',
+      },
+    ],
+    [
+      'expo-secure-store',
+      {
+        // No biometric-gated reads anywhere in the app (`requireAuthentication`
+        // is never used), so drop the Face ID declaration.
+        faceIDPermission: false,
+      },
+    ],
     'expo-notifications',
     'expo-localization',
     'expo-image',
@@ -39,10 +113,15 @@ export default (): ExpoConfig => ({
       'expo-location',
       {
         // Foreground only — used to auto-fill the listing's pickup address.
-        locationAlwaysAndWhenInUsePermission:
-          'Allow GreenBridge to use your location to auto-fill the pickup address of a listing.',
         locationWhenInUsePermission:
-          'Allow GreenBridge to use your location to auto-fill the pickup address of a listing.',
+          'Allow 101Lab to use your location to auto-fill the pickup address of a listing.',
+        // `false` deletes these keys. App Review scrutinises "Always" location
+        // hardest, and we never request always-authorization or background
+        // location — declaring only WhenInUse keeps the ask honest. Motion is
+        // an expo-location default the app never uses.
+        locationAlwaysAndWhenInUsePermission: false,
+        locationAlwaysPermission: false,
+        motionUsagePermission: false,
         isAndroidBackgroundLocationEnabled: false,
       },
     ],
@@ -58,9 +137,7 @@ export default (): ExpoConfig => ({
     [
       'onesignal-expo-plugin',
       {
-        // iOS APNs environment for the built app. 'development' for dev-client /
-        // TestFlight sandbox; switch to 'production' for App Store builds.
-        mode: 'development',
+        mode: APNS_MODE,
       },
     ],
   ],
