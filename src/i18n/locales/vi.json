@@ -3501,6 +3501,32 @@
     }
   },
   "mobile": {
+    "deleteAccount": {
+      "link": "Xóa tài khoản",
+      "title": "Xóa tài khoản của bạn",
+      "whatHappensTitle": "Điều gì sẽ xảy ra",
+      "bulletSignedOut": "Bạn sẽ bị đăng xuất trên mọi thiết bị",
+      "bulletProfileErased": "Tên, số điện thoại và thông tin công ty của bạn sẽ bị xóa",
+      "bulletContentRemoved": "Các mục đã lưu, tin cần mua và bản nháp sẽ bị xóa",
+      "bulletListingsWithdrawn": "Các tin đăng còn trên sàn sẽ bị rút xuống",
+      "retentionNote": "Hồ sơ đơn hàng và thanh toán được lưu giữ cho mục đích kế toán và giải quyết tranh chấp, như nêu trong Chính sách bảo mật của chúng tôi.",
+      "checking": "Đang kiểm tra tài khoản của bạn…",
+      "outstandingTitle": "Trước khi bạn xóa",
+      "outstandingListings_other": "{{count}} tin đăng còn trên sàn",
+      "outstandingOrders_other": "{{count}} đơn hàng đang mở",
+      "outstandingBids_other": "{{count}} lượt đấu giá thắng chưa thanh toán",
+      "outstandingNote": "Xóa tài khoản không hủy các khoản tiền bạn đang nợ. Đội ngũ của chúng tôi sẽ liên hệ theo thông tin trên đơn hàng.",
+      "passwordLabel": "Mật khẩu",
+      "passwordHint": "Xác nhận mật khẩu để tiếp tục",
+      "confirmCta": "Xóa tài khoản của tôi",
+      "deleting": "Đang xóa tài khoản của bạn…",
+      "cancel": "Hủy",
+      "errorInvalidPassword": "Mật khẩu không đúng. Vui lòng thử lại.",
+      "errorAdminAccount": "Không thể xóa tài khoản nhân viên từ ứng dụng. Vui lòng liên hệ support@greenbidz.com.",
+      "errorNetwork": "Không thể kết nối tới máy chủ. Chưa có gì bị xóa.",
+      "retry": "Thử lại",
+      "success": "Tài khoản của bạn đã được xóa"
+    },
     "home": {
       "greeting": "Chào, {{name}}.",
       "scanTitle": "Quét & Tải lên",

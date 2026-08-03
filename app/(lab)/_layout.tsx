@@ -32,6 +32,9 @@ export default function LabLayout() {
         {/* Product detail — buyer-marketplace listing in a WebView, pushed from a
             chat product card (or any product surface). */}
         <Stack.Screen name="product/[id]" />
+        {/* Account deletion, pushed from Account ▸ Security. No tab bar: it is a
+            focused confirm flow with a single primary action. */}
+        <Stack.Screen name="account/delete" />
       </Stack>
       {/* Off-screen warmer — primes the marketplace WebView engine + HTTP cache so
           Browse / product-detail open faster. Renders null unless it should warm. */}

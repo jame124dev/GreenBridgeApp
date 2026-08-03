@@ -3485,6 +3485,32 @@
     }
   },
   "mobile": {
+    "deleteAccount": {
+      "link": "刪除帳戶",
+      "title": "刪除您的帳戶",
+      "whatHappensTitle": "將會發生什麼",
+      "bulletSignedOut": "您將在所有裝置上登出",
+      "bulletProfileErased": "您的姓名、電話和公司資訊將被清除",
+      "bulletContentRemoved": "您的收藏、徵求和草稿將被刪除",
+      "bulletListingsWithdrawn": "仍在售的商品將被下架",
+      "retentionNote": "依據我們的隱私政策，訂單與付款記錄將為會計及爭議處理目的予以保留。",
+      "checking": "正在檢查您的帳戶…",
+      "outstandingTitle": "刪除前請注意",
+      "outstandingListings_other": "{{count}} 件商品仍在售",
+      "outstandingOrders_other": "{{count}} 筆未完成訂單",
+      "outstandingBids_other": "{{count}} 筆未付款的得標出價",
+      "outstandingNote": "刪除帳戶不會取消您已欠的款項。我們的團隊將透過訂單上的聯絡方式與您聯繫。",
+      "passwordLabel": "密碼",
+      "passwordHint": "請確認密碼以繼續",
+      "confirmCta": "刪除我的帳戶",
+      "deleting": "正在刪除您的帳戶…",
+      "cancel": "取消",
+      "errorInvalidPassword": "密碼不正確，請重試。",
+      "errorAdminAccount": "員工帳戶無法在應用程式內刪除，請聯絡 support@greenbidz.com。",
+      "errorNetwork": "無法連線伺服器，未刪除任何內容。",
+      "retry": "重試",
+      "success": "您的帳戶已刪除"
+    },
     "home": {
       "greeting": "你好，{{name}}。",
       "scanTitle": "掃描並上傳",

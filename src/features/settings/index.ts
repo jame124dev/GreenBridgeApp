@@ -7,6 +7,7 @@ export { LanguageRegionCard }  from './components/LanguageRegionCard';
 export { ProfileSkeleton }     from './components/ProfileSkeleton';
 export { VerificationCard }    from './components/VerificationCard';
 export { NotificationPreferencesCard } from './components/NotificationPreferencesCard';
+export { DeleteAccountLink }   from './components/DeleteAccountLink';
 export {
   useNotificationPreferences,
   type NotificationPreferences,

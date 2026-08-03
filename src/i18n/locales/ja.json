@@ -3420,6 +3420,32 @@
     }
   },
   "mobile": {
+    "deleteAccount": {
+      "link": "アカウントを削除",
+      "title": "アカウントを削除します",
+      "whatHappensTitle": "削除すると",
+      "bulletSignedOut": "すべての端末からサインアウトされます",
+      "bulletProfileErased": "氏名・電話番号・会社情報は消去されます",
+      "bulletContentRemoved": "保存した商品・買いたいリスト・下書きは削除されます",
+      "bulletListingsWithdrawn": "出品中の商品は取り下げられます",
+      "retentionNote": "注文および支払いの記録は、プライバシーポリシーに記載のとおり、会計および紛争対応の目的で保持されます。",
+      "checking": "アカウントを確認しています…",
+      "outstandingTitle": "削除する前にご確認ください",
+      "outstandingListings_other": "出品中の商品 {{count}} 件",
+      "outstandingOrders_other": "進行中の注文 {{count}} 件",
+      "outstandingBids_other": "未払いの落札 {{count}} 件",
+      "outstandingNote": "アカウントを削除しても、未払いの代金は取り消されません。ご注文の連絡先より担当者がご連絡いたします。",
+      "passwordLabel": "パスワード",
+      "passwordHint": "続行するにはパスワードを入力してください",
+      "confirmCta": "アカウントを削除する",
+      "deleting": "アカウントを削除しています…",
+      "cancel": "キャンセル",
+      "errorInvalidPassword": "パスワードが正しくありません。もう一度お試しください。",
+      "errorAdminAccount": "スタッフアカウントはアプリから削除できません。support@greenbidz.com までご連絡ください。",
+      "errorNetwork": "サーバーに接続できませんでした。何も削除されていません。",
+      "retry": "再試行",
+      "success": "アカウントを削除しました"
+    },
     "home": {
       "greeting": "こんにちは、{{name}}。",
       "scanTitle": "スキャン & アップロード",

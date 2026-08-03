@@ -3485,6 +3485,32 @@
     }
   },
   "mobile": {
+    "deleteAccount": {
+      "link": "删除帐户",
+      "title": "删除您的帐户",
+      "whatHappensTitle": "将会发生什么",
+      "bulletSignedOut": "您将在所有设备上退出登录",
+      "bulletProfileErased": "您的姓名、电话和公司信息将被清除",
+      "bulletContentRemoved": "您的收藏、求购和草稿将被删除",
+      "bulletListingsWithdrawn": "仍在售的商品将被撤下",
+      "retentionNote": "根据我们的隐私政策，订单和付款记录将出于会计和争议处理目的予以保留。",
+      "checking": "正在检查您的帐户…",
+      "outstandingTitle": "删除前请注意",
+      "outstandingListings_other": "{{count}} 件商品仍在售",
+      "outstandingOrders_other": "{{count}} 个未完成订单",
+      "outstandingBids_other": "{{count}} 个未付款的中标出价",
+      "outstandingNote": "删除帐户不会取消您已欠的款项。我们的团队将通过订单上的联系方式与您联系。",
+      "passwordLabel": "密码",
+      "passwordHint": "请确认密码以继续",
+      "confirmCta": "删除我的帐户",
+      "deleting": "正在删除您的帐户…",
+      "cancel": "取消",
+      "errorInvalidPassword": "密码不正确，请重试。",
+      "errorAdminAccount": "员工帐户无法在应用内删除，请联系 support@greenbidz.com。",
+      "errorNetwork": "无法连接服务器，未删除任何内容。",
+      "retry": "重试",
+      "success": "您的帐户已删除"
+    },
     "home": {
       "greeting": "你好，{{name}}。",
       "scanTitle": "扫描并上传",

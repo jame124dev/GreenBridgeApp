@@ -20,6 +20,7 @@ import { useLogout } from '@/features/auth/useLogout';
 import { useUserProfile } from '@/features/auth/useUserProfile';
 import {
   AddressCard,
+  DeleteAccountLink,
   LanguageRegionCard,
   NotificationPreferencesCard,
   ProfileHero,
@@ -152,6 +153,9 @@ export default function LabAccount() {
                 leftIcon={<LogOut color={brand.destructiveStrong} size={18} />}
                 fullWidth
               />
+              {/* Account deletion (App Store Guideline 5.1.1(v)). A quiet link,
+                  not a second red button — see DeleteAccountLink for why. */}
+              <DeleteAccountLink />
             </View>
           </View>
         ) : null}

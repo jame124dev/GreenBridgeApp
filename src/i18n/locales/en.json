@@ -3501,6 +3501,35 @@
     }
   },
   "mobile": {
+    "deleteAccount": {
+      "link": "Delete account",
+      "title": "Delete your account",
+      "whatHappensTitle": "What happens",
+      "bulletSignedOut": "You'll be signed out on every device",
+      "bulletProfileErased": "Your name, phone and company details are erased",
+      "bulletContentRemoved": "Your saved items, wants and drafts are removed",
+      "bulletListingsWithdrawn": "Any listings still on the market are withdrawn",
+      "retentionNote": "Order and payment records are kept for accounting and dispute purposes, as described in our Privacy Policy.",
+      "checking": "Checking your account…",
+      "outstandingTitle": "Before you delete",
+      "outstandingListings_one": "{{count}} listing still on the market",
+      "outstandingListings_other": "{{count}} listings still on the market",
+      "outstandingOrders_one": "{{count}} open order",
+      "outstandingOrders_other": "{{count}} open orders",
+      "outstandingBids_one": "{{count}} unpaid winning bid",
+      "outstandingBids_other": "{{count}} unpaid winning bids",
+      "outstandingNote": "Deleting your account does not cancel money already owed. Our team will be in touch using the details on the order.",
+      "passwordLabel": "Password",
+      "passwordHint": "Confirm your password to continue",
+      "confirmCta": "Delete my account",
+      "deleting": "Deleting your account…",
+      "cancel": "Cancel",
+      "errorInvalidPassword": "That password is not correct. Try again.",
+      "errorAdminAccount": "Staff accounts can't be deleted from the app. Contact support@greenbidz.com.",
+      "errorNetwork": "We couldn't reach the server. Nothing has been deleted.",
+      "retry": "Retry",
+      "success": "Your account has been deleted"
+    },
     "splash": {
       "tagline": "THE CIRCULAR ECONOMY LEADER",
       "from": "FROM"
