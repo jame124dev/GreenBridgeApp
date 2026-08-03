@@ -20,7 +20,7 @@ through EAS Build in the cloud and TestFlight on a real iPhone is the only way t
 
 These do not block a TestFlight build. They do risk a rejection at review.
 
-### 1.1 In-app account deletion (Guideline 5.1.1(v)) — **BUILT 2026-08-03, needs deploy**
+### 1.1 In-app account deletion (Guideline 5.1.1(v)) — **LIVE ON PROD 2026-08-03** ✅
 
 Implemented. **Account ▸ Security → "Delete account"** → a dedicated confirm screen showing what
 will happen and anything still outstanding, requiring the password to be re-entered.
@@ -41,15 +41,33 @@ tokens/OTPs are deleted — all in one transaction. Orders, payments, bids and w
 are **kept with IDs intact** so accounting and dispute history stay whole; the counterparty's
 message threads survive and render as "Deleted user".
 
-⚠️ **Two things still gate submission:**
-1. **Not deployed.** The endpoint lives on `feat/account-deletion` → merge to `dev`, verify on
-   `testapi.greenbidz.com`, then (with explicit approval) merge to `main` and deploy to prod —
-   the App Store build points at prod `api.101recycle.greenbidz.com`, so the button 404s until
-   then. See "Deployment" in the plan.
-2. **The privacy policy must disclose the retention.** `https://101lab.co/privacy-policy` needs
-   a line stating that order and payment records are retained after account deletion for
-   accounting and dispute purposes. Apple checks that the disclosure exists when an app keeps
-   data post-deletion. This is a web content change, outside both repos.
+**Deployed 2026-08-03.** Dev (`dev` → `greenbidz-test-backend` :6000) and **prod**
+(`main` 152b12f → `greenbidz-backend` :4000, DB `greenbidz`). Both routes verified live: 401
+unauthenticated while a bogus sibling path 404s, so the gate is real and not a catch-all.
+
+⚠️ **Reaching `main` needed a cherry-pick, NOT a merge.** `dev` is 56 commits ahead of `main`
+and `main` is 46 ahead of `dev` — merging `dev → main` would have shipped 56 unrelated,
+unreviewed commits to production. Cherry-pick the single commit. Also note `.github/workflows/
+deploy-backend.yml` fires on **push to `main`**, so pushing `main` *is* the prod deploy (it runs
+`git reset --hard origin/main` + `npm ci --production` + `pm2 restart greenbidz-backend` —
+check the prod checkout for local hot-patches first, since the reset discards them).
+
+Verification performed, since the unit tests mock every model and prove logic only, not schema:
+- Every column and enum value confirmed against the real `greenbidz_test` **and** `greenbidz`
+  schemas. `jos_recycle_product_batch.seller_id` is correct — there is no `post_author` on that
+  table.
+- The full delete transaction run against real MySQL on dev with a throwaway user: tombstone
+  applied, old password rejected afterwards, PII meta gone, `pw_user_status` revoked,
+  `gb_deleted_at` stamped, second delete idempotent, throwaway row then removed.
+- Read-only preview probe run against the prod DB on a real account (no writes).
+- **Not** exercised: a delete against a real prod account (it is irreversible), and a non-zero
+  `unpaidWinningBids` count — no buyer in either DB currently has a pending/failed winner
+  payment, so only the mocked unit test covers that branch.
+
+🔺 **Still gates submission — the privacy policy must disclose the retention.**
+`https://101lab.co/privacy-policy` needs a line stating that order and payment records are
+retained after account deletion for accounting and dispute purposes. Apple checks for that
+disclosure when an app keeps data post-deletion. Web content change, outside both repos.
 
 ### 1.2 App Review needs a pre-approved demo account
 
