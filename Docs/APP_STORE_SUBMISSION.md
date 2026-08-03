@@ -110,8 +110,51 @@ scoped to the endpoints it actually calls and can be rotated independently.
 | `faceIDPermission: false` (expo-secure-store) | `requireAuthentication` is never used anywhere in the app. |
 | `locationAlwaysAndWhenInUsePermission: false`, `locationAlwaysPermission: false`, `motionUsagePermission: false` (expo-location) | App is foreground-only. "Always" location is the most heavily scrutinised permission at review; motion is an unused plugin default. |
 
-Resulting iOS permission set — verified with `npx expo config --type introspect`:
-**Camera, Photo Library, Location (When In Use)**. Nothing else.
+Resulting iOS permission set, verified in the **shipped IPA** (not just the config):
+**Camera, Photo Library, Location (When In Use), Motion**.
+
+### ⚠️ Build traps hit for real — read before trimming anything else
+
+**1. `NSMotionUsageDescription` MUST stay declared.** Deleting it built fine but Apple
+**rejected the upload** of build 6:
+
+> `90683: Missing purpose string in Info.plist … should contain a NSMotionUsageDescription
+> key … While your app might not use these APIs, a purpose string is still required.`
+
+Apple statically analyses the linked **binary**, and `expo-location` links CoreMotion. "The app
+never calls it" is not the test — "is the API referenced anywhere in the binary" is. The
+microphone, Face ID and location-Always trims passed the same check and are safe.
+
+**2. `expo-dev-launcher`'s Release strip phase does NOT work.** Build 6's shipped
+`Payload/GreenBidz.app/Info.plist` still contained `NSBonjourServices: ['_expo._tcp']` and
+`NSLocalNetworkUsageDescription: "Expo Dev Launcher uses the local network to discover and
+connect to development servers running on your computer."` — dev-tooling wording in a store
+binary. Fixed with `plugins/withStripDevLauncherLocalNetwork.js`, which must stay **last** in
+the `plugins` array so its mod runs after the one that adds the keys.
+
+**3. `channel` requires `expo-updates`.** The `production` profile declares
+`channel: "production"`, so the build aborts without `updates.url` + `runtimeVersion` — and EAS
+cannot write them into a dynamic `app.config.ts` itself.
+
+**4. `npm ci --dry-run` does NOT catch a desynced lockfile.** It reported "up to date" while the
+builder's real `npm ci --include=dev` failed with `Missing: typescript@5.9.3 from lock file`
+(root pinned `~6.0.3`; the SDK 56 toolchain resolves `5.9.3`; local npm 11 hoisted one copy and
+the builder's npm wanted a nested one). Always validate with the real command.
+
+### Verified in the build-6 IPA
+
+Parsed straight out of `Payload/GreenBidz.app/`:
+
+| | |
+|---|---|
+| `CFBundleDisplayName` | `GreenBidz` |
+| Version / build | `1.0.0` (6) |
+| `MinimumOSVersion` | **16.4** — the minimum iOS a test device needs |
+| `ITSAppUsesNonExemptEncryption` | `false` |
+| `UIBackgroundModes` | `['remote-notification']` |
+| `PrivacyInfo.xcprivacy` | all 4 required-reason declarations, `NSPrivacyTracking: false` |
+| Absent as intended | microphone, Face ID, location-Always |
+| OneSignal extension | `PlugIns/OneSignalNotificationServiceExtension.appex` present |
 
 ### `eas.json`
 
