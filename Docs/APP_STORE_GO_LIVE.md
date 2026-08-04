@@ -123,19 +123,45 @@ This is a read-only check — it creates nothing and changes nothing.
 ## Step 3 — Screenshots
 
 Required: **3 to 10** images, iPhone **6.9"**, portrait, **1290 × 2796** px. No iPad set is needed
-(the app doesn't support iPad). They must come from a real phone — Windows has no iOS simulator.
+(the app doesn't support iPad).
 
-Take these on TestFlight with the demo account, then AirDrop/email them to your PC:
+**4 are generated and committed** in [`assets/store/ios/`](../assets/store/ios/), all exactly
+1290 × 2796, RGB, no alpha:
 
-- [ ] Home screen
-- [ ] AI scan → the listing it drafted
-- [ ] Browse / marketplace
-- [ ] Matches (a want showing a relevance %)
-- [ ] A message thread
-
+- [x] `1-home.png` — "What are you selling?" + AI describe box + real Recent listings
+- [x] `2-browse.png` — marketplace, "2029 results open for bidding", real lots
+- [x] `3-matches.png` — My Wants with **92% MATCH** rings on real lab equipment
+- [x] `4-messages.png` — a seller thread with the delivered tick and quick-replies
 - [ ] Upload them in ASC → **GreenBidz → 1.0 Prepare for Submission → Previews and Screenshots**
 
-> No placeholder or lorem-ipsum content in any screenshot — that alone gets builds rejected.
+Regenerate with `python scripts/make-ios-screenshots.py <capture-dir>`.
+
+**How they were made, and the caveat.** There is no iOS device or simulator on this machine, so they
+are **Android emulator captures** of the same React Native screens, with the emulator forced to true
+iPhone 16 Pro Max geometry:
+
+```bash
+adb shell wm size 1290x2796     # 1290x2796 @3x = 430x932 pt — iPhone 16 Pro Max
+adb shell wm density 480        # 480dpi = 3x, so the app lays out at 430x932 dp
+```
+
+`policy_control immersive.full=*` no longer works on API 34, so the Android status bar and gesture
+pill are cropped off and the image is uniformly rescaled back to 1290 × 2796 (no stretching; ~3%
+centre crop horizontally).
+
+⚠️ The **content is genuine** — real listings, real match scores, captured while signed in as the
+actual demo account (`jame124d@gmail.com`) — but the **pixels are Android renders**. Safe-area
+insets and font metrics differ slightly from iOS. Replace any of them with real iPhone captures if
+you want a perfect match; these are good enough to submit and far better than being blocked.
+
+> No placeholder or lorem-ipsum content in any screenshot — that alone gets builds rejected. These
+> use live production data, so that box is ticked.
+
+**Deliberately excluded**, having captured and reviewed them:
+- **Messages inbox** — lists real counterparty names (real people and companies). Not something to
+  publish on a public store page.
+- **Batch detail** — shows internal seller fields (`Comm. 15%`, `PENDING`) and a mis-tagged Thai
+  category on an English screen.
 
 ---
 
