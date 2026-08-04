@@ -354,10 +354,11 @@ Answer the questionnaire honestly in the ASC UI.
       "Current Price / 175 Countries or Regions" with a blank price column is the expected display.
 - [x] Availability: **All Countries or Regions — 175 Available**
 
-      ⚠️ Two defaults left ON, worth a conscious decision: `iPhone and iPad Apps on Apple Silicon
-      Macs` and visionOS availability are both **checked**. The app is iPhone-only
-      (`supportsTablet: false`) and camera-centric, so it may present poorly on a Mac or Vision Pro.
-      Uncheck them on the Pricing and Availability page if you don't want that distribution.
+- [x] **Apple Silicon Mac and visionOS availability turned OFF** (both were ON by default) and saved;
+      verified still off after a page reload. The app is iPhone-only (`supportsTablet: false`) and
+      camera-first — the AI-scan flow is the core feature — so opting into Mac/Vision Pro invites
+      reviewers to test it on hardware where that experience degrades. iOS availability unchanged at
+      175 regions.
 - [ ] **Submit for Review** — deliberately NOT automated. One-way door.
 
 ---
