@@ -33,11 +33,30 @@ build 9 carries them embedded, with no dependency on an over-the-air update.
 
 - [ ] Create a customer account on **production**
 - [ ] Approve it (`pw_user_status` approved) so it is not pending
+- [ ] Verify with the one-liner below — it must return **HTTP 200**
 - [ ] Sign in with it **in TestFlight on a real phone** and confirm it reaches **Home**
 - [ ] Write the email + password down for Step 5
 
 > Use a dedicated account for this, not a real customer's. Apple's reviewers do log in and click
 > around.
+
+**The exact pass/fail condition.** The gate is server-side, not in the app: `POST /auth/login`
+returns **403 with `code: "ACCOUNT_PENDING"`** while the account is unapproved, and the app routes
+that straight to the pending wall. So the test is simply whether prod login returns 200:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" \
+  -X POST https://api.101recycle.greenbidz.com/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -H 'x-platform: LabGreenbidz' \
+  -d '{"email":"DEMO_EMAIL","password":"DEMO_PASSWORD"}'
+```
+
+- `200` → approved. Apple's reviewer will reach Home. ✅
+- `403` → still pending. **This is the rejection.** Approve the account and re-run.
+- `400`/`401` → wrong email or password.
+
+This is a read-only check — it creates nothing and changes nothing.
 
 ---
 
