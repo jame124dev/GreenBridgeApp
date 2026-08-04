@@ -26,16 +26,46 @@ build 9 carries them embedded, with no dependency on an over-the-air update.
 
 ---
 
-## Step 2 — Demo account for Apple's reviewer
+## Step 2 — Demo account for Apple's reviewer ✅
 
-**This is the hard blocker.** Login is mandatory in the app, and an unapproved account is sent to a
-"pending approval" screen. A reviewer who sees that wall rejects the app (Guideline 2.1).
+**Resolved 2026-08-04 by reusing an existing approved account — no new account was created.**
 
-- [ ] Create a customer account on **production**
-- [ ] Approve it (`pw_user_status` approved) so it is not pending
-- [ ] Verify with the one-liner below — it must return **HTTP 200**
-- [ ] Sign in with it **in TestFlight on a real phone** and confirm it reaches **Home**
-- [ ] Write the email + password down for Step 5
+| | |
+|---|---|
+| Account | `jame124d@gmail.com` — user **id 877**, display name "Test User", company "Jammer" |
+| Status | `user_status: "approved"` — prod `POST /api/v1/auth/login` returns **HTTP 200** |
+| Role | `seller` (`greenbidz_user_type: seller`) |
+| Password | **in App Store Connect only** — deliberately not recorded in this repo |
+
+This is the same account used to verify the chat send fix on-device, so the reviewer's login is one
+already proven to work end-to-end in the app.
+
+- [x] Approved customer account exists on **production**
+- [x] Verified with the one-liner below — returns **HTTP 200**, `user_status: approved`
+- [x] Already exercised in the app (login + Messages) during the build-9 verification
+- [x] Credentials ready for Step 5
+
+Two things to keep in mind rather than fix:
+
+- The account's role is **seller**, not buyer, so the reviewer sees the seller-role code path. That
+  is the path the `sender_role` chat bug lived on, and it is fixed in build 9 — but it is worth
+  knowing that is what gets tested.
+- Its analytics `site_type` is `101machine` while the store build ships `SITE_TYPE=LabGreenbidz`.
+  It logs in and works; content emphasis may differ from the listing copy.
+
+⚠️ **If a reviewer taps Account ▸ Security ▸ Delete account, this account is destroyed** — anonymised,
+password randomised, status revoked, listings withdrawn, no undo. Guideline 5.1.1(v) compliance is
+exactly what reviewers verify, so treat that as likely rather than hypothetical. It is a test
+account, which is why this is acceptable; do **not** substitute a real trading account here.
+
+<details>
+<summary>Original instructions, if a fresh account is ever needed</summary>
+
+- Create a customer account on **production**
+- Approve it (`pw_user_status` approved) so it is not pending
+- Verify with the one-liner below — it must return **HTTP 200**
+- Sign in with it in TestFlight and confirm it reaches **Home**
+</details>
 
 > Use a dedicated account for this, not a real customer's. Apple's reviewers do log in and click
 > around.
