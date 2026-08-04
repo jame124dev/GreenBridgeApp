@@ -50,6 +50,26 @@ without admin credentials. Admin panel → Users → find the account → set st
 Note the local backend `.env` points at **`greenbidz_test`** (dev), not prod, so there is no local
 shortcut to a prod user either.
 
+**Signup paths on prod, probed 2026-08-04 — read this before trying to automate account creation:**
+
+| Endpoint | State |
+|---|---|
+| `POST /api/v2/auth/signup` | **Broken.** Proxies to `greenbidz.com/wp-json/recycle_greenbidz/v1/register`, which replies *"No route was found matching the URL and request method."* The WP plugin route is gone, so v2 signup cannot create anyone. |
+| `POST /api/v1/user/signup-initiate` → `verify-signup-code` → `complete-signup` | The working flow. Step 1 **emails a 6-digit code** (10-min expiry, held in an in-memory `pendingVerifications` map — so it does not survive a backend restart). |
+| `PUT /admin/users/status` | The only approval route. `requirePermission("users.approve")`. |
+
+And `complete-signup` writes `pw_user_status: "pending"` unconditionally:
+
+```js
+{ user_id: userId, meta_key: "pw_user_status", meta_value: "pending" }
+```
+
+So **there is no path to a self-serve account that is already approved.** Creating a demo account
+always needs (a) a readable mailbox for the emailed code and (b) an admin to flip the status.
+
+⚡ **Fastest route: skip creation entirely.** Any *already-approved* customer account on prod works
+as the reviewer's demo account — verify it with the curl above and Step 2 is done.
+
 **The exact pass/fail condition.** The gate is server-side, not in the app: `POST /auth/login`
 returns **403 with `code: "ACCOUNT_PENDING"`** while the account is unapproved, and the app routes
 that straight to the pending wall. So the test is simply whether prod login returns 200:
