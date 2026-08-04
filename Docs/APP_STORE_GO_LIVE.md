@@ -179,10 +179,13 @@ you want a perfect match; these are good enough to submit and far better than be
 - [x] Description (1352 chars) + promotional text (166 chars)
 - [x] Keywords (96 chars) `used equipment,laboratory,industrial,machinery,B2B,marketplace,surplus,auction,resale,secondhand`
 - [x] Support URL `https://101lab.co/faq`
-- [x] Marketing URL `https://101lab.co`
+- [x] Marketing URL `https://greenbidz.com` — the GreenBidz Group site (verified 200,
+      *"GreenBidz Group – Circular B2B Marketplaces"*), updated 2026-08-04
 - [x] Privacy Policy URL `https://101lab.co/privacy-policy`
 - [x] Category **Business** (primary), **Shopping** (secondary)
-- [x] Copyright `2026 Quippy AI Limited`
+- [x] Copyright `2026 GreenBidz. All rights reserved.` — note the leading "Copyright ©" was dropped
+      on purpose: Apple renders the © glyph itself and the field spec is *year + entity*, so
+      "Copyright © 2026 …" would display as "© Copyright © 2026 …" on the product page
 
 ### Two things that went wrong, and why they matter
 

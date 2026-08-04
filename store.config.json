@@ -2,7 +2,7 @@
   "configVersion": 0,
   "apple": {
     "version": "1.0.0",
-    "copyright": "2026 Quippy AI Limited",
+    "copyright": "2026 GreenBidz. All rights reserved.",
     "release": {
       "automaticRelease": false
     },
@@ -21,7 +21,7 @@
           "resale",
           "secondhand"
         ],
-        "marketingUrl": "https://101lab.co",
+        "marketingUrl": "https://greenbidz.com",
         "promoText": "Photograph any machine and our AI writes the listing for you. Browse verified used laboratory and industrial equipment, post what you're looking for, and deal direct.",
         "supportUrl": "https://101lab.co/faq",
         "title": "GreenBidz",
