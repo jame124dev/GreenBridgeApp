@@ -3485,6 +3485,13 @@
     }
   },
   "mobile": {
+    "splash": {
+      "from": "來自",
+      "tagline": "THE CIRCULAR ECONOMY LEADER"},
+    "notFound": {
+      "goHome": "返回首頁",
+      "heading": "頁面不存在",
+      "title": "找不到"},
     "deleteAccount": {
       "link": "刪除帳戶",
       "title": "刪除您的帳戶",
@@ -3617,6 +3624,8 @@
       "removePhoto": "移除此照片"
     },
     "processing": {
+      "backgroundHint": "您可以繼續使用應用程式 — 完成後我們會通知您。",
+      "tryAgain": "重試",
       "aiWorking": "AI 處理中",
       "heading": "正在分析您的物品…",
       "subtitle": "約 5–10 秒",
@@ -3849,6 +3858,9 @@
       "expiredBody": "本機已找不到先前儲存的照片或檔案，請重新掃描。"
     },
     "drafts": {
+      "allDrafts": "全部草稿",
+      "draftBadge": "草稿",
+      "readyToastBody": "已完成分析您上傳的內容。點按即可查看並發布。",
       "saved": "草稿已儲存",
       "saveFailed": "無法儲存草稿",
       "saveDraft": "儲存為草稿",
@@ -4062,6 +4074,18 @@
       "untitled": "商品 {{index}}"
     },
     "labHome": {
+      "viewAllDrafts": "查看全部 {{count}} 份草稿",
+      "savedJustNow": "剛剛儲存",
+      "savedMinutes": "{{count}} 分鐘前儲存",
+      "savedHours": "{{count}} 小時前儲存",
+      "savedDays": "{{count}} 天前儲存",
+      "draftChip": "草稿",
+      "draftCount": "{{count}} 份草稿",
+      "draftsGroup": "從上次中斷處繼續",
+      "listingsError": "無法載入您的設備。",
+      "listingsGroup": "我的刊登",
+      "resume": "繼續",
+      "yourItems": "您的設備",
       "greetingLead": {
         "sell": "您想出售",
         "buy": "您在尋找"
@@ -4142,6 +4166,28 @@
       "attachDocumentSub": "規格表、手冊或 PDF"
     },
     "labCards": {
+      "wtbEdit": {
+        "activeEmail": "一有新配對上架，我們會立即寄email通知您。",
+        "anyPlaceholder": "任意",
+        "budgetChip": "≤ ${{value}}",
+        "budgetFieldA11y": "最高預算",
+        "budgetLabel": "預算",
+        "budgetPrefix": "≤ $",
+        "conditionAny": "任意",
+        "conditionAnyA11y": "任意狀況",
+        "conditionLabel": "狀況",
+        "conditionPillA11y": "狀況 {{label}}",
+        "optionalSuffix": "（選填）",
+        "pendingBody": "管理員將盡快審核。通過後我們會開始為您推送提醒。",
+        "pendingEmail": "通過審核後，一有新配對上架我們就會寄email通知您。",
+        "qtyDecrementA11y": "減少數量",
+        "qtyIncrementA11y": "增加數量",
+        "quantityLabel": "數量",
+        "saveError": "無法儲存該需求，請重試。",
+        "saving": "正在儲存…",
+        "sentForApproval": "已送出審核 — 「{{title}}」",
+        "viewInMyWants": "在「我的需求」中查看",
+        "viewInMyWantsA11y": "在「我的需求」中查看此需求"},
       "priceOnRequest": "價格面議",
       "untitledListing": "未命名商品",
       "untitledItem": "未命名條目",
@@ -4321,6 +4367,19 @@
       "sources": "來源："
     },
     "labChat": {
+      "starter": {
+        "buy1": "找一台 HPLC 系統",
+        "buy2": "我需要一台二手離心機",
+        "buy3": "看看有哪些現貨",
+        "sell1": "我有一台二手 CNC 機床要賣",
+        "sell2": "幫我為實驗室設備定價",
+        "sell3": "用照片批次刊登多件設備"},
+      "empty": {
+        "buyBody": "告訴我您需要什麼，我來搜尋市場。",
+        "buyTitle": "您在尋找什麼？",
+        "sellBody": "描述您的設備或加入照片 — 我來為您草擬刊登內容。",
+        "sellTitle": "您要出售什麼？"},
+      "stillWorking": "仍在處理 — 請稍候…",
       "newChat": "新對話",
       "genericError": "出了點問題，請重試。",
       "back": "返回",
@@ -4429,6 +4488,7 @@
       "downloading": "正在下載更新…"
     },
     "labDeal": {
+      "offlineSend": "您已離線 — 正在重新連線。訊息已儲存，請稍後再點傳送。",
       "sellerFallback": "賣家",
       "back": "返回",
       "listingInfo": "商品資訊",

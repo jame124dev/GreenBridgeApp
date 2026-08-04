@@ -3501,6 +3501,13 @@
     }
   },
   "mobile": {
+    "splash": {
+      "from": "TỪ",
+      "tagline": "THE CIRCULAR ECONOMY LEADER"},
+    "notFound": {
+      "goHome": "Về trang chủ",
+      "heading": "Không tìm thấy trang",
+      "title": "Không tìm thấy"},
     "deleteAccount": {
       "link": "Xóa tài khoản",
       "title": "Xóa tài khoản của bạn",
@@ -3633,6 +3640,8 @@
       "removePhoto": "Xóa ảnh này"
     },
     "processing": {
+      "backgroundHint": "Cứ tiếp tục dùng ứng dụng — chúng tôi sẽ thông báo khi xong.",
+      "tryAgain": "Thử lại",
       "aiWorking": "AI ĐANG XỬ LÝ",
       "heading": "Đang phân tích các món của bạn…",
       "subtitle": "5–10 giây",
@@ -3869,6 +3878,9 @@
       "expiredBody": "Ảnh hoặc tài liệu đã lưu không còn trên thiết bị này. Hãy bắt đầu quét mới."
     },
     "drafts": {
+      "allDrafts": "Tất cả bản nháp",
+      "draftBadge": "BẢN NHÁP",
+      "readyToastBody": "Chúng tôi đã phân tích xong tệp bạn tải lên. Nhấn để xem lại và đăng.",
       "saved": "Đã lưu bản nháp",
       "saveFailed": "Không thể lưu bản nháp",
       "saveDraft": "Lưu dưới dạng bản nháp",
@@ -4082,6 +4094,22 @@
       "untitled": "Sản phẩm {{index}}"
     },
     "labHome": {
+      "viewAllDrafts": "Xem tất cả {{count}} bản nháp",
+      "savedJustNow": "vừa lưu",
+      "savedMinutes": "đã lưu {{count}} phút trước",
+      "savedHours": "đã lưu {{count}} giờ trước",
+      "savedDays": "đã lưu {{count}} ngày trước",
+      "matchOne": "{{count}} kết quả phù hợp",
+      "matchOther": "{{count}} kết quả phù hợp",
+      "draftChip": "BẢN NHÁP",
+      "draftCount": "{{count}} bản nháp",
+      "draftsGroup": "Tiếp tục từ chỗ bạn dừng lại",
+      "listingsError": "Không tải được sản phẩm của bạn.",
+      "listingsGroup": "Tin đăng",
+      "noMatchesYet": "Chưa có kết quả phù hợp",
+      "recentWants": "Nhu cầu gần đây",
+      "resume": "Tiếp tục",
+      "yourItems": "Sản phẩm của bạn",
       "greetingLead": {
         "sell": "Bạn đang",
         "buy": "Bạn đang"
@@ -4158,6 +4186,30 @@
       "attachDocumentSub": "Bảng thông số kỹ thuật, hướng dẫn sử dụng hoặc PDF"
     },
     "labCards": {
+      "wtbEdit": {
+        "activeEmail": "Chúng tôi sẽ gửi email ngay khi có kết quả phù hợp mới.",
+        "anyPlaceholder": "bất kỳ",
+        "budgetChip": "≤ ${{value}}",
+        "budgetFieldA11y": "Ngân sách tối đa",
+        "budgetLabel": "Ngân sách",
+        "budgetPrefix": "≤ $",
+        "conditionAny": "Bất kỳ",
+        "conditionAnyA11y": "Mọi tình trạng",
+        "conditionLabel": "Tình trạng",
+        "conditionPillA11y": "Tình trạng {{label}}",
+        "optionalSuffix": "(không bắt buộc)",
+        "pendingBody": "Quản trị viên sẽ xem xét ngay. Sau khi được duyệt, chúng tôi sẽ bắt đầu thông báo cho bạn.",
+        "pendingEmail": "Sau khi được duyệt, chúng tôi sẽ gửi email ngay khi có kết quả phù hợp mới.",
+        "qtyDecrementA11y": "Giảm số lượng",
+        "qtyIncrementA11y": "Tăng số lượng",
+        "quantityLabel": "Số lượng",
+        "saveError": "Không lưu được yêu cầu — vui lòng thử lại.",
+        "saving": "Đang lưu…",
+        "sentForApproval": "Đã gửi để duyệt — “{{title}}”",
+        "viewInMyWants": "Xem trong Nhu cầu của tôi",
+        "viewInMyWantsA11y": "Xem nhu cầu này trong Nhu cầu của tôi"},
+      "imagePending": "Đang chờ ảnh",
+      "resultsCount": "Kết quả · {{count}}",
       "priceOnRequest": "Giá liên hệ",
       "untitledListing": "Tin đăng chưa có tiêu đề",
       "untitledItem": "Sản phẩm chưa có tiêu đề",
@@ -4335,6 +4387,35 @@
       "sources": "Nguồn:"
     },
     "labChat": {
+      "working": {
+        "default": "Đang xử lý…",
+        "searching": "Đang tìm trên sàn…",
+        "checking": "Đang kiểm tra yêu cầu của bạn…",
+        "reading": "Đang đọc tài liệu của bạn…",
+        "thinking": "Đang phân tích…",
+        "ranking": "Đang xếp hạng kết quả…",
+        "summarizing": "Đang tổng hợp bản tóm tắt…",
+        "draft": "Đang chuẩn bị bản nháp…"},
+      "stop": "Dừng",
+      "starter": {
+        "buy1": "Tìm hệ thống HPLC",
+        "buy2": "Tôi cần một máy ly tâm đã qua sử dụng",
+        "buy3": "Cho tôi xem những gì đang có",
+        "sell1": "Tôi có một máy CNC đã qua sử dụng cần bán",
+        "sell2": "Giúp tôi định giá thiết bị phòng thí nghiệm",
+        "sell3": "Đăng nhiều sản phẩm từ ảnh"},
+      "empty": {
+        "buyBody": "Cho tôi biết bạn cần gì và tôi sẽ tìm trên sàn.",
+        "buyTitle": "Bạn đang tìm gì?",
+        "sellBody": "Mô tả thiết bị của bạn hoặc thêm ảnh — tôi sẽ soạn tin đăng cho bạn.",
+        "sellTitle": "Bạn đang bán gì?"},
+      "actions": {
+        "copied": "Đã sao chép vào bảng nhớ tạm",
+        "copy": "Sao chép",
+        "helpful": "Hữu ích",
+        "notHelpful": "Không hữu ích",
+        "share": "Chia sẻ"},
+      "stillWorking": "Vẫn đang xử lý — chờ một chút…",
       "newChat": "Cuộc trò chuyện mới",
       "genericError": "Đã xảy ra lỗi. Vui lòng thử lại.",
       "back": "Quay lại",
@@ -4425,6 +4506,7 @@
       "downloading": "Đang tải bản cập nhật…"
     },
     "labDeal": {
+      "offlineSend": "Bạn đang ngoại tuyến — đang kết nối lại. Tin nhắn đã được lưu; hãy nhấn gửi lại sau một lát.",
       "sellerFallback": "Người bán",
       "back": "Quay lại",
       "listingInfo": "Thông tin tin đăng",

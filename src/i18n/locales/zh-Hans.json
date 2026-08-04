@@ -3485,6 +3485,13 @@
     }
   },
   "mobile": {
+    "splash": {
+      "from": "来自",
+      "tagline": "THE CIRCULAR ECONOMY LEADER"},
+    "notFound": {
+      "goHome": "返回首页",
+      "heading": "页面不存在",
+      "title": "未找到"},
     "deleteAccount": {
       "link": "删除帐户",
       "title": "删除您的帐户",
@@ -3617,6 +3624,8 @@
       "removePhoto": "移除此照片"
     },
     "processing": {
+      "backgroundHint": "您可以继续使用应用 — 完成后我们会通知您。",
+      "tryAgain": "重试",
       "aiWorking": "AI 处理中",
       "heading": "正在分析您的物品…",
       "subtitle": "约 5–10 秒",
@@ -3849,6 +3858,9 @@
       "expiredBody": "本机已找不到先前保存的照片或文件，请重新扫描。"
     },
     "drafts": {
+      "allDrafts": "全部草稿",
+      "draftBadge": "草稿",
+      "readyToastBody": "已完成分析您上传的内容。点按即可查看并发布。",
       "saved": "草稿已保存",
       "saveFailed": "无法保存草稿",
       "saveDraft": "保存为草稿",
@@ -4062,6 +4074,18 @@
       "untitled": "商品 {{index}}"
     },
     "labHome": {
+      "viewAllDrafts": "查看全部 {{count}} 份草稿",
+      "savedJustNow": "刚刚保存",
+      "savedMinutes": "{{count}} 分钟前保存",
+      "savedHours": "{{count}} 小时前保存",
+      "savedDays": "{{count}} 天前保存",
+      "draftChip": "草稿",
+      "draftCount": "{{count}} 份草稿",
+      "draftsGroup": "从上次中断处继续",
+      "listingsError": "无法加载您的设备。",
+      "listingsGroup": "我的发布",
+      "resume": "继续",
+      "yourItems": "您的设备",
       "greetingLead": {
         "sell": "您想出售",
         "buy": "您在寻找"
@@ -4142,6 +4166,28 @@
       "attachDocumentSub": "规格表、手册或 PDF"
     },
     "labCards": {
+      "wtbEdit": {
+        "activeEmail": "一有新匹配上架，我们会立即发邮件通知您。",
+        "anyPlaceholder": "任意",
+        "budgetChip": "≤ ${{value}}",
+        "budgetFieldA11y": "最高预算",
+        "budgetLabel": "预算",
+        "budgetPrefix": "≤ $",
+        "conditionAny": "任意",
+        "conditionAnyA11y": "任意成色",
+        "conditionLabel": "成色",
+        "conditionPillA11y": "成色 {{label}}",
+        "optionalSuffix": "（选填）",
+        "pendingBody": "管理员将尽快审核。通过后我们会开始为您推送提醒。",
+        "pendingEmail": "通过审核后，一有新匹配上架我们就会发邮件通知您。",
+        "qtyDecrementA11y": "减少数量",
+        "qtyIncrementA11y": "增加数量",
+        "quantityLabel": "数量",
+        "saveError": "无法保存该需求，请重试。",
+        "saving": "正在保存…",
+        "sentForApproval": "已提交审核 — “{{title}}”",
+        "viewInMyWants": "在“我的需求”中查看",
+        "viewInMyWantsA11y": "在“我的需求”中查看此需求"},
       "priceOnRequest": "价格面议",
       "untitledListing": "未命名商品",
       "untitledItem": "未命名条目",
@@ -4321,6 +4367,19 @@
       "sources": "来源："
     },
     "labChat": {
+      "starter": {
+        "buy1": "找一台 HPLC 系统",
+        "buy2": "我需要一台二手离心机",
+        "buy3": "看看有哪些现货",
+        "sell1": "我有一台二手 CNC 机床要卖",
+        "sell2": "帮我给实验室设备定价",
+        "sell3": "用照片批量发布多件设备"},
+      "empty": {
+        "buyBody": "告诉我您需要什么，我来搜索市场。",
+        "buyTitle": "您在寻找什么？",
+        "sellBody": "描述您的设备或添加照片 — 我来为您起草listing。",
+        "sellTitle": "您要出售什么？"},
+      "stillWorking": "仍在处理 — 请稍候…",
       "newChat": "新对话",
       "genericError": "出了点问题，请重试。",
       "back": "返回",
@@ -4429,6 +4488,7 @@
       "downloading": "正在下载更新…"
     },
     "labDeal": {
+      "offlineSend": "您已离线 — 正在重新连接。消息已保存，请稍后再点发送。",
       "sellerFallback": "卖家",
       "back": "返回",
       "listingInfo": "商品信息",

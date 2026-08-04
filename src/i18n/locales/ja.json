@@ -3420,6 +3420,13 @@
     }
   },
   "mobile": {
+    "splash": {
+      "from": "提供",
+      "tagline": "THE CIRCULAR ECONOMY LEADER"},
+    "notFound": {
+      "goHome": "ホームへ戻る",
+      "heading": "ページが見つかりません",
+      "title": "見つかりません"},
     "deleteAccount": {
       "link": "アカウントを削除",
       "title": "アカウントを削除します",
@@ -3552,6 +3559,8 @@
       "removePhoto": "この写真を削除"
     },
     "processing": {
+      "backgroundHint": "アプリはそのままお使いください。完了したらお知らせします。",
+      "tryAgain": "再試行",
       "aiWorking": "AI 処理中",
       "heading": "アイテムを分析中…",
       "subtitle": "5〜10 秒",
@@ -3784,6 +3793,9 @@
       "expiredBody": "この端末に保存された写真・書類が見つかりません。新しくスキャンしてください。"
     },
     "drafts": {
+      "allDrafts": "すべての下書き",
+      "draftBadge": "下書き",
+      "readyToastBody": "アップロードの解析が完了しました。タップして確認し、公開できます。",
       "saved": "下書きを保存しました",
       "saveFailed": "下書きを保存できませんでした",
       "saveDraft": "下書きとして保存",
@@ -3997,6 +4009,22 @@
       "untitled": "商品 {{index}}"
     },
     "labHome": {
+      "viewAllDrafts": "下書き {{count}} 件をすべて表示",
+      "savedJustNow": "たった今保存",
+      "savedMinutes": "{{count}} 分前に保存",
+      "savedHours": "{{count}} 時間前に保存",
+      "savedDays": "{{count}} 日前に保存",
+      "matchOne": "{{count}} 件の候補",
+      "matchOther": "{{count}} 件の候補",
+      "draftChip": "下書き",
+      "draftCount": "下書き {{count}} 件",
+      "draftsGroup": "前回の続きから",
+      "listingsError": "アイテムを読み込めませんでした。",
+      "listingsGroup": "出品",
+      "noMatchesYet": "まだ候補はありません",
+      "recentWants": "最近のリクエスト",
+      "resume": "再開",
+      "yourItems": "あなたのアイテム",
       "greetingLead": {
         "sell": "何を",
         "buy": "何を"
@@ -4073,6 +4101,30 @@
       "attachDocumentSub": "仕様書、マニュアル、または PDF"
     },
     "labCards": {
+      "wtbEdit": {
+        "activeEmail": "新しい候補が登録され次第、メールでお知らせします。",
+        "anyPlaceholder": "指定なし",
+        "budgetChip": "≤ ${{value}}",
+        "budgetFieldA11y": "上限予算",
+        "budgetLabel": "予算",
+        "budgetPrefix": "≤ $",
+        "conditionAny": "指定なし",
+        "conditionAnyA11y": "状態の指定なし",
+        "conditionLabel": "状態",
+        "conditionPillA11y": "状態 {{label}}",
+        "optionalSuffix": "（任意）",
+        "pendingBody": "管理者がまもなく確認します。承認され次第、お知らせを開始します。",
+        "pendingEmail": "承認後、新しい候補が登録され次第メールでお知らせします。",
+        "qtyDecrementA11y": "数量を減らす",
+        "qtyIncrementA11y": "数量を増やす",
+        "quantityLabel": "数量",
+        "saveError": "リクエストを保存できませんでした。もう一度お試しください。",
+        "saving": "保存中…",
+        "sentForApproval": "承認申請を送信しました — 「{{title}}」",
+        "viewInMyWants": "「マイリクエスト」で見る",
+        "viewInMyWantsA11y": "このリクエストを「マイリクエスト」で見る"},
+      "imagePending": "画像を準備中",
+      "resultsCount": "結果 · {{count}}",
       "priceOnRequest": "価格応談",
       "untitledListing": "無題の出品",
       "untitledItem": "無題のアイテム",
@@ -4250,6 +4302,35 @@
       "sources": "ソース："
     },
     "labChat": {
+      "working": {
+        "default": "処理中…",
+        "searching": "マーケットプレイスを検索中…",
+        "checking": "リクエストを確認中…",
+        "reading": "書類を読み取り中…",
+        "thinking": "分析中…",
+        "ranking": "結果を並べ替え中…",
+        "summarizing": "要約を作成中…",
+        "draft": "下書きを準備中…"},
+      "stop": "停止",
+      "starter": {
+        "buy1": "HPLCシステムを探す",
+        "buy2": "中古の遠心機が必要です",
+        "buy3": "在庫を見せてください",
+        "sell1": "中古のCNC工作機械を売りたい",
+        "sell2": "ラボ機器の価格設定を手伝って",
+        "sell3": "写真から複数の商品を出品する"},
+      "empty": {
+        "buyBody": "お探しのものを教えてください。マーケットプレイスを検索します。",
+        "buyTitle": "何をお探しですか？",
+        "sellBody": "商品を説明するか写真を追加してください。出品内容を作成します。",
+        "sellTitle": "何を売りますか？"},
+      "actions": {
+        "copied": "クリップボードにコピーしました",
+        "copy": "コピー",
+        "helpful": "役に立った",
+        "notHelpful": "役に立たなかった",
+        "share": "共有"},
+      "stillWorking": "処理中です — 少しお待ちください…",
       "newChat": "新しいチャット",
       "genericError": "問題が発生しました。もう一度お試しください。",
       "back": "戻る",
@@ -4340,6 +4421,7 @@
       "downloading": "更新をダウンロード中…"
     },
     "labDeal": {
+      "offlineSend": "オフラインです — 再接続中。メッセージは保存されました。少し後にもう一度送信してください。",
       "sellerFallback": "出品者",
       "back": "戻る",
       "listingInfo": "出品情報",
