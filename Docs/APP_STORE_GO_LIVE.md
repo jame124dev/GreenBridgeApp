@@ -390,6 +390,20 @@ Answer the questionnaire honestly in the ASC UI.
 
 ---
 
+## ⛔ Blocking RELEASE (not review) — status 2026-08-04
+
+- [ ] **Deploy the chat auth fix to production.** Built, tested and pushed as
+      `fix/chat-auth-batch404` (`e4da751`) on the **backend** repo, branched off `dev`. It closes an
+      unauthenticated IDOR that returned `display_name` + `user_email` for any user id, and opens
+      admin chat routes to anyone. **Not on prod yet** — reaching prod means a cherry-pick onto
+      `main`, and pushing `main` IS the deploy. Must be a cherry-pick, never a merge: `dev` is 58
+      commits ahead of `main`.
+      ⚠️ Re-apply per branch rather than cherry-pick blind — `dev` carries 4 chat routes `main` does
+      not, two of which need guards.
+- [ ] **The chat SOCKET is still unauthenticated** — identity is whatever `user_id` a client claims
+      via `joinRooms`. A separate code path from the REST fix above, and a larger change; the web
+      client behaves the same way.
+
 ## Not blocking, but decide before/soon after launch
 
 - [ ] **iPhone push notifications are dead** until `AuthKey_ZL766GXRJL.p8` is uploaded to OneSignal
