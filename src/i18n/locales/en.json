@@ -4506,6 +4506,15 @@
       "composerDefault": "Message…",
       "sendMessage": "Send message"
     },
+    "labUpdate": {
+      "readyTitle": "Update ready",
+      "readyBody": "Restart to apply the latest fixes.",
+      "restart": "Restart now",
+      "restarting": "Restarting…",
+      "later": "Later",
+      "builtIn": "built-in",
+      "downloading": "Downloading an update…"
+    },
     "labDeal": {
       "sellerFallback": "Seller",
       "back": "Back",

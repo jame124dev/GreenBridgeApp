@@ -4314,6 +4314,15 @@
       "composerDefault": "ข้อความ…",
       "sendMessage": "ส่งข้อความ"
     },
+    "labUpdate": {
+      "readyTitle": "อัปเดตพร้อมแล้ว",
+      "readyBody": "รีสตาร์ทเพื่อใช้การแก้ไขล่าสุด",
+      "restart": "รีสตาร์ทตอนนี้",
+      "restarting": "กำลังรีสตาร์ท…",
+      "later": "ภายหลัง",
+      "builtIn": "ในตัว",
+      "downloading": "กำลังดาวน์โหลดอัปเดต…"
+    },
     "labDeal": {
       "sellerFallback": "ผู้ขาย",
       "back": "กลับ",

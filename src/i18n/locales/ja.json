@@ -4330,6 +4330,15 @@
       "composerDefault": "メッセージ…",
       "sendMessage": "メッセージを送信"
     },
+    "labUpdate": {
+      "readyTitle": "更新の準備完了",
+      "readyBody": "再起動すると最新の修正が適用されます。",
+      "restart": "今すぐ再起動",
+      "restarting": "再起動中…",
+      "later": "後で",
+      "builtIn": "組み込み",
+      "downloading": "更新をダウンロード中…"
+    },
     "labDeal": {
       "sellerFallback": "出品者",
       "back": "戻る",

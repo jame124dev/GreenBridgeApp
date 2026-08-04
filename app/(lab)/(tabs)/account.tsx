@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { useTabBarHeight } from '@/features/lab/components';
+import { AppVersionLine } from '@/features/lab/updates';
 import { useLogout } from '@/features/auth/useLogout';
 import { useUserProfile } from '@/features/auth/useUserProfile';
 import {
@@ -157,6 +158,10 @@ export default function LabAccount() {
                   not a second red button — see DeleteAccountLink for why. */}
               <DeleteAccountLink />
             </View>
+
+            {/* Which build is actually running. Support-critical when a shipped
+                OTA fix appears not to have arrived — see AppVersionLine. */}
+            <AppVersionLine />
           </View>
         ) : null}
       </Screen>

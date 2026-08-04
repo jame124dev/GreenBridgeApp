@@ -4419,6 +4419,15 @@
       "composerDefault": "发送消息…",
       "sendMessage": "发送消息"
     },
+    "labUpdate": {
+      "readyTitle": "更新已就绪",
+      "readyBody": "重启以应用最新修复。",
+      "restart": "立即重启",
+      "restarting": "正在重启…",
+      "later": "稍后",
+      "builtIn": "内置",
+      "downloading": "正在下载更新…"
+    },
     "labDeal": {
       "sellerFallback": "卖家",
       "back": "返回",
