@@ -348,8 +348,16 @@ Answer the questionnaire honestly in the ASC UI.
       Worth noting: declaring UGC and chat truthfully did **not** raise the rating above 4+, so the
       earlier worry about losing the 4+ audience was unfounded. It does still imply the usual
       user-generated-content duties (moderation, reporting, blocking) as a product matter.
-- [ ] Pricing: **Free** (or set your tier)
-- [ ] Availability: choose countries
+- [x] Pricing: **Free** — set 2026-08-04. Base country United States (USD), price `$0.00`; the
+      per-country confirmation table was read before confirming and every one of the 175 territories
+      showed 0.00 (`$0.00`, `kr 0.00`, `฿0.00`, `₫0.00`, …). ASC renders no amount for free apps, so
+      "Current Price / 175 Countries or Regions" with a blank price column is the expected display.
+- [x] Availability: **All Countries or Regions — 175 Available**
+
+      ⚠️ Two defaults left ON, worth a conscious decision: `iPhone and iPad Apps on Apple Silicon
+      Macs` and visionOS availability are both **checked**. The app is iPhone-only
+      (`supportsTablet: false`) and camera-centric, so it may present poorly on a Mac or Vision Pro.
+      Uncheck them on the Pricing and Availability page if you don't want that distribution.
 - [ ] **Submit for Review** — deliberately NOT automated. One-way door.
 
 ---
