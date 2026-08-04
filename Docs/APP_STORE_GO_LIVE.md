@@ -122,17 +122,21 @@ This is a read-only check — it creates nothing and changes nothing.
 
 ## Step 3 — Screenshots
 
-Required: **3 to 10** images, iPhone **6.9"**, portrait, **1290 × 2796** px. No iPad set is needed
-(the app doesn't support iPad).
+Required: **3 to 10** images, portrait. ⚠️ **The size is 1284 × 2778, not 1290 × 2796.** This app's
+ASC page exposes a single iPhone slot labelled **6.5" Display**, accepting `1242 × 2688`,
+`2688 × 1242`, `1284 × 2778` or `2778 × 1284`. A 1290 × 2796 ("6.9"") upload is **rejected**:
+*"The dimensions of one or more screenshots are wrong."* ASC then reuses the one set "for all display
+sizes and localizations", so a single 1284 × 2778 set is enough. No iPad set is needed (the app
+doesn't support iPad).
 
 **4 are generated and committed** in [`assets/store/ios/`](../assets/store/ios/), all exactly
-1290 × 2796, RGB, no alpha:
+1284 × 2778, RGB, no alpha:
 
 - [x] `1-home.png` — "What are you selling?" + AI describe box + real Recent listings
 - [x] `2-browse.png` — marketplace, "2029 results open for bidding", real lots
 - [x] `3-matches.png` — My Wants with **92% MATCH** rings on real lab equipment
 - [x] `4-messages.png` — a seller thread with the delivered tick and quick-replies
-- [ ] Upload them in ASC → **GreenBidz → 1.0 Prepare for Submission → Previews and Screenshots**
+- [x] **Uploaded to ASC 2026-08-04** — all 4 present in order, `4 of 10 Screenshots`, no dimension error
 
 Regenerate with `python scripts/make-ios-screenshots.py <capture-dir>`.
 
@@ -146,7 +150,7 @@ adb shell wm density 480        # 480dpi = 3x, so the app lays out at 430x932 dp
 ```
 
 `policy_control immersive.full=*` no longer works on API 34, so the Android status bar and gesture
-pill are cropped off and the image is uniformly rescaled back to 1290 × 2796 (no stretching; ~3%
+pill are cropped off and the image is uniformly rescaled back to 1284 × 2778 (no stretching; ~3%
 centre crop horizontally).
 
 ⚠️ The **content is genuine** — real listings, real match scores, captured while signed in as the
@@ -270,20 +274,31 @@ app. There are no digital goods, so no in-app purchases are used.
 
 ---
 
-## Step 6 — App Privacy questionnaire
+## Step 6 — App Privacy questionnaire ✅
 
-ASC → **App Privacy**. There is no analytics, ads or tracking SDK in the app, so:
+**Published 2026-08-04** ("Published a few seconds ago by Jam User"). Driven through the ASC UI via
+browser automation, then read back to verify every row before publishing.
 
-- [ ] **"Data is not used to track you"** — tracking: **No**
-- [ ] Declare each of these as **collected, linked to the user, purpose: App Functionality**:
-  - [ ] Email address
-  - [ ] Name / company
-  - [ ] Photos
-  - [ ] Other user content (listing text, messages, requests)
-  - [ ] Precise location — mark **optional** (user may decline; app still works)
-  - [ ] Device ID (push subscription)
-  - [ ] Search history
-- [ ] Third-party advertising: **No**
+**9 data types**, each *Used for App Functionality* · *Linked to the user's identity* · **not** used
+for tracking:
+
+- [x] Name
+- [x] Email Address
+- [x] Phone Number — added because Account collects and verifies one
+- [x] Precise Location
+- [x] Photos or Videos
+- [x] Other User Content
+- [x] Search History
+- [x] **User ID** — added beyond the original list: the app assigns account IDs and display names,
+      which is exactly Apple's definition. Under-declaring is the real rejection risk.
+- [x] Device ID
+- [x] Tracking: **No** everywhere → "Data is not used to track you". No analytics, ads or
+      attribution SDK exists in the app.
+
+**UI gotcha for anyone repeating this:** ASC's radios and "Set Up X" controls are styled `div`/`P`
+elements with no `role`, so accessibility-tree clicks time out. Clicking the `<label>` (or dispatching
+a full pointerdown→mousedown→mouseup→click sequence on the wrapper `div`) works. Each data type is a
+5-screen wizard: purpose → linked? → two tracking explainers → tracking?
 
 ---
 
@@ -306,12 +321,16 @@ That is a product/compliance decision, not a config tweak, so it was deliberatel
 `store.config.json` carries the pulled `advisory` block only as a record of ASC's current state.
 Answer the questionnaire honestly in the ASC UI.
 
-- [ ] Age rating: **4+** — only if the questionnaire above genuinely supports it
+- [x] Select build **1.0.0 (9)** — attached and saved 2026-08-04. The picker offered builds 9, 8 and 7,
+      all at version 1.0.0, confirming the `1.0` → `1.0.0` version rename made them attachable.
+- [x] Version release: **Manually release this version** (set via `metadata:push`)
+- [ ] **Age rating** — ⚠️ ASC is showing a live banner: *"Update Your Age Ratings Responses about
+      Social Media — Respond to new questions about social media capabilities in the App Information
+      section of this app by September 7, 2026."* This is the same issue as the `messagingAndChat` /
+      `userGeneratedContent` flags above. **Requires a human decision** and is the last blocker.
 - [ ] Pricing: **Free** (or set your tier)
 - [ ] Availability: choose countries
-- [ ] Select build **1.0.0 (9)**
-- [ ] Version release: **Manually release this version** (so you control the go-live moment)
-- [ ] **Submit for Review**
+- [ ] **Submit for Review** — deliberately NOT automated. One-way door.
 
 ---
 

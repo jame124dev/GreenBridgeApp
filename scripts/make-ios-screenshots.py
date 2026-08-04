@@ -26,7 +26,12 @@ import sys
 
 from PIL import Image
 
-TARGET_W, TARGET_H = 1290, 2796
+# 1284x2778 — what App Store Connect's iPhone slot actually accepts for this app
+# ("6.5" Display": 1242x2688, 2688x1242, 1284x2778 or 2778x1284). A 1290x2796
+# ("6.9"") upload is REJECTED with "The dimensions of one or more screenshots are
+# wrong", so do not "fix" this back to 1290x2796 without re-checking the live UI.
+# ASC states it reuses one set "for all display sizes and localizations".
+TARGET_W, TARGET_H = 1284, 2778
 CROP_TOP = 100      # Android status bar
 CROP_BOTTOM = 44    # gesture pill
 
