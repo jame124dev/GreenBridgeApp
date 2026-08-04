@@ -10,17 +10,19 @@ App Store Connect: https://appstoreconnect.apple.com → **Apps → GreenBidz**
 
 ---
 
-## Step 1 — Confirm build 9 actually works on your iPhone
+## Step 1 — Confirm build 9 actually works on your iPhone ✅
 
-Do this first. If something is broken here, there's no point submitting it.
+**Confirmed working on device 2026-08-04.** Ticked on the user's report from a real iPhone — not
+from a test run here (there is no iOS device or simulator on this machine).
 
-- [ ] Install **build 9** from TestFlight
-- [ ] **Browse** tab → the "Filters" bar sits **above** the bottom tab bar, not hidden behind it
-- [ ] **Chat** → send a message → a bubble appears with a delivered tick
-- [ ] Leave the thread, come back → the message is **still there**
-- [ ] **Account** → scroll to the bottom → note the small grey line (e.g. `GreenBidz 1.0.0 · production · built-in`)
+- [x] Install **build 9** from TestFlight
+- [x] **Browse** tab → the "Filters" bar sits **above** the bottom tab bar, not hidden behind it
+- [x] **Chat** → send a message → a bubble appears with a delivered tick
+- [x] Leave the thread, come back → the message is **still there**
+- [x] **Account** → scroll to the bottom → the version line renders
 
-If any of these fail, stop and say so — that changes the diagnosis.
+So the two bugs from TestFlight build 8 are fixed on iOS, and they are fixed **in the binary** —
+build 9 carries them embedded, with no dependency on an over-the-air update.
 
 ---
 
