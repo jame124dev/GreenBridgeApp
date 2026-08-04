@@ -12,6 +12,12 @@ submit for review.
 - **Registered App ID:** `com.greenbidz.bridge` with Push Notifications enabled (portal description reads "101Lab" — an internal label only, harmless)
 - **Bundle ID:** `com.greenbidz.bridge` — ⚠️ **permanent once the first build is uploaded.** Change it now or never.
 - **Version:** `1.0.0`, build number auto-incremented by EAS (`appVersionSource: "remote"`)
+- **Latest build: `1.0.0 (9)`** (`d9d6899e`, 2026-08-04) — uploaded via `--auto-submit`. Contains
+  the chat send fix (`sender_role` was derived from `profile.role`, so the server dropped every
+  sent message), the `joinChat` ack timeout, the Filters-bar inset fix, and the update-ready
+  banner. All verified in the shipped IPA's embedded Hermes bundle, not just in config.
+  ⚠️ When grepping a Hermes bundle: strings containing any non-ASCII character (e.g. an em dash)
+  are stored as **UTF-16**, so an ASCII `grep` returns 0 hits for a string that is present.
 
 Windows note: there is no local iOS toolchain and no simulator, so **every** iOS build goes
 through EAS Build in the cloud and TestFlight on a real iPhone is the only way to test it.
@@ -66,10 +72,16 @@ Verification performed, since the unit tests mock every model and prove logic on
   `unpaidWinningBids` count — no buyer in either DB currently has a pending/failed winner
   payment, so only the mocked unit test covers that branch.
 
-🔺 **Still gates submission — the privacy policy must disclose the retention.**
-`https://101lab.co/privacy-policy` needs a line stating that order and payment records are
-retained after account deletion for accounting and dispute purposes. Apple checks for that
-disclosure when an app keeps data post-deletion. Web content change, outside both repos.
+✅ **RESOLVED — the retention disclosure is live** (verified on `101lab.co` 2026-08-04). §8 "Data
+retention" of the live privacy policy reads:
+
+> We retain your information for as long as your account is active and as needed to provide our
+> services, and afterwards only as long as necessary to comply with legal, tax, accounting and
+> dispute-resolution obligations, after which it is deleted or anonymized.
+
+That is exactly what the deletion implementation does (anonymise, retain orders/payments for
+accounting and disputes), so Apple's post-deletion-retention disclosure requirement is satisfied.
+No web deploy is outstanding for this.
 
 ### 1.2 App Review needs a pre-approved demo account
 
@@ -309,6 +321,34 @@ and 101IT joining it.
 **Localizations** worth adding, since the app ships all six: English, Chinese (Simplified),
 Chinese (Traditional), Japanese, Thai, Vietnamese.
 
+### Pushing the listing copy — `store.config.json`
+
+The copy above is committed as **`store.config.json`** at the repo root, field-length-validated
+against Apple's limits (title 9/30, subtitle 26/30, promo 166/170, description 1352/4000,
+keywords 96/100). Push it with:
+
+```powershell
+npx eas-cli@latest metadata:push
+```
+
+⚠️ **This command needs YOUR Apple ID at the keyboard.** The App Store Connect **API key** stored
+on EAS (`2GW82U6AZW`, "[Expo] EAS Submit") is enough to *upload builds* — it submitted build 9 —
+but the metadata API rejects it:
+
+```
+Auth error: Apple 401 detected … Authentication credentials are missing or invalid.
+Log in to your Apple Developer account to continue
+```
+
+So `metadata:pull` / `metadata:push` fall back to Apple-ID cookie auth and prompt for 2FA. Either
+run it yourself, or paste the §4 copy into the App Store Connect web UI — both produce the same
+result.
+
+**Demo-account credentials are deliberately NOT in `store.config.json`.** The file is committed to
+git; the review credentials belong in **App Store Connect → App Review Information**, typed into
+the web UI, so they never enter the repository. Same for the App Privacy questionnaire (§6) and
+age rating — `eas metadata` does not manage screenshots or the privacy questionnaire at all.
+
 ### Screenshots — required
 
 iPhone **6.9"**, portrait, `1290 × 2796` or `1320 × 2868`. Minimum 3, maximum 10. Since the app
@@ -410,10 +450,22 @@ app. There are no digital goods, so no in-app purchases are used.
 
 ## 7. Order of operations
 
-1. Decide §1.1 (account deletion) and §1.3 (system key).
-2. Create + approve the demo account, verify it logs in.
-3. Commit config, run §3 build, upload to TestFlight.
-4. Work the §5 test pass on a real iPhone.
-5. Create the ASC record and metadata (§4); capture screenshots from TestFlight.
-6. Fill the privacy questionnaire and review notes (§6).
-7. Submit for review.
+Status as of **2026-08-04**. Done: account deletion (§1.1) including the live privacy-policy
+disclosure, the ASC app record, build `1.0.0 (9)` uploaded, and the listing copy in
+`store.config.json`.
+
+Remaining, in order — every one of these needs a human with an Apple login or a phone:
+
+1. **Decide §1.3** — `X_SYSTEM_KEY` becomes public the moment the app ships. Also note the chat
+   socket has **no authentication** (identity is whatever `user_id` a client claims via
+   `joinRooms`; the web client is the same). Neither blocks the build; both should be a decision
+   rather than an accident before the app is public.
+2. **Create + approve a demo account on prod**, and confirm in TestFlight that it reaches Home
+   rather than `app/(auth)/pending.tsx`. Hard blocker: a reviewer who lands on the pending wall
+   rejects the build (Guideline 2.1).
+3. **Capture 3–10 screenshots** at 6.9" `1290 × 2796` from a real iPhone on TestFlight — Windows
+   has no simulator, so there is no other source. No placeholder content.
+4. **Listing copy** — `metadata:push` (needs your Apple ID + 2FA) or paste §4 into the ASC UI.
+5. **App Privacy questionnaire + age rating (4+) + App Review Information** — ASC web UI only;
+   answers are all in §6. Put the demo credentials here, not in `store.config.json`.
+6. **Submit for review.**
