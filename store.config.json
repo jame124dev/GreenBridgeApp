@@ -1,16 +1,13 @@
 {
   "configVersion": 0,
   "apple": {
+    "version": "1.0.0",
     "copyright": "2026 Quippy AI Limited",
-    "categories": ["BUSINESS", "SHOPPING"],
     "release": {
       "automaticRelease": false
     },
     "info": {
       "en-US": {
-        "title": "GreenBidz",
-        "subtitle": "Used lab & industrial gear",
-        "promoText": "Photograph any machine and our AI writes the listing for you. Browse verified used laboratory and industrial equipment, post what you're looking for, and deal direct.",
         "description": "GreenBidz is a B2B marketplace for used laboratory and industrial equipment.\n\nPHOTOGRAPH IT — THE AI WRITES THE LISTING\nPoint your camera at a machine. GreenBidz identifies it and drafts the listing for you: title, category, specifications and description. Review, adjust anything you like, and publish. Save a draft and pick it up later on any device.\n\nBROWSE VERIFIED EQUIPMENT\nSearch thousands of used lab and industrial machines. Filter by category and condition, view full specifications and photo galleries, and see live auction lots alongside direct-sale listings.\n\nTELL US WHAT YOU NEED\nCan't find it? Post what you're looking for and GreenBidz matches it against incoming equipment, scoring how closely each one fits. You get notified when something relevant arrives.\n\nTALK DIRECTLY TO SELLERS\nMessage sellers in-app about condition, specifications, logistics and price. Everything stays in one thread.\n\nASK IN YOUR OWN WORDS\nThe built-in assistant answers questions about equipment, finds listings and helps you post a request — in plain language, in any of six languages.\n\nAvailable in English, Chinese (Simplified and Traditional), Japanese, Thai and Vietnamese.\n\nGreenBidz supports the circular economy through responsible industrial trade. The app connects you to the 101lab marketplace, with 101machines, 101recycle and 101IT joining it.",
         "keywords": [
           "used equipment",
@@ -25,9 +22,45 @@
           "secondhand"
         ],
         "marketingUrl": "https://101lab.co",
+        "promoText": "Photograph any machine and our AI writes the listing for you. Browse verified used laboratory and industrial equipment, post what you're looking for, and deal direct.",
         "supportUrl": "https://101lab.co/faq",
+        "title": "GreenBidz",
+        "subtitle": "Used lab & industrial gear",
         "privacyPolicyUrl": "https://101lab.co/privacy-policy"
       }
+    },
+    "categories": [
+      "BUSINESS",
+      "SHOPPING"
+    ],
+    "advisory": {
+      "ageRatingOverride": "NONE",
+      "alcoholTobaccoOrDrugUseOrReferences": "NONE",
+      "contests": "NONE",
+      "gambling": false,
+      "gamblingSimulated": "NONE",
+      "horrorOrFearThemes": "NONE",
+      "kidsAgeBand": null,
+      "koreaAgeRatingOverride": "NONE",
+      "lootBox": false,
+      "matureOrSuggestiveThemes": "NONE",
+      "medicalOrTreatmentInformation": "NONE",
+      "profanityOrCrudeHumor": "NONE",
+      "sexualContentGraphicAndNudity": "NONE",
+      "sexualContentOrNudity": "NONE",
+      "unrestrictedWebAccess": false,
+      "violenceCartoonOrFantasy": "NONE",
+      "violenceRealistic": "NONE",
+      "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+      "advertising": false,
+      "ageAssurance": false,
+      "ageRatingOverrideV2": "NONE",
+      "developerAgeRatingInfoUrl": null,
+      "gunsOrOtherWeapons": "NONE",
+      "healthOrWellnessTopics": false,
+      "messagingAndChat": false,
+      "parentalControls": false,
+      "userGeneratedContent": false
     }
   }
 }

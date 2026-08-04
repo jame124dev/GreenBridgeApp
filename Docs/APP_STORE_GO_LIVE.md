@@ -165,25 +165,49 @@ you want a perfect match; these are good enough to submit and far better than be
 
 ---
 
-## Step 4 — Listing text
+## Step 4 — Listing text ✅
 
-Already written and length-checked, in [`store.config.json`](../store.config.json).
+**Pushed and verified in App Store Connect 2026-08-04** via `eas metadata:push`, then read back with
+`metadata:pull` rather than trusting the success message:
 
-Pick **one**:
+- [x] Version **1.0.0**, `automaticRelease: false`
+- [x] Title `GreenBidz` · Subtitle `Used lab & industrial gear`
+- [x] Description (1352 chars) + promotional text (166 chars)
+- [x] Keywords (96 chars) `used equipment,laboratory,industrial,machinery,B2B,marketplace,surplus,auction,resale,secondhand`
+- [x] Support URL `https://101lab.co/faq`
+- [x] Marketing URL `https://101lab.co`
+- [x] Privacy Policy URL `https://101lab.co/privacy-policy`
+- [x] Category **Business** (primary), **Shopping** (secondary)
+- [x] Copyright `2026 Quippy AI Limited`
 
-- [ ] **Option A** — run `npx eas-cli@latest metadata:push` from `GreenBridgeApp`
-      (it will ask for your Apple ID and a 2FA code — it cannot run without you)
-- [ ] **Option B** — paste it manually in ASC from §4 of `APP_STORE_SUBMISSION.md`
+### Two things that went wrong, and why they matter
 
-Either way, confirm these are set in ASC:
+**1. The first push half-failed.** It reported `✔ Updated localized info for en-US` yet
+`✖ Failed updating version and release info for 1.0` →
+*"You must provide a value for the attribute 'versionString'"*.
 
-- [ ] Subtitle: `Used lab & industrial gear`
-- [ ] Description, promotional text, keywords
-- [ ] Support URL `https://101lab.co/faq`
-- [ ] Marketing URL `https://101lab.co`
-- [ ] Privacy Policy URL `https://101lab.co/privacy-policy`
-- [ ] Category: **Business** (primary), **Shopping** (secondary)
-- [ ] Copyright: `2026 Quippy AI Limited`
+The trap: App Store Connect splits localizations in two. **App-level** info (title, subtitle,
+privacy policy URL) succeeded, but **version-level** info — description, keywords, promo text,
+support and marketing URLs — rides along with the version update, which had failed. So the success
+line was real and the listing was still half-empty. Cause: `store.config.json` had no
+`apple.version`. Fixed by adding `"version": "1.0.0"`.
+
+**Always `metadata:pull` after a push and diff it.** A partial push looks like a successful one.
+
+**2. ASC's version string was `1.0` while every build is `1.0.0`.** App Store Connect matches builds
+to a version by version string, so build 9 could not have been attached to a version named `1.0`.
+The push renamed it to `1.0.0`. Confirm build `1.0.0 (9)` is now selectable under **Build**.
+
+**3. `automaticRelease` was `true`** in ASC — the app would have gone live the moment Apple approved.
+Now `false`, so releasing is a deliberate act (Step 8).
+
+### Auth note
+
+`metadata:push`/`pull` do **not** work with the App Store Connect API key stored on EAS
+(`2GW82U6AZW`) — Apple returns 401, because that key is scoped for build submission only. They fall
+back to Apple-ID cookie auth. Once you have logged in interactively **once**, the session is cached
+at `~/.app-store/auth/<apple-id>/cookie` and subsequent runs work headlessly with
+`EXPO_APPLE_ID=<apple-id>` set. That is how the corrected push was run without a second 2FA prompt.
 
 ---
 
@@ -251,7 +275,24 @@ ASC → **App Privacy**. There is no analytics, ads or tracking SDK in the app, 
 
 ## Step 7 — Final settings and submit
 
-- [ ] Age rating: **4+**
+⚠️ **Check the age-rating answers before accepting 4+.** `metadata:pull` shows App Store Connect
+currently holds:
+
+```
+messagingAndChat:     false
+userGeneratedContent: false
+```
+
+Both look **wrong for this app**: it has in-app buyer↔seller messaging (the Chat tab) and its entire
+catalogue is user-generated (listings, descriptions, photos, wants, messages). Apple's current
+age-rating questionnaire asks about exactly these, and answering them accurately may raise the rating
+above 4+ and/or trigger the user-generated-content obligations (moderation, reporting, blocking).
+
+That is a product/compliance decision, not a config tweak, so it was deliberately **not** pushed —
+`store.config.json` carries the pulled `advisory` block only as a record of ASC's current state.
+Answer the questionnaire honestly in the ASC UI.
+
+- [ ] Age rating: **4+** — only if the questionnaire above genuinely supports it
 - [ ] Pricing: **Free** (or set your tier)
 - [ ] Availability: choose countries
 - [ ] Select build **1.0.0 (9)**
