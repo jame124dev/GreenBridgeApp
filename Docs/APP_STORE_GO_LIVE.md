@@ -40,6 +40,16 @@ build 9 carries them embedded, with no dependency on an over-the-air update.
 > Use a dedicated account for this, not a real customer's. Apple's reviewers do log in and click
 > around.
 
+**Who can do which half.** Creating the account is a public prod signup
+(`POST /auth/signup` → delegates to `greenbidz.com/wp-json/recycle_greenbidz/v1/register`, i.e. it
+creates a real WordPress user on the live site). **Approving it requires an admin login** — the only
+route is `PUT /admin/users/status` behind `requirePermission("users.approve")`, and there is
+deliberately **no `x-system-key` bypass** for it. So the approval half cannot be automated from here
+without admin credentials. Admin panel → Users → find the account → set status **approved**.
+
+Note the local backend `.env` points at **`greenbidz_test`** (dev), not prod, so there is no local
+shortcut to a prod user either.
+
 **The exact pass/fail condition.** The gate is server-side, not in the app: `POST /auth/login`
 returns **403 with `code: "ACCOUNT_PENDING"`** while the account is unapproved, and the app routes
 that straight to the pending wall. So the test is simply whether prod login returns 200:
