@@ -178,7 +178,9 @@ you want a perfect match; these are good enough to submit and far better than be
 - [x] Title `GreenBidz` · Subtitle `Used lab & industrial gear`
 - [x] Description (1352 chars) + promotional text (166 chars)
 - [x] Keywords (96 chars) `used equipment,laboratory,industrial,machinery,B2B,marketplace,surplus,auction,resale,secondhand`
-- [x] Support URL `https://101lab.co/faq`
+- [x] Support URL `https://greenbidz.com/contact-us/` — verified live; publishes a contact form,
+      `info@greenbidz.com`, `+886-02-7715-9166` and WhatsApp, which satisfies Apple's requirement
+      that the support page offer a way to reach you
 - [x] Marketing URL `https://greenbidz.com` — the GreenBidz Group site (verified 200,
       *"GreenBidz Group – Circular B2B Marketplaces"*), updated 2026-08-04
 - [x] Privacy Policy URL `https://101lab.co/privacy-policy`
