@@ -329,10 +329,25 @@ Answer the questionnaire honestly in the ASC UI.
 - [x] Select build **1.0.0 (9)** — attached and saved 2026-08-04. The picker offered builds 9, 8 and 7,
       all at version 1.0.0, confirming the `1.0` → `1.0.0` version rename made them attachable.
 - [x] Version release: **Manually release this version** (set via `metadata:push`)
-- [ ] **Age rating** — ⚠️ ASC is showing a live banner: *"Update Your Age Ratings Responses about
-      Social Media — Respond to new questions about social media capabilities in the App Information
-      section of this app by September 7, 2026."* This is the same issue as the `messagingAndChat` /
-      `userGeneratedContent` flags above. **Requires a human decision** and is the last blocker.
+- [x] **Age rating — completed 2026-08-04, and the honest answers cost nothing.** The 7-step
+      questionnaire was corrected and saved; result is still **4+ across 172 regions**.
+
+      | Question | Was | Now | Why |
+      |---|---|---|---|
+      | User-Generated Content | NO | **YES** | The catalogue is entirely seller-supplied — listings, descriptions, photos |
+      | Messaging and Chat | NO | **YES** | Buyer↔seller chat is a core feature |
+      | Social Media | unanswered | **NO** | No feed, no resharing or amplification — a marketplace catalogue is not social distribution |
+      | Social Media Disabled for Under 13 | unanswered | **NO** | Only meaningful if Social Media were YES. **YES would falsely claim the app calls Apple's Declared Age Range API** — it does not |
+      | Unrestricted Web Access | NO | NO | The Browse WebView is scoped to the marketplace, not free browsing |
+      | Parental Controls / Age Assurance / Advertising | NO | NO | None exist |
+
+      Steps 2–7 (mature themes, medical, sexuality, violence, chance-based) are all **NONE**.
+      Verified independently with `metadata:pull`: `userGeneratedContent: true`,
+      `messagingAndChat: true`, `ageRatingOverrideV2: "NONE"`.
+
+      Worth noting: declaring UGC and chat truthfully did **not** raise the rating above 4+, so the
+      earlier worry about losing the 4+ audience was unfounded. It does still imply the usual
+      user-generated-content duties (moderation, reporting, blocking) as a product matter.
 - [ ] Pricing: **Free** (or set your tier)
 - [ ] Availability: choose countries
 - [ ] **Submit for Review** — deliberately NOT automated. One-way door.
