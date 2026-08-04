@@ -359,11 +359,29 @@ Answer the questionnaire honestly in the ASC UI.
       camera-first — the AI-scan flow is the core feature — so opting into Mac/Vision Pro invites
       reviewers to test it on hardware where that experience degrades. iOS availability unchanged at
       175 regions.
-- [ ] **Submit for Review** — deliberately NOT automated. One-way door.
+- [x] **Content Rights** — this was the one hidden blocker: *"You must set up Content Rights
+      Information in App Information."* Answered **"Yes, it contains, shows, or accesses third-party
+      content, and I have the necessary rights"** — the catalogue is entirely seller-supplied photos
+      and descriptions, and it is the only answer consistent with declaring
+      `userGeneratedContent: true` in the age rating. The rights half rests on your seller terms.
+- [x] **SUBMITTED FOR REVIEW 2026-08-04** — state is **`1.0.0 Waiting for Review`**, verified after a
+      page reload. Apple quotes up to 48 hours. Release remains **manual**, so nothing becomes public
+      without an explicit Release click.
 
 ---
 
 ## Step 8 — After submitting
+
+⚠️ **Fix before you press Release** — found while smoke-testing the prod API on submission day:
+
+1. **Unauthenticated PII leak.** `GET /api/v1/chat/buyer/:id/sellers` returns 200 with **no token and
+   no system key**, exposing `display_name` + `user_email` for every conversation partner of any user
+   id (574 → 160 rows, 877 → 69 rows). A classic IDOR. Needs `protect` **plus** an ownership check
+   that the JWT subject matches `:id` — the middleware alone still lets any signed-in user read
+   everyone else's inbox. `/chat/conversation/:id/messages` sits in the same unprotected route family.
+2. **`GET /api/v1/batch/:id/products` 500s on some ids** (2478, 2477, 1 fail; 2731, 5407 succeed).
+   In-app this breaks product detail and "Contact seller" (`fetchBatchSeller`) — and **2478 is the
+   listing attached to the demo account's chat thread**, so App Review can reach it.
 
 - [ ] Apple review — usually 24–48 hours
 - [ ] If **rejected**: read the exact guideline number they cite, then fix and resubmit
