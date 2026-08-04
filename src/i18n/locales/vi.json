@@ -3501,6 +3501,22 @@
     }
   },
   "mobile": {
+    "scan": {
+      "locationPrimerAccept": "Dùng vị trí",
+      "locationPrimerBody": "GreenBidz có thể dùng vị trí hiện tại để tự động điền địa chỉ nhận hàng ở bước sau. Bạn vẫn có thể sửa trước khi gửi.",
+      "locationPrimerDecline": "Để sau",
+      "locationPrimerTitle": "Tự động điền địa chỉ nhận hàng?"},
+    "reviewWizard": {
+      "addMoreNotWiredYet": "Việc thêm ảnh khi đang chỉnh sửa sẽ có trong bản cập nhật tới.",
+      "notWiredYetTitle": "Sắp có",
+      "rearrangeNotWiredYet": "Sắp xếp lại ảnh sẽ có trong bản cập nhật tới.",
+      "submitFailedTitle": "Gửi không thành công"},
+    "groupedEdit": {
+      "heading": "Sản phẩm {{index}}",
+      "missingBody": "Vui lòng thêm: {{fields}}",
+      "missingTitle": "Còn thiếu một số trường",
+      "saveReturn": "Lưu và trở lại",
+      "sectionPhotos": "Ảnh"},
     "splash": {
       "from": "TỪ",
       "tagline": "THE CIRCULAR ECONOMY LEADER"},
@@ -3535,6 +3551,10 @@
       "success": "Tài khoản của bạn đã được xóa"
     },
     "home": {
+      "locationA11y": "Vị trí của bạn, nhấn để cập nhật",
+      "locationDeniedBody": "Hãy bật quyền truy cập vị trí trong Cài đặt để chúng tôi hiển thị khu vực của bạn.",
+      "locationSet": "Đặt vị trí",
+      "locationTapHint": "Nhấn để phát hiện khu vực của bạn",
       "greeting": "Chào, {{name}}.",
       "scanTitle": "Quét & Tải lên",
       "scanSubtitle": "Chụp thiết bị · AI tự điền thông tin · xem lại và gửi",
@@ -3640,6 +3660,7 @@
       "removePhoto": "Xóa ảnh này"
     },
     "processing": {
+      "productFailed": "Không đọc được sản phẩm này",
       "backgroundHint": "Cứ tiếp tục dùng ứng dụng — chúng tôi sẽ thông báo khi xong.",
       "tryAgain": "Thử lại",
       "aiWorking": "AI ĐANG XỬ LÝ",
@@ -4006,6 +4027,15 @@
         }
     },
     "profile": {
+      "aboutAction": "Giới thiệu",
+      "aboutComingSoon": "Giới thiệu GreenBidz — sắp có",
+      "helpAction": "Trợ giúp",
+      "helpComingSoon": "Trợ giúp và hỗ trợ sắp có",
+      "listingsAction": "Tin đăng",
+      "sectionAccount": "Tài khoản",
+      "sectionPreferences": "Tùy chọn",
+      "sectionSecurity": "Bảo mật",
+      "signOutAction": "Đăng xuất",
       "heading": "Hồ sơ",
       "role": "Vai trò: {{role}}",
       "signOut": "Đăng xuất",
@@ -4013,6 +4043,26 @@
       "sectionActivity": "Hoạt động"
     },
     "settings": {
+      "comingSoon": "Sắp có",
+      "notificationsDesc": "Chọn những thông báo bạn muốn nhận về tin đăng của mình.",
+      "notificationsTitle": "Thông báo",
+      "notificationsUpdated": "Đã cập nhật thông báo",
+      "notifyBid": "Đã nhận lượt đặt giá",
+      "notifyBidHint": "Có người đặt giá cho tin đăng của bạn",
+      "notifyOffer": "Đã nhận đề nghị",
+      "notifyOfferHint": "Người mua gửi cho bạn một đề nghị trực tiếp",
+      "notifyPayment": "Trạng thái thanh toán",
+      "notifyPaymentHint": "Chi trả, hoàn tiền và thanh toán thất bại",
+      "removeInterest": "Xóa {{name}}",
+      "verificationDesc": "Hoàn tất từng bước để nhận huy hiệu Người bán đã xác minh.",
+      "verificationTitle": "Tin cậy và xác minh",
+      "verified": "Đã xác minh",
+      "verifyEmail": "Địa chỉ email",
+      "verifyEmailMissing": "Chưa có email trong hồ sơ",
+      "verifyIdentity": "Danh tính",
+      "verifyIdentityHint": "Tải lên giấy tờ tùy thân do nhà nước cấp để nhận huy hiệu người bán đáng tin cậy",
+      "verifyPhone": "Số điện thoại",
+      "verifyPhoneMissing": "Thêm số điện thoại để bật xác minh",
       "title": "Cài đặt",
       "subtitle": "Quản lý tài khoản và tùy chọn của bạn",
       "profileInformation": "Thông tin hồ sơ",
@@ -4094,6 +4144,7 @@
       "untitled": "Sản phẩm {{index}}"
     },
     "labHome": {
+      "retry": "Thử lại",
       "viewAllDrafts": "Xem tất cả {{count}} bản nháp",
       "savedJustNow": "vừa lưu",
       "savedMinutes": "đã lưu {{count}} phút trước",
@@ -4885,6 +4936,7 @@
       }
     },
     "processingV2": {
+      "est": "Khoảng {{price}}",
       "aiAnalyzing": "AI ĐANG PHÂN TÍCH",
       "subtitle": "Kết quả hiện ra ngay khi chúng tôi tìm thấy",
       "stepOf": "BƯỚC {{current}} / {{total}}",

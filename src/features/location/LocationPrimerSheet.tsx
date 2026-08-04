@@ -59,7 +59,7 @@ export function LocationPrimerSheet({
         >
           {t('mobile.scan.locationPrimerBody', {
             defaultValue:
-              'GreenBridge can use your current location to auto-fill the pickup address on the next screen. You can edit it before submitting.',
+              'GreenBidz can use your current location to auto-fill the pickup address on the next screen. You can edit it before submitting.',
           })}
         </Text>
       </View>

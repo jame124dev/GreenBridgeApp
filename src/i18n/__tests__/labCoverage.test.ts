@@ -33,6 +33,10 @@ const NAMESPACES = [
   'drafts',
   'notFound',
   'splash',
+  // Shared with the seller fork but rendered on the customer Account screen
+  // (VerificationCard, NotificationPreferencesCard, InterestChips, QuickActionsStrip).
+  'settings',
+  'profile',
 ] as const;
 
 /**
@@ -53,6 +57,8 @@ const INTENTIONALLY_SAME = new Set([
   'labEdit.model', // "Model" is the loanword in vi
   'labEdit.pricePlaceholder', // "0.00"
   'processing.poweredBy', // brand mark
+  'settings.email', // "Email" is the loanword in vi
+  'settings.phonePlaceholder', // "+1 234 567 8900"
   'splash.tagline', // brand tagline, kept as part of the lockup
 ]);
 

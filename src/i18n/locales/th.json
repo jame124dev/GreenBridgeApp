@@ -3404,6 +3404,22 @@
     }
   },
   "mobile": {
+    "scan": {
+      "locationPrimerAccept": "ใช้ตำแหน่ง",
+      "locationPrimerBody": "GreenBidz สามารถใช้ตำแหน่งปัจจุบันของคุณเพื่อกรอกที่อยู่รับสินค้าในหน้าถัดไปโดยอัตโนมัติ คุณแก้ไขได้ก่อนส่ง",
+      "locationPrimerDecline": "ยังไม่ใช่ตอนนี้",
+      "locationPrimerTitle": "กรอกที่อยู่รับสินค้าอัตโนมัติไหม"},
+    "reviewWizard": {
+      "addMoreNotWiredYet": "การเพิ่มรูปภาพระหว่างแก้ไขจะมาในการอัปเดตถัดไป",
+      "notWiredYetTitle": "เร็ว ๆ นี้",
+      "rearrangeNotWiredYet": "การจัดเรียงรูปภาพใหม่จะมาในการอัปเดตถัดไป",
+      "submitFailedTitle": "ส่งไม่สำเร็จ"},
+    "groupedEdit": {
+      "heading": "สินค้า {{index}}",
+      "missingBody": "โปรดเพิ่ม: {{fields}}",
+      "missingTitle": "ยังมีบางช่องที่ไม่ได้กรอก",
+      "saveReturn": "บันทึกและกลับ",
+      "sectionPhotos": "รูปภาพ"},
     "splash": {
       "from": "จาก",
       "tagline": "THE CIRCULAR ECONOMY LEADER"},
@@ -3438,6 +3454,10 @@
       "success": "บัญชีของคุณถูกลบแล้ว"
     },
     "home": {
+      "locationA11y": "ตำแหน่งของคุณ แตะเพื่ออัปเดต",
+      "locationDeniedBody": "เปิดการเข้าถึงตำแหน่งในการตั้งค่า เพื่อให้เราแสดงพื้นที่ของคุณได้",
+      "locationSet": "ตั้งตำแหน่ง",
+      "locationTapHint": "แตะเพื่อตรวจหาพื้นที่ของคุณ",
       "greeting": "สวัสดี, {{name}}.",
       "scanTitle": "สแกนและอัปโหลด",
       "scanSubtitle": "ถ่ายภาพอุปกรณ์ · AI กรอกรายละเอียด · ตรวจสอบและส่ง",
@@ -3543,6 +3563,7 @@
       "removePhoto": "ลบรูปนี้"
     },
     "processing": {
+      "productFailed": "อ่านรายการนี้ไม่สำเร็จ",
       "backgroundHint": "ใช้แอปต่อได้เลย — เราจะแจ้งเมื่อเสร็จ",
       "tryAgain": "ลองอีกครั้ง",
       "aiWorking": "AI กำลังทำงาน",
@@ -3905,6 +3926,15 @@
         }
     },
     "profile": {
+      "aboutAction": "เกี่ยวกับ",
+      "aboutComingSoon": "เกี่ยวกับ GreenBidz — เร็ว ๆ นี้",
+      "helpAction": "ช่วยเหลือ",
+      "helpComingSoon": "ความช่วยเหลือและการสนับสนุนเร็ว ๆ นี้",
+      "listingsAction": "ประกาศ",
+      "sectionAccount": "บัญชี",
+      "sectionPreferences": "การตั้งค่า",
+      "sectionSecurity": "ความปลอดภัย",
+      "signOutAction": "ออกจากระบบ",
       "heading": "โปรไฟล์",
       "role": "บทบาท: {{role}}",
       "signOut": "ออกจากระบบ",
@@ -3912,6 +3942,26 @@
       "sectionActivity": "กิจกรรม"
     },
     "settings": {
+      "comingSoon": "เร็ว ๆ นี้",
+      "notificationsDesc": "เลือกการแจ้งเตือนที่คุณต้องการรับเกี่ยวกับประกาศของคุณ",
+      "notificationsTitle": "การแจ้งเตือน",
+      "notificationsUpdated": "อัปเดตการแจ้งเตือนแล้ว",
+      "notifyBid": "ได้รับการเสนอราคา",
+      "notifyBidHint": "มีคนเสนอราคาประกาศของคุณ",
+      "notifyOffer": "ได้รับข้อเสนอ",
+      "notifyOfferHint": "ผู้ซื้อส่งข้อเสนอตรงถึงคุณ",
+      "notifyPayment": "สถานะการชำระเงิน",
+      "notifyPaymentHint": "การจ่ายเงิน การคืนเงิน และการชำระเงินที่ล้มเหลว",
+      "removeInterest": "ลบ {{name}}",
+      "verificationDesc": "ทำแต่ละขั้นตอนให้ครบเพื่อรับตรา ผู้ขายที่ยืนยันแล้ว",
+      "verificationTitle": "ความน่าเชื่อถือและการยืนยัน",
+      "verified": "ยืนยันแล้ว",
+      "verifyEmail": "ที่อยู่อีเมล",
+      "verifyEmailMissing": "ยังไม่มีอีเมลในระบบ",
+      "verifyIdentity": "ตัวตน",
+      "verifyIdentityHint": "อัปโหลดบัตรประจำตัวที่ออกโดยรัฐเพื่อรับตราผู้ขายที่เชื่อถือได้",
+      "verifyPhone": "หมายเลขโทรศัพท์",
+      "verifyPhoneMissing": "เพิ่มหมายเลขโทรศัพท์เพื่อเปิดใช้การยืนยัน",
       "title": "ตั้งค่า",
       "subtitle": "จัดการบัญชีและการตั้งค่าของคุณ",
       "profileInformation": "ข้อมูลโปรไฟล์",
@@ -3993,6 +4043,7 @@
       "untitled": "สินค้า {{index}}"
     },
     "labHome": {
+      "retry": "ลองอีกครั้ง",
       "viewAllDrafts": "ดูฉบับร่างทั้งหมด {{count}} รายการ",
       "savedJustNow": "บันทึกเมื่อสักครู่",
       "savedMinutes": "บันทึก {{count}} นาทีที่แล้ว",
@@ -4784,6 +4835,7 @@
       }
     },
     "processingV2": {
+      "est": "ประมาณ {{price}}",
       "aiAnalyzing": "AI กำลังวิเคราะห์",
       "subtitle": "ผลลัพธ์จะแสดงแบบเรียลไทม์เมื่อเราพบ",
       "stepOf": "ขั้นตอน {{current}} / {{total}}",

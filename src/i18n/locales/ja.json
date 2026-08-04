@@ -3420,6 +3420,22 @@
     }
   },
   "mobile": {
+    "scan": {
+      "locationPrimerAccept": "位置情報を使用",
+      "locationPrimerBody": "GreenBidz は現在地を利用して、次の画面で引き取り住所を自動入力できます。送信前に編集できます。",
+      "locationPrimerDecline": "今はしない",
+      "locationPrimerTitle": "引き取り住所を自動入力しますか？"},
+    "reviewWizard": {
+      "addMoreNotWiredYet": "編集中の写真追加は次回のアップデートで対応します。",
+      "notWiredYetTitle": "近日公開",
+      "rearrangeNotWiredYet": "写真の並べ替えは次回のアップデートで対応します。",
+      "submitFailedTitle": "送信できませんでした"},
+    "groupedEdit": {
+      "heading": "商品 {{index}}",
+      "missingBody": "次を入力してください：{{fields}}",
+      "missingTitle": "未入力の項目があります",
+      "saveReturn": "保存して戻る",
+      "sectionPhotos": "写真"},
     "splash": {
       "from": "提供",
       "tagline": "THE CIRCULAR ECONOMY LEADER"},
@@ -3454,6 +3470,10 @@
       "success": "アカウントを削除しました"
     },
     "home": {
+      "locationA11y": "現在地。タップして更新",
+      "locationDeniedBody": "設定で位置情報のアクセスを許可すると、お住まいの地域を表示できます。",
+      "locationSet": "位置を設定",
+      "locationTapHint": "タップして地域を検出",
       "greeting": "こんにちは、{{name}}。",
       "scanTitle": "スキャン & アップロード",
       "scanSubtitle": "機器を撮影 · AI が詳細を入力 · 確認して送信",
@@ -3559,6 +3579,7 @@
       "removePhoto": "この写真を削除"
     },
     "processing": {
+      "productFailed": "このアイテムを読み取れませんでした",
       "backgroundHint": "アプリはそのままお使いください。完了したらお知らせします。",
       "tryAgain": "再試行",
       "aiWorking": "AI 処理中",
@@ -3921,6 +3942,15 @@
         }
     },
     "profile": {
+      "aboutAction": "アプリについて",
+      "aboutComingSoon": "GreenBidz について — 近日公開",
+      "helpAction": "ヘルプ",
+      "helpComingSoon": "ヘルプとサポートは近日公開",
+      "listingsAction": "出品",
+      "sectionAccount": "アカウント",
+      "sectionPreferences": "設定",
+      "sectionSecurity": "セキュリティ",
+      "signOutAction": "サインアウト",
       "heading": "プロフィール",
       "role": "役割：{{role}}",
       "signOut": "サインアウト",
@@ -3928,6 +3958,26 @@
       "sectionActivity": "アクティビティ"
     },
     "settings": {
+      "comingSoon": "近日公開",
+      "notificationsDesc": "出品に関する通知の種類を選択してください。",
+      "notificationsTitle": "通知",
+      "notificationsUpdated": "通知設定を更新しました",
+      "notifyBid": "入札を受信",
+      "notifyBidHint": "あなたの出品に入札があったとき",
+      "notifyOffer": "オファーを受信",
+      "notifyOfferHint": "購入希望者から直接オファーが届いたとき",
+      "notifyPayment": "支払い状況",
+      "notifyPaymentHint": "入金・返金・支払い失敗",
+      "removeInterest": "{{name}} を削除",
+      "verificationDesc": "各ステップを完了すると「認証済み出品者」バッジを獲得できます。",
+      "verificationTitle": "信頼と認証",
+      "verified": "認証済み",
+      "verifyEmail": "メールアドレス",
+      "verifyEmailMissing": "メールアドレスが未登録です",
+      "verifyIdentity": "本人確認",
+      "verifyIdentityHint": "公的身分証をアップロードすると信頼できる出品者バッジを取得できます",
+      "verifyPhone": "電話番号",
+      "verifyPhoneMissing": "電話番号を追加すると認証を利用できます",
       "title": "設定",
       "subtitle": "アカウントと環境設定を管理",
       "profileInformation": "プロフィール情報",
@@ -4009,6 +4059,7 @@
       "untitled": "商品 {{index}}"
     },
     "labHome": {
+      "retry": "再試行",
       "viewAllDrafts": "下書き {{count}} 件をすべて表示",
       "savedJustNow": "たった今保存",
       "savedMinutes": "{{count}} 分前に保存",
@@ -4800,6 +4851,7 @@
       }
     },
     "processingV2": {
+      "est": "概算 {{price}}",
       "aiAnalyzing": "AI 解析中",
       "subtitle": "検出結果はリアルタイムに表示されます",
       "stepOf": "ステップ {{current}} / {{total}}",

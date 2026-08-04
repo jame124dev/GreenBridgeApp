@@ -3501,6 +3501,22 @@
     }
   },
   "mobile": {
+    "scan": {
+      "locationPrimerAccept": "Use location",
+      "locationPrimerBody": "GreenBidz can use your current location to auto-fill the pickup address on the next screen. You can edit it before submitting.",
+      "locationPrimerDecline": "Not now",
+      "locationPrimerTitle": "Auto-fill pickup address?"},
+    "reviewWizard": {
+      "addMoreNotWiredYet": "Adding photos mid-edit lands with the next polish pass.",
+      "notWiredYetTitle": "Coming soon",
+      "rearrangeNotWiredYet": "Photo rearrange lands with the next polish pass.",
+      "submitFailedTitle": "Submission failed"},
+    "groupedEdit": {
+      "heading": "Product {{index}}",
+      "missingBody": "Please add: {{fields}}",
+      "missingTitle": "Some fields are missing",
+      "saveReturn": "Save & Return",
+      "sectionPhotos": "Photos"},
     "deleteAccount": {
       "link": "Delete account",
       "title": "Delete your account",
@@ -3540,6 +3556,10 @@
       "goHome": "Go home"
     },
     "home": {
+      "locationA11y": "Your location, tap to update",
+      "locationDeniedBody": "Enable location access in Settings so we can show your area.",
+      "locationSet": "Set location",
+      "locationTapHint": "Tap to detect your area",
       "greeting": "Hi, {{name}}.",
       "scanTitle": "Scan & Upload",
       "scanSubtitle": "Photograph equipment · AI fills the details · review and submit",
@@ -3645,6 +3665,7 @@
       "removePhoto": "Remove this photo"
     },
     "processing": {
+      "productFailed": "Couldn't read this item",
       "aiWorking": "AI WORKING",
       "heading": "Analyzing your items…",
       "subtitle": "5–10 seconds",
@@ -4011,6 +4032,15 @@
       "contactOpenFailed": "Open the link from your browser instead."
     },
     "profile": {
+      "aboutAction": "About",
+      "aboutComingSoon": "About GreenBidz — coming soon",
+      "helpAction": "Help",
+      "helpComingSoon": "Help & support coming soon",
+      "listingsAction": "Listings",
+      "sectionAccount": "Account",
+      "sectionPreferences": "Preferences",
+      "sectionSecurity": "Security",
+      "signOutAction": "Sign out",
       "heading": "Profile",
       "role": "Role: {{role}}",
       "signOut": "Sign out",
@@ -4018,6 +4048,26 @@
       "sectionActivity": "Activity"
     },
     "settings": {
+      "comingSoon": "Coming soon",
+      "notificationsDesc": "Choose which alerts you receive about your listings.",
+      "notificationsTitle": "Notifications",
+      "notificationsUpdated": "Notifications updated",
+      "notifyBid": "Bid received",
+      "notifyBidHint": "Someone places a bid on your listing",
+      "notifyOffer": "Offer received",
+      "notifyOfferHint": "A buyer sends you a direct offer",
+      "notifyPayment": "Payment status",
+      "notifyPaymentHint": "Payouts, refunds, and payment failures",
+      "removeInterest": "Remove {{name}}",
+      "verificationDesc": "Complete each step to earn the Verified Seller badge.",
+      "verificationTitle": "Trust & Verification",
+      "verified": "Verified",
+      "verifyEmail": "Email address",
+      "verifyEmailMissing": "No email on file",
+      "verifyIdentity": "Identity",
+      "verifyIdentityHint": "Upload a government ID for the trusted-seller badge",
+      "verifyPhone": "Phone number",
+      "verifyPhoneMissing": "Add a phone to enable verification",
       "title": "Settings",
       "subtitle": "Manage your account and preferences",
       "profileInformation": "Profile Information",
@@ -4099,6 +4149,7 @@
       "untitled": "Product {{index}}"
     },
     "labHome": {
+      "retry": "Retry",
       "greetingLead": {
         "sell": "What are you",
         "buy": "What are you"
@@ -4895,6 +4946,7 @@
       }
     },
     "processingV2": {
+      "est": "Est. {{price}}",
       "aiAnalyzing": "AI ANALYZING",
       "subtitle": "Live results appear as we find them",
       "stepOf": "STEP {{current}} OF {{total}}",

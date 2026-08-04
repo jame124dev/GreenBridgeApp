@@ -3485,6 +3485,22 @@
     }
   },
   "mobile": {
+    "scan": {
+      "locationPrimerAccept": "使用定位",
+      "locationPrimerBody": "GreenBidz 可以使用您的当前位置，在下一步自动填写提货地址。提交前您仍可修改。",
+      "locationPrimerDecline": "暂不",
+      "locationPrimerTitle": "自动填写提货地址？"},
+    "reviewWizard": {
+      "addMoreNotWiredYet": "编辑过程中添加照片的功能将在下次更新中推出。",
+      "notWiredYetTitle": "即将推出",
+      "rearrangeNotWiredYet": "照片重新排序功能将在下次更新中推出。",
+      "submitFailedTitle": "提交失败"},
+    "groupedEdit": {
+      "heading": "产品 {{index}}",
+      "missingBody": "请补充：{{fields}}",
+      "missingTitle": "部分字段尚未填写",
+      "saveReturn": "保存并返回",
+      "sectionPhotos": "照片"},
     "splash": {
       "from": "来自",
       "tagline": "THE CIRCULAR ECONOMY LEADER"},
@@ -3519,6 +3535,10 @@
       "success": "您的帐户已删除"
     },
     "home": {
+      "locationA11y": "您的位置，点按以更新",
+      "locationDeniedBody": "请在“设置”中开启定位权限，以便我们显示您所在的区域。",
+      "locationSet": "设置位置",
+      "locationTapHint": "点按以检测您的区域",
       "greeting": "你好，{{name}}。",
       "scanTitle": "扫描并上传",
       "scanSubtitle": "拍摄设备 · AI 填写详细数据 · 审核并提交",
@@ -3624,6 +3644,7 @@
       "removePhoto": "移除此照片"
     },
     "processing": {
+      "productFailed": "无法识别此设备",
       "backgroundHint": "您可以继续使用应用 — 完成后我们会通知您。",
       "tryAgain": "重试",
       "aiWorking": "AI 处理中",
@@ -3986,6 +4007,15 @@
       "requestAccount": "申请账户"
     },
     "profile": {
+      "aboutAction": "关于",
+      "aboutComingSoon": "关于 GreenBidz — 即将推出",
+      "helpAction": "帮助",
+      "helpComingSoon": "帮助与支持即将推出",
+      "listingsAction": "我的发布",
+      "sectionAccount": "账户",
+      "sectionPreferences": "偏好设置",
+      "sectionSecurity": "安全",
+      "signOutAction": "退出登录",
       "heading": "个人数据",
       "role": "身分：{{role}}",
       "signOut": "注销",
@@ -3993,6 +4023,26 @@
       "sectionActivity": "活动"
     },
     "settings": {
+      "comingSoon": "即将推出",
+      "notificationsDesc": "选择您希望收到的与发布相关的提醒。",
+      "notificationsTitle": "通知",
+      "notificationsUpdated": "通知设置已更新",
+      "notifyBid": "收到出价",
+      "notifyBidHint": "有人对您的发布出价",
+      "notifyOffer": "收到报价",
+      "notifyOfferHint": "买家向您发送直接报价",
+      "notifyPayment": "支付状态",
+      "notifyPaymentHint": "打款、退款和支付失败",
+      "removeInterest": "移除 {{name}}",
+      "verificationDesc": "完成每个步骤即可获得“认证卖家”标识。",
+      "verificationTitle": "信任与认证",
+      "verified": "已认证",
+      "verifyEmail": "电子邮箱地址",
+      "verifyEmailMissing": "未登记邮箱",
+      "verifyIdentity": "身份",
+      "verifyIdentityHint": "上传政府签发的身份证件以获得可信卖家标识",
+      "verifyPhone": "电话号码",
+      "verifyPhoneMissing": "添加电话号码以启用验证",
       "title": "设置",
       "subtitle": "管理您的帐号与偏好",
       "profileInformation": "个人数据",
@@ -4074,6 +4124,7 @@
       "untitled": "商品 {{index}}"
     },
     "labHome": {
+      "retry": "重试",
       "viewAllDrafts": "查看全部 {{count}} 份草稿",
       "savedJustNow": "刚刚保存",
       "savedMinutes": "{{count}} 分钟前保存",
@@ -4867,6 +4918,7 @@
       }
     },
     "processingV2": {
+      "est": "约 {{price}}",
       "aiAnalyzing": "AI 分析中",
       "subtitle": "结果会在我们找到时实时显示",
       "stepOf": "步骤 {{current}} / {{total}}",

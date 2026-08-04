@@ -38,7 +38,7 @@ export function QuickActionsStrip({ onSignOut, signingOut }: Props) {
 
   const showAbout = () => {
     haptics.tap();
-    toast(t('mobile.profile.aboutComingSoon', { defaultValue: 'About GreenBridge — coming soon' }));
+    toast(t('mobile.profile.aboutComingSoon', { defaultValue: 'About GreenBidz — coming soon' }));
   };
 
   const handleSignOut = () => {
