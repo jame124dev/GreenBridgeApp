@@ -211,15 +211,27 @@ at `~/.app-store/auth/<apple-id>/cookie` and subsequent runs work headlessly wit
 
 ---
 
-## Step 5 — App Review Information
+## Step 5 — App Review Information ✅
 
-ASC → **App Review Information**. This is where the demo account goes — **not** into any file in
-the repo.
+**Pushed to ASC 2026-08-04** via `eas metadata:push` — `✔ Created store review details for 1.0.0`.
 
-- [ ] Sign-in required: **Yes**
-- [ ] Demo username + password from Step 2
-- [ ] Contact name, email and phone number (a real number Apple can reach)
-- [ ] Paste the notes below
+- [x] Sign-in required: **Yes**
+- [x] Demo username + password (the Step 2 account)
+- [x] Contact: Abhay Dixit · abhay@greenbidz.com · +916386511382
+- [x] Review notes (1355 chars — the block below)
+
+⚠️ **The demo credentials and review contact are NOT in `store.config.json`.** They were added, pushed,
+then removed from the file, so they exist only in App Store Connect. A tracked config must never carry
+a password. Consequence: a future `metadata:push` prints *"Skipped store review details, not
+configured"* and leaves the ASC values untouched — which is the intended behaviour.
+
+⚠️ **`advisory` was also removed from the config**, for the same class of reason. The first review push
+printed `✔ Updated age rating declaration`, writing ASC's own (inaccurate) values back — harmless that
+time, but any later push would have silently reverted a corrected age-rating questionnaire. Age rating
+is now owned by the ASC UI alone. See Step 7.
+
+<details>
+<summary>The notes that were pushed</summary>
 
 ```
 DEMO ACCOUNT
@@ -253,6 +265,8 @@ TRANSACTIONS
 All transactions concern physical industrial equipment fulfilled outside the
 app. There are no digital goods, so no in-app purchases are used.
 ```
+
+</details>
 
 ---
 
