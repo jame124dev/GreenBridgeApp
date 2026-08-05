@@ -86,3 +86,6 @@ ehthumbs.db
 tmp/
 .tmp/
 temp/
+
+# `eas metadata:pull` downloads ASC screenshots here — duplicates assets/store/ios
+store/
