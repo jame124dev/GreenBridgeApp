@@ -33,6 +33,23 @@ export default (): ExpoConfig => ({
   // native code it does not match.
   updates: {
     url: 'https://u.expo.dev/57cd3db7-90b1-4b57-a723-679bfe81ef69',
+    // ⚠️ 'NEVER' is deliberate for the 1.0.0 review cycle. Build 1.0.0 (9) was
+    // rejected under Guideline 2.1.0 "The app crashed on launch" with no crash
+    // log, while TestFlight recorded 0 crashes across 18 sessions on a real
+    // iPhone and the launch path audited clean.
+    //
+    // With the default (ALWAYS) the app launches on its embedded bundle, fetches
+    // an update in the background, then runs THAT bundle on a later launch — and
+    // a reviewer opens an app several times. Those OTA bundles were only ever
+    // verified on Android (no Apple hardware on the Windows dev box), so the
+    // reviewed artifact was not the artifact anyone had tested. 'NEVER' removes
+    // the launch-time update path entirely: what Apple runs is exactly the JS
+    // compiled into the binary.
+    //
+    // Keeping `url` (rather than `enabled: false`) means expo-updates stays
+    // configured, so the `channel` in eas.json remains valid — dropping it makes
+    // the build abort. Restore ALWAYS in 1.0.1 once the crash is understood.
+    checkAutomatically: 'NEVER',
   },
   runtimeVersion: {
     policy: 'appVersion',
