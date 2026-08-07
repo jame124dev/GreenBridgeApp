@@ -147,8 +147,7 @@ const DELAY = {
   price: 320,
   demand: 400,
   ctaPrimary: 450,
-  ctaSecondary: 530,
-  ctaTertiary: 610,
+  ctaSecondary: 530, // "Save as draft" — the footer's only secondary CTA now
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -277,11 +276,6 @@ export default function LabDraft() {
 
   // Abort any in-flight CONFIRM CREATE turn if the screen unmounts mid-submit.
   useEffect(() => () => labTurn.abort(), [labTurn]);
-
-  const onEdit = () => {
-    haptics.tap();
-    toast(t('mobile.labDraft.editComingSoon'));
-  };
 
   // ── Save as draft (Task 12) ────────────────────────────────────────────
   // Persists the current lab draft frame via the shared drafts API (Task 3).
@@ -507,26 +501,13 @@ export default function LabDraft() {
             }}
           />
         </Animated.View>
-        <Animated.View entering={enterPop(DELAY.ctaSecondary)}>
-          <Button
-            variant="secondary"
-            size="sm"
-            haptic={false}
-            disabled={submitting}
-            label={t('mobile.labDraft.editDetails')}
-            onPress={onEdit}
-            accessibilityHint={t('mobile.labDraft.editComingSoon')}
-            style={{
-              borderWidth: 1.4,
-              borderColor: DRAFT_COLORS.secondaryBorder,
-              backgroundColor: '#fff',
-              height: 54, // match the primary CTA height for an even stacked-CTA block (was sm 48)
-              borderRadius: 16,
-            }}
-          />
-        </Animated.View>
+        {/* NOTE: an "Edit details" secondary CTA used to sit here, but it only
+            raised a "coming soon" toast — a visible control that does nothing is
+            an App Store Guideline 2.1 (App Completeness) rejection risk. Editing
+            already works one screen back in chat (LabListingEditSheet), which
+            Back returns to, so nothing is lost by not offering it twice. */}
         {draftsEnabled() && isLivePublish && (
-          <Animated.View entering={enterPop(DELAY.ctaTertiary)}>
+          <Animated.View entering={enterPop(DELAY.ctaSecondary)}>
             <Button
               variant="secondary"
               size="sm"

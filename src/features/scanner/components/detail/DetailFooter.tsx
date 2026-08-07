@@ -1,4 +1,4 @@
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { draftsEnabled } from '@/lib/flags';
@@ -86,6 +86,11 @@ export function DetailFooter({
 
   return (
     <View className={footerCls}>
+      {/* When drafts are off there is no second action to offer. The fallback
+          here used to be a "Preview" button that only alerted "coming soon" — a
+          visible control that does nothing is an App Store Guideline 2.1 (App
+          Completeness) rejection risk, so render nothing and let Submit take the
+          full width instead. */}
       {draftsEnabled() && onSaveDraft ? (
         <FooterButton
           label={t('mobile.detail.saveDraft', { defaultValue: 'Save as draft' })}
@@ -94,20 +99,7 @@ export function DetailFooter({
           disabled={!!submitting}
           flex={1}
         />
-      ) : (
-        <FooterButton
-          label={t('mobile.detail.preview', { defaultValue: 'Preview' })}
-          onPress={() =>
-            Alert.alert(
-              t('mobile.detail.preview', { defaultValue: 'Preview' }),
-              t('mobile.detail.previewSoon', {
-                defaultValue: 'Listing preview is coming soon.',
-              }),
-            )
-          }
-          flex={1}
-        />
-      )}
+      ) : null}
       <FooterButton
         label={t('mobile.detail.submitListing')}
         onPress={onSubmitSingle}

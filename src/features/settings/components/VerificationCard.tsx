@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import { Mail, Phone, ShieldCheck, BadgeCheck } from 'lucide-react-native';
+import { Mail, ShieldCheck } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/Badge';
@@ -12,12 +12,17 @@ interface Props {
   profile: UserProfile;
 }
 
-// Mercari-style trust checklist. Backend wiring is out of scope for v1 —
-// email is derived from `profile.email` (login flow guarantees a verified
-// address); phone + identity are static "Coming soon" pills. All rows are
-// plain <View>s because none are currently tappable; switch the right row to
-// <Pressable> + accessibilityRole="button" once the backend supplies a
-// verification flow URL.
+// Trust checklist. Email is derived from `profile.email` (the login flow
+// guarantees a verified address).
+//
+// This card used to also list Phone and Identity rows carrying static
+// "Coming soon" badges, plus a header promising "Complete each step to earn the
+// Verified Seller badge". Neither step existed — and this is the Account tab,
+// which every App Review pass opens, so advertising unbuilt features here is an
+// App Store Guideline 2.1 (App Completeness) rejection risk. Both rows and the
+// promise are gone until the backend supplies a real verification flow; add them
+// back together with it (as <Pressable> + accessibilityRole="button", since a
+// real flow is tappable — these rows are plain <View>s today).
 export function VerificationCard({ profile }: Props) {
   const { t } = useTranslation();
   const emailVerified = Boolean(profile.email);
@@ -28,9 +33,6 @@ export function VerificationCard({ profile }: Props) {
         icon={<ShieldCheck color={brand.primary} size={18} />}
         iconBg={brand.primarySurface}
         title={t('mobile.settings.verificationTitle', { defaultValue: 'Trust & Verification' })}
-        description={t('mobile.settings.verificationDesc', {
-          defaultValue: 'Complete each step to earn the Verified Seller badge.',
-        })}
       />
       <Card.Body>
         <Row
@@ -40,29 +42,8 @@ export function VerificationCard({ profile }: Props) {
           right={
             emailVerified ? (
               <Badge variant="success" label={t('mobile.settings.verified', { defaultValue: 'Verified' })} />
-            ) : (
-              <Badge variant="neutral" label={t('mobile.settings.comingSoon', { defaultValue: 'Coming soon' })} />
-            )
+            ) : null
           }
-        />
-
-        <Row
-          icon={<Phone color={colors.neutral[500]} size={18} />}
-          label={t('mobile.settings.verifyPhone', { defaultValue: 'Phone number' })}
-          sub={
-            profile.personalInfo.phone ||
-            t('mobile.settings.verifyPhoneMissing', { defaultValue: 'Add a phone to enable verification' })
-          }
-          right={<Badge variant="neutral" label={t('mobile.settings.comingSoon', { defaultValue: 'Coming soon' })} />}
-        />
-
-        <Row
-          icon={<BadgeCheck color={colors.neutral[500]} size={18} />}
-          label={t('mobile.settings.verifyIdentity', { defaultValue: 'Identity' })}
-          sub={t('mobile.settings.verifyIdentityHint', {
-            defaultValue: 'Upload a government ID for the trusted-seller badge',
-          })}
-          right={<Badge variant="neutral" label={t('mobile.settings.comingSoon', { defaultValue: 'Coming soon' })} />}
         />
       </Card.Body>
     </Card>

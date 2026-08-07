@@ -10,8 +10,12 @@ import { brand } from '@/constants/theme';
 interface Props {
   photos: { uri: string; sourceLabel?: string }[];
   rearrangeLabel: string;
-  onRearrange: () => void;
-  onAddMore: () => void;
+  /** Omit to HIDE the control. A visible button that only says "coming soon" is
+   *  a Guideline 2.1 (App Completeness) rejection risk — Apple treats
+   *  placeholder features as an unfinished app. Screens without a real
+   *  implementation must not render the affordance at all. */
+  onRearrange?: () => void;
+  onAddMore?: () => void;
 }
 
 /**
@@ -67,6 +71,7 @@ export function PhotosCard({ photos, rearrangeLabel, onRearrange, onAddMore }: P
             </Text>
           ) : null}
         </View>
+        {onRearrange ? (
         <Pressable
           className="absolute top-2.5 right-2.5 flex-row items-center gap-xs bg-brand-surface border border-brand-border-strong rounded-xs px-sm"
           style={{ paddingVertical: 6 }}
@@ -80,6 +85,7 @@ export function PhotosCard({ photos, rearrangeLabel, onRearrange, onAddMore }: P
             {rearrangeLabel}
           </Text>
         </Pressable>
+        ) : null}
       </View>
 
       <ScrollView
@@ -107,6 +113,7 @@ export function PhotosCard({ photos, rearrangeLabel, onRearrange, onAddMore }: P
             <AppImage source={{ uri: p.uri }} style={{ width: '100%', height: '100%' }} />
           </Pressable>
         ))}
+        {onAddMore ? (
         <Pressable
           className="rounded-xs border border-brand-border-strong border-dashed items-center justify-center gap-xxs"
           style={{ width: 96, height: 54 }}
@@ -119,6 +126,7 @@ export function PhotosCard({ photos, rearrangeLabel, onRearrange, onAddMore }: P
             {t('mobile.detail.addMore', { defaultValue: 'ADD MORE' })}
           </Text>
         </Pressable>
+        ) : null}
       </ScrollView>
 
       <PhotoZoomViewer

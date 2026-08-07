@@ -161,25 +161,16 @@ export default function GroupedEditScreen() {
 
   const onSave = form.handleSubmit(onValid, onInvalid);
 
-  // PhotosCard stubs — same deferral as Round 1's wizard. Full mid-editor
-  // photo editing (rearrange/add) requires a separate flow and is post-gate
-  // polish per the carry-forward list.
-  const onRearrangeStub = () => {
-    Alert.alert(
-      t('mobile.reviewWizard.notWiredYetTitle', { defaultValue: 'Coming soon' }),
-      t('mobile.reviewWizard.rearrangeNotWiredYet', {
-        defaultValue: 'Photo rearrange lands with the next polish pass.',
-      }),
-    );
-  };
-  const onAddMoreStub = () => {
-    Alert.alert(
-      t('mobile.reviewWizard.notWiredYetTitle', { defaultValue: 'Coming soon' }),
-      t('mobile.reviewWizard.addMoreNotWiredYet', {
-        defaultValue: 'Adding photos mid-edit lands with the next polish pass.',
-      }),
-    );
-  };
+  // Mid-editor photo rearrange/add is not implemented for the grouped (multi-
+  // product) editor. The controls are therefore NOT rendered — PhotosCard hides
+  // them when no handler is passed.
+  //
+  // They previously showed a "Coming soon" alert. That is a Guideline 2.1
+  // (App Completeness) rejection risk: Apple treats placeholder features as an
+  // unfinished app, and this build has already been rejected twice under 2.1.
+  // A control that does nothing is worse than no control.
+  // The single-product editor (app/scan/detail.tsx) DOES implement both and
+  // passes real handlers, so that screen is unaffected.
 
   return (
     <Screen padded={false} edges={['top', 'bottom']}>
@@ -218,8 +209,6 @@ export default function GroupedEditScreen() {
           <PhotosCard
             photos={item.photos ?? []}
             rearrangeLabel={t('mobile.review.rearrange')}
-            onRearrange={onRearrangeStub}
-            onAddMore={onAddMoreStub}
           />
           <IdentityCard />
           <DescriptionCard />
