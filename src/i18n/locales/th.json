@@ -3405,6 +3405,7 @@
   },
   "mobile": {
     "scan": {
+      "locationPrimerContinue": "ดำเนินการต่อ",
       "locationPrimerAccept": "ใช้ตำแหน่ง",
       "locationPrimerBody": "GreenBidz สามารถใช้ตำแหน่งปัจจุบันของคุณเพื่อกรอกที่อยู่รับสินค้าในหน้าถัดไปโดยอัตโนมัติ คุณแก้ไขได้ก่อนส่ง",
       "locationPrimerDecline": "ยังไม่ใช่ตอนนี้",
@@ -3498,7 +3499,7 @@
       "shutter": "ถ่ายภาพ",
       "permissionTitle": "ต้องการสิทธิ์เข้าถึงกล้อง",
       "permissionText": "อนุญาตให้เข้าถึงกล้องเพื่อถ่ายภาพป้ายและอุปกรณ์",
-      "allowCamera": "อนุญาตกล้อง",
+      "allowCamera": "ดำเนินการต่อ",
       "openSettings": "เปิดการตั้งค่า",
       "tipStrong": "เคล็ดลับ",
       "tipText": " ถ่ายหลายภาพ · ทั้งหมดอยู่ในรายการเดียวกัน",

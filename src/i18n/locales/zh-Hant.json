@@ -3486,6 +3486,7 @@
   },
   "mobile": {
     "scan": {
+      "locationPrimerContinue": "繼續",
       "locationPrimerAccept": "使用定位",
       "locationPrimerBody": "GreenBidz 可以使用您的目前位置，在下一步自動填寫取貨地址。送出前您仍可修改。",
       "locationPrimerDecline": "暫不",
@@ -3579,7 +3580,7 @@
       "shutter": "拍攝",
       "permissionTitle": "需要相機許可權",
       "permissionText": "允許相機存取以拍攝裝置銘牌與照片。",
-      "allowCamera": "允許相機",
+      "allowCamera": "繼續",
       "openSettings": "開啟設定",
       "tipStrong": "提示",
       "tipText": " 拍多張照片 · 全部歸屬同一物品",

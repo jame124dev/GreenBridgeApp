@@ -842,11 +842,12 @@ export default function CameraScreen() {
         }}
       />
 
+      {/* No onDecline: per Guideline 5.1.1(iv) the user must always reach the OS
+          permission prompt after the explanation — see LocationPrimerSheet. */}
       <LocationPrimerSheet
         visible={locationPrimer.shouldShowPrimer}
         accepting={locationPrimer.accepting}
         onAccept={locationPrimer.onAccept}
-        onDecline={locationPrimer.onDecline}
       />
     </View>
   );

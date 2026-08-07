@@ -3502,6 +3502,7 @@
   },
   "mobile": {
     "scan": {
+      "locationPrimerContinue": "Continue",
       "locationPrimerAccept": "Use location",
       "locationPrimerBody": "GreenBidz can use your current location to auto-fill the pickup address on the next screen. You can edit it before submitting.",
       "locationPrimerDecline": "Not now",
@@ -3600,7 +3601,7 @@
       "shutter": "Capture",
       "permissionTitle": "Camera access needed",
       "permissionText": "Allow camera access to scan equipment nameplates and photos.",
-      "allowCamera": "Allow camera",
+      "allowCamera": "Continue",
       "openSettings": "Open settings",
       "tipStrong": "TIP",
       "tipText": " Take multiple photos · all stay with this item",

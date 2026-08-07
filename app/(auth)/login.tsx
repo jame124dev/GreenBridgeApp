@@ -25,7 +25,20 @@ import { getBranding } from '@/theme/branding';
 // the standard market pattern (Stripe, Linear, Slack all do this for OAuth /
 // contact hand-offs). The forgot-password flow itself is now native — see
 // `/(auth)/forgot-password` — so it no longer uses this helper.
-const CONTACT_URL = 'https://seller.greenbidz.com/contact';
+// ⚠️ Was `https://seller.greenbidz.com/contact`, which renders "404 — Oops!
+// Page not found". App Review followed this link (the only visible route to get
+// an account) and rejected the build under Guideline 2.1(a): "An error message
+// displayed at the account registration".
+//
+// It is a single-page app, so the SERVER returns HTTP 200 and the 404 is drawn
+// client-side — a status-code check "passes" on a dead page. Verify links by
+// rendering them, never by curl'ing the status.
+//
+// greenbidz.com/contact-us/ is a real page with a working enquiry form
+// (first/last name, company, phone, email, message), which is what "request an
+// account" actually needs: there is no self-serve signup anywhere — the seller
+// site's /auth page offers only Sign In and Forgot Password.
+const CONTACT_URL = 'https://greenbidz.com/contact-us/';
 
 // Carry the app's current UI language to the (web) reset / contact pages so a
 // Chinese-language user isn't dropped onto an English page. Harmless if the page

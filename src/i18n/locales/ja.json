@@ -3421,6 +3421,7 @@
   },
   "mobile": {
     "scan": {
+      "locationPrimerContinue": "続ける",
       "locationPrimerAccept": "位置情報を使用",
       "locationPrimerBody": "GreenBidz は現在地を利用して、次の画面で引き取り住所を自動入力できます。送信前に編集できます。",
       "locationPrimerDecline": "今はしない",
@@ -3514,7 +3515,7 @@
       "shutter": "撮影",
       "permissionTitle": "カメラへのアクセス許可が必要",
       "permissionText": "機器の銘板と写真を撮影するためにカメラを許可してください。",
-      "allowCamera": "カメラを許可",
+      "allowCamera": "続ける",
       "openSettings": "設定を開く",
       "tipStrong": "ヒント",
       "tipText": " 複数枚撮影 · すべて同じアイテムに紐づきます",

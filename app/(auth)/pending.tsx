@@ -271,7 +271,14 @@ export default function PendingScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => Linking.openURL('https://greenbidz.com/dashboard/settings')}
+              // ⚠️ Was `https://greenbidz.com/dashboard/settings`, which renders
+              // "Page not found". Same class of dead link as the login screen's
+              // "Request an account" that App Review rejected — this one sits on
+              // the pending screen, which is exactly where an unapproved
+              // reviewer lands, so it was a second 2.1(a) waiting to happen.
+              // seller.greenbidz.com/dashboard/settings resolves (it redirects
+              // to the sign-in page, then on to settings).
+              onPress={() => Linking.openURL('https://seller.greenbidz.com/dashboard/settings')}
               style={({ pressed }) => [styles.btn, styles.btnSecondary, pressed && styles.pressed]}
               accessibilityRole="button"
             >

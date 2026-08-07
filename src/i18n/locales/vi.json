@@ -3502,6 +3502,7 @@
   },
   "mobile": {
     "scan": {
+      "locationPrimerContinue": "Tiếp tục",
       "locationPrimerAccept": "Dùng vị trí",
       "locationPrimerBody": "GreenBidz có thể dùng vị trí hiện tại để tự động điền địa chỉ nhận hàng ở bước sau. Bạn vẫn có thể sửa trước khi gửi.",
       "locationPrimerDecline": "Để sau",
@@ -3595,7 +3596,7 @@
       "shutter": "Chụp",
       "permissionTitle": "Cần quyền truy cập camera",
       "permissionText": "Cho phép truy cập camera để quét biển tên và ảnh thiết bị.",
-      "allowCamera": "Cho phép camera",
+      "allowCamera": "Tiếp tục",
       "openSettings": "Mở cài đặt",
       "tipStrong": "MẸO",
       "tipText": " Chụp nhiều ảnh · tất cả sẽ lưu cùng món này",
