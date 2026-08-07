@@ -1,5 +1,6 @@
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { Package, HelpCircle, Info, LogOut } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner-native';
@@ -31,15 +32,41 @@ export function QuickActionsStrip({ onSignOut, signingOut }: Props) {
     router.push(IS_CUSTOMER ? routes.labListings : '/(tabs)/history');
   };
 
-  const showHelp = () => {
+  /**
+   * ⚠️ These two used to show a "coming soon" toast and do nothing else.
+   *
+   * That is a Guideline 2.1 (App Completeness) rejection risk: Apple treats
+   * placeholder features as an incomplete app, and these are two of only four
+   * tiles on the Account screen — a reviewer exploring that tab taps them.
+   * Build 1.0.0 (10) was already rejected under 2.1(a) for a dead link, so
+   * shipping visible dead buttons alongside it invites the same finding.
+   *
+   * Both now open real pages, verified by RENDERING them (not by status code —
+   * these are SPAs that serve 200 on a missing route, which is exactly how the
+   * two 404s got shipped):
+   *   Help  → greenbidz.com/contact-us/  (the App Store Support URL: contact
+   *           form, info@greenbidz.com, phone, WhatsApp)
+   *   About → greenbidz.com             (GreenBidz Group site)
+   */
+  const openPage = async (url: string) => {
     haptics.tap();
-    toast(t('mobile.profile.helpComingSoon', { defaultValue: 'Help & support coming soon' }));
+    try {
+      await WebBrowser.openBrowserAsync(url, {
+        toolbarColor: '#14452f',
+        controlsColor: '#FFFFFF',
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
+      });
+    } catch {
+      toast.error(
+        t('mobile.profile.openLinkFailed', {
+          defaultValue: 'Open the link from your browser instead.',
+        }),
+      );
+    }
   };
 
-  const showAbout = () => {
-    haptics.tap();
-    toast(t('mobile.profile.aboutComingSoon', { defaultValue: 'About GreenBidz — coming soon' }));
-  };
+  const showHelp = () => openPage('https://greenbidz.com/contact-us/');
+  const showAbout = () => openPage('https://greenbidz.com');
 
   const handleSignOut = () => {
     if (signingOut) return;
