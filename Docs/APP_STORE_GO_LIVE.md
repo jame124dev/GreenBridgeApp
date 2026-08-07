@@ -383,16 +383,63 @@ Answer the questionnaire honestly in the ASC UI.
    In-app this breaks product detail and "Contact seller" (`fetchBatchSeller`) — and **2478 is the
    listing attached to the demo account's chat thread**, so App Review can reach it.
 
-- [ ] Apple review — usually 24–48 hours
-- [ ] If **rejected**: read the exact guideline number they cite, then fix and resubmit
-- [ ] If **approved**: press **Release This Version**
+- [x] Apple review — usually 24–48 hours
+- [x] **REJECTION 1 (2026-08-04, Guideline 2.1)** — app wouldn't launch on their iPhone 17 Pro Max.
+      Root cause: the OTA update check ran **before** the first frame and blocked launch. Fixed by
+      `checkAutomatically: 'NEVER'` for the review cycle (`app.config.ts`). **Confirmed fixed** — on
+      the next review Apple got *into* the app and reported a different, in-app problem.
+- [x] **REJECTION 2 (2026-08-06, Guideline 2.1(a))** — *"An error message displayed at the account
+      registration"*, reviewed on build 10. Their screenshot showed the browser on
+      `seller.greenbidz.com/contact` → **404**, reached from the **Contact us** link on the sign-in
+      screen.
+      ⚠️ **Why my earlier check missed it:** I validated those URLs with `curl` status codes. These are
+      SPAs — they return **HTTP 200** and render "404" client-side. A status check can never catch
+      this; you must read the rendered page. A regression test
+      (`src/__tests__/externalLinks.test.ts`) now **hard-fails** on the known-dead URLs.
+      A full audit of every outbound link then found **a second 404 Apple never reached** —
+      `greenbidz.com/dashboard/settings` on the pending-approval screen.
+- [x] **RESUBMITTED 2026-08-07 with build 14** — verified `1.0.0 Waiting for Review`, item reads
+      `iOS App 1.0.0 (14) — Waiting for Review`, release still **Manually release**.
+      Build 14 carries, and was verified **inside the IPA** (not just in source):
+      | Guideline | Fix | Proof in the binary |
+      |---|---|---|
+      | 2.1(a) | Contact → `greenbidz.com/contact-us/`; pending → `seller.greenbidz.com/dashboard/settings` | both dead URLs **absent**, replacement **present** |
+      | 5.1.1(iv) | Location pre-prompt: single **Continue**, no skip path (swipe-dismiss also reaches the OS prompt) | `locationPrimerContinue` present, `'Not now'` absent |
+      | 1.2 (proactive) | Report + Block in every Messages thread; blocked user leaves the inbox, composer replaced | `labReport.*` + `chat.blockedUserIds` present |
+      | 2.1 (proactive) | Account → Help / About open real pages (were "coming soon" toasts) | `profile.helpComingSoon` absent |
+      Review notes in ASC tell the reviewer **where** report/block is, so they don't have to hunt.
+- [ ] If **rejected again**: read the exact guideline number they cite, then fix and resubmit
+- [ ] If **approved**: press **Release This Version** — but clear the blockers below first
 - [ ] App is live 🎉 — confirm it opens from the public App Store link
+
+### Verify-the-artifact rule (earned the hard way)
+
+Every claim above was checked against the **IPA / Hermes bundle**, never the config or the source.
+This practice caught real problems more than once. Two traps when you do it:
+
+- **Hermes stores any string containing a non-ASCII character as UTF-16** — an ASCII `grep` returns 0
+  matches for a string that is definitely present. Search `utf-16-le` too before concluding anything
+  is missing.
+- **Read `Payload/<App>.app/Expo.plist`** for the OTA settings (`EXUpdatesCheckOnLaunch`), not
+  `Info.plist`.
 
 ---
 
-## ⛔ Blocking RELEASE (not review) — status 2026-08-04
+## ⛔ Blocking RELEASE (not review) — status 2026-08-07
 
-- [ ] **Deploy the chat auth fix to production.** Built, tested and pushed as
+- [x] **Deploy the chat auth fix to production — DONE 2026-08-06, `main` `d3595ca`, verified live.**
+      Re-applied per branch (not cherry-picked) exactly as the warning below said to.
+      ⚠️ **Merge hazard, still live:** a future `dev → main` merge must NOT drag `dev`'s four
+      `/direct/*` chat routes into `main`'s `chatRoute.js` — their controllers don't exist on `main`,
+      so the import would throw on pm2 restart and take prod down.
+- [ ] **The chat SOCKET is still unauthenticated** — identity is whatever `user_id` a client claims
+      via `joinRooms`. A separate code path from the REST fix above, and a larger change; the web
+      client behaves the same way.
+
+<details>
+<summary>Original note (kept for the record)</summary>
+
+- **Deploy the chat auth fix to production.** Built, tested and pushed as
       `fix/chat-auth-batch404` (`e4da751`) on the **backend** repo, branched off `dev`. It closes an
       unauthenticated IDOR that returned `display_name` + `user_email` for any user id, and opens
       admin chat routes to anyone. **Not on prod yet** — reaching prod means a cherry-pick onto
@@ -400,9 +447,11 @@ Answer the questionnaire honestly in the ASC UI.
       commits ahead of `main`.
       ⚠️ Re-apply per branch rather than cherry-pick blind — `dev` carries 4 chat routes `main` does
       not, two of which need guards.
-- [ ] **The chat SOCKET is still unauthenticated** — identity is whatever `user_id` a client claims
+- **The chat SOCKET is still unauthenticated** — identity is whatever `user_id` a client claims
       via `joinRooms`. A separate code path from the REST fix above, and a larger change; the web
       client behaves the same way.
+
+</details>
 
 ## Not blocking, but decide before/soon after launch
 
