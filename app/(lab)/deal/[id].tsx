@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { BadgeCheck, CheckCircle2, ChevronLeft, ChevronRight, Info } from 'lucide-react-native';
+import { BadgeCheck, CheckCircle2, ChevronLeft, ChevronRight, Info, MoreVertical } from 'lucide-react-native';
 import { toast } from 'sonner-native';
 
 import { Text } from '@/components/ui';
@@ -34,6 +34,8 @@ import { ProductThumb } from '@/features/lab/components';
 import { MessageBubble } from '@/features/lab/messages/components/MessageBubble';
 import { ChatComposer } from '@/features/lab/messages/components/ChatComposer';
 import { DateDivider } from '@/features/lab/messages/components/DateDivider';
+import { ReportBlockSheet } from '@/features/lab/messages/ReportBlockSheet';
+import { isBlocked, subscribeBlocked } from '@/features/lab/messages/blockList';
 
 // Counterparty avatar tints — same palette as the inbox ConversationRow so the
 // same seller reads with the same colour across the Messages surface.
@@ -92,6 +94,11 @@ export default function LabConversation() {
   // resolving with a null sellerId.
   const [sellerFailed, setSellerFailed] = useState(false);
   const [resolveAttempt, setResolveAttempt] = useState(0);
+  // Guideline 1.2: report / block. `blocked` mirrors the persisted list and is
+  // re-read whenever it changes, so blocking from the sheet updates this screen.
+  const [reportOpen, setReportOpen] = useState(false);
+  const [blockedTick, setBlockedTick] = useState(0);
+  useEffect(() => subscribeBlocked(() => setBlockedTick((n) => n + 1)), []);
   const sellerKnown = Number.isFinite(paramSellerId) && paramSellerId > 0;
   useEffect(() => {
     if (sellerKnown) return; // seller already known
@@ -139,6 +146,14 @@ export default function LabConversation() {
   // There is no counterparty to open a room with, so the thread can never work.
   // Kept separate from `isError` (which means the API call itself failed).
   const sellerUnresolved = sellerFailed && !Number.isFinite(otherPartyId);
+  // Guideline 1.2: a blocked counterparty must genuinely be unable to reach the
+  // user — the composer goes away and a clear notice replaces it. blockedTick is
+  // read so this recomputes when the persisted list changes.
+  const blocked = useMemo(
+    () => (Number.isFinite(otherPartyId) ? isBlocked(otherPartyId) : false),
+    // blockedTick is the invalidation signal from the persisted list.
+    [otherPartyId, blockedTick],
+  );
 
   const avatarColor = AVATAR_BG[Math.abs((otherPartyId || 0) + (batchId || 0)) % AVATAR_BG.length];
   const dividerLabel = useMemo(() => dayLabel(t, messages[0]?.createdAt), [messages, t]);
@@ -225,6 +240,18 @@ export default function LabConversation() {
 
         <Pressable onPress={openListing} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('mobile.labDeal.listingInfo')} style={styles.iconBtn}>
           <Info size={20} color={lab.inkMeta} />
+        </Pressable>
+
+        {/* Report / block — App Store Guideline 1.2 requires a UGC + messaging
+            app to offer both. See ReportBlockSheet / blockList. */}
+        <Pressable
+          onPress={() => setReportOpen(true)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={t('mobile.labReport.openMenu')}
+          style={styles.iconBtn}
+        >
+          <MoreVertical size={20} color={lab.inkMeta} />
         </Pressable>
       </View>
 
@@ -347,7 +374,13 @@ export default function LabConversation() {
         {/* Hidden, not merely disabled, when there is no seller to send to —
             the recovery block above owns the screen in that case and an inert
             input next to it just re-invites the tap that does nothing. */}
-        {sellerUnresolved ? null : (
+        {sellerUnresolved ? null : blocked ? (
+          <View style={styles.blockedNotice}>
+            <Text style={styles.blockedNoticeText}>
+              {t('mobile.labReport.blockedNotice', { name: firstName })}
+            </Text>
+          </View>
+        ) : (
           <ChatComposer
             placeholder={t('mobile.labDeal.composerPlaceholder', { name: firstName })}
             disabled={!canSend}
@@ -357,12 +390,40 @@ export default function LabConversation() {
         )}
         <View style={{ height: Math.max(insets.bottom, 8), backgroundColor: brand.surface }} />
       </KeyboardAvoidingView>
+
+      {Number.isFinite(otherPartyId) ? (
+        <ReportBlockSheet
+          visible={reportOpen}
+          onClose={() => setReportOpen(false)}
+          otherPartyId={otherPartyId}
+          otherPartyName={counterparty}
+          listingId={params.id}
+          onBlocked={goBack}
+        />
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: lab.bg },
+  blockedNotice: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: lab.utilBorder,
+    backgroundColor: lab.utilBg,
+  },
+  blockedNoticeText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: lab.inkSub,
+    textAlign: 'center',
+  },
   flex: { flex: 1 },
   header: {
     flexDirection: 'row',

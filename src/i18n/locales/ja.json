@@ -4473,6 +4473,20 @@
       "builtIn": "組み込み",
       "downloading": "更新をダウンロード中…"
     },
+    "labReport": {
+      "title": "報告またはブロック",
+      "subtitle": "{{name}} とのやり取り",
+      "openMenu": "この会話を報告またはブロック",
+      "reportAction": "この会話を報告",
+      "reportHint": "不適切または誤解を招く内容をチームにお知らせください。",
+      "reportOpened": "報告フォームを開きました。担当チームが対応します。",
+      "reportFailed": "報告フォームを開けませんでした。もう一度お試しください。",
+      "blockAction": "このユーザーをブロック",
+      "blockHint": "メッセージ一覧から消え、アプリ内で連絡できなくなります。",
+      "blocked": "{{name}} をブロックしました。",
+      "blockedNotice": "{{name}} をブロックしました。ここでメッセージを受け取ることはありません。",
+      "contextListing": "出品 #{{id}}"
+    },
     "labDeal": {
       "offlineSend": "オフラインです — 再接続中。メッセージは保存されました。少し後にもう一度送信してください。",
       "sellerFallback": "出品者",

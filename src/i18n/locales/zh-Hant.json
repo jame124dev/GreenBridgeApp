@@ -4540,6 +4540,20 @@
       "builtIn": "內建",
       "downloading": "正在下載更新…"
     },
+    "labReport": {
+      "title": "檢舉或封鎖",
+      "subtitle": "您與 {{name}} 的對話",
+      "openMenu": "檢舉或封鎖此對話",
+      "reportAction": "檢舉此對話",
+      "reportHint": "向我們的團隊反映不當或誤導性內容。",
+      "reportOpened": "檢舉表單已開啟 — 我們的團隊會跟進。",
+      "reportFailed": "無法開啟檢舉表單，請重試。",
+      "blockAction": "封鎖此使用者",
+      "blockHint": "該使用者將從您的訊息中消失，且無法再在此聯繫您。",
+      "blocked": "已封鎖 {{name}}。",
+      "blockedNotice": "您已封鎖 {{name}}。對方無法在此向您傳送訊息。",
+      "contextListing": "商品 #{{id}}"
+    },
     "labDeal": {
       "offlineSend": "您已離線 — 正在重新連線。訊息已儲存，請稍後再點傳送。",
       "sellerFallback": "賣家",

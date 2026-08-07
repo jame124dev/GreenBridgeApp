@@ -4558,6 +4558,20 @@
       "builtIn": "tích hợp",
       "downloading": "Đang tải bản cập nhật…"
     },
+    "labReport": {
+      "title": "Báo cáo hoặc chặn",
+      "subtitle": "Cuộc trò chuyện của bạn với {{name}}",
+      "openMenu": "Báo cáo hoặc chặn cuộc trò chuyện này",
+      "reportAction": "Báo cáo cuộc trò chuyện này",
+      "reportHint": "Cho đội ngũ của chúng tôi biết về nội dung không phù hợp hoặc gây nhầm lẫn.",
+      "reportOpened": "Đã mở biểu mẫu báo cáo — đội ngũ của chúng tôi sẽ theo dõi.",
+      "reportFailed": "Không mở được biểu mẫu báo cáo — vui lòng thử lại.",
+      "blockAction": "Chặn người dùng này",
+      "blockHint": "Họ sẽ biến mất khỏi tin nhắn của bạn và không thể liên hệ với bạn ở đây.",
+      "blocked": "Đã chặn {{name}}.",
+      "blockedNotice": "Bạn đã chặn {{name}}. Họ không thể nhắn tin cho bạn ở đây.",
+      "contextListing": "Tin đăng #{{id}}"
+    },
     "labDeal": {
       "offlineSend": "Bạn đang ngoại tuyến — đang kết nối lại. Tin nhắn đã được lưu; hãy nhấn gửi lại sau một lát.",
       "sellerFallback": "Người bán",

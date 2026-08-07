@@ -4568,6 +4568,20 @@
       "builtIn": "built-in",
       "downloading": "Downloading an update…"
     },
+    "labReport": {
+      "title": "Report or block",
+      "subtitle": "Your conversation with {{name}}",
+      "openMenu": "Report or block this conversation",
+      "reportAction": "Report this conversation",
+      "reportHint": "Tell our team about offensive or misleading content.",
+      "reportOpened": "Report form opened — our team will follow up.",
+      "reportFailed": "Couldn't open the report form — please try again.",
+      "blockAction": "Block this user",
+      "blockHint": "They disappear from your messages and can no longer reach you here.",
+      "blocked": "{{name}} is blocked.",
+      "blockedNotice": "You blocked {{name}}. They can't message you here.",
+      "contextListing": "Listing #{{id}}"
+    },
     "labDeal": {
       "sellerFallback": "Seller",
       "back": "Back",

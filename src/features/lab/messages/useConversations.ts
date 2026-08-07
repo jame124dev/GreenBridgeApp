@@ -3,12 +3,13 @@
 // shared socket: re-emits `joinRooms` on (re)connect, refetches on
 // `new_conversation_buyer`, and bumps ordering on any inbound `chat_message`.
 // Mirrors the web `BuyerAllChatList` socket wiring.
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/stores/authStore';
 import { labKeys } from '@/features/lab/data/labQueryKeys';
 import { getLabSocket, joinRooms } from './socket';
+import { isBlocked, subscribeBlocked } from './blockList';
 import {
   listBuyerConversations,
   MOBILE_CHAT_ROLE,
@@ -59,7 +60,15 @@ export function useConversations(): UseConversationsResult {
     };
   }, [userId, role, qc]);
 
-  const conversations = query.data ?? [];
+  // Guideline 1.2: a blocked user must disappear from the inbox, not merely be
+  // unable to message. Re-runs when the persisted block list changes.
+  const [blockedTick, setBlockedTick] = useState(0);
+  useEffect(() => subscribeBlocked(() => setBlockedTick((n) => n + 1)), []);
+  const rows = query.data ?? [];
+  const conversations = useMemo(
+    () => rows.filter((r) => !isBlocked(r.ID)),
+    [rows, blockedTick],
+  );
   return {
     conversations,
     isLoading: query.isLoading && userId != null,
