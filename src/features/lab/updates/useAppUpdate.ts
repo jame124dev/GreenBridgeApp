@@ -17,8 +17,50 @@
 // Everything is guarded on `Updates.isEnabled`, which is false in Expo Go and
 // in debug dev-client builds — there the hook reports a benign idle state rather
 // than throwing.
+//
+// WHY expo-updates IS LOADED WITH require() AND NOT import
+// -------------------------------------------------------
+// `isEnabled` is not enough on its own. In a binary built BEFORE expo-updates
+// was added (an older dev client, or Expo Go), the package throws while it is
+// being imported — "Cannot find native module 'ExpoUpdates'" — which happens
+// before any guard in this file can run, and takes the whole app down at launch
+// with an uncaught error. That was observed on an older dev client here. Given
+// the app has already been rejected once for crashing on launch, no native
+// module may be allowed to fail the startup import: load it defensively and
+// degrade to the disabled stub below when it is absent.
 import { useCallback, useState } from 'react';
-import * as Updates from 'expo-updates';
+
+/** Only the surface of expo-updates this module actually uses. */
+interface UpdatesApi {
+  useUpdates: () => { isUpdatePending: boolean; isDownloading: boolean };
+  isEnabled: boolean;
+  reloadAsync: () => Promise<unknown>;
+  runtimeVersion: string | null;
+  channel: string | null;
+  updateId: string | null;
+  isEmbeddedLaunch: boolean;
+}
+
+// Reports "nothing to update, running the built-in bundle" — the truth when the
+// native module is missing. `useUpdates` calls no hooks, so swapping it in does
+// not disturb hook order (the choice is made once, at module load).
+const UPDATES_UNAVAILABLE: UpdatesApi = {
+  useUpdates: () => ({ isUpdatePending: false, isDownloading: false }),
+  isEnabled: false,
+  reloadAsync: () => Promise.reject(new Error('expo-updates is not available in this binary')),
+  runtimeVersion: null,
+  channel: null,
+  updateId: null,
+  isEmbeddedLaunch: true,
+};
+
+let Updates: UpdatesApi = UPDATES_UNAVAILABLE;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  Updates = require('expo-updates') as UpdatesApi;
+} catch {
+  // No ExpoUpdates native module in this binary — keep the stub.
+}
 
 export interface AppUpdateState {
   /** A newer bundle is downloaded and will run on the next launch. */
