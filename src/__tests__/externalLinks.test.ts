@@ -138,12 +138,37 @@ describe('outbound web links', () => {
     });
   }
 
-  it('the login screen offers no account-registration call to action', () => {
+  /**
+   * The rule is "no OUTBOUND navigation", NOT "no signup".
+   *
+   * Guideline 3.1.1 objected to the app giving access to an EXTERNAL
+   * registration mechanism. A native in-app signup is a different thing and is
+   * what every marketplace app ships, so `/(auth)/register` is allowed and
+   * expected. Enforce the real constraint: the entry point is a router push,
+   * never a URL.
+   */
+  it('the login screen routes to native signup, not a web page', () => {
     const src = read('app/(auth)/login.tsx');
-    // The i18n KEYS for the removed CTA must be gone from the screen; the
-    // strings may remain in the locale files, which is harmless.
-    for (const key of ['mobile.auth.requestAccount', 'mobile.auth.noAccount']) {
-      expect(codeLines(src).some(({ line }) => line.includes(key))).toBe(false);
-    }
+    const lines = codeLines(src);
+    expect(lines.some(({ line }) => line.includes("router.push('/(auth)/register')"))).toBe(true);
+    // Belt and braces: no http(s) literal anywhere in the screen's code.
+    const urls = lines.filter(({ line }) => /['"`]https?:\/\//.test(line));
+    expect(urls.map((l) => `${l.n}: ${l.line.trim()}`)).toEqual([]);
+  });
+
+  it('the registration screen opens nothing external', () => {
+    const src = read('app/(auth)/register.tsx');
+    const lines = codeLines(src);
+    const nav = lines.filter(({ line }) =>
+      /Linking\.openURL|WebBrowser\.|openAuthSessionAsync|['"`]https?:\/\//.test(line),
+    );
+    expect(nav.map((l) => `${l.n}: ${l.line.trim()}`)).toEqual([]);
+  });
+
+  it('registration keeps company optional (a required one is business signup)', () => {
+    const schema = read('src/features/auth/schema.ts');
+    const m = schema.match(/company:\s*z\.string\(\)[^,\n]*/);
+    expect(m).not.toBeNull();
+    expect(m![0]).toContain('optional()');
   });
 });

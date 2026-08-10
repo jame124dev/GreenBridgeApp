@@ -373,9 +373,10 @@ export default function LoginScreen() {
         </Text>
       </View>
 
-      {/* ⚠️ DO NOT re-add a "Request an account" / "Sign up" control here.
-          This used to be a link opening greenbidz.com/contact-us/ in the in-app
-          browser. App Review REJECTED build 14 under **Guideline 3.1.1**:
+      {/* ⚠️ THIS MUST STAY A NATIVE ROUTE. DO NOT point it at a web page.
+          This was originally a link opening greenbidz.com/contact-us/ in the
+          in-app browser, and App Review REJECTED build 14 under
+          **Guideline 3.1.1**:
 
             "The app includes an account registration feature for businesses and
              organizations, which is considered access to external mechanisms for
@@ -386,12 +387,13 @@ export default function LoginScreen() {
           That contact page carries a Company field and a chat widget offering
           "auction services" / "list my equipment" / "free valuation", so Apple
           reads any in-app route to it as a B2B sign-up funnel for services sold
-          outside the App Store. The app is therefore **sign-in only** — the
-          standard, accepted pattern for B2B apps.
+          outside the App Store.
 
-          The line below is deliberately INERT: informational text, no link, no
-          CTA, nothing tappable. `src/__tests__/externalLinks.test.ts` fails the
-          build if a banned URL comes back. */}
+          Registration itself was never the objection — linking OUT to it was.
+          `/(auth)/register` is a fully native, free BUYER signup that opens
+          nothing external, which is what every marketplace app ships.
+          `src/__tests__/externalLinks.test.ts` fails the build if this screen
+          ever performs outbound navigation again. */}
       <View className="items-center mt-2xl flex-row justify-center" style={{ gap: 4 }}>
         <RNText
           style={{
@@ -399,13 +401,28 @@ export default function LoginScreen() {
             fontSize: 13,
             lineHeight: 18,
             color: TEXT_SECONDARY,
-            textAlign: 'center',
           }}
         >
-          {t('mobile.auth.accountsIssuedByTeam', {
-            defaultValue: 'Accounts are issued by the GreenBidz team.',
-          })}
+          {t('mobile.auth.noAccount', { defaultValue: "Don't have an account?" })}
         </RNText>
+        <Pressable
+          onPress={() => router.push('/(auth)/register')}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel={t('mobile.auth.createAccount', { defaultValue: 'Create account' })}
+        >
+          <RNText
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 13,
+              lineHeight: 18,
+              color: ECO_TEAL,
+              fontWeight: '600',
+            }}
+          >
+            {t('mobile.auth.createAccount', { defaultValue: 'Create account' })}
+          </RNText>
+        </Pressable>
       </View>
 
       <LanguageSheet visible={langSheetOpen} onClose={() => setLangSheetOpen(false)} />

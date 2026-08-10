@@ -28,6 +28,7 @@ const INTENTIONALLY_SAME = new Set([
   'emailPlaceholder', // you@example.com
   'passwordPlaceholder', // ••••••••
   'email', // "Email" is the standard term in several of these locales
+  'emailLabel', // ditto — Vietnamese uses "Email" verbatim (register step 1)
 ]);
 
 /** Flatten to `a.b.c` -> string, skipping i18next plural siblings. */
