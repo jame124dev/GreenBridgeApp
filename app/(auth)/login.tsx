@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Eye, EyeOff, Globe, Leaf, Lock, Mail } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import * as WebBrowser from 'expo-web-browser';
 import { languageBadge } from '@/i18n';
 
 import { Button, Card, Input, LanguageSheet, Screen, Text } from '@/components/ui';
@@ -18,49 +17,23 @@ import { toast } from 'sonner-native';
 import { useAuth } from '@/stores/authStore';
 import { getBranding } from '@/theme/branding';
 
-// The "Request an account" hand-off still lives on the seller web app (not
-// the mobile API). Open it in an in-app browser (Chrome Custom Tabs on
-// Android, SFSafariViewController on iOS) so the user stays inside the app
-// shell and can tap the system X to return to login. `expo-web-browser` is
-// the standard market pattern (Stripe, Linear, Slack all do this for OAuth /
-// contact hand-offs). The forgot-password flow itself is now native — see
-// `/(auth)/forgot-password` — so it no longer uses this helper.
-// ⚠️ Was `https://seller.greenbidz.com/contact`, which renders "404 — Oops!
-// Page not found". App Review followed this link (the only visible route to get
-// an account) and rejected the build under Guideline 2.1(a): "An error message
-// displayed at the account registration".
+// ⚠️ This screen deliberately opens NO external pages.
 //
-// It is a single-page app, so the SERVER returns HTTP 200 and the 404 is drawn
-// client-side — a status-code check "passes" on a dead page. Verify links by
-// rendering them, never by curl'ing the status.
+// It used to hold a `CONTACT_URL` (`greenbidz.com/contact-us/`) plus an
+// `openInAppBrowser` helper behind a "Request an account" link. That link is
+// what App Review rejected build 14 for under **Guideline 3.1.1** — see the
+// long note at the JSX site below. Both the constant and the helper are gone so
+// there is no route back to a B2B sign-up funnel from the login screen; the
+// `expo-web-browser` import went with them.
 //
-// greenbidz.com/contact-us/ is a real page with a working enquiry form
-// (first/last name, company, phone, email, message), which is what "request an
-// account" actually needs: there is no self-serve signup anywhere — the seller
-// site's /auth page offers only Sign In and Forgot Password.
-const CONTACT_URL = 'https://greenbidz.com/contact-us/';
-
-// Carry the app's current UI language to the (web) reset / contact pages so a
-// Chinese-language user isn't dropped onto an English page. Harmless if the page
-// ignores it — the web side must read `lang` for the language to actually switch
-// (tracked as a web follow-up; the app's part is done here).
-function withLang(url: string, lang: string): string {
-  const code = (lang || 'en').trim();
-  const sep = url.includes('?') ? '&' : '?';
-  return `${url}${sep}lang=${encodeURIComponent(code)}`;
-}
-
-async function openInAppBrowser(url: string, errorMessage: string) {
-  try {
-    await WebBrowser.openBrowserAsync(url, {
-      toolbarColor: '#14452f',
-      controlsColor: '#FFFFFF',
-      presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
-    });
-  } catch {
-    toast.error(errorMessage);
-  }
-}
+// Forgot-password is native (`/(auth)/forgot-password`) and never needed a
+// browser hand-off, so nothing else on this screen regressed.
+//
+// History worth keeping: the ORIGINAL link was `seller.greenbidz.com/contact`,
+// which rendered "404 — Oops! Page not found" and earned a Guideline 2.1(a)
+// rejection. It is a single-page app, so the SERVER returns HTTP 200 and the
+// 404 is drawn client-side — a status-code check "passes" on a dead page.
+// Verify links by RENDERING them, never by curl'ing the status.
 
 // Post-auth landing route, forked at build time by EXPO_PUBLIC_USER_TYPE: the
 // customer (lab) app or the seller tabs. Mirrors `HOME_ROUTE` in app/_layout.tsx
@@ -400,11 +373,25 @@ export default function LoginScreen() {
         </Text>
       </View>
 
-      {/* Account registration entry. Accounts are approved by the team (no
-          self-serve signup page exists), so this opens the web "request an
-          account" / contact page in the in-app browser. Labeled "Request an
-          account" — not "Contact us" — so new users actually recognize it as
-          the way to register (client feedback: couldn't find how to sign up). */}
+      {/* ⚠️ DO NOT re-add a "Request an account" / "Sign up" control here.
+          This used to be a link opening greenbidz.com/contact-us/ in the in-app
+          browser. App Review REJECTED build 14 under **Guideline 3.1.1**:
+
+            "The app includes an account registration feature for businesses and
+             organizations, which is considered access to external mechanisms for
+             purchases or subscriptions to be used in the app.
+             Next Steps: Remove the account registration features for business
+             and organizations."
+
+          That contact page carries a Company field and a chat widget offering
+          "auction services" / "list my equipment" / "free valuation", so Apple
+          reads any in-app route to it as a B2B sign-up funnel for services sold
+          outside the App Store. The app is therefore **sign-in only** — the
+          standard, accepted pattern for B2B apps.
+
+          The line below is deliberately INERT: informational text, no link, no
+          CTA, nothing tappable. `src/__tests__/externalLinks.test.ts` fails the
+          build if a banned URL comes back. */}
       <View className="items-center mt-2xl flex-row justify-center" style={{ gap: 4 }}>
         <RNText
           style={{
@@ -412,35 +399,13 @@ export default function LoginScreen() {
             fontSize: 13,
             lineHeight: 18,
             color: TEXT_SECONDARY,
+            textAlign: 'center',
           }}
         >
-          {t('mobile.auth.noAccount', { defaultValue: "Don't have an account?" })}
+          {t('mobile.auth.accountsIssuedByTeam', {
+            defaultValue: 'Accounts are issued by the GreenBidz team.',
+          })}
         </RNText>
-        <Pressable
-          onPress={() =>
-            openInAppBrowser(
-              withLang(CONTACT_URL, i18n.language),
-              t('mobile.auth.contactOpenFailed', {
-                defaultValue: 'Open the link from your browser instead.',
-              }),
-            )
-          }
-          hitSlop={6}
-          accessibilityRole="button"
-          accessibilityLabel={t('mobile.auth.requestAccount', { defaultValue: 'Request an account' })}
-        >
-          <RNText
-            style={{
-              fontFamily: 'Inter_400Regular',
-              fontSize: 13,
-              lineHeight: 18,
-              color: ECO_TEAL,
-              fontWeight: '600',
-            }}
-          >
-            {t('mobile.auth.requestAccount', { defaultValue: 'Request an account' })}
-          </RNText>
-        </Pressable>
       </View>
 
       <LanguageSheet visible={langSheetOpen} onClose={() => setLangSheetOpen(false)} />

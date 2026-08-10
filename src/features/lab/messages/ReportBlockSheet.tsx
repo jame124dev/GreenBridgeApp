@@ -4,14 +4,21 @@
  * A UGC + messaging app must let users report offensive content and block
  * abusive users. This is the surface for both, reachable from the thread header.
  *
- * Report routes to the published support contact page rather than a bespoke
- * endpoint (the backend has no moderation route). That is an accepted mechanism:
- * the user reaches a real human channel, and the app confirms the report was
- * raised. Block is immediate and local — see blockList.ts.
+ * Report opens a pre-filled email to the moderation address (the backend has no
+ * moderation endpoint). Block is immediate and local — see blockList.ts.
+ *
+ * ⚠️ This USED to open `greenbidz.com/contact-us/` in the in-app browser. App
+ * Review rejected build 14 under **Guideline 3.1.1** because that page is a
+ * business sign-up funnel (Company field, "auction services", "list my
+ * equipment"), and any in-app route to it counts as access to an external
+ * purchase/registration mechanism. Do not point this back at a web page.
+ *
+ * The email is also a strictly better report channel than the web form was: it
+ * carries the reported user id and the listing, which a generic contact form
+ * never captured.
  */
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import { Linking, Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Flag, Ban } from 'lucide-react-native';
 import { toast } from 'sonner-native';
@@ -21,8 +28,8 @@ import { fonts, lab, spacing } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { blockUser } from './blockList';
 
-/** Published support channel — same page as the App Store Support URL. */
-const SUPPORT_URL = 'https://greenbidz.com/contact-us/';
+/** Moderation inbox. An email address is a support channel, not a storefront. */
+const REPORT_EMAIL = 'support@greenbidz.com';
 
 export interface ReportBlockSheetProps {
   visible: boolean;
@@ -52,11 +59,22 @@ export function ReportBlockSheet({
     setBusy(true);
     haptics.tap();
     try {
-      await WebBrowser.openBrowserAsync(SUPPORT_URL, {
-        toolbarColor: '#14452f',
-        controlsColor: '#FFFFFF',
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
-      });
+      // The reviewer can see this carries real context, not a blank form.
+      const subject = `Report: user ${otherPartyId}${listingId ? ` (listing ${listingId})` : ''}`;
+      const body = [
+        'Please describe what happened:',
+        '',
+        '',
+        '---',
+        `Reported user: ${otherPartyName || 'unknown'} (id ${otherPartyId})`,
+        listingId ? `Listing: ${listingId}` : null,
+      ]
+        .filter((l) => l !== null)
+        .join('\n');
+      const url = `mailto:${REPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      const can = await Linking.canOpenURL(url);
+      if (!can) throw new Error('no mail client');
+      await Linking.openURL(url);
       toast(t('mobile.labReport.reportOpened'));
     } catch {
       toast.error(t('mobile.labReport.reportFailed'));

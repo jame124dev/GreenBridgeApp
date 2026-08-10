@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, Linking, ScrollView, StyleSheet } from 'react-native';
+// `Linking` is deliberately NOT imported — this screen opens no external pages
+// (Guideline 3.1.1; see the note at the removed "Open website" button below).
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
@@ -270,24 +272,29 @@ export default function PendingScreen() {
               </Text>
             </Pressable>
 
-            <Pressable
-              // ⚠️ Was `https://greenbidz.com/dashboard/settings`, which renders
-              // "Page not found". Same class of dead link as the login screen's
-              // "Request an account" that App Review rejected — this one sits on
-              // the pending screen, which is exactly where an unapproved
-              // reviewer lands, so it was a second 2.1(a) waiting to happen.
-              // seller.greenbidz.com/dashboard/settings resolves (it redirects
-              // to the sign-in page, then on to settings).
-              onPress={() => Linking.openURL('https://seller.greenbidz.com/dashboard/settings')}
-              style={({ pressed }) => [styles.btn, styles.btnSecondary, pressed && styles.pressed]}
-              accessibilityRole="button"
-            >
-              <Text style={styles.btnSecondaryText}>
-                {overall === 'action'
-                  ? t('mobile.auth.pending.completeOnSite', { defaultValue: 'Complete on website' })
-                  : t('mobile.auth.pending.openSite', { defaultValue: 'Open website' })}
-              </Text>
-            </Pressable>
+            {/* ⚠️ DO NOT re-add an "Open website" / "Complete on website" button
+                here. It used to open `seller.greenbidz.com/dashboard/settings`
+                — the seller dashboard, where a business completes its account.
+                App Review rejected build 14 under **Guideline 3.1.1** for giving
+                in-app access to exactly that kind of external business
+                account-registration mechanism, and this screen is where an
+                unapproved reviewer lands, so it is the most exposed instance of
+                it in the whole app.
+
+                Replaced with inert guidance: nothing here is tappable, and the
+                approval state still updates by itself via "Check approval
+                status" above. */}
+            <Text style={styles.note}>
+              {overall === 'action'
+                ? t('mobile.auth.pending.actionContact', {
+                    defaultValue:
+                      'Our team will contact you about anything still needed. No action is required in the app.',
+                  })
+                : t('mobile.auth.pending.reviewContact', {
+                    defaultValue:
+                      "Your application is with our team. We'll email you as soon as it's reviewed.",
+                  })}
+            </Text>
 
             <Pressable
               onPress={handleSignOut}

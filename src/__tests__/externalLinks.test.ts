@@ -1,21 +1,35 @@
 /**
- * The app's outbound web links must not point at dead pages.
+ * The app's outbound web links have now caused THREE App Store rejections, each
+ * from a different failure mode. This test encodes all three lessons.
  *
- * App Review rejected 1.0.0 (10) under Guideline 2.1(a) — "An error message
- * displayed at the account registration" — because the login screen's
- * "Request an account" opened `seller.greenbidz.com/contact`, which renders
- * "404 — Oops! Page not found". A second dead link (`greenbidz.com/dashboard/
- * settings`) sat on the pending screen, which is exactly where an unapproved
- * reviewer lands.
+ * 1. **Guideline 2.1(a) — build 10.** "An error message displayed at the account
+ *    registration": the login screen's "Request an account" opened
+ *    `seller.greenbidz.com/contact`, which renders "404 — Oops! Page not found".
+ *    A second dead link (`greenbidz.com/dashboard/settings`) sat on the pending
+ *    screen, which is exactly where an unapproved reviewer lands.
  *
- * ⚠️ WHY A STATUS-CODE CHECK DOES NOT CATCH THIS: both are single-page apps.
- * The server answers **HTTP 200** and the 404 is rendered client-side, so
- * `curl -o /dev/null -w '%{http_code}'` reports a healthy 200 for a dead page.
- * These URLs must be verified by RENDERING them, not by their status code.
+ *    ⚠️ WHY A STATUS-CODE CHECK DOES NOT CATCH THIS: both are single-page apps.
+ *    The server answers **HTTP 200** and the 404 is rendered client-side, so
+ *    `curl -o /dev/null -w '%{http_code}'` reports a healthy 200 for a dead
+ *    page. Such URLs must be verified by RENDERING them.
  *
- * This test cannot make network calls, so it does the next best thing: it pins
- * the outbound URLs so a regression is deliberate, and hard-fails on the two
- * URLs already known to be dead.
+ * 2. **Guideline 3.1.1 — build 14.** Fixing (1) by pointing those links at
+ *    `greenbidz.com/contact-us/` created a WORSE problem. That page carries a
+ *    Company field and a chat widget offering "auction services" / "list my
+ *    equipment" / "free valuation", so App Review found:
+ *
+ *      "The app includes an account registration feature for businesses and
+ *       organizations, which is considered access to external mechanisms for
+ *       purchases or subscriptions to be used in the app.
+ *       Next Steps: Remove the account registration features for business and
+ *       organizations."
+ *
+ *    The app is therefore **sign-in only** and links to NO commercial or
+ *    account-registration page. `BANNED` below is the enforcement.
+ *
+ * 3. The two rules pull in opposite directions, so neither list may be relaxed
+ *    without re-reading both rejections. A link that is merely "alive" is not
+ *    automatically safe, and a link that is "safe" is not automatically alive.
  */
 import { describe, it, expect } from '@jest/globals';
 import fs from 'fs';
@@ -29,13 +43,45 @@ const KNOWN_DEAD = [
   'https://greenbidz.com/dashboard/settings',
 ];
 
-/** Verified live, by rendering. Update only after checking in a browser. */
-const APPROVED = {
-  'app/(auth)/login.tsx': 'https://greenbidz.com/contact-us/',
-  'app/(auth)/pending.tsx': 'https://seller.greenbidz.com/dashboard/settings',
-} as const;
+/**
+ * Alive, but rejected under Guideline 3.1.1 — these are business/organization
+ * sign-up and account-management surfaces. The app must not open any of them.
+ * `greenbidz.com` is banned wholesale: its nav reaches the flagged contact form
+ * in one tap, so linking the homepage is linking the funnel.
+ */
+const BANNED = [
+  'https://greenbidz.com/contact-us/',
+  'https://greenbidz.com/contact-us',
+  'https://greenbidz.com',
+  'https://seller.greenbidz.com/dashboard/settings',
+  'https://seller.greenbidz.com/dashboard',
+];
+
+/**
+ * Screens that App Review reached and rejected. They must contain NO outbound
+ * web navigation at all — not a fixed URL, not one built at runtime.
+ */
+const MUST_NOT_NAVIGATE = ['app/(auth)/login.tsx', 'app/(auth)/pending.tsx'];
 
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+
+/** Strip comments so an explanatory note naming a banned URL isn't a failure. */
+function codeLines(src: string): { line: string; n: number }[] {
+  let inBlock = false;
+  return src.split('\n').flatMap((raw, i) => {
+    const line = raw.trim();
+    if (inBlock) {
+      if (line.includes('*/')) inBlock = false;
+      return [];
+    }
+    if (line.startsWith('/*')) {
+      if (!line.includes('*/')) inBlock = true;
+      return [];
+    }
+    if (line.startsWith('//') || line.startsWith('*')) return [];
+    return [{ line: raw, n: i + 1 }];
+  });
+}
 
 /** Every source file that can open an external web page. */
 function sourceFiles(): string[] {
@@ -55,28 +101,49 @@ function sourceFiles(): string[] {
   return out;
 }
 
-describe('outbound web links', () => {
-  it('never references a URL known to render a 404', () => {
-    const offenders: string[] = [];
-    for (const file of sourceFiles()) {
-      const src = fs.readFileSync(file, 'utf8');
-      for (const dead of KNOWN_DEAD) {
-        // Ignore the explanatory comments that name the dead URL on purpose.
-        const lines = src.split('\n');
-        lines.forEach((line, i) => {
-          if (!line.includes(dead)) return;
-          const trimmed = line.trim();
-          if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
-          offenders.push(`${path.relative(ROOT, file)}:${i + 1} → ${dead}`);
-        });
+function scan(needles: string[]): string[] {
+  const offenders: string[] = [];
+  for (const file of sourceFiles()) {
+    // The locale files legitimately mention greenbidz.com as display text.
+    if (file.includes(`${path.sep}i18n${path.sep}`)) continue;
+    for (const { line, n } of codeLines(fs.readFileSync(file, 'utf8'))) {
+      for (const needle of needles) {
+        if (!line.includes(needle)) continue;
+        // Only flag a real URL, not a longer unrelated one that contains it.
+        const after = line.slice(line.indexOf(needle) + needle.length, line.indexOf(needle) + needle.length + 1);
+        if (needle === 'https://greenbidz.com' && /[\w/-]/.test(after)) continue;
+        offenders.push(`${path.relative(ROOT, file)}:${n} → ${needle}`);
       }
     }
-    expect(offenders).toEqual([]);
+  }
+  return offenders;
+}
+
+describe('outbound web links', () => {
+  it('never references a URL known to render a 404 (Guideline 2.1(a))', () => {
+    expect(scan(KNOWN_DEAD)).toEqual([]);
   });
 
-  for (const [file, url] of Object.entries(APPROVED)) {
-    it(`${file} still points at the verified page`, () => {
-      expect(read(file)).toContain(url);
+  it('never links to a business sign-up or account page (Guideline 3.1.1)', () => {
+    expect(scan(BANNED)).toEqual([]);
+  });
+
+  for (const file of MUST_NOT_NAVIGATE) {
+    it(`${file} performs no outbound navigation at all`, () => {
+      const src = read(file);
+      const nav = codeLines(src).filter(({ line }) =>
+        /Linking\.openURL|WebBrowser\.openBrowserAsync|openAuthSessionAsync/.test(line),
+      );
+      expect(nav.map((l) => `${file}:${l.n} ${l.line.trim()}`)).toEqual([]);
     });
   }
+
+  it('the login screen offers no account-registration call to action', () => {
+    const src = read('app/(auth)/login.tsx');
+    // The i18n KEYS for the removed CTA must be gone from the screen; the
+    // strings may remain in the locale files, which is harmless.
+    for (const key of ['mobile.auth.requestAccount', 'mobile.auth.noAccount']) {
+      expect(codeLines(src).some(({ line }) => line.includes(key))).toBe(false);
+    }
+  });
 });
