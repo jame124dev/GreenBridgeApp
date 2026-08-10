@@ -408,6 +408,36 @@ Answer the questionnaire honestly in the ASC UI.
       | 1.2 (proactive) | Report + Block in every Messages thread; blocked user leaves the inbox, composer replaced | `labReport.*` + `chat.blockedUserIds` present |
       | 2.1 (proactive) | Account → Help / About open real pages (were "coming soon" toasts) | `profile.helpComingSoon` absent |
       Review notes in ASC tell the reviewer **where** report/block is, so they don't have to hunt.
+- [x] **REJECTION 3 (2026-08-09, Guideline 3.1.1 — Business/Payments)** on build 14:
+      > *"The app includes an account registration feature for businesses and organizations, which is
+      > considered access to external mechanisms for purchases or subscriptions to be used in the app.
+      > **Next Steps:** Remove the account registration features for business and organizations."*
+
+      Their screenshot was **`greenbidz.com/contact-us/` open in the app's in-app browser** — the page
+      carries a **Company** field and a chat widget offering *"auction services" / "list my equipment" /
+      "free valuation"*.
+
+      ⚠️ **This was caused by the fix for rejection 2.** The link was dead before, so App Review never
+      got far enough to object to where it went. Repairing the 404 exposed the guideline problem
+      underneath it. **Lesson: when you repair a broken path, review the destination as if it were new
+      — a fix moves the reviewer forward into territory nobody has audited.**
+
+      Fixed by making the app **sign-in only**, with no route to any commercial page:
+      | Screen | Was | Now |
+      |---|---|---|
+      | `login.tsx` | "Request an account" → `greenbidz.com/contact-us/` | inert line, "Accounts are issued by the GreenBidz team." `CONTACT_URL`, `openInAppBrowser` and the `expo-web-browser` import all deleted |
+      | `pending.tsx` | "Open website" → seller dashboard | inert guidance; `Linking` import deleted |
+      | `QuickActionsStrip` | Help → contact page · About → `greenbidz.com` | Help → `mailto:support@greenbidz.com` · About → in-app `AboutSheet` |
+      | `ReportBlockSheet` | Report → contact page | Report → pre-filled `mailto` carrying reported user id + listing |
+
+      **`externalLinks.test.ts` found the fourth one** (`ReportBlockSheet`) — I had missed it by hand.
+      It now enforces three rules: no known-404 URL, no banned business URL, and **no outbound
+      navigation at all** from the two screens App Review actually reached.
+
+      Residual, knowingly accepted: the marketplace tab embeds `101lab.co` **with its own web header**
+      (`hideSiteHeader` is only passed on product detail). It is signed-in-only and survived three
+      reviews unflagged; hiding it would remove the hamburger navigation and trade a 3.1.1 risk for a
+      2.1 completeness one.
 - [ ] If **rejected again**: read the exact guideline number they cite, then fix and resubmit
 - [ ] If **approved**: press **Release This Version** — but clear the blockers below first
 - [ ] App is live 🎉 — confirm it opens from the public App Store link
