@@ -83,9 +83,14 @@ export default function LoginScreen() {
             return;
           }
           if (err.code === 'ACCOUNT_PENDING') {
+            // A pending account is a working BUYER session: login() already
+            // persisted the tokens AND a synthesised profile, so send the user
+            // into the app. We still record the pending facts for the seller
+            // status surfaces — but `isPending` must never block navigation, and
+            // routing here to /(auth)/pending is what made it a dead end.
             setPending(true);
             setApproval((err.extra as ApprovalStateExtra | undefined)?.approval ?? null);
-            return router.replace('/(auth)/pending');
+            return router.replace(HOME_ROUTE);
           }
           if (err.code === 'BUYER_NOT_ALLOWED') {
             toast.error(err.message);

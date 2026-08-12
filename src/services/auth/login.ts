@@ -3,7 +3,7 @@ import { getAuthConfigError } from '@/lib/env';
 import { IS_CUSTOMER } from '@/lib/flags';
 import { mmkv } from '@/lib/mmkv';
 import { getSecureItem, setSecureItem } from '@/lib/secureStorage';
-import type { ApprovalState } from '@/stores/authStore';
+import { useAuth, type ApprovalState } from '@/stores/authStore';
 import { logout } from './logout';
 
 export { logout };
@@ -74,6 +74,22 @@ export async function login(payload: LoginPayload): Promise<LoginSuccess> {
       });
       mmkv.set('auth.pending', true);
       if (body.approval) mmkv.set('auth.approval', JSON.stringify(body.approval));
+
+      // loginV3's pending response carries NO user object — only token/refreshToken/userId
+      // (controller/authV3.controller.js:220-225). Synthesise the minimum the app needs so a
+      // pending user can actually USE the app as a buyer instead of hitting a wall. The real
+      // profile replaces this on the first approved login.
+      const pendingProfile = {
+        id: Number(body.userId),
+        email: payload.email,
+        name: payload.email.split('@')[0],
+        role: 'buyer' as const,
+        company: null,
+      };
+      mmkv.set('auth.profile', JSON.stringify(pendingProfile));
+      useAuth.getState().setProfile(pendingProfile);
+      useAuth.getState().setPending(true);
+
       throw new LoginError('ACCOUNT_PENDING', (body.message as string) ?? 'Account pending approval', body);
     }
     if (!axiosErr.response) {

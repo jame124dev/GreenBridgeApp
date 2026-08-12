@@ -5,9 +5,12 @@ import { IS_CUSTOMER } from '@/lib/flags';
 
 export default function Index() {
   const profile = useAuth((s) => s.profile);
-  const isPending = useAuth((s) => s.isPending);
 
-  if (isPending) return <Redirect href="/(auth)/pending" />;
+  // ⚠️ DO NOT re-add an `isPending` redirect here (it used to send pending users
+  // to /(auth)/pending, mirroring the AuthGuard). `isPending` only means "not
+  // approved in the main users queue" — the state every new app signup starts
+  // in — and a pending account is a working BUYER session. Only the SELL path is
+  // gated, in launchSellerScan(), off /seller-upgrade/my-status.
   if (!profile) return <Redirect href="/(auth)/login" />;
   // Post-auth fork: customer bundle → (lab) app; seller bundle → existing (tabs).
   if (IS_CUSTOMER) return <Redirect href="/(lab)/(tabs)/home" />;

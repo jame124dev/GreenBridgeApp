@@ -51,7 +51,6 @@ function AuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
   const profile = useAuth((s) => s.profile);
-  const isPending = useAuth((s) => s.isPending);
   const hydrated = useAuth((s) => s.hydrated);
   const reset = useAuth((s) => s.reset);
 
@@ -77,12 +76,13 @@ function AuthGuard({ children }: { children: ReactNode }) {
     if (!hydrated) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const onPending = (segments as string[]).includes('pending');
 
-    if (isPending) {
-      if (!onPending) router.replace('/(auth)/pending');
-      return;
-    }
+    // ⚠️ DO NOT re-add a redirect here. `isPending` means "not approved in the main
+    // users queue", which is the state EVERY new app signup starts in. Bouncing
+    // those users to /(auth)/pending is what made a fresh install a dead end.
+    // A pending account is a working BUYER account: browse, search, prices, AI
+    // chat, messaging and wants all work. Only the SELL path is gated, and that
+    // gate lives in launchSellerScan() keyed off /seller-upgrade/my-status.
 
     if (!profile && !inAuthGroup) {
       router.replace('/(auth)/login');
@@ -92,7 +92,7 @@ function AuthGuard({ children }: { children: ReactNode }) {
     if (profile && inAuthGroup) {
       router.replace(HOME_ROUTE);
     }
-  }, [profile, isPending, segments, hydrated, router]);
+  }, [profile, segments, hydrated, router]);
 
   return <>{children}</>;
 }
