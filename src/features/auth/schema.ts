@@ -30,6 +30,10 @@ export type NewPasswordInput = z.infer<typeof newPasswordSchema>;
 export const registerCredentialsSchema = z
   .object({
     email: z.string().email('mobile.auth.register.emailInvalid'),
+    // One free-text name, split into first/last for the API. The signup form is
+    // deliberately three fields — asking for company details up front is what
+    // reads as business/organization registration (Guideline 3.1.1).
+    name: z.string().trim().min(1, 'mobile.auth.register.nameRequired'),
     // Matches the reset flow's floor; the API itself imposes no minimum, so
     // this is the only place a weak password is caught.
     password: z.string().min(8, 'mobile.auth.register.passwordTooShort'),

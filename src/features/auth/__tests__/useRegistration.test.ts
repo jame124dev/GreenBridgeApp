@@ -55,7 +55,9 @@ const mockComplete = completeSignup as jest.MockedFunction<typeof completeSignup
 beforeEach(() => jest.clearAllMocks());
 
 describe('useRegistration', () => {
-  it('walks credentials -> code -> profile -> done', async () => {
+  // Two steps, not three: verifying the code also creates the account. There is
+  // no `submitProfile` — company/tax details moved to the seller application.
+  it('walks credentials -> code -> done', async () => {
     mockInitiate.mockResolvedValue(undefined);
     mockVerify.mockResolvedValue(undefined);
     mockComplete.mockResolvedValue({ user_id: 42, email: 'a@b.com', name: 'A B' });
@@ -64,18 +66,13 @@ describe('useRegistration', () => {
     expect(result.current.state.step).toBe('credentials');
 
     await act(async () => {
-      await result.current.submitCredentials('a@b.com', 'hunter2hunter2');
+      await result.current.submitCredentials('a@b.com', 'hunter2hunter2', 'A B');
     });
     expect(result.current.state.step).toBe('code');
     expect(result.current.state.email).toBe('a@b.com');
 
     await act(async () => {
       await result.current.submitCode('123456');
-    });
-    expect(result.current.state.step).toBe('profile');
-
-    await act(async () => {
-      await result.current.submitProfile({ firstName: 'A', lastName: 'B' });
     });
     expect(result.current.state.step).toBe('done');
     expect(result.current.state.result?.user_id).toBe(42);
@@ -85,7 +82,7 @@ describe('useRegistration', () => {
     mockInitiate.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRegistration());
     await act(async () => {
-      await result.current.submitCredentials('a@b.com', 'hunter2hunter2');
+      await result.current.submitCredentials('a@b.com', 'hunter2hunter2', 'A B');
     });
     // The service pins role: 'buyer'; assert the hook doesn't override it.
     expect(mockInitiate).toHaveBeenCalledWith('a@b.com', 'hunter2hunter2');
@@ -99,7 +96,7 @@ describe('useRegistration', () => {
 
     const { result } = renderHook(() => useRegistration());
     await act(async () => {
-      await result.current.submitCredentials('a@b.com', 'hunter2hunter2');
+      await result.current.submitCredentials('a@b.com', 'hunter2hunter2', 'A B');
     });
     await act(async () => {
       await result.current.submitCode('123456');
@@ -118,7 +115,7 @@ describe('useRegistration', () => {
 
     const { result } = renderHook(() => useRegistration());
     await act(async () => {
-      await result.current.submitCredentials('a@b.com', 'hunter2hunter2');
+      await result.current.submitCredentials('a@b.com', 'hunter2hunter2', 'A B');
     });
     await act(async () => {
       await result.current.submitCode('000000');
@@ -134,7 +131,7 @@ describe('useRegistration', () => {
 
     const { result } = renderHook(() => useRegistration());
     await act(async () => {
-      await result.current.submitCredentials('taken@b.com', 'hunter2hunter2');
+      await result.current.submitCredentials('taken@b.com', 'hunter2hunter2', 'A B');
     });
 
     expect(result.current.state.step).toBe('credentials');
@@ -145,7 +142,7 @@ describe('useRegistration', () => {
     mockInitiate.mockRejectedValue(new RegisterError('NETWORK', 'Network error'));
     const { result } = renderHook(() => useRegistration());
     await act(async () => {
-      await result.current.submitCredentials('a@b.com', 'hunter2hunter2');
+      await result.current.submitCredentials('a@b.com', 'hunter2hunter2', 'A B');
     });
     expect(result.current.state.busy).toBe(false);
   });
@@ -156,7 +153,7 @@ describe('useRegistration', () => {
 
     const { result } = renderHook(() => useRegistration());
     await act(async () => {
-      await result.current.submitCredentials('a@b.com', 'hunter2hunter2');
+      await result.current.submitCredentials('a@b.com', 'hunter2hunter2', 'A B');
     });
     await act(async () => {
       await result.current.resend();
@@ -166,21 +163,63 @@ describe('useRegistration', () => {
     expect(result.current.state.step).toBe('code');
   });
 
-  it('back() steps within the flow and clears the error', async () => {
+  it('splits one name field into first and last for the API', async () => {
     mockInitiate.mockResolvedValue(undefined);
     mockVerify.mockResolvedValue(undefined);
+    mockComplete.mockResolvedValue({ user_id: 1, email: 'a@b.com', name: 'Ada Lovelace' });
+
     const { result } = renderHook(() => useRegistration());
     await act(async () => {
-      await result.current.submitCredentials('a@b.com', 'hunter2hunter2');
+      await result.current.submitCredentials('a@b.com', 'hunter2hunter2', 'Ada Lovelace');
     });
     await act(async () => {
       await result.current.submitCode('123456');
     });
-    expect(result.current.state.step).toBe('profile');
 
-    act(() => result.current.back());
+    expect(mockComplete).toHaveBeenCalledWith({
+      email: 'a@b.com',
+      first_name: 'Ada',
+      last_name: 'Lovelace',
+    });
+    expect(result.current.state.step).toBe('done');
+  });
+
+  it('uses a single-word name for both fields', async () => {
+    mockInitiate.mockResolvedValue(undefined);
+    mockVerify.mockResolvedValue(undefined);
+    mockComplete.mockResolvedValue({ user_id: 1, email: 'a@b.com', name: 'Ada' });
+    const { result } = renderHook(() => useRegistration());
+    await act(async () => {
+      await result.current.submitCredentials('a@b.com', 'hunter2hunter2', 'Ada');
+    });
+    await act(async () => {
+      await result.current.submitCode('123456');
+    });
+    // The server would otherwise fall back to the email prefix, which reads as broken in chat.
+    expect(mockComplete).toHaveBeenCalledWith({
+      email: 'a@b.com',
+      first_name: 'Ada',
+      last_name: 'Ada',
+    });
+  });
+
+  it('back() steps within the flow and clears the error', async () => {
+    mockInitiate.mockResolvedValue(undefined);
+    mockVerify.mockRejectedValue(new RegisterError('INVALID_CODE', 'Invalid verification code'));
+    const { result } = renderHook(() => useRegistration());
+    await act(async () => {
+      await result.current.submitCredentials('a@b.com', 'hunter2hunter2', 'A B');
+    });
+    await act(async () => {
+      await result.current.submitCode('000000');
+    });
     expect(result.current.state.step).toBe('code');
+    expect(result.current.state.error).toMatch(/invalid/i);
+
+    // Only one step back now — `code` is the last step before the account
+    // exists, so `done` is terminal and there is no `profile` step to leave.
     act(() => result.current.back());
     expect(result.current.state.step).toBe('credentials');
+    expect(result.current.state.error).toBeNull();
   });
 });

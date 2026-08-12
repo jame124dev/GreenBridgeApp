@@ -156,13 +156,23 @@ describe('outbound web links', () => {
     expect(urls.map((l) => `${l.n}: ${l.line.trim()}`)).toEqual([]);
   });
 
-  it('the registration screen opens nothing external', () => {
-    const src = read('app/(auth)/register.tsx');
-    const lines = codeLines(src);
-    const nav = lines.filter(({ line }) =>
-      /Linking\.openURL|WebBrowser\.|openAuthSessionAsync|['"`]https?:\/\//.test(line),
-    );
-    expect(nav.map((l) => `${l.n}: ${l.line.trim()}`)).toEqual([]);
+  /**
+   * Terms and Privacy are the ONE permitted exception: they are legal notices,
+   * not a purchase or account-registration mechanism, and consent links are
+   * expected on a signup screen. The allow-list is exact — any OTHER URL on this
+   * screen (a contact form, a pricing page, a "request an account" funnel) is
+   * the Guideline 3.1.1 failure all over again.
+   */
+  it('the registration screen opens nothing except the legal pages', () => {
+    const ALLOWED = ['https://101lab.co/terms-of-service', 'https://101lab.co/privacy-policy'];
+    const lines = codeLines(read('app/(auth)/register.tsx'));
+    const urls = lines
+      .filter(({ line }) => /['"`]https?:\/\//.test(line))
+      .flatMap(({ line, n }) => {
+        const m = line.match(/https?:\/\/[^'"`\s]+/g) ?? [];
+        return m.filter((u) => !ALLOWED.includes(u)).map((u) => `${n}: ${u}`);
+      });
+    expect(urls).toEqual([]);
   });
 
   it('registration keeps company optional (a required one is business signup)', () => {

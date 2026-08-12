@@ -1,23 +1,26 @@
 /**
- * Native 3-step registration (email + password → 6-digit code → your details).
+ * Native 2-step registration (email + password + name → 6-digit code → in).
  *
  * ⚠️ NATIVE ON PURPOSE — DO NOT REPLACE WITH A WEB HAND-OFF.
  * The login screen used to link out to `greenbidz.com/contact-us/` to "request
  * an account". App Review rejected build 14 under **Guideline 3.1.1** because
  * that page is a business sign-up funnel reached from inside the app. Signup
- * itself was never the problem — linking OUT to it was. This screen opens
- * nothing external.
+ * itself was never the problem — linking OUT to it was. The Terms and Privacy
+ * notices below are the ONLY external links on this screen (legal notices, not
+ * a purchase or registration mechanism) and `externalLinks.test.ts` enforces it.
  *
- * Deliberately a BUYER marketplace account with an optional company field.
- * Requiring company details would turn this back into business/organization
- * registration, which is exactly what was rejected.
+ * Deliberately THREE FIELDS for a plain BUYER marketplace account. Company, tax
+ * id and business type are NOT collected here — asking for them is what turns
+ * signup into "account registration for businesses and organizations", the
+ * Guideline 3.1.1 finding. They belong to the seller-upgrade application, which
+ * is only reached by someone who tries to list something.
  *
  * Presentational only: the flow lives in useRegistration, so the recovery paths
- * are unit-tested without rendering. Styling mirrors forgot-password.tsx, which
- * is the same 3-step shape, so the two flows feel identical.
+ * are unit-tested without rendering. Styling mirrors forgot-password.tsx so the
+ * two flows feel identical.
  */
 import { useEffect, useState } from 'react';
-import { BackHandler, Pressable, ScrollView, StyleSheet, Text as RNText, TextInput, View } from 'react-native';
+import { BackHandler, Linking, Pressable, ScrollView, StyleSheet, Text as RNText, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -29,13 +32,14 @@ import { toast } from 'sonner-native';
 import { Button } from '@/components/ui/Button';
 import { OtpInput } from '@/components/ui/OtpInput';
 import { useRegistration } from '@/features/auth/useRegistration';
+import { useLogin } from '@/features/auth/useLogin';
 import {
   registerCodeSchema,
   registerCredentialsSchema,
-  registerProfileSchema,
   type RegisterCredentialsInput,
-  type RegisterProfileInput,
 } from '@/features/auth/schema';
+import { IS_CUSTOMER } from '@/lib/flags';
+import { LoginError } from '@/services/auth/login';
 
 const FOREST = '#14452f';
 const ECO_TEAL = '#00B289';
@@ -43,7 +47,11 @@ const TEXT_PRIMARY = '#1A1C1F';
 const TEXT_SECONDARY = '#43474F';
 const HAIRLINE = '#E1E5EC';
 
-const STEP_ORDER = ['credentials', 'code', 'profile'] as const;
+// Post-auth landing route — mirrors HOME_ROUTE in login.tsx / _layout.tsx so a
+// brand-new account lands in the right app for this bundle.
+const HOME_ROUTE = IS_CUSTOMER ? '/(lab)/(tabs)/home' : '/(tabs)';
+
+const STEP_ORDER = ['credentials', 'code'] as const;
 
 /** Privacy: show a***@domain in the "code sent to" hint, never the full address. */
 function maskEmail(email: string): string {
@@ -95,7 +103,7 @@ export default function RegisterScreen() {
       {stepIndex >= 0 ? (
         <View style={styles.rail} accessibilityRole="progressbar"
           accessibilityLabel={t('mobile.auth.register.stepOf', {
-            defaultValue: `Step ${stepIndex + 1} of 3`,
+            defaultValue: `Step ${stepIndex + 1} of ${STEP_ORDER.length}`,
             current: stepIndex + 1,
             total: STEP_ORDER.length,
           })}
@@ -113,7 +121,6 @@ export default function RegisterScreen() {
       >
         {step === 'credentials' && <CredentialsStep reg={reg} />}
         {step === 'code' && <CodeStep reg={reg} />}
-        {step === 'profile' && <ProfileStep reg={reg} />}
         {step === 'done' && <DoneStep reg={reg} />}
       </ScrollView>
     </View>
@@ -126,11 +133,11 @@ function CredentialsStep({ reg }: StepProps) {
   const { t } = useTranslation();
   const { control, handleSubmit, formState: { errors } } = useForm<RegisterCredentialsInput>({
     resolver: zodResolver(registerCredentialsSchema),
-    defaultValues: { email: '', password: '', confirmPassword: '' },
+    defaultValues: { email: '', name: '', password: '', confirmPassword: '' },
   });
 
-  const onSubmit = handleSubmit(async ({ email, password }) => {
-    const ok = await reg.submitCredentials(email.trim(), password);
+  const onSubmit = handleSubmit(async ({ email, password, name }) => {
+    const ok = await reg.submitCredentials(email.trim(), password, name.trim());
     if (ok) toast(t('mobile.auth.register.codeSent'));
   });
 
@@ -158,6 +165,34 @@ function CredentialsStep({ reg }: StepProps) {
         )}
       />
       {errors.email?.message ? <RNText style={styles.err}>{t(errors.email.message)}</RNText> : null}
+
+      {/* One free-text name, split into first/last for the API. Without it the
+          server falls back to the email prefix, which shows up as e.g. "abhay"
+          in a seller's chat thread. */}
+      <RNText style={styles.label}>
+        {t('mobile.auth.register.nameLabel', { defaultValue: 'Your name' })}
+      </RNText>
+      <Controller
+        control={control}
+        name="name"
+        render={({ field: { onChange, value, onBlur } }) => (
+          <TextInput
+            style={styles.input}
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            placeholder={t('mobile.auth.register.namePlaceholder', { defaultValue: 'Ada Lovelace' })}
+            placeholderTextColor="#9aa1ad"
+            autoCapitalize="words"
+            autoComplete="name"
+          />
+        )}
+      />
+      {errors.name?.message ? (
+        <RNText style={styles.err}>
+          {t(errors.name.message, { defaultValue: 'Please enter your name' })}
+        </RNText>
+      ) : null}
 
       <RNText style={styles.label}>{t('mobile.auth.register.passwordLabel')}</RNText>
       <Controller
@@ -205,6 +240,19 @@ function CredentialsStep({ reg }: StepProps) {
         loading={reg.state.busy}
         fullWidth
       />
+
+      {/* The ONLY external links permitted on an auth screen — legal notices, not a
+          registration or purchase mechanism (see Global Constraint 1). */}
+      <RNText style={styles.legal}>
+        {t('mobile.auth.register.legalPrefix', { defaultValue: 'By continuing you agree to our' })}{' '}
+        <RNText style={styles.legalLink} onPress={() => Linking.openURL('https://101lab.co/terms-of-service')}>
+          {t('mobile.auth.register.terms', { defaultValue: 'Terms of Service' })}
+        </RNText>
+        {' '}{t('mobile.auth.register.legalAnd', { defaultValue: 'and' })}{' '}
+        <RNText style={styles.legalLink} onPress={() => Linking.openURL('https://101lab.co/privacy-policy')}>
+          {t('mobile.auth.register.privacy', { defaultValue: 'Privacy Policy' })}
+        </RNText>
+      </RNText>
 
       {/* An "email already registered" dead end is the most likely failure on
           this step, so the recovery sits right under the CTA. */}
@@ -262,98 +310,42 @@ function CodeStep({ reg }: StepProps) {
   );
 }
 
-function ProfileStep({ reg }: StepProps) {
-  const { t } = useTranslation();
-  const { control, handleSubmit, formState: { errors } } = useForm<RegisterProfileInput>({
-    resolver: zodResolver(registerProfileSchema),
-    defaultValues: { firstName: '', lastName: '', phone: '', company: '', country: '' },
-  });
-
-  const onSubmit = handleSubmit(async (values) => {
-    await reg.submitProfile(values);
-  });
-
-  return (
-    <View style={styles.body}>
-      <RNText style={styles.title}>{t('mobile.auth.register.profileTitle')}</RNText>
-      <RNText style={styles.subtitle}>{t('mobile.auth.register.profileSubtitle')}</RNText>
-
-      <RNText style={styles.label}>{t('mobile.auth.register.firstNameLabel')}</RNText>
-      <Controller
-        control={control}
-        name="firstName"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput style={styles.input} value={value} onChangeText={onChange} onBlur={onBlur} autoComplete="given-name" />
-        )}
-      />
-      {errors.firstName?.message ? <RNText style={styles.err}>{t(errors.firstName.message)}</RNText> : null}
-
-      <RNText style={styles.label}>{t('mobile.auth.register.lastNameLabel')}</RNText>
-      <Controller
-        control={control}
-        name="lastName"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput style={styles.input} value={value} onChangeText={onChange} onBlur={onBlur} autoComplete="family-name" />
-        )}
-      />
-      {errors.lastName?.message ? <RNText style={styles.err}>{t(errors.lastName.message)}</RNText> : null}
-
-      <RNText style={styles.label}>{t('mobile.auth.register.phoneLabel')}</RNText>
-      <Controller
-        control={control}
-        name="phone"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput
-            style={styles.input}
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            keyboardType="phone-pad"
-            autoComplete="tel"
-          />
-        )}
-      />
-
-      {/* ⚠️ Company is OPTIONAL and labelled as such. Making it required would
-          turn this into business/organization registration — the Guideline
-          3.1.1 finding on build 14. */}
-      <RNText style={styles.label}>{t('mobile.auth.register.companyLabel')}</RNText>
-      <Controller
-        control={control}
-        name="company"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput style={styles.input} value={value} onChangeText={onChange} onBlur={onBlur} autoComplete="organization" />
-        )}
-      />
-
-      <RNText style={styles.label}>{t('mobile.auth.register.countryLabel')}</RNText>
-      <Controller
-        control={control}
-        name="country"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput style={styles.input} value={value} onChangeText={onChange} onBlur={onBlur} autoComplete="country" />
-        )}
-      />
-
-      {reg.state.error ? <RNText style={styles.err}>{reg.state.error}</RNText> : null}
-
-      <Button
-        label={t('mobile.auth.register.createAccount')}
-        onPress={onSubmit}
-        loading={reg.state.busy}
-        fullWidth
-      />
-    </View>
-  );
-}
-
 /**
- * "What happens after this?" — the account is created but PENDING admin
- * approval, so we say so plainly instead of dropping the user at a login screen
- * that would reject them.
+ * "What happens after this?" — the account works immediately as a BUYER, so the
+ * only thing left to do is go and use it.
+ *
+ * ⚠️ The signup endpoints do NOT return a session: `POST /user/complete-signup`
+ * creates the row and returns `{ user_id, email, name }`, nothing else. So this
+ * button signs in with the credentials just entered rather than pretending a
+ * session exists — without that, replacing to HOME_ROUTE with a null profile is
+ * bounced straight back to /(auth)/login by the AuthGuard. The account is
+ * `pw_user_status = "pending"`, so `login()` answers ACCOUNT_PENDING; since Task
+ * 1 that is a working buyer session, not a failure.
  */
 function DoneStep({ reg }: StepProps) {
   const { t } = useTranslation();
+  const mut = useLogin();
+
+  const enter = () =>
+    mut.mutate(
+      { email: reg.state.email, password: reg.state.password },
+      {
+        onSuccess: () => router.replace(HOME_ROUTE),
+        onError: (err) => {
+          // Pending is the EXPECTED outcome for a fresh signup and is a usable
+          // buyer session (login() has already persisted profile + tokens).
+          if (err instanceof LoginError && err.code === 'ACCOUNT_PENDING') {
+            return router.replace(HOME_ROUTE);
+          }
+          // Anything else (e.g. the app was backgrounded long enough for the
+          // password to be dropped from memory) — recover at sign-in rather
+          // than stranding the user on a success screen.
+          toast.error(err instanceof Error ? err.message : t('mobile.auth.loginFailedBody'));
+          router.replace({ pathname: '/(auth)/login', params: { email: reg.state.email } });
+        },
+      },
+    );
+
   return (
     <View style={[styles.body, { alignItems: 'center', marginTop: 40 }]}>
       <CheckCircle2 size={56} color={ECO_TEAL} />
@@ -361,11 +353,15 @@ function DoneStep({ reg }: StepProps) {
         {t('mobile.auth.register.doneTitle')}
       </RNText>
       <RNText style={[styles.subtitle, { textAlign: 'center' }]}>
-        {t('mobile.auth.register.doneSubtitle')}
+        {t('mobile.auth.register.doneSubtitleBuyer', {
+          defaultValue:
+            'Your account is ready. Browse equipment, ask our AI assistant anything, and message sellers. To list your own equipment, apply to sell from the Sell tab.',
+        })}
       </RNText>
       <Button
-        label={t('mobile.auth.register.backToSignIn')}
-        onPress={() => router.replace({ pathname: '/(auth)/login', params: { email: reg.state.email } })}
+        label={t('mobile.auth.register.startBrowsing', { defaultValue: 'Start browsing' })}
+        onPress={enter}
+        loading={mut.isPending}
         fullWidth
       />
     </View>
@@ -388,6 +384,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, fontFamily: 'Inter_400Regular', fontSize: 15, color: TEXT_PRIMARY, backgroundColor: '#ffffff',
   },
   err: { fontFamily: 'Inter_400Regular', fontSize: 12.5, color: '#b42318' },
+  legal: { fontFamily: 'Inter_400Regular', fontSize: 11.5, lineHeight: 16, color: TEXT_SECONDARY, textAlign: 'center', marginTop: 12 },
+  legalLink: { color: FOREST, fontWeight: '600' },
   linkRow: { marginTop: 14, alignItems: 'center' },
   link: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: FOREST },
 });
