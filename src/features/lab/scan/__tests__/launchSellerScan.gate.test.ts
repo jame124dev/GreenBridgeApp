@@ -1,9 +1,9 @@
 /**
  * Task 4 — the sell gate.
  *
- * `launchSellerScan()` is the single choke point in front of the listing flow.
- * Two things are asserted here, because either one failing ships an ungated
- * sell path:
+ * `launchSellerScan()` is the choke point in front of the five chat/home entry
+ * points into the listing flow. Three things are asserted here, because any one
+ * of them failing ships an ungated sell path:
  *
  *  1. **Behaviour** — anything that is not exactly `status === 'approved'` in
  *     the `/seller-upgrade/my-status` cache routes to the application screen and
@@ -11,10 +11,16 @@
  *     the honest answer to "may this user list?" before the status has ever been
  *     fetched is "ask", not "yes".
  *
- *  2. **Topology** — the gate is inside the function, so every call site is
- *     covered by construction. The static scan at the bottom proves the premise
- *     that makes that true: the five call sites do no gating of their own, and
- *     no other (lab) file enters the scan flow behind the gate's back.
+ *  2. **Topology, within the customer fork** — the gate is inside the function, so
+ *     every call site is covered by construction. The static scan proves the
+ *     premise: the five call sites do no gating of their own.
+ *
+ *  3. **Topology, app-wide** — the section at the very bottom. The Phase 3 review
+ *     caught that (2) was too narrow: resuming a saved draft reaches the same
+ *     `/scan/*` screens from `src/features/scanner`, outside both `app/(lab)` and
+ *     `src/features/lab`, so a (lab)-scoped scan could never have seen it. There
+ *     are TWO choke points, sharing ONE predicate — `canEnterScanFlow()` — and the
+ *     app-wide enumeration is what makes a third door fail the build.
  */
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import fs from 'fs';
@@ -22,6 +28,15 @@ import path from 'path';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
+}));
+// ⚠️ JEST DOES NOT LOAD `.env`, so `IS_CUSTOMER` is `false` in this process while
+// EVERY shipped profile sets `EXPO_PUBLIC_USER_TYPE: "customer"` (eas.json lines
+// 18/39/60) — verified by probe. `canEnterScanFlow()` short-circuits to `true` for
+// the seller fork, so without this override these tests would exercise the
+// allow-all path and quietly stop testing the gate at all.
+jest.mock('@/lib/flags', () => ({
+  ...(jest.requireActual('@/lib/flags') as typeof import('@/lib/flags')),
+  IS_CUSTOMER: true,
 }));
 // The axios instance reads expo-constants at module load; the gate never makes a
 // request, so a stub is enough to keep the import graph out of native modules.
@@ -238,14 +253,142 @@ describe('the gate has no bypass', () => {
     const offenders: string[] = [];
     for (const file of labFiles()) {
       if (rel(file).endsWith('scan/launchSellerScan.ts')) continue;
-      const src = fs.readFileSync(file, 'utf8');
-      src.split('\n').forEach((line, i) => {
-        if (line.trim().startsWith('//') || line.trim().startsWith('*')) return;
+      for (const line of codeOf(fs.readFileSync(file, 'utf8')).split('\n')) {
         if (/routes\.scanCamera|routes\.scanListingMethod|['"`]\/scan\/camera/.test(line)) {
-          offenders.push(`${rel(file)}:${i + 1}`);
+          offenders.push(rel(file));
         }
-      });
+      }
     }
     expect(offenders).toEqual([]);
+  });
+});
+
+// ── Every door into /scan/*, app-wide ───────────────────────────────────────
+//
+// The (lab)-scoped test above missed the real second door: resuming a saved draft
+// lands on `/scan/detail` / `/scan/grouped-review` / `/scan/detection` — and, for
+// a draft with no photos, `/scan/camera` — from `src/features/scanner`, which is
+// outside `app/(lab)` and `src/features/lab` entirely. This section enumerates
+// EVERY file app-wide that can put a user inside the scan flow, so the next one
+// added fails the build rather than shipping ungated.
+
+/** The scan-flow AUTHORING screens. `/scan/drafts` (a list), `/scan/success`
+ *  (post-submit) and `/(tabs)` are deliberately NOT here — a buyer may see them. */
+const SCAN_AUTHORING = [
+  'scanCamera',
+  'scanListingMethod',
+  'scanProcessing',
+  'scanProcessingV2',
+  'scanDetection',
+  'scanDetail',
+  'scanGroupedReview',
+  'scanGroupedEdit',
+  'scanReorderPhotos',
+];
+
+const AUTHORING_PUSH = new RegExp(
+  `router\\.(push|replace|navigate)\\(` +
+    `|routes\\.(${SCAN_AUTHORING.join('|')})\\b` +
+    `|['"\`]/scan/(camera|listing-method|detail|detection|processing)`,
+);
+
+/**
+ * Files that can put the user inside the scan flow, and why each is safe.
+ *
+ *  gated       — calls `canEnterScanFlow()`; asserted below, so deleting the
+ *                guard fails this suite.
+ *  seller-fork — `app/(tabs)/*` is never mounted when `IS_CUSTOMER`, and in the
+ *                seller fork listing IS the product.
+ *  inside-flow — only reachable once a gated choke point has already let the user
+ *                in (e.g. the Detail screen's "retake photos").
+ *  via-gated    — does not push a scan route itself; delegates to `resumeDraftById`,
+ *                 which is gated. Listed so it stays visible rather than exempt.
+ */
+const SCAN_FLOW_DOORS: Record<string, 'gated' | 'seller-fork' | 'inside-flow' | 'via-gated'> = {
+  'src/features/lab/scan/launchSellerScan.ts': 'gated',
+  'src/features/scanner/useResumeDraft.ts': 'gated',
+  'app/(tabs)/index.tsx': 'seller-fork',
+  'app/(tabs)/scan.tsx': 'seller-fork',
+  'src/features/scanner/components/detail/useDetailController.ts': 'inside-flow',
+  // The background-recognition "draft ready" toast's "View" action. A GLOBAL
+  // entry point — it can fire on any screen — which is precisely why the guard
+  // belongs in `resumeDraftById` rather than on the surfaces that call it.
+  'src/features/scanner/surfaceDraftReady.tsx': 'via-gated',
+};
+
+/** Everything under app/ and src/, minus the scan flow's own screens. */
+function appWideFiles(): string[] {
+  const out: string[] = [];
+  for (const dir of ['app', 'src']) walk(path.join(ROOT, dir), out);
+  // `app/scan/**` IS the flow. Its one buyer-reachable screen, `drafts.tsx`, gets
+  // its own assertion below rather than an exemption.
+  return out.filter((f) => !rel(f).startsWith('app/scan/'));
+}
+
+describe('every door into the scan flow is accounted for', () => {
+  it('no file outside the allow-list pushes a scan authoring screen', () => {
+    const doors = new Set<string>();
+    for (const file of appWideFiles()) {
+      for (const line of codeOf(fs.readFileSync(file, 'utf8')).split('\n')) {
+        // Both halves must be on the line: a `router.push(` AND a scan authoring
+        // target. `routes.ts` itself only DEFINES the paths, so it never matches.
+        if (!/router\.(push|replace|navigate)\(/.test(line)) continue;
+        if (
+          new RegExp(
+            `routes\\.(${SCAN_AUTHORING.join('|')})\\b|['"\`]/scan/(camera|listing-method|detail|detection|processing)`,
+          ).test(line)
+        ) {
+          doors.add(rel(file));
+        }
+      }
+    }
+    // Resume doors push a route computed at runtime (`getScanResumeRoute`), which
+    // no line-level regex can see — count importing it as a door too.
+    for (const file of appWideFiles()) {
+      const code = codeOf(fs.readFileSync(file, 'utf8'));
+      if (/getScanResumeRoute|resumeDraftById/.test(code) && !rel(file).includes('scanResume')) {
+        doors.add(rel(file));
+      }
+    }
+    const unknown = [...doors].filter((f) => !(f in SCAN_FLOW_DOORS)).sort();
+    expect(unknown).toEqual([]);
+  });
+
+  it('both choke points actually call the shared predicate', () => {
+    // Guards against the guard being deleted while the door stays open.
+    const gated = Object.entries(SCAN_FLOW_DOORS)
+      .filter(([, why]) => why === 'gated')
+      .map(([file]) => file);
+    expect(gated).toHaveLength(2);
+    for (const file of gated) {
+      const code = codeOf(fs.readFileSync(path.join(ROOT, file), 'utf8'));
+      // The CALL form, not the bare identifier: deleting the guard body while
+      // leaving the import behind must fail this (it did, on the first attempt —
+      // the assertion originally matched the unused import and passed).
+      expect({ file, calls: code.includes('canEnterScanFlow()') }).toEqual({ file, calls: true });
+      expect({ file, redirects: code.includes('redirectToSellerApplication()') }).toEqual({
+        file,
+        redirects: true,
+      });
+    }
+  });
+
+  it('there is exactly ONE definition of the predicate', () => {
+    // Two copies drifting apart is the failure this phase was reviewed for.
+    const definitions = appWideFiles()
+      .filter((f) => /export function canEnterScanFlow/.test(fs.readFileSync(f, 'utf8')))
+      .map(rel);
+    expect(definitions).toEqual(['src/features/seller/scanFlowGate.ts']);
+  });
+
+  it('the drafts list has no scan-authoring push of its own', () => {
+    // Answers the specific question "can the drafts screen START a new scan?".
+    // Its empty state is inert copy today; a future "Start a listing" button there
+    // would be an ungated door, so it fails here instead.
+    const code = codeOf(fs.readFileSync(path.join(ROOT, 'app', 'scan', 'drafts.tsx'), 'utf8'));
+    const offending = code
+      .split('\n')
+      .filter((line) => AUTHORING_PUSH.test(line) && /router\./.test(line));
+    expect(offending).toEqual([]);
   });
 });

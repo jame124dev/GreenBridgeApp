@@ -24,6 +24,7 @@ import { getScanResumeRoute } from '@/lib/scanResume';
 import { routes } from '@/lib/routes';
 import { haptics } from '@/lib/haptics';
 import { isLabDraft, labResumeRoute } from '@/features/lab/labResumeRoute';
+import { canEnterScanFlow, redirectToSellerApplication } from '@/features/seller/scanFlowGate';
 import { useComposer } from '@/features/lab/stores/composerStore';
 import { useThread } from '@/features/lab/stores/threadStore';
 
@@ -65,6 +66,26 @@ export async function resumeDraftById(id: string, t: ResumeT): Promise<void> {
         data: { type: labMode === 'buy' ? 'wtb_draft' : 'listing_draft', data: p.labDraft },
       });
       router.push(labResumeRoute() as never);
+      return;
+    }
+
+    // ⚠️ SELL GATE — the second choke point (see `@/features/seller/scanFlowGate`).
+    // EVERYTHING below this line routes into the seller scan flow:
+    // `/scan/detail`, `/scan/grouped-review` and `/scan/detection` explicitly, and
+    // whatever `getScanResumeRoute` picks for a form-blob — which for a draft with
+    // no photos is `/scan/camera` (`src/lib/scanResume.ts:15`). `launchSellerScan`
+    // guards the five chat/home entry points; without this guard, resuming a saved
+    // draft reached those same screens without passing through it, from the drafts
+    // list, the (lab) Home draft rail and the background-recognition toast.
+    //
+    // Placed AFTER the lab-draft branch on purpose: a lab draft resumes to
+    // `/(lab)/draft`, which is a BUYER surface (a saved buy request or an unsent
+    // chat listing draft) and must stay open to everyone. Only the scan flow is
+    // gated. Note how close the two are — a lab payload that lost its `labDraft`
+    // field would fall through to the form-blob branch and, having no photos,
+    // resolve to `/scan/camera`; the guard makes that a redirect, not a breach.
+    if (!canEnterScanFlow()) {
+      redirectToSellerApplication();
       return;
     }
 
