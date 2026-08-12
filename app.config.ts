@@ -19,7 +19,11 @@ export default (): ExpoConfig => ({
   name: 'GreenBidz',
   slug: 'greenbridge',
   scheme: 'greenbridge',
-  version: '1.0.0',
+  // 1.0.1 — native in-app registration + the seller-upgrade application.
+  // TESTFLIGHT ONLY: no App Store version record for 1.0.1 is to be created and
+  // nothing is to be submitted for review (owner's instruction 2026-08-11).
+  // 1.0.0 (16) remains approved and Pending Developer Release, untouched.
+  version: '1.0.1',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   userInterfaceStyle: 'light',
@@ -29,8 +33,9 @@ export default (): ExpoConfig => ({
   //
   // Lets us ship JS-only fixes without another App Store review. The
   // `appVersion` runtime policy means an update only reaches clients on the
-  // SAME app version (1.0.0), so a JS bundle can never land on a binary whose
-  // native code it does not match.
+  // SAME app version, so a JS bundle can never land on a binary whose native
+  // code it does not match — and, usefully here, an update published for 1.0.1
+  // can never reach the approved 1.0.0 build.
   updates: {
     url: 'https://u.expo.dev/57cd3db7-90b1-4b57-a723-679bfe81ef69',
     // ⚠️ 'NEVER' is deliberate for the 1.0.0 review cycle. Build 1.0.0 (9) was
@@ -38,7 +43,7 @@ export default (): ExpoConfig => ({
     // log, while TestFlight recorded 0 crashes across 18 sessions on a real
     // iPhone and the launch path audited clean.
     //
-    // With the default (ALWAYS) the app launches on its embedded bundle, fetches
+    // With the check enabled (ON_LOAD) the app launches on its embedded bundle, fetches
     // an update in the background, then runs THAT bundle on a later launch — and
     // a reviewer opens an app several times. Those OTA bundles were only ever
     // verified on Android (no Apple hardware on the Windows dev box), so the
@@ -48,8 +53,31 @@ export default (): ExpoConfig => ({
     //
     // Keeping `url` (rather than `enabled: false`) means expo-updates stays
     // configured, so the `channel` in eas.json remains valid — dropping it makes
-    // the build abort. Restore ALWAYS in 1.0.1 once the crash is understood.
-    checkAutomatically: 'NEVER',
+    // the build abort.
+    //
+    // ✅ RESTORED for 1.0.1 (2026-08-11). The 2.1.0 launch crash IS understood:
+    // the update check ran before the first frame and blocked launch. 'NEVER'
+    // proved it — build 10 launched fine for App Review, they got INTO the app,
+    // and the next rejections were about in-app content instead. 1.0.0 (16) was
+    // then approved outright.
+    //
+    // Two reasons to turn it back on now rather than later:
+    //  - `cc73427` makes a missing ExpoUpdates native module non-fatal at launch,
+    //    so the failure mode that caused the crash cannot recur silently.
+    //  - Without it there is no remote kill switch and no way to ship copy or
+    //    translation fixes without a full review cycle. This build carries a new
+    //    signup flow; going in with no way to correct it is the larger risk.
+    //
+    // ⚠️ 1.0.1 is a TESTFLIGHT-ONLY build (owner's instruction). Its runtime
+    // version is the app version, so its OTA channel is separate from 1.0.0's —
+    // publishing an update for 1.0.1 cannot reach the approved 1.0.0 build.
+    //
+    // ⚠️ THE VALUE IS 'ON_LOAD', NOT 'ALWAYS'. The permitted set is
+    // ON_LOAD | ON_ERROR_RECOVERY | WIFI_ONLY | NEVER — `tsc` rejects 'ALWAYS'.
+    // The note above about "the default (ALWAYS)" was loose wording for the
+    // check-on-every-launch behaviour, whose real name is ON_LOAD. Do not
+    // "correct" this back.
+    checkAutomatically: 'ON_LOAD',
   },
   runtimeVersion: {
     policy: 'appVersion',

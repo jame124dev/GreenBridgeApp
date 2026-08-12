@@ -31,10 +31,20 @@ Every task's requirements implicitly include this section.
    a purchase or registration mechanism).
 2. **`company` must stay OPTIONAL at signup.** A required company field turns signup into
    "business and organization registration" — the exact 3.1.1 finding. There is a test enforcing it.
-3. **Locale files are edited by TEXT INSERTION, never `json.dump`.** `src/i18n/locales/*.json`
-   contain duplicate keys (`signingIn` ×2, `welcomeBack` ×3) and CRLF that a dump silently destroys.
-   Locate a parent object by **brace matching**, not a first-match regex. Verify every locale diff is
-   `+N/-0` before committing.
+3. **Locale files are edited by TEXT INSERTION, never `json.dump`.** There are **two distinct
+   hazards** here and each needs its own precaution — an earlier revision of this constraint
+   conflated them:
+   - **Wrong-object insertion.** The same key literal exists under several different parents:
+     `signingIn` appears in both `auth` and `mobile.auth`; `welcomeBack` in `auth`, `dashboard` and
+     `mobile.auth`. A first-match regex for `"signingIn"` lands in top-level `auth`, **not**
+     `mobile.auth`. → Locate the parent object by **brace matching**, and assert the value landed at
+     the intended path before writing.
+   - **Duplicate-key and line-ending loss.** Exactly one true duplicate key exists
+     (`mobile.labCommon.close` ×2), and the files carry mixed CRLF/LF. `json.load` + `json.dump`
+     silently collapses the duplicate and rewrites every ending. → Never dump; `json.loads` only as a
+     parse guard, and match the line ending of the neighbouring lines when inserting.
+   Verify the diff line-by-line before committing (see the Phase 4 gate for what a legitimate `-`
+   line looks like).
 4. **All three `eas.json` profiles point at PRODUCTION.** Any signup run from a dev build creates a
    real account on the live site and emails real admins. Use a throwaway address, never a customer's.
 5. **No production backend changes in this plan.** Anything requiring one is listed in
@@ -199,9 +209,17 @@ strictly sequential.
 - **Reviewer specifically checks:** the rejected state offers a real way forward, not a dead end.
 
 **Phase 4**
-- Every locale diff is `+N/-0` (`git diff --numstat -- src/i18n/locales/`).
-- `npx jest src/i18n` green, including `authCoverage.test.ts`.
-- **Reviewer specifically checks:** no `json.dump` was used — the duplicate keys and CRLF survive.
+- Every locale diff is **additions only, EXCEPT the deletions this phase explicitly requires** — the
+  Guideline 3.1.1 leftovers (`mobile.auth.pending.body`, `openSite`, `completeOnSite`) and the four
+  superseded `pending.*` keys. Show the deleted lines and account for each:
+  `git diff -U0 -- src/i18n/locales/ | grep '^-' | grep -v '^---'`.
+  ⚠️ An earlier revision demanded `+N/-0`, which contradicted the deletions and would have rejected a
+  correct diff. Expect a small number of `-` lines that are **reflows**, not removals: appending a
+  member to an object forces a trailing comma onto the previous last member, so that line reappears
+  on the `+` side.
+- `npx jest src/i18n` green, including `authCoverage.test.ts` and `sellerCoverage.test.ts`.
+- **Reviewer specifically checks:** no `json.dump` was used, verified by asserting the duplicate key
+  and the mixed line endings survive.
 
 **Phase 5**
 - IPA verified for `1.0.1`, `EXUpdatesCheckOnLaunch: ALWAYS`, `seller-upgrade/request` present,
