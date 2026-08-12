@@ -186,8 +186,10 @@ strictly sequential.
   `company_tax_id`, `business_type`, `reason`, `phone`, `country`.
 - Both server duplicate-submission messages map to distinct error codes and are surfaced.
 - `useCanSell()` returns true **only** for `status === 'approved'`.
-- **Reviewer specifically checks:** the gate is not keyed off `isPending` — approving an upgrade does
-  not flip `pw_user_status`, so that would never unlock.
+- **Reviewer specifically checks:** the gate is not keyed off `isPending`. Prod *does* flip
+  `pw_user_status` on seller approval, so a session-based gate would appear to work there — and then
+  fail on `dev`, and fail for anyone approved via the plain users queue (which flips the flag but
+  creates no upgrade row). Status is the only key correct in every case.
 
 **Phase 3**
 - All four `launchSellerScan` call sites are covered by the single gate; no call site bypasses it.
@@ -661,9 +663,16 @@ export function useSellerUpgradeStatus() {
   return useQuery({ queryKey: SELLER_UPGRADE_KEY, queryFn: getSellerUpgradeStatus, staleTime: 60_000 });
 }
 
-/** THE sell gate. Selling requires an APPROVED seller-upgrade request — not a
- *  non-pending session, because approving an upgrade does NOT flip
- *  pw_user_status (services/sellerUpgradeService.js:272-280). */
+/** THE sell gate. Selling requires an APPROVED seller-upgrade request, keyed off
+ *  the request status rather than off "do I have a non-pending session".
+ *
+ *  ⚠️ An earlier revision of this comment claimed prod does NOT flip
+ *  pw_user_status on approval. That is FALSE — origin/main
+ *  services/sellerUpgradeService.js:292-308 flips it. The real reasons to key off
+ *  status are: (a) approval can arrive through the PLAIN users queue, which flips
+ *  pw_user_status but creates no upgrade row, and (b) `dev` does not flip it at
+ *  all, so a session-based gate would behave differently per environment.
+ *  Fail closed: anything that is not exactly 'approved' means no. */
 export function useCanSell(): boolean {
   const { data } = useSellerUpgradeStatus();
   return data?.status === 'approved';
@@ -772,7 +781,10 @@ one dominant CTA (**Submit application**), sticky on this long form; document up
 visibly so; every field error recoverable in place; on success the screen switches to the status
 view rather than navigating away; server duplicate/approved messages shown verbatim.
 
-- [ ] **Step 1: Write the form schema**
+- [x] **Step 1: Write the form schema — ALREADY DONE IN PHASE 2.**
+      `src/features/seller/schema.ts` was listed under both Task 3 and Task 5 (a plan defect) and was
+      created by the Phase 2 engineer. **Do not overwrite it**; import `sellerApplicationSchema` and
+      `SellerApplicationValues` from `@/features/seller/schema` as-is.
 
 ```ts
 // src/features/seller/schema.ts
