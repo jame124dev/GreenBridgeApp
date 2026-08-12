@@ -7,6 +7,12 @@ export const routes = {
   labListings: '/(lab)/(tabs)/listings' as Href,
   /** (lab) dedicated notifications page — reached from the header bell. */
   labNotifications: '/(lab)/notifications' as Href,
+  /**
+   * (lab) seller application + application-status screen. The ONLY destination
+   * of the sell gate in `launchSellerScan()` — listing requires an approved
+   * seller-upgrade request, and this is where an unapproved user is sent.
+   */
+  labSellApply: '/(lab)/sell/apply' as Href,
   profile: '/(tabs)/profile' as Href,
   scanListingMethod: '/scan/listing-method' as Href,
   scanGroupedReview: '/scan/grouped-review' as Href,
