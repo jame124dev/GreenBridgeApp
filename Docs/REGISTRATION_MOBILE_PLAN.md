@@ -214,6 +214,36 @@ strictly sequential.
 
 ---
 
+## Known gate boundaries (Phase 3, enforced by tests)
+
+There are exactly **two** choke points in front of the `/scan/*` authoring screens, and both call the
+one predicate `canEnterScanFlow()` in `src/features/seller/scanFlowGate.ts`:
+
+1. `launchSellerScan()` — the five chat/home "upload photos / documents" entries.
+2. `resumeDraftById()` in `src/features/scanner/useResumeDraft.ts` — resuming a saved draft, reached
+   from three surfaces (drafts list, (lab) Home draft rail, background-recognition toast).
+
+**Deliberately NOT gated:** `/(lab)/draft` — a lab draft is buyer content (a saved buy request or an
+unsent chat draft). The guard sits *after* the lab-draft branch for that reason.
+
+**The predicate is fork-aware and that is load-bearing.** `useResumeDraft` is shared with the seller
+fork, which never fetches `/seller-upgrade/my-status` (`SellerGatePrewarm` mounts only in
+`app/(lab)/_layout.tsx`). A status-only predicate would fail closed for every seller-fork user and
+push them at `/(lab)/sell/apply`, a route that fork does not mount.
+
+⚠️ **Flag facts, corrected — do not repeat the mistake that failed the first Phase 3 gate.** Reading
+the *default* in `flags.ts` says nothing about what ships. Check `eas.json`:
+- `EXPO_PUBLIC_DRAFTS: "1"` in **all three** profiles (`:24`, `:45`, `:66`) and in `.env:28`.
+- `EXPO_PUBLIC_BACKGROUND_RECOGNITION: "1"` in all three.
+- `EXPO_PUBLIC_USER_TYPE: "customer"` in all three — the seller fork is **not** shipped, which is why
+  a seller-fork regression would be invisible.
+
+⚠️ **Jest does not load `.env`.** Under test the resolved config is the seller fork with drafts off —
+a combination nobody ships. Any suite exercising customer-fork behaviour **must** mock `@/lib/flags`,
+or it asserts the allow-all path and proves nothing.
+
+---
+
 ## Phase 0 verdict — **GO** (CTO, 2026-08-11)
 
 **The blocking question — will the write endpoints accept a pending token? — is answered: yes.**
