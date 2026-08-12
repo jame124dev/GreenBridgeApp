@@ -65,13 +65,23 @@ Every task's requirements implicitly include this section.
 (15 min), `refreshToken` (7 days, row persisted) and `userId`. **It does not return a user object** —
 no name, email, role or company. That is why Task 1 must synthesise a profile locally.
 
-### ⚠️ Two constraints that shape the design
+### ⚠️ Constraints that shape the design
 
-- **Approving a seller-upgrade request does NOT unblock login.**
-  `services/sellerUpgradeService.js:272-280` sets `greenbidz_user_type = "seller"` and the request's
-  `status = "approved"`, but **never touches `pw_user_status`**. So a user approved as a seller is
-  still `pending` and still gets the 403 at login. The app's "can I sell?" gate must therefore key
-  off `/seller-upgrade/my-status`, **not** off having a normal (non-pending) session.
+- **⚠️ READ `origin/main`, NOT THE LOCAL WORKING TREE.** The local checkout is on `dev`, which is
+  **behind** production on `services/sellerUpgradeService.js`. An earlier draft of this plan asserted
+  the opposite of the truth because it was written from the local file. Verify every backend claim
+  with `git show origin/main:<path>`.
+- **Approving a seller-upgrade request DOES unblock login — on production.**
+  `origin/main:services/sellerUpgradeService.js:292-308` sets `greenbidz_user_type = "seller"` *and*
+  `pw_user_status = "approved"`, with the comment: *"Without this, a still-pending buyer stays
+  blocked by the ACCOUNT_PENDING login gate even after their seller upgrade is approved."*
+  So an approved seller gets a **normal** session and works on the website too.
+  `dev` does **not** have this — do not test approval on dev and conclude anything about prod.
+- **`useCanSell()` still keys off `/seller-upgrade/my-status`, not off the session.** It is correct in
+  both states: before approval the user has a pending session and `status !== 'approved'`; after
+  approval they have a normal session and `status === 'approved'`. Keying off "do I have a
+  non-pending session" would also work on prod but would silently break on dev and on any account
+  approved through the plain users queue rather than the seller queue.
 - **Duplicate submissions are rejected by the server** with a 400 and a human-readable message:
   "You already have a pending seller upgrade request." / "Your seller upgrade has already been
   approved." (`services/sellerUpgradeService.js:100-116`). The UI must surface these, not swallow
@@ -81,10 +91,13 @@ no name, email, role or company. That is why Task 1 must synthesise a profile lo
 
 ## Known consequence, accepted for 1.0.1
 
-Buyers keep `pw_user_status = "pending"` forever. Therefore:
+Buyers who **never apply to sell** keep `pw_user_status = "pending"` forever. Therefore:
 
-- The **same account can browse in the app but is still blocked on the website.**
+- Such an account **can browse in the app but is still blocked on the website.**
 - The **admin users queue fills with buyers who never needed approving.**
+
+Anyone who applies to sell and is approved is unaffected — production flips them to `approved` (see
+above), so app and website agree from that moment on.
 
 This is the price of not touching a live auth path this week. See "Deferred to 1.0.2".
 
@@ -119,6 +132,117 @@ This is the price of not touching a live auth path this week. See "Deferred to 1
 | `src/i18n/locales/{en,zh-Hans,zh-Hant,ja,th,vi}.json` | New strings |
 | `app.config.ts` | `version: '1.0.1'`; `checkAutomatically: 'ALWAYS'` |
 | `src/__tests__/externalLinks.test.ts` | Permit the two legal links; keep banning everything else |
+
+---
+
+## Phased execution — CTO model
+
+**Rules of engagement**
+
+- **No phase starts until the previous one passes its gate.** The gate is a diff review by the CTO
+  against the criteria below, not "the tests are green".
+- **A phase that fails its gate is returned to the same team with the specific defect**, not patched
+  by the reviewer. The reviewer's job is to find the defect, not to hide it.
+- **The CTO reports to the product owner once**, at the end, when the whole thing is tested and
+  proven. The only exceptions — where silence would be worse than an interruption — are:
+  (a) Phase 0 returns PIVOT, (b) a phase needs a production change, (c) a phase needs the throwaway
+  email or another decision only the owner can make.
+- **Phase 0 runs against DEV, not production** (`testapi.greenbidz.com`, DB `greenbidz_test`), per the
+  repo's dev-first rule. The middleware under test is identical on both branches — verify that claim
+  as part of the phase rather than assuming it.
+
+| Phase | Scope | Team | Depends on |
+|---|---|---|---|
+| **0 — Feasibility gate** | Prove a pending JWT is accepted by the write endpoints; prove the code email arrives; prove refresh works | **CTO, personally** | — |
+| **1 — Auth foundation** | Task 1 + Task 2 | Auth/RN engineer | 0 |
+| **2 — Seller data layer** | Task 3 | API/data engineer | 0 (runs **parallel** with 1 — disjoint files) |
+| **3 — Gate + screens** | Task 4 + Task 5 | RN UI engineer, with a UX reviewer | 1, 2 |
+| **4 — Translations** | Task 6 | i18n engineer | 1, 3 (strings must exist first) |
+| **5 — Release engineering** | Task 7 + IPA verification — **TestFlight only, NO review submission** | **CTO, personally** (credentials + App Store Connect) | 1–4 |
+| **6 — Production journey** | Task 8 steps 4–5, on a TestFlight build | CTO + owner | 5, and the throwaway email |
+
+Phases 1 and 2 touch disjoint files (`src/services/auth`, `app/(auth)` vs `src/services/seller`,
+`src/features/seller`), so they can run concurrently without a merge conflict. Everything else is
+strictly sequential.
+
+### Gate criteria
+
+**Phase 0 — the only phase that can cancel the project.**
+- `POST /chat/send`, the wants-create route and `POST /seller-upgrade/request` each accept a pending
+  token, or the phase returns **PIVOT** and the product becomes read-only browsing.
+- The 6-digit code email arrives at a real inbox.
+- A pending session survives access-token expiry via refresh.
+- Output: a written GO / PIVOT verdict recorded in this file.
+
+**Phase 1**
+- `npx tsc --noEmit` exit 0; `npx jest --silent` all green.
+- `externalLinks.test.ts` passes, including the new "legal links only" case.
+- A pending login leaves `useAuth().profile` non-null — asserted, not eyeballed.
+- No redirect remains in `app/_layout.tsx` for `isPending`.
+- **Reviewer specifically checks:** that `isPending` is not used anywhere else as a blocker.
+
+**Phase 2**
+- Wire field names are snake_case and match the controller exactly: `company_name`,
+  `company_tax_id`, `business_type`, `reason`, `phone`, `country`.
+- Both server duplicate-submission messages map to distinct error codes and are surfaced.
+- `useCanSell()` returns true **only** for `status === 'approved'`.
+- **Reviewer specifically checks:** the gate is not keyed off `isPending` — approving an upgrade does
+  not flip `pw_user_status`, so that would never unlock.
+
+**Phase 3**
+- All four `launchSellerScan` call sites are covered by the single gate; no call site bypasses it.
+- Typed routes regenerated (`grep -c "sell/apply" .expo/types/router.d.ts` > 0) before type-checking.
+- `UX_DESIGN_RULES.md` checklist run and recorded: one dominant CTA, sticky on the long form, every
+  error recoverable in place, optional fields visibly optional, no dead controls.
+- **Reviewer specifically checks:** the rejected state offers a real way forward, not a dead end.
+
+**Phase 4**
+- Every locale diff is `+N/-0` (`git diff --numstat -- src/i18n/locales/`).
+- `npx jest src/i18n` green, including `authCoverage.test.ts`.
+- **Reviewer specifically checks:** no `json.dump` was used — the duplicate keys and CRLF survive.
+
+**Phase 5**
+- IPA verified for `1.0.1`, `EXUpdatesCheckOnLaunch: ALWAYS`, `seller-upgrade/request` present,
+  `greenbidz.com/contact-us` absent — each needle searched as ASCII **and** UTF-16LE.
+- Build uploaded with an explicit `eas submit` (a build alone never reaches App Store Connect).
+
+**Phase 6**
+- The full journey passes on a real device or emulator against production.
+- Results written into this file under "Verified", with dates.
+
+---
+
+## Phase 0 verdict — **GO** (CTO, 2026-08-11)
+
+**The blocking question — will the write endpoints accept a pending token? — is answered: yes.**
+
+Evidence, all against `origin/main` (production):
+
+1. `middleware/authMiddleware.js` — `protect` contains **no** reference to `pw_user_status` or
+   `user_status`. It validates the JWT and loads the user. Byte-identical on `dev` and `main`.
+2. The three controllers a pending buyer must reach — `chatController.js`,
+   `productRequestController.js` (wants), `sellerUpgradeController.js` — contain **zero** references
+   to `pw_user_status`, `user_status` or `ACCOUNT_PENDING`.
+3. Repo-wide, `pw_user_status` is consumed **only** by login (`authV3`, `googleAuth`), user
+   management (`userController`, `userService`), admin (`AdminService`), account deletion and seller
+   teams. No write path a buyer uses reads it.
+4. The pending JWT is signed with the same secret and carries the same `{ id, role }` shape as a
+   normal token (`authV3.controller.js:213-215`), so it is indistinguishable to `protect`.
+
+Conclusion: a pending token is **functionally identical** to an approved one on every endpoint this
+feature touches. The design stands; no PIVOT.
+
+**Deferred to Phase 6 (inherently empirical, needs a real inbox):**
+- the 6-digit code email actually arriving,
+- refresh surviving access-token expiry on a pending session,
+- one live call per write endpoint with a real pending token, as belt-and-braces on the above.
+
+**Incidental findings — reported, not actioned:**
+- The local backend `.env` points at **`PORT=4000` on `34.44.20.223`** — the **production** port and
+  host. Running the backend locally therefore writes to the live database. Do not use its secrets to
+  mint tokens "for dev".
+- That `JWT_SECRET` is **6 characters long**. Every access and refresh token in the system is signed
+  with it.
 
 ---
 
@@ -713,7 +837,19 @@ git add -A && git commit -m "feat(seller): application form and status screen"
 
 ---
 
-## Task 7: Version, updates, and the build
+## Task 7: Version, updates, and the build — **TestFlight only**
+
+> ⛔ **DO NOT SUBMIT 1.0.1 FOR APP STORE REVIEW.** Owner's instruction, 2026-08-11: this build is for
+> **TestFlight testing only**. Upload it, test it, stop there.
+>
+> - `eas submit` **is** required and **is** allowed — uploading to App Store Connect is what makes a
+>   build appear in TestFlight. That is not a review submission.
+> - What is forbidden: creating/attaching a **1.0.1 App Store version** and pressing *Add for Review*
+>   / *Submit for Review*.
+> - Keep testers **internal** (your team, up to 100). Internal TestFlight needs **no Apple review at
+>   all**. External testers trigger a Beta App Review — avoid unless the owner asks.
+> - Build **1.0.0 (16)** stays exactly as it is: **approved, Pending Developer Release**. Uploading a
+>   1.0.1 build does not disturb it, and nothing here releases it.
 
 - [ ] **Step 1** — `app.config.ts`: `version: '1.0.1'`, and restore
   `checkAutomatically: 'ALWAYS'` (it was set to `'NEVER'` only for the 1.0.0 review cycle, because
@@ -757,11 +893,12 @@ Three assumptions this plan rests on. **Each must be proven against production b
 
 ## Deferred to 1.0.2 (needs explicit approval — touches production)
 
-1. **Seller-upgrade approval should also flip `pw_user_status` to `approved`**
-   (`services/sellerUpgradeService.js` around line 272). Without it, an approved seller is still
-   `pending`, so the **website keeps blocking them** even though the app works.
+1. ~~Seller-upgrade approval should also flip `pw_user_status`~~ — **already done on production**
+   (`origin/main:services/sellerUpgradeService.js:292-308`). What remains is a **`dev` → `main`
+   divergence**: `dev` lacks it, so a future merge in the wrong direction would silently remove it.
+   Worth reconciling `dev` with `main` on that file before any other backend work.
 2. **Buyers should not sit in the admin approval queue.** Either approve app buyer signups on
-   creation, or split buyer status from seller status.
+   creation, or split buyer status from seller status. Only affects buyers who never apply to sell.
 3. **The welcome email has never been sent to anyone.** `completeSignup` calls
    `BuyerEmailTemplate.welcomeUser(emailData, lang)` and **`lang` is undefined** — not in the
    function, not at module scope, identical on `main`. It throws inside a `try/catch`, so every
