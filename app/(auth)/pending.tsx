@@ -1,6 +1,32 @@
+/**
+ * Application status — NOT a gate.
+ *
+ * This screen used to be the wall a pending account hit on every launch: three
+ * redirects sent anyone whose `pw_user_status !== 'approved'` here, and there was
+ * no way onwards. Phase 1 deleted all three redirects, because that is the state
+ * EVERY new app signup starts in and a pending account is a perfectly working
+ * BUYER account. Phase 3 repoints what is left: a read-only status surface for
+ * the SELLER APPLICATION (`/seller-upgrade/my-status`) plus the account checklist.
+ *
+ * Two invariants hold it in place:
+ *
+ *  1. **It never blocks.** The dominant CTA is "Continue to GreenBidz". Nothing
+ *     on this screen is a prerequisite for using the app — only LISTING is gated,
+ *     and that gate lives in `launchSellerScan()`.
+ *  2. **It performs no outbound navigation.** `Linking` / `WebBrowser` are
+ *     deliberately not imported: App Review rejected build 14 under Guideline
+ *     3.1.1 for the "Open website" button that used to sit here, and this is the
+ *     screen an unapproved reviewer lands on. `src/__tests__/externalLinks.test.ts`
+ *     fails the build if either returns.
+ *
+ * ⚠️ REACHABILITY, stated plainly: with Phase 1's redirects gone, the RootLayout
+ * AuthGuard (`app/_layout.tsx`) replaces to the home route for any signed-in user
+ * inside the `(auth)` group, and to `/(auth)/login` for anyone signed out. So no
+ * user can currently be shown this screen. It is kept correct and non-blocking
+ * rather than deleted so that a deep link, a stale navigation state or a future
+ * entry point cannot resurrect the dead end.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-// `Linking` is deliberately NOT imported — this screen opens no external pages
-// (Guideline 3.1.1; see the note at the removed "Open website" button below).
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +42,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import {
+  ArrowRight,
   Check,
   Clock,
   FileCheck,
@@ -35,9 +62,16 @@ import {
 import { useLogout } from '@/features/auth/useLogout';
 import { useRecheckApproval } from '@/features/auth/useLogin';
 import { deriveApprovalChecklist, type StepKey, type StepState } from '@/features/auth/approvalChecklist';
+import { SellerStatusCard } from '@/features/seller/SellerStatusCard';
+import { useSellerUpgradeStatus } from '@/features/seller/useSellerUpgrade';
 import { LoginError, type ApprovalStateExtra } from '@/services/auth/login';
 import { useAuth } from '@/stores/authStore';
+import { IS_CUSTOMER } from '@/lib/flags';
 import { haptics } from '@/lib/haptics';
+
+// Post-auth landing route for this bundle — mirrors HOME_ROUTE in _layout.tsx /
+// login.tsx so "Continue" lands in the right app.
+const HOME_ROUTE = IS_CUSTOMER ? '/(lab)/(tabs)/home' : '/(tabs)';
 
 // ── brand palette (the app renders light-only — app.config userInterfaceStyle) ──
 const FOREST_DEEP = '#0f3a27';
@@ -110,6 +144,9 @@ export default function PendingScreen() {
   const approval = useAuth((s) => s.approval);
   const setApproval = useAuth((s) => s.setApproval);
   const [notApprovedYet, setNotApprovedYet] = useState(false);
+  // The seller application, if there is one. `null` = never applied, in which
+  // case this screen shows only the account checklist.
+  const sellerStatus = useSellerUpgradeStatus();
 
   const checklist = useMemo(() => deriveApprovalChecklist(approval), [approval]);
   const { overall, steps, doneCount, totalCount } = checklist;
@@ -155,10 +192,14 @@ export default function PendingScreen() {
       : overall === 'action'
       ? { Emblem: TriangleAlert, chip: t('mobile.auth.pending.chipAction', { defaultValue: 'Action needed' }), chipAmber: true,
           title: t('mobile.auth.pending.titleAction', { defaultValue: 'A few steps to finish' }),
-          sub: t('mobile.auth.pending.subAction', { defaultValue: 'Complete the highlighted items below and your account goes to review automatically.' }) }
+          // NEW key on purpose: the old `subAction` / `subReview` strings already
+          // exist in en.json, so a locale value would win over any defaultValue
+          // here and the screen would keep reading as a gate. Phase 4 translates
+          // these two and retires the originals.
+          sub: t('mobile.auth.pending.subActionOpen', { defaultValue: 'Your account already works — these items are only needed before you can LIST equipment.' }) }
       : { Emblem: Hourglass, chip: t('mobile.auth.pending.chipReview', { defaultValue: 'Under review' }), chipAmber: true,
           title: t('mobile.auth.pending.titleReview', { defaultValue: 'Almost there' }),
-          sub: t('mobile.auth.pending.subReview', { defaultValue: 'Your account is with our team for a final check. Hang tight — we’ll let you in automatically.' }) };
+          sub: t('mobile.auth.pending.subReviewOpen', { defaultValue: 'Your application is with our team. Carry on using GreenBidz while you wait — only listing is on hold.' }) };
 
   // Breathing core.
   const breathe = useSharedValue(0);
@@ -209,6 +250,16 @@ export default function PendingScreen() {
 
       <View style={styles.sheet}>
         <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
+          {/* The seller application, when there is one — the same card the sell
+              gate shows in `app/(lab)/sell/apply.tsx`, so the two surfaces cannot
+              describe the same request differently. No actions attached: this
+              screen navigates nowhere. */}
+          {sellerStatus.data ? (
+            <View style={styles.sellerCard}>
+              <SellerStatusCard status={sellerStatus.data} />
+            </View>
+          ) : null}
+
           <View style={styles.sheetHead}>
             <Text style={styles.sheetTitle}>{t('mobile.auth.pending.checklist', { defaultValue: 'APPROVAL CHECKLIST' })}</Text>
             <View style={styles.count}>
@@ -258,14 +309,29 @@ export default function PendingScreen() {
               </Text>
             </View>
 
+            {/* THE dominant action, and the reason this screen is no longer a
+                wall: whatever the checklist says, the account is usable now. */}
             <Pressable
-              onPress={check}
-              disabled={checking}
+              onPress={() => router.replace(HOME_ROUTE)}
               style={({ pressed }) => [styles.btn, styles.btnPrimary, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <RefreshCw size={18} color="#fff" strokeWidth={2.4} />
               <Text style={styles.btnPrimaryText}>
+                {t('mobile.auth.pending.continueCta', { defaultValue: 'Continue to GreenBidz' })}
+              </Text>
+              <ArrowRight size={18} color="#fff" strokeWidth={2.4} />
+            </Pressable>
+
+            {/* Secondary weight — refreshing the status is useful, but it is not
+                the thing the user should do next. */}
+            <Pressable
+              onPress={check}
+              disabled={checking}
+              style={({ pressed }) => [styles.btn, styles.btnSecondary, pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              <RefreshCw size={17} color={INK} strokeWidth={2.3} />
+              <Text style={styles.btnSecondaryText}>
                 {checking
                   ? t('mobile.auth.pending.checking', { defaultValue: 'Checking…' })
                   : t('mobile.auth.pending.checkStatus', { defaultValue: 'Check approval status' })}
@@ -285,14 +351,16 @@ export default function PendingScreen() {
                 approval state still updates by itself via "Check approval
                 status" above. */}
             <Text style={styles.note}>
+              {/* New keys: the existing `actionContact` / `reviewContact` values in
+                  en.json would override any defaultValue set here. */}
               {overall === 'action'
-                ? t('mobile.auth.pending.actionContact', {
+                ? t('mobile.auth.pending.actionContactOpen', {
                     defaultValue:
-                      'Our team will contact you about anything still needed. No action is required in the app.',
+                      'Our team will email you about anything still needed. Nothing is required from you in the app, and browsing, the AI assistant and messaging all work now.',
                   })
-                : t('mobile.auth.pending.reviewContact', {
+                : t('mobile.auth.pending.reviewContactOpen', {
                     defaultValue:
-                      "Your application is with our team. We'll email you as soon as it's reviewed.",
+                      "We'll email you as soon as your application is reviewed. Until then you can browse equipment, ask the AI assistant, post what you're looking for and message sellers.",
                   })}
             </Text>
 
@@ -354,6 +422,7 @@ const styles = StyleSheet.create({
 
   sheet: { flex: 1, backgroundColor: '#fff', marginTop: -26, borderTopLeftRadius: 26, borderTopRightRadius: 26 },
   sheetContent: { paddingHorizontal: 22, paddingTop: 24, paddingBottom: 10, flexGrow: 1 },
+  sellerCard: { marginBottom: 20 },
   sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sheetTitle: { fontSize: 12.5, letterSpacing: 1.6, color: FAINT, fontWeight: '800' },
   count: { backgroundColor: 'rgba(35,107,72,0.12)', borderRadius: 999, paddingVertical: 3, paddingHorizontal: 10 },
