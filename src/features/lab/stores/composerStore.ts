@@ -26,6 +26,17 @@ type ComposerState = {
   /** Drop all staged attachments (called right after a turn reads them, so they
    *  don't leak into the next text-only turn). */
   clearAttachments: () => void;
+  /**
+   * What the most recent turn actually SENT, recorded as `clearAttachments()`
+   * empties the staging area.
+   *
+   * Exists because the Home composer starts its turn and then navigates to the
+   * chat screen, whose mount-time `seed()` OVERWRITES the conversation — so the
+   * chat cannot learn what was sent from the staged list (already cleared) and
+   * Home cannot pre-append it (would be wiped). See `seedMessages.ts`: without
+   * this, an image sent from Home with no caption vanished entirely.
+   */
+  lastSentAttachments: ComposerAttachment[];
   reset: () => void;
 };
 
@@ -33,12 +44,15 @@ export const useComposer = create<ComposerState>((set) => ({
   mode: 'sell',
   input: '',
   attachments: [],
+  lastSentAttachments: [],
   setMode: (mode) => set({ mode }),
   toggleMode: () => set((s) => ({ mode: s.mode === 'sell' ? 'buy' : 'sell' })),
   setInput: (input) => set({ input }),
   addAttachment: (attachment) => set((s) => ({ attachments: [...s.attachments, attachment] })),
   removeAttachment: (uri) =>
     set((s) => ({ attachments: s.attachments.filter((a) => a.uri !== uri) })),
-  clearAttachments: () => set({ attachments: [] }),
-  reset: () => set({ mode: 'sell', input: '', attachments: [] }),
+  // Hand the staged list over to `lastSentAttachments` rather than dropping it:
+  // the turn that just consumed them is the one the chat screen must render.
+  clearAttachments: () => set((s) => ({ attachments: [], lastSentAttachments: s.attachments })),
+  reset: () => set({ mode: 'sell', input: '', attachments: [], lastSentAttachments: [] }),
 }));

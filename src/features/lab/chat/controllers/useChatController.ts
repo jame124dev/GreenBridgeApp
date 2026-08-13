@@ -23,6 +23,7 @@ import { useLabTurn } from '@/features/lab/hooks/useLabTurn';
 import { useBatchProducts } from '@/features/lab/hooks/useBatchProducts';
 import { launchSellerScan } from '@/features/lab/scan/launchSellerScan';
 import type { DraftPayload } from '@/features/lab/data/listingDraftApi';
+import { buildSeedMessages } from '@/features/lab/chat/controllers/seedMessages';
 import { newMsgId } from '@/features/lab/chat/types';
 import { textContent, type Message } from '@/features/lab/chat/types/message';
 import {
@@ -62,11 +63,12 @@ export function useChatController({
   useState(() => {
     useConversation
       .getState()
+      // Seed from the text AND from what the turn actually sent. Keying this on
+      // `initialQuery` alone meant an image sent from Home with no caption seeded
+      // NOTHING — the thread opened blank, image included. See seedMessages.ts.
       .seed(
         conversationId,
-        initialQuery
-          ? [{ id: newMsgId('user'), role: 'user', createdAt: Date.now(), content: textContent(initialQuery) }]
-          : [],
+        buildSeedMessages(initialQuery, useComposer.getState().lastSentAttachments),
       );
     return null;
   });
