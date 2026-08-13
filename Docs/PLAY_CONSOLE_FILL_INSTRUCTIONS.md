@@ -156,8 +156,23 @@ Start the questionnaire.
 | Is the app a social/dating app? | **No** |
 | Financial features (loans, crypto, banking, investment) | **No** — bidding on used machinery is not a Play financial feature |
 
-Expected outcome: **Everyone / PEGI 3**. Submit the questionnaire (this is a rating form, not an
-app submission — safe to submit).
+**Expected outcome: Teen / 12+ / PEGI Parental Guidance, with a "Users Interact" label.**
+Submit the questionnaire (this is a rating form, not an app submission — safe to submit).
+
+⚠️ **This is the CORRECT result — accept it. An earlier revision of this document said to expect
+Everyone / PEGI 3, which was wrong.** Any app with user-to-user messaging plus user-generated
+listings earns the interactive-content descriptor; that is IARC working as intended, not a symptom
+of a mis-answered question.
+
+**Do NOT go back and soften the UGC or messaging answers to chase a lower rating.** Saying no to
+either would be false — the app has buyer↔seller threads and users publish listings — and Google
+cross-checks the rating against the Data safety form and the store listing, both of which state
+that messaging exists. A rating obtained by understating the app is grounds for removal later.
+
+It costs nothing here: the target audience is already **18 and over**, the app is not in Designed
+for Families, and 12+ restricts no market relevant to a B2B equipment marketplace. (For contrast,
+Apple's questionnaire returned **4+** on the same honest answers — the two bodies simply weight
+user interaction differently.)
 
 ### 4.5 Target audience
 - Target age groups: **18 and over only**
