@@ -114,6 +114,16 @@ export default function LabHome() {
   // Sell-mode photo/document uploads hand off to the native scan flow (camera →
   // AI detect → review → submit); buyer-mode uploads stay inline for image
   // search. (NewVersion/12 §4 — reuse seller scan, replace inline.)
+  // Starter searches from the buy-mode empty state. Same turn path as onSend so
+  // a tapped suggestion behaves exactly like typing it and pressing Find it.
+  const onSuggestion = (query: string) => {
+    haptics.impact();
+    setInput('');
+    useThread.getState().startTurn();
+    void labTurn.start(query);
+    router.push({ pathname: '/(lab)/chat', params: { q: query } });
+  };
+
   const onPhoto = () => {
     if (mode === 'sell') {
       haptics.tap();
@@ -202,11 +212,11 @@ export default function LabHome() {
 
       {/* Recent listings — a mini seller dashboard under the composer. Sell-mode
           only ("my listings" is a seller concept); hides itself when empty. */}
-      {mode === 'sell' && <HomeRecentListings />}
+      {mode === 'sell' && <HomeRecentListings onStartListing={onPhoto} />}
 
       {/* Recent wants — the buyer-mode mirror ("My Wants" preview). Buy-mode only;
           gated on WTB_ENABLED via useWants; hides itself when empty/signed-out. */}
-      {mode === 'buy' && <HomeRecentWants />}
+      {mode === 'buy' && <HomeRecentWants onSuggestion={onSuggestion} />}
 
       {/* Language picker — globe chip in the header opens this (reuses the seller
           LanguageSheet; i18n.changeLanguage re-renders every t() on the screen). */}

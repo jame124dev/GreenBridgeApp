@@ -23,6 +23,7 @@ import { AppImage, Badge, Text } from '@/components/ui';
 import type { BadgeVariant } from '@/components/ui/Badge';
 import { useRecentSubmissions } from '@/features/scanner/useRecentSubmissions';
 import { classifyStatus, type StatusTone } from '@/features/scanner/batchStatus';
+import { HomeEmptyState } from '@/features/lab/components/HomeEmptyState';
 import { useResumeDraft } from '@/features/scanner/useResumeDraft';
 import { useListDrafts } from '@/services/drafts/draftHooks';
 import type { DraftSummary } from '@/services/drafts/draftApi';
@@ -317,7 +318,13 @@ function Rail({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function HomeRecentListings() {
+type HomeRecentListingsProps = {
+  /** Start the photo->listing flow from the empty state. From home.tsx, which
+   *  owns the gated launcher; omit it and the section stays hidden. */
+  onStartListing?: () => void;
+};
+
+export function HomeRecentListings({ onStartListing }: HomeRecentListingsProps) {
   const { t } = useTranslation();
   const profile = useAuth((s) => s.profile);
   const { resume, resumingId } = useResumeDraft();
@@ -387,7 +394,14 @@ export function HomeRecentListings() {
       </View>
     );
   }
-  if (!listings.length && !allDrafts.length) return null;
+  // ⚠️ Was `return null`, which is why a brand-new seller's Home was blank below
+  // the composer -- no listings, no drafts, nothing explaining the app. Teach the
+  // AI flow instead. Reached only after the loading + error branches above.
+  if (!listings.length && !allDrafts.length) {
+    return onStartListing ? (
+      <HomeEmptyState mode="sell" onStartListing={onStartListing} onSuggestion={() => {}} />
+    ) : null;
+  }
 
   const hasDraftGroup = drafts.length > 0;
   // "Your items" once drafts share the section; else the familiar "Recent listings".

@@ -16,6 +16,7 @@ import { Badge, Text } from '@/components/ui';
 import { useWants } from '@/features/lab/hooks/useWants';
 import type { WtbListItem } from '@/features/lab/data/wtbApi';
 import { buyBlue, lab } from '@/constants/theme';
+import { HomeEmptyState } from '@/features/lab/components/HomeEmptyState';
 
 /** How many wants to preview on Home (the rest live behind "See all"). */
 const PREVIEW_LIMIT = 4;
@@ -69,7 +70,13 @@ function WantRow({ item }: { item: WtbListItem }) {
   );
 }
 
-export function HomeRecentWants() {
+type Props = {
+  /** Run a starter search from the empty state. Supplied by home.tsx, which
+   *  owns the composer and the turn; omit it and the section stays hidden. */
+  onSuggestion?: (query: string) => void;
+};
+
+export function HomeRecentWants({ onSuggestion }: Props) {
   const { t } = useTranslation();
   const { wants, isLoading, isError } = useWants();
 
@@ -83,7 +90,18 @@ export function HomeRecentWants() {
       </View>
     );
   }
-  if (!wants.length) return null;
+  // ⚠️ Was `return null`, which left a brand-new buyer staring at a blank lower
+  // half of the Home screen with nothing telling them what the app does. Show
+  // starter searches instead. Reached only after isError/isLoading above, so it
+  // never flashes over a spinner.
+  //
+  // The send itself belongs to home.tsx (it owns the composer + the turn), so it
+  // arrives as a prop rather than being reimplemented here.
+  if (!wants.length) {
+    return onSuggestion ? (
+      <HomeEmptyState mode="buy" onStartListing={() => {}} onSuggestion={onSuggestion} />
+    ) : null;
+  }
 
   return (
     <View className="mt-2xl">
