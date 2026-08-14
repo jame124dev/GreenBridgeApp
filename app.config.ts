@@ -228,6 +228,10 @@ export default (): ExpoConfig => ({
         mode: APNS_MODE,
       },
     ],
+    // Restores the local release signingConfig that `prebuild --clean` wipes.
+    // No-op unless the gitignored `credentials/` files exist, so EAS builds are
+    // untouched and keep using EAS-managed signing.
+    './plugins/withLocalReleaseSigning',
     // MUST stay last: its mod has to run after expo-dev-launcher adds the
     // local-network keys. Build 6 shipped them despite dev-launcher's own
     // Release strip phase, so we remove them ourselves.

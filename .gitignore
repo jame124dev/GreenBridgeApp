@@ -89,3 +89,6 @@ temp/
 
 # `eas metadata:pull` downloads ASC screenshots here — duplicates assets/store/ios
 store/
+
+# Local Android release signing (keystore + passwords) — NEVER commit
+credentials/
