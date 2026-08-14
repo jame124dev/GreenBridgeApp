@@ -26,6 +26,7 @@ import {
 import { routes } from '@/lib/routes';
 import { useScanDraft } from '@/stores/scanDraftStore';
 import { useCreateDraft, useUpdateDraft } from '@/services/drafts/draftHooks';
+import { SellerApprovalNotice } from '@/features/seller/components/SellerApprovalNotice';
 import { buildScanDraftPayload } from '@/services/drafts/draftPayload';
 import { getSiteType } from '@/services/scanner/buildFormData';
 
@@ -137,6 +138,9 @@ export default function DetailScreen() {
           <LocationCard />
           <RequiredChecklist draft={draft} />
         </KeyboardAwareScrollView>
+        {/* Only single mode submits from this screen — in grouped mode the footer
+            leads to the review hub, which carries its own copy of this notice. */}
+        {!isGrouped && <SellerApprovalNotice />}
         <DetailFooter
           isGrouped={isGrouped}
           editingGroupedItem={editingGroupedItem}

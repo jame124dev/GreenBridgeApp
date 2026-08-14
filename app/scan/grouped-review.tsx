@@ -23,6 +23,12 @@ import {
   type RequiredRowKey,
 } from '@/features/scanner/requiredStatus';
 import { useSubmitGroupedListing } from '@/features/scanner/useSubmitGroupedListing';
+import {
+  SellerApprovalNotice,
+  useSubmitCtaLabel,
+} from '@/features/seller/components/SellerApprovalNotice';
+import { canSubmitListing, redirectToSellerApplication } from '@/features/seller/sellerSubmitGate';
+import { useCanSell } from '@/features/seller/useSellerUpgrade';
 import { haptics } from '@/lib/haptics';
 import { routes } from '@/lib/routes';
 import { safeBack } from '@/lib/safeBack';
@@ -57,6 +63,13 @@ export default function GroupedReviewHub() {
   const sessionVisibility = useScanDraft((s) => s.sessionVisibility);
   const networkSellers = useScanDraft((s) => s.networkSellers);
   const submitGrouped = useSubmitGroupedListing();
+  // Seller approval is required to PUBLISH, not to author (see
+  // `@/features/seller/sellerSubmitGate`). Reactive here so the CTA can tell the
+  // truth about what it will do; the callback re-reads the predicate itself.
+  const canPublish = useCanSell();
+  const ctaLabel = useSubmitCtaLabel(
+    t('mobile.reviewHub.submitAll', { defaultValue: 'Submit all' }),
+  );
 
   // Smart-detection handoff state (note R-4).
   const detectionSummary = useScanDraft((s) => s.detectionSummary);
@@ -123,6 +136,18 @@ export default function GroupedReviewHub() {
   // would otherwise 400).
   const onSubmitAll = () => {
     if (submitGrouped.isPending) return;
+
+    // ⚠️ SELL GATE — choke point 1 of 2 (the other is `onSubmitSingle` in
+    // `useDetailController`; they POST to different endpoints, so both need it).
+    //
+    // FIRST, before the field sweep below: when the tap is going to take them to
+    // the seller form, nagging about an unfilled price on the way is noise. The
+    // draft stays in `useScanDraft` (in-memory), so it is still here on return.
+    if (!canSubmitListing()) {
+      haptics.tap();
+      redirectToSellerApplication();
+      return;
+    }
 
     // Pre-flight sweep over the live store queue (not the React snapshot).
     const liveItems = useScanDraft.getState().queuedItems;
@@ -371,16 +396,21 @@ export default function GroupedReviewHub() {
             <View style={{ flex: 1, height: 1, backgroundColor: brand.divider }} />
           </View>
 
+          {/* Says the seller-details step is coming BEFORE the CTA is tapped.
+              Renders nothing for an approved seller. */}
+          <SellerApprovalNotice />
+
           {/* D2 (F2 + note D-1): local override — DO NOT modify the shared
               Button primitive (would rebrand the whole app). Brand forest
               #14452f enabled, FLAT neutral when disabled (no opacity-50). */}
           <CtaSubmitButton
-            label={t('mobile.reviewHub.submitAll', {
-              defaultValue: 'Submit all',
-            })}
+            label={ctaLabel}
             onPress={onSubmitAll}
             loading={submitGrouped.isPending}
-            disabled={!allReady || submitGrouped.isPending}
+            // An incomplete row only blocks PUBLISHING. A user who still has to
+            // add seller details may go and do that now — the missing field and
+            // the approval wait then run in parallel instead of in series.
+            disabled={(!allReady && canPublish) || submitGrouped.isPending}
           />
         </View>
       </View>

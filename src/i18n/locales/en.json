@@ -4183,6 +4183,13 @@
       "envHint": "Set WEB_APP_URL in .env to enable a one-tap link to the seller dashboard.",
       "loadFailed": "Could not load this batch."
     },
+    "sellGate": {
+      "noticeNone": "One-off step: to publish, we need your company details. Takes about two minutes — your draft is saved.",
+      "noticePending": "Your seller details are with our team. We’ll email you once approved — your draft is saved until then.",
+      "noticeRejected": "Your seller details need a correction before this can be published. Your draft is saved.",
+      "ctaApply": "Add seller details to publish",
+      "ctaPending": "View review status"
+    },
     "reviewHub": {
       "finalValidationTitle": "A product needs info",
       "readyCounterSuffix": "products ready",

@@ -1,24 +1,19 @@
 /**
- * The SECOND sell gate: resuming a saved draft.
+ * Resuming a saved draft is UNGATED.
  *
- * `launchSellerScan()` covers the five chat/home entry points. This covers the
- * other door, which the Phase 3 review caught: `resumeDraftById` lands on
- * `/scan/detail`, `/scan/grouped-review`, `/scan/detection` — and, for a draft
- * with no photos, `/scan/camera` (`src/lib/scanResume.ts:15`). It is reached from
- * three surfaces, all sharing this one core:
+ * This replaces `resumeDraftGate.test.ts`, which asserted that an unapproved user
+ * resuming their own draft was redirected to the seller application. Authoring is
+ * now open — a draft you were allowed to create is a draft you are allowed to
+ * reopen and edit — and approval is enforced at the two SUBMIT choke points
+ * instead (`submitGateTopology.test.ts`).
  *
- *   app/scan/drafts.tsx:54                              (the drafts list)
- *   src/features/lab/components/HomeRecentListings.tsx:323 (the Home draft rail)
- *   src/features/scanner/surfaceDraftReady.tsx:104       (background-ready toast)
+ * Reached from three surfaces, all sharing this one core:
+ *   app/scan/drafts.tsx                                   (the drafts list)
+ *   src/features/lab/components/HomeRecentListings.tsx     (the Home draft rail)
+ *   src/features/scanner/surfaceDraftReady.tsx             (background-ready toast)
  *
- * `EXPO_PUBLIC_DRAFTS` is "1" in all three eas.json profiles and in .env, so all
- * of this is live in every build we ship — it is not behind an off flag.
- *
- * What must hold:
- *   - unapproved → the seller application, and NOTHING is hydrated or mapped;
- *   - a LAB draft is untouched by the gate (it resumes to `/(lab)/draft`, a buyer
- *     surface — a saved buy request or an unsent chat draft);
- *   - approved → the scan flow opens exactly as before.
+ * `EXPO_PUBLIC_DRAFTS` is "1" in all three eas.json profiles and in .env, so this
+ * is live in every build we ship — it is not behind an off flag.
  */
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 
@@ -119,91 +114,89 @@ beforeEach(() => {
   queryClient.clear();
 });
 
-afterEach(() => {
-  // setQueryData on an unobserved query arms a 5-minute GC timer on the shared
-  // client; clear() destroys it so Jest is not left holding an open handle.
-  queryClient.clear();
-});
+afterEach(() => queryClient.clear());
 
-describe('resuming a draft is gated for an unapproved user', () => {
-  it('sends a seller form-blob draft to the application instead of the scan flow', async () => {
+describe('resumeDraftById — no approval needed to keep working', () => {
+  it('opens a seller form-blob draft with NO application on file', async () => {
+    // The hardest case: a photo-less form-blob resolves to `/scan/camera`, which
+    // the old policy treated as the flow entrance and blocked.
+    queryClient.setQueryData(SELLER_UPGRADE_KEY, null);
     mockGetDraft.mockResolvedValue(SELLER_FORM_BLOB);
+    mockHydrate.mockReturnValue({});
+
     await resumeDraftById('d1', t);
-    expect(push).toHaveBeenCalledWith(APPLY_ROUTE);
+
     expect(push).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalledWith(APPLY_ROUTE);
+    expect(useScanDraft.getState().hydrateFromServer).toHaveBeenCalledTimes(1);
   });
 
-  it('does not hydrate the scan store on a blocked resume', async () => {
-    // Redirecting but still loading the draft into the scan store would leave the
-    // flow primed for the next ungated push.
-    mockGetDraft.mockResolvedValue(SELLER_FORM_BLOB);
-    await resumeDraftById('d1', t);
-    expect(mockHydrate).not.toHaveBeenCalled();
-    expect(useScanDraft.getState().hydrateFromServer).not.toHaveBeenCalled();
-  });
-
-  it('blocks a background-recognition draft without mapping it', async () => {
-    mockGetDraft.mockResolvedValue(PENDING_AI);
-    await resumeDraftById('d2', t);
-    expect(push).toHaveBeenCalledWith(APPLY_ROUTE);
-    expect(mockMapPendingAi).not.toHaveBeenCalled();
-  });
-
-  it('fails closed when the status was never fetched', async () => {
-    // No setQueryData — the cold-cache case, which is every app launch.
-    mockGetDraft.mockResolvedValue(SELLER_FORM_BLOB);
-    await resumeDraftById('d1', t);
-    expect(push).toHaveBeenCalledWith(APPLY_ROUTE);
-  });
-
-  it.each(['pending', 'rejected'])('blocks while the application is %s', async (status) => {
+  it.each([
+    ['pending', 'pending'],
+    ['rejected', 'rejected'],
+  ])('opens a draft for a %s application', async (_label, status) => {
     queryClient.setQueryData(SELLER_UPGRADE_KEY, {
       status,
-      company_name: 'Acme',
+      company_name: null,
       admin_notes: null,
       reviewed_at: null,
     });
     mockGetDraft.mockResolvedValue(SELLER_FORM_BLOB);
-    await resumeDraftById('d1', t);
-    expect(push).toHaveBeenCalledWith(APPLY_ROUTE);
+    mockHydrate.mockReturnValue({});
+
+    await resumeDraftById('d2', t);
+
+    expect(push).not.toHaveBeenCalledWith(APPLY_ROUTE);
+    expect(useScanDraft.getState().hydrateFromServer).toHaveBeenCalledTimes(1);
   });
 
-  it('redirects rather than erroring — no scary toast on a gated resume', async () => {
-    mockGetDraft.mockResolvedValue(SELLER_FORM_BLOB);
-    await resumeDraftById('d1', t);
-    expect(toastError).not.toHaveBeenCalled();
-  });
-});
+  it('opens a background-recognition draft with a cold status cache', async () => {
+    // No setQueryData at all.
+    mockGetDraft.mockResolvedValue(PENDING_AI);
+    // `shouldSkipDetectionChoice` is the REAL implementation here and reads
+    // `mapped.meta.productCount` — a fixture without `meta` throws inside the
+    // try/catch and shows up as "navigated nowhere", not as an error.
+    mockMapPendingAi.mockReturnValue({
+      mapped: { meta: { productCount: 1, suggestedMode: 'single' } },
+      sourcePhotos: [{ uri: 'file:///a.jpg' }],
+    });
 
-describe('the gate does not touch buyer surfaces', () => {
-  it('still resumes a LAB draft to the lab draft screen while unapproved', async () => {
-    // A saved buy request / unsent chat draft is a BUYER's own content. Gating it
-    // would take away something they are entitled to.
-    mockGetDraft.mockResolvedValue(LAB_DRAFT);
     await resumeDraftById('d3', t);
-    expect(push).toHaveBeenCalledWith('/(lab)/draft');
-    expect(push).not.toHaveBeenCalledWith(APPLY_ROUTE);
-  });
-});
 
-describe('an approved seller resumes exactly as before', () => {
-  it('opens the scan flow for a form-blob draft', async () => {
-    approve();
-    mockGetDraft.mockResolvedValue(SELLER_FORM_BLOB);
-    mockHydrate.mockReturnValue({});
-    await resumeDraftById('d1', t);
-    expect(push).toHaveBeenCalledWith(expect.stringContaining('/scan/'));
+    expect(toastError).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalledTimes(1);
     expect(push).not.toHaveBeenCalledWith(APPLY_ROUTE);
   });
 
-  it('proves the hazard: a photo-less draft resumes to the CAMERA', async () => {
-    // This is the exact line the gate exists for — `scanResume.ts:15` returns
-    // `routes.scanCamera` when a draft has no photos. Approved, it is correct
-    // behaviour; unapproved (above) it was an ungated route into the sell flow.
+  it('still opens a LAB draft on the buyer surface', async () => {
+    // Unchanged by the policy move, and asserted so the two branches cannot be
+    // conflated: a lab draft must never land in the scan flow.
+    mockGetDraft.mockResolvedValue(LAB_DRAFT);
+
+    await resumeDraftById('d4', t);
+
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalledWith(APPLY_ROUTE);
+    expect(useScanDraft.getState().hydrateFromServer).not.toHaveBeenCalled();
+  });
+
+  it('opens the draft for an approved seller, exactly as before', async () => {
     approve();
     mockGetDraft.mockResolvedValue(SELLER_FORM_BLOB);
     mockHydrate.mockReturnValue({});
-    await resumeDraftById('d1', t);
-    expect(push).toHaveBeenCalledWith('/scan/camera');
+
+    await resumeDraftById('d5', t);
+
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(useScanDraft.getState().hydrateFromServer).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a fetch failure with a toast and navigates nowhere', async () => {
+    mockGetDraft.mockRejectedValue(new Error('offline'));
+
+    await resumeDraftById('d6', t);
+
+    expect(toastError).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalled();
   });
 });

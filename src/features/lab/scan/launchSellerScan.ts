@@ -9,33 +9,26 @@
 // smart-detect is off). Buyer-mode image uploads are NOT routed here — they stay
 // inline for image search (useLabTurn keeps buyer attachments on /chat/stream).
 //
-// ⚠️ THIS FUNCTION IS ONE OF TWO SELL GATES. It covers the five chat/home entry
-// points; `resumeDraftById` covers resuming a saved draft. Both share ONE
-// predicate — `canEnterScanFlow()` in `@/features/seller/scanFlowGate` — so there
-// is a single definition of "may this user reach the scan flow".
+// ⚠️ DELIBERATELY UNGATED. Authoring a listing is open to anyone signed in —
+// photograph, run the AI, edit, save a draft. Seller approval is required to
+// PUBLISH, and is enforced at the two submit choke points instead; see
+// `@/features/seller/sellerSubmitGate`. Do not reintroduce a check here: sending
+// a user to a company-details form before they have seen the AI do anything is
+// the friction this flow exists to avoid.
 import { router } from 'expo-router';
 
-import { canEnterScanFlow, redirectToSellerApplication } from '@/features/seller/scanFlowGate';
 import { SMART_DETECT_ENABLED } from '@/lib/flags';
 import { routes } from '@/lib/routes';
 import { useScanDraft } from '@/stores/scanDraftStore';
 
 export function launchSellerScan(): void {
-  // Gated HERE, not at the call sites: this is a plain function called from five
-  // places — lab home ×2 (`app/(lab)/(tabs)/home.tsx` onPhoto/onAttach), lab chat
-  // ×2 (`app/(lab)/chat.tsx` camera/attach buttons) and the chat controller
-  // (`useChatController.handleUploadPress`, behind the entry card's "Upload photos
-  // / documents"). One check covers all five; a check per call site would leave
-  // the next new one ungated.
-  if (!canEnterScanFlow()) {
-    redirectToSellerApplication();
-    return;
-  }
-
+  // Called from five places — lab home ×2 (`app/(lab)/(tabs)/home.tsx`
+  // onPhoto/onAttach), lab chat ×2 (`app/(lab)/chat.tsx` camera/attach buttons)
+  // and the chat controller (`useChatController.handleUploadPress`, behind the
+  // entry card's "Upload photos / documents").
+  //
   // FLUSH-ALWAYS: reset any half-finished scan draft so the flow starts clean
-  // (same contract as the seller Scan tab). Deliberately AFTER the gate — a
-  // blocked attempt must not destroy work belonging to a flow the user never
-  // entered.
+  // (same contract as the seller Scan tab).
   useScanDraft.getState().reset();
   // push (not replace) so the OS/back gesture returns to the chat, not the tab.
   router.push(SMART_DETECT_ENABLED ? routes.scanCamera : routes.scanListingMethod);

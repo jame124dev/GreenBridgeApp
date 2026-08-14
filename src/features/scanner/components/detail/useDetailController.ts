@@ -8,6 +8,10 @@ import { useTranslation } from 'react-i18next';
 
 import { detailSchema, type DetailFormInput } from '@/features/scanner/schema';
 import { useCreateListing } from '@/features/scanner/useCreateListing';
+import {
+  canSubmitListing,
+  redirectToSellerApplication,
+} from '@/features/seller/sellerSubmitGate';
 import { useLabCategories } from '@/features/scanner/useLabCategories';
 import { haptics } from '@/lib/haptics';
 import { routes } from '@/lib/routes';
@@ -87,7 +91,7 @@ export function useDetailController() {
     return buildDraftPatch(values, current, categories.data?.options);
   };
 
-  const onSubmitSingle = handleSubmit((values) => {
+  const submitSingleValidated = handleSubmit((values) => {
     const updated = buildUpdated(values);
     if (!updated) return;
     patch(updated);
@@ -106,6 +110,28 @@ export function useDetailController() {
       },
     });
   });
+
+  /**
+   * ⚠️ SELL GATE — choke point 2 of 2. `createListing` POSTs to
+   * `/wp/create-product-direct` + create-batch, a DIFFERENT endpoint from the
+   * grouped submit in `app/scan/grouped-review.tsx`, so gating only that one
+   * would leave single-product publishing wide open.
+   *
+   * Wraps `handleSubmit` rather than living inside it: a blocked user is going to
+   * the seller form, so running field validation first would surface errors about
+   * a publish that is not about to happen. Their draft stays in `useScanDraft`.
+   *
+   * `onAddAnother` / `onReviewGroup` / `onSaveAndReturnToReview` stay UNGATED —
+   * they only move work around inside the app.
+   */
+  const onSubmitSingle = () => {
+    if (!canSubmitListing()) {
+      haptics.tap();
+      redirectToSellerApplication();
+      return;
+    }
+    void submitSingleValidated();
+  };
 
   const onAddAnother = handleSubmit((values) => {
     const updated = buildUpdated(values);
