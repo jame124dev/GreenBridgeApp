@@ -3485,6 +3485,13 @@
     }
   },
   "mobile": {
+    "sellGate": {
+      "ctaApply": "填写卖家资料以发布",
+      "ctaPending": "查看审核状态",
+      "noticeNone": "一次性步骤：发布前需要填写您的公司资料，大约两分钟即可完成，草稿已为您保存。",
+      "noticePending": "您的卖家资料已提交，我们的团队正在审核。通过后会发邮件通知您，在此之前草稿会一直保存。",
+      "noticeRejected": "您的卖家资料需要修改后才能发布。草稿已为您保存。"
+    },
     "scan": {
       "locationPrimerContinue": "继续",
       "locationPrimerAccept": "使用定位",
@@ -3504,7 +3511,7 @@
       "sectionPhotos": "照片"},
     "splash": {
       "from": "来自",
-      "tagline": "THE CIRCULAR ECONOMY LEADER"},
+      "tagline": "循环经济引领者"},
     "notFound": {
       "goHome": "返回首页",
       "heading": "页面不存在",
@@ -3536,6 +3543,7 @@
       "success": "您的帐户已删除"
     },
     "home": {
+      "locationDeniedTitle": "需要位置权限",
       "locationA11y": "您的位置，点按以更新",
       "locationDeniedBody": "请在“设置”中开启定位权限，以便我们显示您所在的区域。",
       "locationSet": "设置位置",
@@ -3561,6 +3569,7 @@
       "inactive": "已禁用"
     },
     "common": {
+      "close": "关闭",
       "cancel": "取消",
       "ok": "确定",
       "retry": "轻触重试",
@@ -3951,7 +3960,7 @@
       "accountsIssuedByTeam": "账号由 GreenBidz 团队开通。",
       "welcomeBack": "欢迎回来",
       "signInSubtitle": "登录以继续刊登",
-      "email": "电子邮件",
+      "email": "邮箱",
       "emailPlaceholder": "you@example.com",
       "password": "密码",
       "passwordPlaceholder": "••••••••",
@@ -4106,7 +4115,7 @@
       "languageRegionDesc": "应用编程语言、时区与货币",
       "firstName": "姓名",
       "firstNamePlaceholder": "您的姓名",
-      "email": "电子邮件",
+      "email": "邮箱",
       "phone": "电话",
       "phonePlaceholder": "+886 912 345 678",
       "company": "公司",
@@ -4175,6 +4184,17 @@
       "untitled": "商品 {{index}}"
     },
     "labHome": {
+      "empty": {
+        "buyBody": "点击任一项即可搜索，或在上方用自己的话描述您需要的设备。",
+        "buyHint": "没找到？告诉我们您想要什么，有货上架时我们会第一时间通知您。",
+        "buyTitle": "不知从何开始？",
+        "sellBody": "拍下您的设备，AI 会自动生成标题、规格和描述。发布前由您审核确认。",
+        "sellCta": "拍摄设备照片",
+        "sellStep1": "拍照",
+        "sellStep2": "AI 生成草稿",
+        "sellStep3": "您审核并发布",
+        "sellTitle": "一张照片，生成商品信息"
+      },
       "retry": "重试",
       "viewAllDrafts": "查看全部 {{count}} 份草稿",
       "savedJustNow": "刚刚保存",

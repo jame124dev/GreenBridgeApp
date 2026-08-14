@@ -3501,6 +3501,13 @@
     }
   },
   "mobile": {
+    "sellGate": {
+      "ctaApply": "Thêm thông tin người bán",
+      "ctaPending": "Xem trạng thái xét duyệt",
+      "noticeNone": "Bước làm một lần: để đăng tin, chúng tôi cần thông tin công ty của bạn. Chỉ mất khoảng hai phút — bản nháp của bạn đã được lưu.",
+      "noticePending": "Thông tin người bán của bạn đang được đội ngũ của chúng tôi xem xét. Chúng tôi sẽ gửi email khi được phê duyệt — bản nháp của bạn vẫn được lưu cho đến lúc đó.",
+      "noticeRejected": "Thông tin người bán của bạn cần được chỉnh sửa trước khi có thể đăng tin này. Bản nháp của bạn đã được lưu."
+    },
     "scan": {
       "locationPrimerContinue": "Tiếp tục",
       "locationPrimerAccept": "Dùng vị trí",
@@ -3520,7 +3527,7 @@
       "sectionPhotos": "Ảnh"},
     "splash": {
       "from": "TỪ",
-      "tagline": "THE CIRCULAR ECONOMY LEADER"},
+      "tagline": "DẪN ĐẦU KINH TẾ TUẦN HOÀN"},
     "notFound": {
       "goHome": "Về trang chủ",
       "heading": "Không tìm thấy trang",
@@ -3552,6 +3559,7 @@
       "success": "Tài khoản của bạn đã được xóa"
     },
     "home": {
+      "locationDeniedTitle": "Cần quyền truy cập vị trí",
       "locationA11y": "Vị trí của bạn, nhấn để cập nhật",
       "locationDeniedBody": "Hãy bật quyền truy cập vị trí trong Cài đặt để chúng tôi hiển thị khu vực của bạn.",
       "locationSet": "Đặt vị trí",
@@ -3577,6 +3585,7 @@
       "inactive": "KHÔNG HOẠT ĐỘNG"
     },
     "common": {
+      "close": "Đóng",
       "cancel": "Hủy",
       "ok": "OK",
       "retry": "Nhấn để thử lại",
@@ -4195,6 +4204,17 @@
       "untitled": "Sản phẩm {{index}}"
     },
     "labHome": {
+      "empty": {
+        "buyBody": "Chạm vào một mục để tìm, hoặc mô tả nhu cầu của bạn bằng lời ở phía trên.",
+        "buyHint": "Không tìm thấy? Hãy cho chúng tôi biết bạn đang cần gì, chúng tôi sẽ thông báo ngay khi có tin đăng phù hợp.",
+        "buyTitle": "Chưa biết bắt đầu từ đâu?",
+        "sellBody": "Chụp ảnh thiết bị của bạn, AI sẽ viết tiêu đề, thông số và mô tả. Bạn kiểm tra lại trước khi tin đăng được đưa lên.",
+        "sellCta": "Chụp ảnh thiết bị",
+        "sellStep1": "Chụp ảnh",
+        "sellStep2": "AI soạn tin đăng",
+        "sellStep3": "Bạn kiểm tra và đăng",
+        "sellTitle": "Biến ảnh thành tin đăng"
+      },
       "retry": "Thử lại",
       "viewAllDrafts": "Xem tất cả {{count}} bản nháp",
       "savedJustNow": "vừa lưu",

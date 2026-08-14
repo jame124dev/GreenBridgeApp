@@ -1792,7 +1792,7 @@
     "phone": "電話",
     "country": "国",
     "address": "Address",
-    "cancel": "Cancel",
+    "cancel": "キャンセル",
     "close": "閉じる",
     "soon": "近日公開"
   },
@@ -3420,6 +3420,13 @@
     }
   },
   "mobile": {
+    "sellGate": {
+      "ctaApply": "出品者情報を登録する",
+      "ctaPending": "審査状況を確認",
+      "noticeNone": "公開には会社情報の登録が必要です（初回のみ・約2分）。下書きは保存されています。",
+      "noticePending": "出品者情報を担当チームが確認しています。承認後にメールでお知らせします。それまで下書きは保存されています。",
+      "noticeRejected": "公開するには出品者情報の修正が必要です。下書きは保存されています。"
+    },
     "scan": {
       "locationPrimerContinue": "続ける",
       "locationPrimerAccept": "位置情報を使用",
@@ -3439,7 +3446,7 @@
       "sectionPhotos": "写真"},
     "splash": {
       "from": "提供",
-      "tagline": "THE CIRCULAR ECONOMY LEADER"},
+      "tagline": "サーキュラーエコノミーのリーダー"},
     "notFound": {
       "goHome": "ホームへ戻る",
       "heading": "ページが見つかりません",
@@ -3471,6 +3478,7 @@
       "success": "アカウントを削除しました"
     },
     "home": {
+      "locationDeniedTitle": "位置情報の許可が必要です",
       "locationA11y": "現在地。タップして更新",
       "locationDeniedBody": "設定で位置情報のアクセスを許可すると、お住まいの地域を表示できます。",
       "locationSet": "位置を設定",
@@ -3496,6 +3504,7 @@
       "inactive": "無効"
     },
     "common": {
+      "close": "閉じる",
       "cancel": "キャンセル",
       "ok": "OK",
       "retry": "タップして再試行",
@@ -4110,6 +4119,17 @@
       "untitled": "商品 {{index}}"
     },
     "labHome": {
+      "empty": {
+        "buyBody": "タップして検索、または上の入力欄にご希望を自由に入力してください。",
+        "buyHint": "見つかりませんか？お探しの機器を教えていただければ、出品され次第お知らせします。",
+        "buyTitle": "何から始めますか？",
+        "sellBody": "機器を撮影すると、AI がタイトル・仕様・説明を作成します。公開前にご自身で内容を確認できます。",
+        "sellCta": "機器を撮影",
+        "sellStep1": "写真を撮る",
+        "sellStep2": "AI が下書きを作成",
+        "sellStep3": "確認して公開",
+        "sellTitle": "写真から出品を作成"
+      },
       "retry": "再試行",
       "viewAllDrafts": "下書き {{count}} 件をすべて表示",
       "savedJustNow": "たった今保存",

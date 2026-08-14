@@ -3485,6 +3485,13 @@
     }
   },
   "mobile": {
+    "sellGate": {
+      "ctaApply": "填寫賣家資料以發布",
+      "ctaPending": "查看審核狀態",
+      "noticeNone": "一次性步驟：發布前需提供您的公司資料，約兩分鐘即可完成，草稿會為您保留。",
+      "noticePending": "您的賣家資料已交由我們的團隊審核，通過後會以電子郵件通知您；在此之前草稿會為您保留。",
+      "noticeRejected": "您的賣家資料需修正後才能發布此刊登，草稿已為您保留。"
+    },
     "scan": {
       "locationPrimerContinue": "繼續",
       "locationPrimerAccept": "使用定位",
@@ -3504,7 +3511,7 @@
       "sectionPhotos": "照片"},
     "splash": {
       "from": "來自",
-      "tagline": "THE CIRCULAR ECONOMY LEADER"},
+      "tagline": "循環經濟領導品牌"},
     "notFound": {
       "goHome": "返回首頁",
       "heading": "頁面不存在",
@@ -3536,6 +3543,7 @@
       "success": "您的帳戶已刪除"
     },
     "home": {
+      "locationDeniedTitle": "需要位置權限",
       "locationA11y": "您的位置，點按以更新",
       "locationDeniedBody": "請在「設定」中開啟定位權限，以便我們顯示您所在的區域。",
       "locationSet": "設定位置",
@@ -3561,6 +3569,7 @@
       "inactive": "已停用"
     },
     "common": {
+      "close": "關閉",
       "cancel": "取消",
       "ok": "確定",
       "retry": "輕觸重試",
@@ -3907,7 +3916,7 @@
       "register": {
         "credentialsTitle": "建立帳號",
         "credentialsSubtitle": "瀏覽設備、儲存搜尋並與賣家聯絡。",
-        "emailLabel": "電郵",
+        "emailLabel": "電子郵件",
         "passwordLabel": "密碼",
         "confirmPasswordLabel": "確認密碼",
         "sendCode": "發送驗證碼",
@@ -4175,6 +4184,17 @@
       "untitled": "商品 {{index}}"
     },
     "labHome": {
+      "empty": {
+        "buyBody": "點選任一項目即可搜尋，或在上方以自己的話描述您的需求。",
+        "buyHint": "找不到嗎？告訴我們您要找的設備，一有刊登我們就通知您。",
+        "buyTitle": "不知道從哪裡開始？",
+        "sellBody": "拍下您的設備，AI 就會自動撰寫標題、規格與說明；正式上線前都由您先確認。",
+        "sellCta": "拍攝設備",
+        "sellStep1": "拍照",
+        "sellStep2": "AI 生成刊登草稿",
+        "sellStep3": "確認後發布",
+        "sellTitle": "用一張照片建立刊登"
+      },
       "retry": "重試",
       "viewAllDrafts": "查看全部 {{count}} 份草稿",
       "savedJustNow": "剛剛儲存",

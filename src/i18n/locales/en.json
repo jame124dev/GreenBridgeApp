@@ -3557,6 +3557,7 @@
       "goHome": "Go home"
     },
     "home": {
+      "locationDeniedTitle": "Location permission needed",
       "locationA11y": "Your location, tap to update",
       "locationDeniedBody": "Enable location access in Settings so we can show your area.",
       "locationSet": "Set location",
@@ -3582,6 +3583,7 @@
       "inactive": "INACTIVE"
     },
     "common": {
+      "close": "Close",
       "cancel": "Cancel",
       "ok": "OK",
       "retry": "Tap to retry",
@@ -4207,6 +4209,17 @@
       "untitled": "Product {{index}}"
     },
     "labHome": {
+      "empty": {
+        "buyBody": "Tap one to search, or describe what you need in your own words above.",
+        "buyHint": "Can't find it? Tell us what you're looking for and we'll alert you when it's listed.",
+        "buyTitle": "Not sure where to start?",
+        "sellBody": "Photograph your equipment and the AI writes the title, specs and description. You review it before anything goes live.",
+        "sellCta": "Photograph equipment",
+        "sellStep1": "Take a photo",
+        "sellStep2": "AI drafts the listing",
+        "sellStep3": "You check it and publish",
+        "sellTitle": "Turn a photo into a listing"
+      },
       "retry": "Retry",
       "greetingLead": {
         "sell": "What are you",
