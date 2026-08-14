@@ -1,6 +1,8 @@
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { useSubmitCtaLabel } from '@/features/seller/components/SellerApprovalNotice';
+import { useCanSell } from '@/features/seller/useSellerUpgrade';
 import { draftsEnabled } from '@/lib/flags';
 
 import { FooterButton } from './FooterButton';
@@ -47,6 +49,9 @@ export function DetailFooter({
   savingDraft,
 }: Props) {
   const { t } = useTranslation();
+  // Declared before the early returns below: hooks cannot live after a branch.
+  const canPublish = useCanSell();
+  const submitLabel = useSubmitCtaLabel(t('mobile.detail.submitListing'));
 
   const footerCls =
     'flex-row items-center gap-sm px-lg pt-2.5 pb-2.5 border-t border-brand-border-strong bg-brand-surface';
@@ -100,10 +105,16 @@ export function DetailFooter({
           flex={1}
         />
       ) : null}
+      {/* Mirrors the grouped review hub's CTA. Two things change for a user who
+          cannot publish yet (`SellerApprovalNotice` sits directly above this):
+          the label says what the button will actually do, and an incomplete
+          field stops disabling it — they can go add seller details now and let
+          the approval wait overlap with finishing the draft, rather than being
+          told about a step they have no way to start. */}
       <FooterButton
-        label={t('mobile.detail.submitListing')}
+        label={submitLabel}
         onPress={onSubmitSingle}
-        disabled={!allRequired}
+        disabled={!allRequired && canPublish}
         loading={submitting}
         primary
         icon="arrow-forward"
