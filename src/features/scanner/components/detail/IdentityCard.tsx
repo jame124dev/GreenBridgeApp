@@ -18,8 +18,17 @@ const titleInputCls =
  * S6.2.b2.i — converted to NativeWind. Card container, field gaps, and input
  * styling all use className. `placeholderTextColor` retains the brand token
  * via JS (no Tailwind hook for placeholder color in NativeWind).
+ *
+ * `variant` (default `'draft'` — existing behaviour unchanged):
+ *   'edit' is the published-listing editor. Model and year are hidden there
+ *   because the v1 edit contract has no slot for them — on create they are
+ *   folded into `product_content` by `appendSpecsToDescription`, and the editor
+ *   exposes the description itself, so keeping the inputs would offer two ways
+ *   to change one thing and silently discard one of them. Title and brand ARE
+ *   contract fields and stay editable.
  */
-export function IdentityCard() {
+export function IdentityCard({ variant = 'draft' }: { variant?: 'draft' | 'edit' } = {}) {
+  const isEdit = variant === 'edit';
   const { t } = useTranslation();
   const { control } = useFormContext<DetailFormInput>();
 
@@ -68,6 +77,7 @@ export function IdentityCard() {
             </View>
           )}
         />
+        {isEdit ? null : (
         <Controller
           control={control}
           name="model"
@@ -85,8 +95,10 @@ export function IdentityCard() {
             </View>
           )}
         />
+        )}
       </View>
 
+      {isEdit ? null : (
       <Controller
         control={control}
         name="year"
@@ -106,6 +118,7 @@ export function IdentityCard() {
           </View>
         )}
       />
+      )}
     </View>
   );
 }

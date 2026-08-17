@@ -32,19 +32,26 @@ export const CURRENCY_PREFIX: Record<SupportedCurrency, string> = {
 };
 
 /**
- * Format a numeric amount for read-only display ("$ 12,500", "NT$ 393,750",
- * "+$ 4,200"). The currency-input component used for the editable price
+ * Format a numeric amount for read-only display ("USD 12,500", "TWD 393,750",
+ * "+USD 4,200"). The currency-input component used for the editable price
  * field has its own formatter and shouldn't go through this helper.
  *
  * USD shows two decimals only when the amount has a fractional part — whole
- * scrap-value style numbers come back as "$ 12,500" not "$ 12,500.00".
+ * scrap-value style numbers come back as "USD 12,500" not "USD 12,500.00".
+ *
+ * The ISO CODE is deliberate, not the symbol. This is a cross-border B2B
+ * marketplace: "$" is ambiguous across USD/AUD/CAD/HKD/SGD and a buyer reading
+ * a scrap value or a profit range has to know which currency it is without
+ * guessing. `NT$` compounded it by being unfamiliar outside Taiwan. The symbols
+ * remain in CURRENCY_PREFIX for the editable price input, where the currency is
+ * already chosen right beside the field.
  */
 export function formatCurrency(
   amount: number,
   currency: SupportedCurrency,
   opts: { signed?: boolean } = {},
 ): string {
-  const prefix = CURRENCY_PREFIX[currency] ?? '$';
+  const prefix = currency;
   const absAmount = Math.abs(amount);
   let body: string;
   if (currency === 'USD') {

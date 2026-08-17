@@ -64,7 +64,12 @@ export default function ListingDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    // 'bottom' edge: the scroll's last child is the "Open on website" button and
+    // this layout has no bottom chrome of its own, so with a top-only inset the
+    // button's lower edge fell under the Android 3-button nav bar. Insetting the
+    // root is cheaper (and can't drift) than adding insets.bottom to the scroll
+    // padding, which is also why styles.scroll keeps its plain 40.
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => safeBack()} hitSlop={12}>
           <ChevronLeft color="#121c28" size={24} />

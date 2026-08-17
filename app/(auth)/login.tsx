@@ -4,11 +4,13 @@ import { Image } from 'expo-image';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Eye, EyeOff, Globe, Leaf, Lock, Mail } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { languageBadge } from '@/i18n';
 
 import { Button, Card, Input, LanguageSheet, Screen, Text } from '@/components/ui';
+import { spacing } from '@/constants/theme';
 import { loginSchema, type LoginInput } from '@/features/auth/schema';
 import { useLogin } from '@/features/auth/useLogin';
 import { IS_CUSTOMER } from '@/lib/flags';
@@ -54,6 +56,7 @@ const MONO_FONT = 'JetBrainsMono_400Regular';
 
 export default function LoginScreen() {
   const { t, i18n } = useTranslation();
+  const insets = useSafeAreaInsets();
   const branding = getBranding();
   const [showPassword, setShowPassword] = useState(false);
   const [langSheetOpen, setLangSheetOpen] = useState(false);
@@ -115,7 +118,15 @@ export default function LoginScreen() {
     });
 
   return (
-    <Screen keyboardAware contentContainerStyle={{ paddingTop: 16, paddingBottom: 24 }}>
+    // paddingBottom must carry the safe-area inset itself: a caller-supplied
+    // paddingBottom overrides Screen's inset-aware default, and the LAST element
+    // in this scroll is the "Don't have an account? / Create account" row — the
+    // only in-app path to signup. At a flat 24 it sat behind the 48dp Android
+    // 3-button nav bar, so taps on it hit Back/Home instead.
+    <Screen
+      keyboardAware
+      contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: insets.bottom + spacing['2xl'] }}
+    >
       {/* Top row: language switcher right-aligned. Login screen previously
           had no language entry — international sellers landing here couldn't
           switch the app's locale until after sign-in. Mirrors the chip in

@@ -17,8 +17,10 @@ const TEXT = '#FFFFFF';
 const TEXT_MUTED = 'rgba(255,255,255,0.66)';
 const RULE = 'rgba(255,255,255,0.18)';
 
-// The customer bundle is "101LAB"; the seller bundle keeps its name.
-const APP_NAME = IS_CUSTOMER ? '101LAB' : 'GreenBidz Seller';
+// Both bundles carry the umbrella brand: the app is published as GreenBidz, and
+// naming a single marketplace here contradicted the icon, the store listing and
+// the header. The seller bundle keeps its longer name to distinguish the two.
+const APP_NAME = IS_CUSTOMER ? 'GreenBidz' : 'GreenBidz Seller';
 
 export function AppSplash() {
   const fade = useRef(new Animated.Value(0)).current;

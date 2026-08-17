@@ -1,4 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { haptics } from '@/lib/haptics';
@@ -25,13 +26,24 @@ type Props = {
   onClose: () => void;
 };
 
+// Design floor for the card's bottom padding; the live safe-area inset raises it
+// when the OS chrome is taller (see the Math.max at the render site).
+const SHEET_PADDING_BOTTOM = 28;
+
 /**
  * Bottom-sheet style language picker. Built on RN's <Modal> so it renders
  * identically on iOS / Android / Web (unlike Alert.alert which only shows
  * the title on web with no buttons).
+ *
+ * ⚠️ Bottom-anchored card on a forced-edge-to-edge Android window: the last
+ * language row and Cancel are the bottom-most controls, so a flat 28px pad put
+ * them under the 48dp 3-button navigation bar. This is the FIRST sheet a new
+ * user meets (login header, seller Home header, (lab) Home header), so the
+ * inset is read here rather than trusted to callers. Mirrors Sheet.tsx.
  */
 export function LanguageSheet({ visible, onClose }: Props) {
   const { t, i18n } = useTranslation();
+  const insets = useSafeAreaInsets();
   // Normalize so the active check + comparison are robust to any code casing.
   const current = normalizeLanguage(i18n.language) ?? i18n.language;
 
@@ -49,11 +61,18 @@ export function LanguageSheet({ visible, onClose }: Props) {
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      // Parity with Sheet.tsx / PickerSelect.tsx: without this the modal window
+      // is laid out inside the status bar on Android, so the slate backdrop
+      // stops short of the top edge and this one sheet reads as a different
+      // system from every other sheet in the app.
+      statusBarTranslucent
     >
       {/* Tap outside to dismiss */}
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet} pointerEvents="box-none">
-        <View style={styles.sheetInner}>
+        <View
+          style={[styles.sheetInner, { paddingBottom: Math.max(insets.bottom, SHEET_PADDING_BOTTOM) }]}
+        >
           <View style={styles.grabber} accessibilityElementsHidden importantForAccessibility="no" />
           <Text style={styles.title}>{t('mobile.home.languageTitle')}</Text>
           <Text style={styles.subtitle}>{t('mobile.home.languageSubtitle')}</Text>
@@ -111,7 +130,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 28,
+    // paddingBottom lives at the render site (safe-area aware, floor
+    // SHEET_PADDING_BOTTOM) — a literal here would be always-overridden noise.
     maxWidth: 460,
     width: '100%',
     alignSelf: 'center',

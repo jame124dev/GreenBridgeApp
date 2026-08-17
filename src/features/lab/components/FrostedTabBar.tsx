@@ -7,8 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { haptics } from '@/lib/haptics';
 import { navBorder, spacing } from '@/constants/theme';
+import { useMatchesBadgeCount } from '@/features/lab/hooks/useMatchesBadge';
+import { useUnreadMessagesCount } from '@/features/lab/hooks/useMessagesBadge';
 import { TabBarItem } from './TabBarItem';
-import { TAB_CONFIG, STATIC_BADGES } from './tabConfig';
+import { TAB_CONFIG, type BadgeKey } from './tabConfig';
 
 // Measured content height of the bar, safe-area inset EXCLUDED: paddingTop 8 +
 // item minHeight 48 + gap/label + paddingBottom 8 ≈ 66. Exported so tab screens
@@ -44,6 +46,40 @@ export function FrostedTabBar({ state, navigation }: FrostedTabBarProps) {
   const isPublished = activeName === 'published';
   const ownerTab = activeName ? OWNED_BY_TAB[activeName] : undefined;
 
+  // Live badge counts, resolved here so TabBadge/TabBarItem stay pure `count`
+  // components. Both are derived from the signed-in buyer's own data and share
+  // the React Query cache entries their screens already populate — no extra
+  // fetches, and no literal counts (see tabConfig.ts).
+  const matchesBadge = useMatchesBadgeCount();
+  const dealsBadge = useUnreadMessagesCount();
+  const badgeCounts: Record<BadgeKey, number> = { matches: matchesBadge, deals: dealsBadge };
+
+  // The pill is a visual-only digit, so it is spelled out for screen readers —
+  // with the right NOUN per tab (new matches vs unread messages); "3 new
+  // matches" on the Chat tab would be a lie. Both pairs use the explicit
+  // One/Other key convention (NOT i18next `_one`/`_other` suffixes) so ja / zh /
+  // th aren't forced to invent a plural category they don't have.
+  const badgeA11yLabel = (badgeKey: BadgeKey | undefined, label: string, count: number) => {
+    if (count <= 0) return undefined;
+    if (badgeKey === 'deals') {
+      return count === 1
+        ? t('mobile.labMessages.tabBadgeA11yOne', {
+            label,
+            count,
+            defaultValue: '{{label}}, {{count}} unread message',
+          })
+        : t('mobile.labMessages.tabBadgeA11yOther', {
+            label,
+            count,
+            defaultValue: '{{label}}, {{count}} unread messages',
+          });
+    }
+    return t(count === 1 ? 'mobile.labNav.badgeA11yOne' : 'mobile.labNav.badgeA11yOther', {
+      label,
+      count,
+    });
+  };
+
   return (
     <View style={[styles.bar, { paddingBottom: spacing.sm + insets.bottom }]}>
       {TAB_CONFIG.map((tab, i) => {
@@ -53,13 +89,16 @@ export function FrostedTabBar({ state, navigation }: FrostedTabBarProps) {
         const focused =
           !isPublished && (ownerTab ? tab.name === ownerTab : state.index === i);
         const routeName = state.routes[i]?.name ?? tab.name;
+        const label = t(`mobile.labNav.${tab.labelKey}`);
+        const badgeCount = tab.badgeKey ? badgeCounts[tab.badgeKey] : 0;
         return (
           <TabBarItem
             key={tab.name}
             Icon={tab.Icon}
-            label={t(`mobile.labNav.${tab.labelKey}`)}
+            label={label}
             focused={focused}
-            badgeCount={tab.badgeKey ? STATIC_BADGES[tab.badgeKey] : 0}
+            badgeCount={badgeCount}
+            badgeA11yLabel={badgeA11yLabel(tab.badgeKey, label, badgeCount)}
             onPress={() => {
               haptics.tap(); // tab switch = tap() (light/selection feel)
               // Navigate unless we're already ON this tab's own route — so from

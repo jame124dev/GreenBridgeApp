@@ -12,7 +12,7 @@ import { AppImage, Button, HStack, Screen, Text } from '@/components/ui';
 import { routes } from '@/lib/routes';
 import { safeBack } from '@/lib/safeBack';
 import { useScanDraft, type Photo } from '@/stores/scanDraftStore';
-import { brand } from '@/constants/theme';
+import { brand, spacing } from '@/constants/theme';
 
 function moveItem<T>(arr: T[], from: number, to: number): T[] {
   if (to < 0 || to >= arr.length) return arr;
@@ -79,7 +79,17 @@ export default function ReorderPhotosScreen() {
   if (!ordered.length) return null;
 
   return (
-    <Screen scroll={false} contentContainerStyle={{ flex: 1, paddingBottom: 16 }}>
+    // `edges` includes 'bottom' because the screen's ONE primary CTA (Save order
+    // / Continue, below) is the last flex child of a non-scrolling column: with
+    // the default top-only inset its ~48pt button sat 16px above the physical
+    // screen bottom, so a 48dp Android 3-button nav bar covered two thirds of it
+    // and the flow could not be completed. The SafeAreaView now owns the inset;
+    // spacing.lg is the CTA's own breathing room on top of it.
+    <Screen
+      scroll={false}
+      edges={['top', 'bottom']}
+      contentContainerStyle={{ flex: 1, paddingBottom: spacing.lg }}
+    >
       <View className="pt-sm mb-sm">
         <HStack align="center" justify="space-between">
           <Pressable

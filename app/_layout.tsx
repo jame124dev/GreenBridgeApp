@@ -6,7 +6,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
@@ -31,6 +31,12 @@ import { Toaster } from 'sonner-native';
 
 import { setUnauthorizedHandler } from '@/api/interceptors';
 import { AppSplash } from '@/components/AppSplash';
+import { spacing } from '@/constants/theme';
+// Leaf import, NOT the `@/features/lab/components` barrel: this is the root
+// layout, so a barrel import would eagerly evaluate ~25 lab components (home
+// composer, sheets, animated chrome) at boot — dead weight in the seller fork.
+import { TAB_BAR_BASE_HEIGHT } from '@/features/lab/components/FrostedTabBar';
+import { PushPermissionGate } from '@/features/notifications';
 import { BackgroundRecognitionWatcher } from '@/features/scanner/BackgroundRecognitionWatcher';
 import { isSessionExpired } from '@/lib/authSession';
 import { warnMissingEnvInDev } from '@/lib/env';
@@ -97,6 +103,29 @@ function AuthGuard({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * The app's single Toaster, extracted so it can read `useSafeAreaInsets()` —
+ * which only resolves INSIDE `SafeAreaProvider`, i.e. not in RootLayout itself.
+ *
+ * Why the offset is computed and not a constant: sonner-native's Positioner does
+ * `bottom: offset || bottom || 40`, so an explicit `offset` REPLACES the
+ * safe-area inset rather than adding to it. The previous flat `offset={96}` was
+ * therefore a fixed distance from the PHYSICAL screen bottom that ignored
+ * `insets.bottom` entirely, and 96 < the live bottom bar (66 + inset ≈ 114 on
+ * Android 3-button nav) — so every toast, including the NotificationToast card
+ * and its dismiss X, overlapped the bottom of the tab bar and could steal taps
+ * from a tab. Deriving it from the exported bar height keeps the two in sync.
+ */
+function AppToaster() {
+  const insets = useSafeAreaInsets();
+  return (
+    <Toaster
+      position="bottom-center"
+      offset={TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.sm}
+    />
+  );
+}
+
 export default function RootLayout() {
   const router = useRouter();
   const hydrate = useAuth((s) => s.hydrate);
@@ -123,7 +152,8 @@ export default function RootLayout() {
       reset();
       router.replace('/(auth)/login');
     });
-    // OneSignal push foundation: init + permission prompt once on boot.
+    // Init only — the permission ask is deliberately NOT here (it fired on the
+    // login screen). PushPermissionGate owns it, post-auth.
     initOneSignal();
   }, [hydrate, reset, router]);
 
@@ -154,10 +184,14 @@ export default function RootLayout() {
                   (list refresh + toast) on ANY screen — must live under the
                   QueryClientProvider so it can invalidate the drafts query. */}
               <BackgroundRecognitionWatcher />
+              {/* Headless: the post-auth push-permission ask (see the gate for
+                  why it can't live in initOneSignal). */}
+              <PushPermissionGate />
             </QueryClientProvider>
-            {/* Bottom-anchored so the notification card floats over content
-                and clears the top header; offset lifts it above the tab bar. */}
-            <Toaster position="bottom-center" offset={96} />
+            {/* Bottom-anchored so the notification card floats over content and
+                clears the top header; the offset lifts it above the bottom tab
+                bar AND the OS navigation bar (see AppToaster). */}
+            <AppToaster />
           </SafeAreaProvider>
         </KeyboardProvider>
       </BottomSheetModalProvider>

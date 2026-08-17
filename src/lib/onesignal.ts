@@ -6,9 +6,10 @@
  * call `login(userId)`, the backend's existing sends reach mobile with no
  * server changes.
  *
- * This module is the minimal foundation: initialize, (contextually) request
- * permission, and identify the signed-in user. Notification-tap deep-linking
- * comes next.
+ * This module is the transport layer only: initialize, expose the permission
+ * primitives, and identify the signed-in user. It deliberately does NOT decide
+ * *when* to ask — that policy lives in `@/features/notifications` so the prompt
+ * can be tied to an authenticated, in-app moment instead of app start.
  *
  * Best-effort throughout — the native module is absent on web and on a
  * dev-client that predates the OneSignal install, so every call is guarded and
@@ -34,8 +35,15 @@ function getSDK(): typeof import('react-native-onesignal') | null {
   }
 }
 
-/** Initialize OneSignal once and prompt for notification permission. Call after
- *  the app mounts. No-op without an app id or the native module. */
+/** Initialize OneSignal once. Call after the app mounts. No-op without an app
+ *  id or the native module.
+ *
+ *  ⚠️ Init must stay permission-free. Asking here meant the OS prompt fired on
+ *  the LOGIN screen (no context, and Apple flags uncontextualised prompts), and
+ *  because the old call passed `fallbackToSettings: true` every later cold
+ *  start re-showed OneSignal's own "Notifications Not Available / Open Settings"
+ *  dialog to anyone who had declined. The ask now belongs to
+ *  `PushPermissionGate` (post-auth, once per install). */
 export function initOneSignal(): void {
   if (initialized || !APP_ID) return;
   const mod = getSDK();
@@ -45,9 +53,6 @@ export function initOneSignal(): void {
     if (__DEV__) OneSignal.Debug.setLogLevel(LogLevel.Verbose);
     OneSignal.initialize(APP_ID);
     initialized = true;
-    // Foundation: prompt now so we can confirm a subscription from the panel.
-    // (A production build should make this contextual, mirroring the web rule.)
-    OneSignal.Notifications.requestPermission(true).catch(() => {});
 
     // Push-tap deep-link: route to the screen for the notification's `type`
     // (e.g. recognition_draft_ready → /scan/drafts). Best-effort — an unknown
@@ -80,6 +85,99 @@ export function initOneSignal(): void {
   } catch {
     /* best-effort */
   }
+}
+
+/**
+ * OS push-permission state.
+ *
+ * Four states, because collapsing them lies to the user:
+ *   • `granted`        — push can be delivered.
+ *   • `denied`         — the user was asked and said no. The OS prompt will
+ *                        never show again; only system Settings can undo it.
+ *   • `not-determined` — never asked. Telling this user notifications are "off"
+ *                        accuses them of a refusal they never made, and hides
+ *                        the fact that a plain in-app ask still works.
+ *   • `unavailable`    — push cannot work on this build at all: web, a
+ *                        dev-client without the native module, or no OneSignal
+ *                        app id. NOT an error the user can fix, so callers must
+ *                        degrade quietly and must never send them to Settings.
+ */
+export type PushPermissionState = 'granted' | 'denied' | 'not-determined' | 'unavailable';
+
+/** iOS `OSNotificationPermission`. Compared as plain numbers so the enum stays
+ *  behind the lazy require (a static import would break web). */
+const IOS_PERMISSION_NOT_DETERMINED = 0;
+const IOS_PERMISSION_DENIED = 1;
+
+/** Current OS push permission. Never throws. */
+export async function getPushPermission(): Promise<PushPermissionState> {
+  if (!APP_ID) return 'unavailable';
+  const mod = getSDK();
+  if (!mod) return 'unavailable';
+  try {
+    const N = mod.OneSignal.Notifications;
+    if (await N.getPermissionAsync()) return 'granted';
+
+    // Not granted — now separate "never asked" from "said no". iOS reports the
+    // three states natively, so prefer it there.
+    if (Platform.OS === 'ios' && typeof N.permissionNative === 'function') {
+      const native = Number(await N.permissionNative());
+      if (native === IOS_PERMISSION_NOT_DETERMINED) return 'not-determined';
+      if (native === IOS_PERMISSION_DENIED) return 'denied';
+    }
+    // Android (and any build without the native enum): "would a prompt still
+    // show?" is the signal — true only while the device has never been asked.
+    if (typeof N.canRequestPermission === 'function' && (await N.canRequestPermission())) {
+      return 'not-determined';
+    }
+    return 'denied';
+  } catch {
+    return 'unavailable';
+  }
+}
+
+/**
+ * Show the OS permission prompt and resolve with the resulting state.
+ *
+ * `fallbackToSettings` hands an already-denied user to OneSignal's own
+ * "Open Settings" dialog. Pass it ONLY from an explicit user action (the
+ * Settings card) — an automatic call with it on is exactly what turned a single
+ * decline into a modal on every launch.
+ */
+export async function requestPushPermission(fallbackToSettings = false): Promise<PushPermissionState> {
+  if (!APP_ID) return 'unavailable';
+  const mod = getSDK();
+  if (!mod) return 'unavailable';
+  try {
+    if (await mod.OneSignal.Notifications.requestPermission(fallbackToSettings)) return 'granted';
+    // A `false` here is not necessarily a refusal — an Android user can swipe
+    // the dialog away, leaving permission undetermined. Re-read rather than
+    // recording a "no" the user never gave.
+    return await getPushPermission();
+  } catch {
+    return 'unavailable';
+  }
+}
+
+/** Observe OS permission flips (e.g. the user toggles us back on in system
+ *  Settings and returns). Returns an unsubscribe fn; noop when unavailable. */
+export function addPushPermissionListener(cb: (granted: boolean) => void): () => void {
+  if (!APP_ID) return () => {};
+  const mod = getSDK();
+  if (!mod) return () => {};
+  const { OneSignal } = mod;
+  try {
+    OneSignal.Notifications.addEventListener('permissionChange', cb);
+  } catch {
+    return () => {};
+  }
+  return () => {
+    try {
+      OneSignal.Notifications.removeEventListener('permissionChange', cb);
+    } catch {
+      /* best-effort */
+    }
+  };
 }
 
 /**

@@ -4028,6 +4028,15 @@
       "notifyOfferHint": "購入希望者から直接オファーが届いたとき",
       "notifyPayment": "支払い状況",
       "notifyPaymentHint": "入金・返金・支払い失敗",
+      "pushOffTitle": "プッシュ通知はオフです",
+      "pushOffBody": "オンにすると、入札・オファー・支払い状況をその場でお知らせします。",
+      "pushOffAction": "通知をオンにする",
+      "pushSetupTitle": "プッシュ通知はまだ設定されていません",
+      "pushOpeningSettings": "端末の通知設定を開いています…",
+      "pushWaitingAnswer": "通知の許可の選択をお待ちしています…",
+      "pushUnavailableTitle": "このバージョンのアプリではプッシュ通知を利用できません",
+      "pushUnavailableBody": "端末側で変更する設定はありません。今後のアップデートで有効にします。アプリのご利用中はアプリ内のお知らせが届きます。",
+      "pushOnToast": "プッシュ通知をオンにしました",
       "removeInterest": "{{name}} を削除",
       "verificationDesc": "各ステップを完了すると「認証済み出品者」バッジを獲得できます。",
       "verificationTitle": "信頼と認証",
@@ -4531,7 +4540,18 @@
       "listingFallback": "出品",
       "rowA11y": "{{title}} についての {{name}} との会話",
       "composerDefault": "メッセージ…",
-      "sendMessage": "メッセージを送信"
+      "sendMessage": "メッセージを送信",
+      "reconnecting": "再接続中…",
+      "unreadOne": "未読メッセージ {{count}} 件",
+      "unreadOther": "未読メッセージ {{count}} 件",
+      "allCaughtUp": "未読はありません",
+      "refreshFailed": "更新できませんでした — 下に引いて再試行してください",
+      "resultCountOne": "{{count}} 件の結果",
+      "resultCountOther": "{{count}} 件の結果",
+      "clearSearch": "検索をクリア",
+      "noMessagesYet": "まだメッセージはありません",
+      "tabBadgeA11yOne": "{{label}}、未読メッセージ {{count}} 件",
+      "tabBadgeA11yOther": "{{label}}、未読メッセージ {{count}} 件"
     },
     "labUpdate": {
       "readyTitle": "更新の準備完了",
@@ -4539,6 +4559,7 @@
       "restart": "今すぐ再起動",
       "restarting": "再起動中…",
       "later": "後で",
+      "version": "GreenBidz バージョン {{version}}",
       "builtIn": "組み込み",
       "downloading": "更新をダウンロード中…"
     },
@@ -4563,6 +4584,8 @@
       "listingInfo": "出品情報",
       "activeNow": "● オンライン",
       "connecting": "接続中…",
+      "reconnecting": "再接続中…",
+      "queued": "接続を待っています…",
       "viewListingA11y": "出品 {{id}} を表示",
       "listingNumber": "出品 #{{id}}",
       "tapToView": "タップして出品を表示",
@@ -4601,14 +4624,25 @@
         "shipToBangkok": "バンコクまで発送できますか？",
         "bestPrice": "最安値はいくらですか？"
       },
-      "sendMessage": "メッセージを送信"
+      "sendMessage": "メッセージを送信",
+      "sending": "送信中…",
+      "sent": "送信済み",
+      "sendFailed": "未送信 — タップして再試行",
+      "sendFailedA11y": "メッセージを送信できませんでした。タップしてもう一度お試しください。",
+      "loadingBody": "チャットサービスに接続し、{{name}} とのメッセージを取得しています。",
+      "errorOpenTitle": "この会話を開けませんでした",
+      "errorOpenBody": "チャットサービスに接続できませんでした。接続を確認して再試行するか、メッセージへ戻ってください。",
+      "startersLabel": "何から始めますか？",
+      "starterA11y": "この書き出しを使う：{{text}}"
     },
     "labNav": {
       "home": "ホーム",
       "browse": "見る",
       "matches": "マッチ",
       "chat": "チャット",
-      "account": "アカウント"
+      "account": "アカウント",
+      "badgeA11yOne": "{{label}}、マッチ {{count}} 件",
+      "badgeA11yOther": "{{label}}、マッチ {{count}} 件"
     },
     "labProcessing": {
       "title": {
@@ -4695,7 +4729,7 @@
       "emptyText": "まだ求購を保存していません。リクエストを投稿すると、マッチする商品をお探しします。",
       "addWant": "求購を追加",
       "statActiveWants": "有効な求購",
-      "statNewMatches": "新着マッチ",
+      "statMatches": "マッチ",
       "statTopFit": "最高適合度",
       "filters": {
         "all": "すべて",
@@ -4901,6 +4935,143 @@
         "item_grade": "グレードは？",
         "dimensions": "寸法（長さ × 幅 × 高さ）は？",
         "product_content": "簡単な説明を追加"
+      }
+    },
+    "listingEdit": {
+      "title": "出品を編集",
+      "and": "と",
+      "retry": "再試行",
+      "backToListings": "出品一覧に戻る",
+      "editAction": "編集",
+      "editA11y": "{{title}} を編集",
+      "soldRowHint": "売却済みの出品は編集できません。",
+      "listLoading": "出品を読み込んでいます…",
+      "listLoadFailed": "現在、出品を読み込めませんでした。",
+      "listEmpty": "公開した出品がここに表示され、いつでも編集できます。",
+      "listCount": "合計 {{n}} 件",
+      "resolvingTitle": "この出品に含まれる商品を探しています…",
+      "loadingTitle": "編集用に出品を開いています…",
+      "noTargetTitle": "どの出品を開くか分かりません",
+      "noTargetBody": "一覧から出品を選び、「編集」をタップしてください。",
+      "noItemsTitle": "編集できる内容がまだありません",
+      "noItemsBody": "この出品には商品が登録されていません。",
+      "pickItemTitle": "どの商品を編集しますか？",
+      "pickItemBody": "この出品には {{n}} 件の商品があります。1件ずつ編集します。",
+      "soldTitle": "この出品は売却済みです",
+      "soldBody": "売却済みの出品は購入者が見た状態のまま保持されるため、編集できません。",
+      "notOwnerTitle": "この出品はあなたのものではありません",
+      "notOwnerBody": "出品を変更できるのは、公開した出品者本人だけです。",
+      "lockedTitle": "この出品は現在編集できません",
+      "lockedBody": "この出品の編集は停止されています。理由は当社チームがご案内します。",
+      "pendingTitle": "承認待ちの変更がすでにあります",
+      "pendingBody": "{{when}} に送信された変更です。購入者に表示される前に当社チームが確認するため、それまで出品は現在の内容のまま表示されます。",
+      "pendingChangesHeading": "承認待ち",
+      "pendingHint": "この確認が終われば、新しい変更を行えます。",
+      "fromTo": "{{from}} → {{to}}",
+      "instantBadge": "すぐに反映",
+      "reviewBadge": "承認が必要",
+      "mixedBadge": "一部は確認あり",
+      "mixedHint": "{{fields}}の変更には承認が必要です。それ以外は保存するとすぐに反映されます。",
+      "changedNeedsApproval": "変更しました。{{fields}}は承認後に購入者へ表示されます。",
+      "changedGoesLive": "変更しました。{{fields}}は保存した時点で反映されます。",
+      "marketplaceLabel": "マーケットプレイス",
+      "lockedTag": "ロック中",
+      "marketplaceLockedHint": "出品は公開時のマーケットプレイスに固定されます。別のマーケットが適切な場合はご連絡ください。",
+      "marketplaceLockedA11y": "マーケットプレイス {{marketplace}}、ロック中",
+      "photosManage": "写真を管理",
+      "photosManageHint": "購入者に見せたくない写真を削除できます。",
+      "photosLastOne": "これが最後の写真です。出品には最低1枚必要なため削除できません。",
+      "photosNone": "この出品には写真がありません。",
+      "photosRemove": "削除",
+      "photosRemoveA11y": "{{index}} 枚目の写真を削除",
+      "photosDone": "完了",
+      "photoNumber": "{{index}} 枚目の写真",
+      "photosRemovedReview": "削除予定の写真：{{n}} 枚。写真の変更は承認後に購入者へ表示されます。",
+      "photosRemovedInstant": "削除予定の写真：{{n}} 枚。保存するとすぐに反映されます。",
+      "save": "変更を保存",
+      "savingExplain": "保存中 — 変更した項目だけを送信しています…",
+      "noChanges": "まだ変更はありません",
+      "summaryAllInstant": "保存待ち：{{n}} 件。すべてすぐに反映されます。",
+      "summaryMixed": "保存待ち：{{n}} 件。{{fields}}は承認待ちとなり、それ以外はすぐに反映されます。",
+      "discardTitle": "変更を破棄しますか？",
+      "discardBody": "まだ保存されていないため、破棄すると失われます。",
+      "discardConfirm": "破棄する",
+      "discardCancel": "編集を続ける",
+      "savedTitle": "出品を更新しました",
+      "savedPartlyTitle": "一部は反映、一部は承認待ちです",
+      "savedNothingTitle": "保存する変更はありませんでした",
+      "savedNothingBody": "入力内容は現在の出品とすでに同じです。",
+      "savedLiveHeading": "反映済み",
+      "savedLiveSentence": "{{fields}}を公開中の出品に反映しました。",
+      "savedPendingHeading": "承認待ち",
+      "savedPendingSentence": "{{fields}}には承認が必要です。当社チームの確認が済むまで、出品は現在の内容のまま公開されます。",
+      "done": "完了",
+      "section": {
+        "photos": "写真",
+        "identity": "タイトルとブランド",
+        "description": "説明",
+        "category": "カテゴリー・状態・グレード",
+        "pricing": "価格と数量",
+        "location": "引き取りと設置状況"
+      },
+      "modeIntro": {
+        "split": "細かな項目は保存するとすぐ反映されます。タイトル・価格・カテゴリー・写真の変更は当社チームが先に確認し、それまで出品は現在の内容のままです。",
+        "instant": "保存した変更はすべて、そのまま出品に反映されます。",
+        "review_all": "すべての変更は購入者に表示される前に当社チームが確認します。それまで出品は現在の内容のまま公開されます。"
+      },
+      "field": {
+        "title": "タイトル",
+        "description": "説明",
+        "brand": "ブランド",
+        "category": "カテゴリー",
+        "condition": "状態",
+        "grade": "グレード",
+        "operationStatus": "設置状況",
+        "quantity": "数量",
+        "priceFormat": "価格タイプ",
+        "price": "価格",
+        "currency": "通貨",
+        "location": "引き取り場所",
+        "photos": "写真",
+        "specs": "仕様"
+      },
+      "error": {
+      "saleRecordBlocked": {
+        "title": "1つの項目は変更できませんでした",
+        "body": "その他の変更は保存されました。この出品にはまだ価格や販売情報が設定されていないため、先に設定する必要があります。"
+      },
+        "unauthorized": {
+          "title": "ログインの有効期限が切れました",
+          "body": "もう一度ログインしてから、出品を開いて編集を続けてください。"
+        },
+        "forbidden": {
+          "title": "この出品を編集する権限がありません",
+          "body": "変更できるのは公開した出品者だけです。正しいアカウントでログインしているかご確認ください。"
+        },
+        "sold": {
+          "title": "この出品は売却済みです",
+          "body": "売却済みの出品は変更できないため、内容は保存されていません。"
+        },
+        "invalid": {
+          "title": "その変更は保存できませんでした",
+          "body": "上部で印の付いた項目を確認し、赤く表示された箇所を直してから保存してください。"
+        },
+        "notFound": {
+          "title": "この出品が見つかりません",
+          "body": "削除された可能性があります。出品一覧に戻って別の出品をお選びください。"
+        },
+        "offline": {
+          "title": "接続がありません",
+          "body": "通信状況を確認してから、もう一度お試しください。"
+        },
+        "server": {
+          "title": "当社側で問題が発生しました",
+          "body": "お客様の操作ではなく当社の問題です。しばらくしてからお試しください。"
+        },
+        "unknown": {
+          "title": "変更を保存できませんでした",
+          "body": "もう一度お試しください。繰り返す場合は当社チームまでお知らせください。"
+        }
       }
     },
     "labNotif": {

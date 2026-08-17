@@ -1,6 +1,8 @@
 // Static tab config for the FrostedTabBar (NewVersion/08-bottom-nav.md §5.1).
-// Keep TabBadge pure (count prop) so the badge source can later swap to a
-// React Query / Zustand selector with a one-line change here.
+// Layout/labels/icons only — badge COUNTS are live and live in FrostedTabBar
+// (`useMatchesBadgeCount`). The prototype's `STATIC_BADGES = { matches: 3 }`
+// used to live here and shipped a hardcoded "3" on every account, including
+// brand-new ones with zero wants; never reintroduce a literal count here.
 import { Home, Search, Sparkles, MessageSquare, User } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 
@@ -19,9 +21,8 @@ export const TAB_CONFIG: readonly {
   { name: 'home', label: 'Home', labelKey: 'home', Icon: Home },
   { name: 'browse', label: 'Browse', labelKey: 'browse', Icon: Search },
   { name: 'matches', label: 'Matches', labelKey: 'matches', Icon: Sparkles, badgeKey: 'matches' },
-  { name: 'deals', label: 'Chat', labelKey: 'chat', Icon: MessageSquare },
+  // `deals` = the Messages inbox. Its badge is unread MESSAGES, resolved live in
+  // FrostedTabBar via `useUnreadMessagesCount` (never a literal here — see above).
+  { name: 'deals', label: 'Chat', labelKey: 'chat', Icon: MessageSquare, badgeKey: 'deals' },
   { name: 'account', label: 'Account', labelKey: 'account', Icon: User },
 ] as const;
-
-// Static badge counts — matches the prototype's hardcoded "3".
-export const STATIC_BADGES: Record<BadgeKey, number> = { matches: 3, deals: 0 };

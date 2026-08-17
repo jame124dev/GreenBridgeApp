@@ -1,18 +1,30 @@
-// LabHeader — LEFT column: brand lockup (OrbitLogo tile + 101LAB / BY GREENBIDZ)
-// with the LOCATION chip beneath it. RIGHT cluster (top-aligned): a LANGUAGE chip
-// (globe + code) and the NOTIFICATION bell (badge + list sheet). The location
-// chip self-hides (label, spinner, or nothing) so the left column height only
-// grows when there's something to show.
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+// LabHeader — LEFT column: the GreenBidz brand logo with the LOCATION chip
+// beneath it. RIGHT cluster (top-aligned): a LANGUAGE chip (globe + code) and the
+// NOTIFICATION bell (badge + list sheet). The location chip self-hides (label,
+// spinner, or nothing) so the left column height only grows when there's
+// something to show.
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react-native';
 import { HStack } from '@/components/ui';
 import { languageBadge } from '@/i18n';
-import { fonts, greenDarkest, lab, radius, spacing } from '@/constants/theme';
-import { OrbitLogo } from './homeOrbitLogo';
+import { fonts, lab, radius, spacing } from '@/constants/theme';
+import { getBranding } from '@/theme/branding';
 import { LabLocationChip, LabSetLocationChip } from './LabLocationChip';
 import { NotificationBell } from '@/features/lab/notifications/NotificationBell';
 import type { ResolvedLocation } from '@/services/location/getDeviceLocation';
+
+// The app ships as GreenBidz, so the header shows the GreenBidz logo. It used to
+// be a hand-built lockup — an orbit tile plus the words "101LAB" / "BY GREENBIDZ"
+// — which named a single marketplace rather than the umbrella brand the app is
+// published under. `getBranding()` already resolves the right asset per SITE_TYPE
+// (and carries the 101IT / 101machine variants); the header simply wasn't using it.
+const branding = getBranding();
+
+// Rendered at a fixed height with the width derived from the asset's own 2.81:1
+// ratio, so the wordmark can't stretch and the right-hand cluster keeps its room.
+const LOGO_HEIGHT = 30;
+const LOGO_WIDTH = Math.round(LOGO_HEIGHT * (branding.logoWidth / branding.logoHeight));
 
 
 type Props = {
@@ -43,13 +55,13 @@ export function LabHeader({ onLanguagePress, location }: Props) {
       {/* Left column — brand lockup with the location chip beneath it. */}
       <View style={styles.leftCol}>
         <HStack align="center" style={styles.lockup}>
-          <View style={styles.logoTile}>
-            <OrbitLogo size={19} />
-          </View>
-          <View>
-            <Text style={styles.wordmark}>101LAB</Text>
-            <Text style={styles.byline}>BY GREENBIDZ</Text>
-          </View>
+          <Image
+            source={branding.logo}
+            style={styles.logo}
+            resizeMode="contain"
+            accessibilityRole="image"
+            accessibilityLabel={branding.logoLabel}
+          />
         </HStack>
 
         {location ? (
@@ -109,27 +121,8 @@ const styles = StyleSheet.create({
     color: lab.inkSub,
     letterSpacing: 0.5,
   },
-  logoTile: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: greenDarkest,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  wordmark: {
-    fontFamily: fonts.headingBold,
-    fontSize: 16,
-    lineHeight: 16,
-    color: lab.ink,
-    letterSpacing: -0.32,
-  },
-  byline: {
-    fontFamily: fonts.bold,
-    fontSize: 8.5,
-    lineHeight: 10,
-    letterSpacing: 1.19,
-    color: lab.inkSub,
-    marginTop: 2,
+  logo: {
+    width: LOGO_WIDTH,
+    height: LOGO_HEIGHT,
   },
 });

@@ -11,6 +11,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { fonts } from '@/theme/typography';
@@ -19,6 +20,21 @@ import { fonts } from '@/theme/typography';
 // home-screen language switcher) and `PickerSelect.tsx`, so every dropdown
 // across the app reads as one system: slate backdrop, bordered cards per
 // option, deep-forest active state, cancel button. Built on RN `Modal`.
+//
+// ⚠️ The card is bottom-anchored (`styles.sheet` = flex:1 + flex-end), so on
+// Android — which is forced edge-to-edge — it draws to the PHYSICAL screen
+// bottom. The old flat `paddingBottom: 28` was smaller than the 48dp 3-button
+// navigation bar, which put the lower half of the trailing Cancel row on top of
+// Back/Home/Recents: the tap went to the system button, not to Cancel. The
+// bottom inset is therefore read here, in the primitive, so all ~10 consumers
+// (AddWantSheet, ManageWantSheet, ReportBlockSheet, InterestsSheet,
+// IdentifyUnknownSheet, MoveToGroupSheet, LocationPrimerSheet, CountryPicker,
+// LabCategorySheet, LabCurrencySheet) are fixed once instead of ten times.
+// Same pattern as `src/features/lab/components/UploadSourceSheet.tsx`.
+
+// Design floor for the card's bottom padding, used as the lower bound against
+// the live safe-area inset (see the Math.max at the render site).
+const SHEET_PADDING_BOTTOM = 28;
 
 type SheetProps = {
   visible: boolean;
@@ -34,6 +50,7 @@ type SheetProps = {
 
 export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, children }: SheetProps) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   // Swipe-down-to-dismiss. Translate the inner card with the drag; past a
   // threshold, animate it out then close. Bound only to the grabber/header
   // region so it never fights the inner ScrollView. `onClose` is read through a
@@ -84,7 +101,15 @@ export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, chil
       <Pressable style={styles.backdrop} onPress={onClose} />
 
       <View style={styles.sheet} pointerEvents="box-none">
-        <Animated.View style={[styles.sheetInner, { transform: [{ translateY }] }]}>
+        <Animated.View
+          style={[
+            styles.sheetInner,
+            // Math.max, not "+": 28 is the design's own breathing room, and on a
+            // gesture-nav / iOS device the inset is already ≈ that. Adding both
+            // would open a dead gap under Cancel on some devices and not others.
+            { paddingBottom: Math.max(insets.bottom, SHEET_PADDING_BOTTOM), transform: [{ translateY }] },
+          ]}
+        >
           {/* Grabber + title share the drag region; the ScrollView below scrolls freely. */}
           <View {...pan.panHandlers}>
             <View style={styles.grabber} accessibilityElementsHidden importantForAccessibility="no" />
@@ -206,7 +231,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 28,
+    // paddingBottom is set at the render site (safe-area aware, floor
+    // SHEET_PADDING_BOTTOM) — keeping a literal here too would be a second,
+    // always-overridden source of truth.
     maxWidth: 460,
     width: '100%',
     alignSelf: 'center',

@@ -21,7 +21,15 @@ import vi from '@/i18n/locales/vi.json';
 
 const TRANSLATED = { 'zh-Hans': zhHans, 'zh-Hant': zhHant, ja, th, vi } as const;
 
-/** Namespaces the (lab) customer fork renders. */
+/**
+ * Namespaces the (lab) customer fork renders.
+ *
+ * Every `mobile.lab*` namespace belongs here: the list used to name only a
+ * subset, so keys added to an unlisted one (Browse, Wants, Messages, …) were
+ * never checked and the suite could pass while shipping English to a
+ * non-English user. `every listed namespace has keys` below stops a rename or
+ * typo from quietly emptying an entry.
+ */
 const NAMESPACES = [
   'labHome',
   'labCards',
@@ -30,6 +38,23 @@ const NAMESPACES = [
   'labDeal',
   'labEdit',
   'labUpdate',
+  'labBrowse',
+  'labDraft',
+  'labGap',
+  'labMatch',
+  'labMessages',
+  'labNav',
+  'labNotif',
+  'labProcessing',
+  'labProduct',
+  'labPublished',
+  'labReport',
+  'labWants',
+  // Seller "edit my listing" (app/(lab)/listing-edit.tsx + features/listings/*).
+  // Not prefixed `lab*`, but it is a (lab) screen and every string on it — the
+  // review-split wording, the sold/not-yours/pending states, the save receipt —
+  // is copy a non-English seller has to be able to act on.
+  'listingEdit',
   'drafts',
   'notFound',
   'splash',
@@ -56,6 +81,7 @@ const INTENTIONALLY_SAME = new Set([
   'labCards.field.model', // "Model" is the loanword in vi
   'labEdit.model', // "Model" is the loanword in vi
   'labEdit.pricePlaceholder', // "0.00"
+  'listingEdit.fromTo', // "{{from}} → {{to}}" — pure format string, no words
   'processing.poweredBy', // brand mark
   'settings.email', // "Email" is the loanword in vi
   'settings.phonePlaceholder', // "+1 234 567 8900"
@@ -86,6 +112,13 @@ describe('(lab) customer-fork translation coverage', () => {
   it('en defines a non-trivial set of lab keys', () => {
     // Guards against the suite silently passing if a namespace is renamed away.
     expect(Object.keys(EN).length).toBeGreaterThan(150);
+  });
+
+  it('every listed namespace has keys in en', () => {
+    // A namespace that no longer exists contributes zero expectations, so the
+    // per-locale checks below would pass without testing anything for it.
+    const empty = NAMESPACES.filter((ns) => Object.keys(nsOf(en, ns)).length === 0);
+    expect(empty).toEqual([]);
   });
 
   for (const [locale, bundle] of Object.entries(TRANSLATED)) {

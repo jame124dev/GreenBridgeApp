@@ -5,7 +5,7 @@ import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { CURRENCY_OPTIONS } from '@/features/settings/constants';
-import { CURRENCY_PREFIX, convertPrice } from '@/features/scanner/currencyFx';
+import { convertPrice } from '@/features/scanner/currencyFx';
 import type { DetailFormInput } from '@/features/scanner/schema';
 import type { SupportedCurrency } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
@@ -22,7 +22,11 @@ export function PricingCard() {
   const { control, watch, setValue, getValues } = useFormContext<DetailFormInput>();
   const priceFormat = watch('priceFormat');
   const priceCurrency = watch('priceCurrency');
-  const currencyPrefix = `${CURRENCY_PREFIX[priceCurrency] ?? '$'} `;
+  // ISO code, not the symbol — matches the scrap-value and profit figures below
+  // it on this same screen. A page that reads "USD 12,500" in one card and
+  // "$ 12,500" in the next invites the reader to wonder whether they are the
+  // same currency, and on a cross-border marketplace "$" alone does not say.
+  const currencyPrefix = `${priceCurrency} `;
 
   const handleCurrencyChange = (next: SupportedCurrency) => {
     if (next === priceCurrency) return;

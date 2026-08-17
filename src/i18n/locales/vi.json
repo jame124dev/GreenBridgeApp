@@ -4113,6 +4113,15 @@
       "notifyOfferHint": "Người mua gửi cho bạn một đề nghị trực tiếp",
       "notifyPayment": "Trạng thái thanh toán",
       "notifyPaymentHint": "Chi trả, hoàn tiền và thanh toán thất bại",
+      "pushOffTitle": "Thông báo đẩy đang tắt",
+      "pushOffBody": "Bật để nhận tin về lượt trả giá, đề nghị và cập nhật thanh toán ngay khi xảy ra.",
+      "pushOffAction": "Bật thông báo",
+      "pushSetupTitle": "Bạn chưa thiết lập thông báo đẩy",
+      "pushOpeningSettings": "Đang mở cài đặt thông báo của thiết bị…",
+      "pushWaitingAnswer": "Đang chờ bạn phản hồi yêu cầu quyền…",
+      "pushUnavailableTitle": "Phiên bản ứng dụng này chưa hỗ trợ thông báo đẩy",
+      "pushUnavailableBody": "Bạn không cần thay đổi cài đặt nào — chúng tôi sẽ bật trong bản cập nhật tới. Bạn vẫn nhận được thông báo trong ứng dụng khi đang dùng.",
+      "pushOnToast": "Đã bật thông báo đẩy",
       "removeInterest": "Xóa {{name}}",
       "verificationDesc": "Hoàn tất từng bước để nhận huy hiệu Người bán đã xác minh.",
       "verificationTitle": "Tin cậy và xác minh",
@@ -4616,7 +4625,18 @@
       "listingFallback": "Tin đăng",
       "rowA11y": "Trò chuyện với {{name}} về {{title}}",
       "composerDefault": "Nhập tin nhắn…",
-      "sendMessage": "Gửi tin nhắn"
+      "sendMessage": "Gửi tin nhắn",
+      "reconnecting": "Đang kết nối lại…",
+      "unreadOne": "{{count}} tin nhắn chưa đọc",
+      "unreadOther": "{{count}} tin nhắn chưa đọc",
+      "allCaughtUp": "Đã đọc hết",
+      "refreshFailed": "Không thể làm mới — kéo xuống để thử lại",
+      "resultCountOne": "{{count}} kết quả",
+      "resultCountOther": "{{count}} kết quả",
+      "clearSearch": "Xóa tìm kiếm",
+      "noMessagesYet": "Chưa có tin nhắn",
+      "tabBadgeA11yOne": "{{label}}, {{count}} tin nhắn chưa đọc",
+      "tabBadgeA11yOther": "{{label}}, {{count}} tin nhắn chưa đọc"
     },
     "labUpdate": {
       "readyTitle": "Bản cập nhật đã sẵn sàng",
@@ -4624,6 +4644,7 @@
       "restart": "Khởi động lại",
       "restarting": "Đang khởi động lại…",
       "later": "Để sau",
+      "version": "GreenBidz phiên bản {{version}}",
       "builtIn": "tích hợp",
       "downloading": "Đang tải bản cập nhật…"
     },
@@ -4648,6 +4669,8 @@
       "listingInfo": "Thông tin tin đăng",
       "activeNow": "● Đang hoạt động",
       "connecting": "Đang kết nối…",
+      "reconnecting": "Đang kết nối lại…",
+      "queued": "Đang chờ kết nối…",
       "viewListingA11y": "Xem tin đăng {{id}}",
       "listingNumber": "Tin đăng #{{id}}",
       "tapToView": "Nhấn để xem tin đăng này",
@@ -4686,14 +4709,25 @@
         "shipToBangkok": "Có giao đến Bangkok không?",
         "bestPrice": "Giá tốt nhất bạn có thể bán là bao nhiêu?"
       },
-      "sendMessage": "Gửi tin nhắn"
+      "sendMessage": "Gửi tin nhắn",
+      "sending": "Đang gửi…",
+      "sent": "Đã gửi",
+      "sendFailed": "Chưa gửi được — nhấn để thử lại",
+      "sendFailedA11y": "Tin nhắn chưa được gửi. Nhấn để thử lại.",
+      "loadingBody": "Đang kết nối dịch vụ trò chuyện và tải tin nhắn của bạn với {{name}}.",
+      "errorOpenTitle": "Không thể mở cuộc trò chuyện này",
+      "errorOpenBody": "Chúng tôi không kết nối được dịch vụ trò chuyện. Kiểm tra kết nối và thử lại, hoặc đến Tin nhắn.",
+      "startersLabel": "Chưa biết bắt đầu từ đâu?",
+      "starterA11y": "Dùng câu mở đầu này: {{text}}"
     },
     "labNav": {
       "home": "Trang chủ",
       "browse": "Khám phá",
       "matches": "Kết quả ghép",
       "chat": "Trò chuyện",
-      "account": "Tài khoản"
+      "account": "Tài khoản",
+      "badgeA11yOne": "{{label}}, {{count}} kết quả ghép",
+      "badgeA11yOther": "{{label}}, {{count}} kết quả ghép"
     },
     "labProcessing": {
       "title": {
@@ -4780,7 +4814,7 @@
       "emptyText": "Bạn chưa lưu yêu cầu nào. Đăng một yêu cầu và chúng tôi sẽ tìm kết quả phù hợp cho bạn.",
       "addWant": "Thêm yêu cầu",
       "statActiveWants": "Yêu cầu đang hoạt động",
-      "statNewMatches": "Kết quả ghép mới",
+      "statMatches": "Kết quả ghép",
       "statTopFit": "Phù hợp nhất",
       "filters": {
         "all": "Tất cả",
@@ -4986,6 +5020,143 @@
         "item_grade": "Phân loại là gì?",
         "dimensions": "Kích thước (D × R × C)?",
         "product_content": "Thêm mô tả ngắn"
+      }
+    },
+    "listingEdit": {
+      "title": "Chỉnh sửa tin đăng",
+      "and": "và",
+      "retry": "Thử lại",
+      "backToListings": "Về tin đăng của tôi",
+      "editAction": "Chỉnh sửa",
+      "editA11y": "Chỉnh sửa {{title}}",
+      "soldRowHint": "Tin đăng đã bán thì không thể chỉnh sửa.",
+      "listLoading": "Đang tải tin đăng của bạn…",
+      "listLoadFailed": "Hiện chúng tôi chưa tải được tin đăng của bạn.",
+      "listEmpty": "Những tin bạn đăng sẽ hiện ở đây và luôn sẵn sàng để chỉnh sửa.",
+      "listCount": "Tổng cộng {{n}}",
+      "resolvingTitle": "Đang tìm sản phẩm trong tin đăng này…",
+      "loadingTitle": "Đang mở tin đăng để chỉnh sửa…",
+      "noTargetTitle": "Chúng tôi chưa rõ cần mở tin đăng nào",
+      "noTargetBody": "Hãy chọn một tin trong danh sách rồi chạm Chỉnh sửa.",
+      "noItemsTitle": "Chưa có gì để chỉnh sửa",
+      "noItemsBody": "Tin đăng này chưa có sản phẩm nào bên trong.",
+      "pickItemTitle": "Bạn muốn chỉnh sửa sản phẩm nào?",
+      "pickItemBody": "Tin đăng này gồm {{n}} sản phẩm, mỗi sản phẩm được sửa riêng.",
+      "soldTitle": "Tin đăng này đã bán",
+      "soldBody": "Tin đã bán được giữ nguyên đúng như người mua đã thấy, nên không thể chỉnh sửa nữa.",
+      "notOwnerTitle": "Tin đăng này không phải của bạn",
+      "notOwnerBody": "Chỉ người bán đã đăng tin mới có thể thay đổi nó.",
+      "lockedTitle": "Hiện chưa thể chỉnh sửa tin đăng này",
+      "lockedBody": "Chức năng chỉnh sửa của tin này đang tắt. Đội ngũ của chúng tôi có thể giải thích lý do.",
+      "pendingTitle": "Bạn đã có thay đổi đang chờ duyệt",
+      "pendingBody": "Bạn đã gửi vào {{when}}. Đội ngũ của chúng tôi sẽ kiểm tra trước khi người mua nhìn thấy, và tin đăng vẫn giữ nội dung hiện tại cho tới lúc đó.",
+      "pendingChangesHeading": "Đang chờ duyệt",
+      "pendingHint": "Bạn có thể sửa tiếp ngay khi thay đổi này được duyệt xong.",
+      "fromTo": "{{from}} → {{to}}",
+      "instantBadge": "Hiển thị ngay",
+      "reviewBadge": "Cần được duyệt",
+      "mixedBadge": "Một phần cần duyệt",
+      "mixedHint": "Thay đổi {{fields}} cần được duyệt trước. Mọi mục khác ở đây sẽ hiển thị ngay khi bạn lưu.",
+      "changedNeedsApproval": "Đã thay đổi. {{fields}} sẽ chờ duyệt trước khi người mua nhìn thấy.",
+      "changedGoesLive": "Đã thay đổi. {{fields}} sẽ hiển thị ngay khi bạn lưu.",
+      "marketplaceLabel": "Sàn giao dịch",
+      "lockedTag": "Đã khoá",
+      "marketplaceLockedHint": "Tin đăng luôn nằm trên sàn đã chọn khi đăng. Hãy nhắn cho chúng tôi nếu sản phẩm này thuộc về sàn khác.",
+      "marketplaceLockedA11y": "Sàn giao dịch {{marketplace}}, đã khoá",
+      "photosManage": "Quản lý ảnh",
+      "photosManageHint": "Xoá những ảnh bạn không muốn người mua nhìn thấy nữa.",
+      "photosLastOne": "Đây là ảnh cuối cùng. Mỗi tin đăng cần ít nhất một ảnh nên không thể xoá.",
+      "photosNone": "Tin đăng này chưa có ảnh nào.",
+      "photosRemove": "Xoá",
+      "photosRemoveA11y": "Xoá ảnh thứ {{index}}",
+      "photosDone": "Xong",
+      "photoNumber": "Ảnh thứ {{index}}",
+      "photosRemovedReview": "Ảnh sẽ xoá: {{n}}. Thay đổi ảnh cần được duyệt trước khi người mua nhìn thấy.",
+      "photosRemovedInstant": "Ảnh sẽ xoá: {{n}}. Thay đổi này hiển thị ngay khi bạn lưu.",
+      "save": "Lưu thay đổi",
+      "savingExplain": "Đang lưu — chỉ gửi những gì bạn đã đổi…",
+      "noChanges": "Chưa có thay đổi nào",
+      "summaryAllInstant": "Sẵn sàng lưu: {{n}}. Tất cả sẽ hiển thị ngay.",
+      "summaryMixed": "Sẵn sàng lưu: {{n}}. {{fields}} sẽ chờ duyệt, phần còn lại hiển thị ngay.",
+      "discardTitle": "Bỏ các thay đổi?",
+      "discardBody": "Bạn chưa lưu nên các thay đổi sẽ mất.",
+      "discardConfirm": "Bỏ đi",
+      "discardCancel": "Sửa tiếp",
+      "savedTitle": "Đã cập nhật tin đăng của bạn",
+      "savedPartlyTitle": "Một phần đã hiển thị, một phần chờ duyệt",
+      "savedNothingTitle": "Không có gì cần lưu",
+      "savedNothingBody": "Tin đăng của bạn vốn đã khớp với nội dung bạn nhập.",
+      "savedLiveHeading": "Đang hiển thị",
+      "savedLiveSentence": "Đã cập nhật {{fields}} trên tin đăng đang hiển thị của bạn.",
+      "savedPendingHeading": "Đang chờ duyệt",
+      "savedPendingSentence": "{{fields}} cần được duyệt trước. Tin đăng vẫn hiển thị nội dung hiện tại cho tới khi đội ngũ của chúng tôi đồng ý.",
+      "done": "Xong",
+      "section": {
+        "photos": "Ảnh",
+        "identity": "Tiêu đề và thương hiệu",
+        "description": "Mô tả",
+        "category": "Danh mục, tình trạng và hạng",
+        "pricing": "Giá và số lượng",
+        "location": "Nơi nhận hàng và lắp đặt"
+      },
+      "modeIntro": {
+        "split": "Các chi tiết nhỏ sẽ hiển thị ngay khi bạn lưu. Thay đổi tiêu đề, giá, danh mục hoặc ảnh sẽ được đội ngũ của chúng tôi kiểm tra trước, và tin đăng vẫn giữ phiên bản hiện tại cho tới lúc đó.",
+        "instant": "Mọi thay đổi bạn lưu sẽ hiển thị ngay trên tin đăng.",
+        "review_all": "Mọi thay đổi đều được đội ngũ của chúng tôi kiểm tra trước khi người mua nhìn thấy. Tin đăng vẫn giữ nội dung hiện tại cho tới lúc đó."
+      },
+      "field": {
+        "title": "Tiêu đề",
+        "description": "Mô tả",
+        "brand": "Thương hiệu",
+        "category": "Danh mục",
+        "condition": "Tình trạng",
+        "grade": "Hạng",
+        "operationStatus": "Tình trạng lắp đặt",
+        "quantity": "Số lượng",
+        "priceFormat": "Kiểu giá",
+        "price": "Giá",
+        "currency": "Tiền tệ",
+        "location": "Nơi nhận hàng",
+        "photos": "Ảnh",
+        "specs": "Thông số kỹ thuật"
+      },
+      "error": {
+      "saleRecordBlocked": {
+        "title": "Một trường không thể thay đổi",
+        "body": "Các thay đổi khác của bạn đã được lưu. Tin đăng này chưa có giá hoặc bản ghi bán hàng, nên cần thiết lập phần đó trước khi có thể sửa."
+      },
+        "unauthorized": {
+          "title": "Phiên đăng nhập đã hết hạn",
+          "body": "Hãy đăng nhập lại rồi mở tin đăng để tiếp tục chỉnh sửa."
+        },
+        "forbidden": {
+          "title": "Bạn không có quyền sửa tin đăng này",
+          "body": "Chỉ người bán đã đăng tin mới thay đổi được. Hãy kiểm tra xem bạn có đang dùng đúng tài khoản không."
+        },
+        "sold": {
+          "title": "Tin đăng này đã bán",
+          "body": "Tin đã bán không thể thay đổi nên không có gì được lưu."
+        },
+        "invalid": {
+          "title": "Chúng tôi không lưu được các thay đổi đó",
+          "body": "Hãy kiểm tra những ô được đánh dấu phía trên, sửa phần bị bôi đỏ rồi lưu lại."
+        },
+        "notFound": {
+          "title": "Không tìm thấy tin đăng này",
+          "body": "Có thể tin đã bị gỡ. Hãy quay lại danh sách và chọn tin khác."
+        },
+        "offline": {
+          "title": "Không có kết nối",
+          "body": "Hãy kiểm tra kết nối mạng rồi thử lại."
+        },
+        "server": {
+          "title": "Có sự cố từ phía chúng tôi",
+          "body": "Lỗi này thuộc về chúng tôi, không phải bạn. Hãy thử lại sau ít phút."
+        },
+        "unknown": {
+          "title": "Chúng tôi không lưu được thay đổi của bạn",
+          "body": "Hãy thử lại — nếu vẫn lặp lại, hãy báo cho đội ngũ của chúng tôi."
+        }
       }
     },
     "labNotif": {

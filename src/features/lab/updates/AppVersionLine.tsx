@@ -20,13 +20,24 @@ export function AppVersionLine() {
   const { downloading } = useAppUpdate();
   const bundle = getRunningBundle();
 
-  const source = bundle.embedded ? t('mobile.labUpdate.builtIn') : bundle.updateId;
+  // expo-updates reports an unconfigured channel (and an unknown runtime
+  // version) as an EMPTY STRING, not null — which is how the footer came to read
+  // "GreenBidz 1.0.2 · · built-in". Blank segments are dropped before joining, so
+  // no combination of missing facts can produce a doubled or trailing separator.
+  // They are dropped rather than back-filled: an invented channel would send
+  // support chasing the wrong build.
+  const line = [
+    bundle.version ? t('mobile.labUpdate.version', { version: bundle.version }) : null,
+    bundle.channel,
+    bundle.embedded ? t('mobile.labUpdate.builtIn') : bundle.updateId,
+  ]
+    .map((segment) => segment?.trim())
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.line}>
-        {`GreenBidz ${bundle.version} · ${bundle.channel} · ${source}`}
-      </Text>
+      <Text style={styles.line}>{line}</Text>
       {downloading ? <Text style={styles.note}>{t('mobile.labUpdate.downloading')}</Text> : null}
     </View>
   );

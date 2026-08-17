@@ -2,7 +2,7 @@
 export { FrostedTabBar, useTabBarHeight, TAB_BAR_BASE_HEIGHT } from './FrostedTabBar';
 export { TabBarItem } from './TabBarItem';
 export { TabBadge } from './TabBadge';
-export { TAB_CONFIG, STATIC_BADGES, type BadgeKey } from './tabConfig';
+export { TAB_CONFIG, type BadgeKey } from './tabConfig';
 export { LabPlaceholder, type NextAction } from './LabPlaceholder';
 export { AttachmentChips } from './AttachmentChips';
 export { HomeRecentListings } from './HomeRecentListings';

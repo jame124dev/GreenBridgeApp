@@ -38,6 +38,7 @@ import {
   registerCredentialsSchema,
   type RegisterCredentialsInput,
 } from '@/features/auth/schema';
+import { spacing } from '@/constants/theme';
 import { IS_CUSTOMER } from '@/lib/flags';
 import { LoginError } from '@/services/auth/login';
 
@@ -115,7 +116,12 @@ export default function RegisterScreen() {
       ) : null}
 
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        // The root is a bare View that insets only the top, so this scroll owns
+        // the bottom inset. At a flat 40 (< the 48dp Android 3-button nav bar)
+        // the trailing "Already have an account? / Sign in" row and the Terms /
+        // Privacy links were half-buried, with taps landing on the system
+        // buttons — the last controls of the screen must stay reachable.
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing['2xl'] }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >

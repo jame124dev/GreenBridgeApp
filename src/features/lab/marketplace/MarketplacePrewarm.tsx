@@ -106,6 +106,13 @@ export function MarketplacePrewarm() {
   // hidden WebView off to the system browser (no Linking here, unlike the visible
   // WebView). Sub-resource fetches (chunks/data) aren't navigations, so they load
   // regardless of this gate.
+  //
+  // NOTE the `originWhitelist={['*']}` below: this gate can only hold if the
+  // library actually asks us. react-native-webview's own `originWhitelist`
+  // pre-filter sends anything it rejects to `Linking.openURL` WITHOUT calling
+  // this function — which would let an invisible 1×1 WebView launch Maps or
+  // the App Store behind the user's back. '*' routes every request here
+  // instead, where a non-marketplace URL is simply refused.
   const onShouldStart = (req: ShouldStartLoadRequest): boolean => {
     const url = req.url || '';
     return url.startsWith('about:') || url.startsWith(MARKETPLACE_URL);
@@ -129,7 +136,7 @@ export function MarketplacePrewarm() {
         thirdPartyCookiesEnabled
         sharedCookiesEnabled
         incognito={false}
-        originWhitelist={[MARKETPLACE_URL, 'https://101lab.co', 'https://*.greenbidz.com']}
+        originWhitelist={['*']}
         setSupportMultipleWindows={false}
         onShouldStartLoadWithRequest={onShouldStart}
         onLoadEnd={() => {

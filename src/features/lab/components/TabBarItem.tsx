@@ -35,12 +35,15 @@ export function TabBarItem({
   label,
   focused,
   badgeCount = 0,
+  badgeA11yLabel,
   onPress,
 }: {
   Icon: LucideIcon;
   label: string;
   focused: boolean;
   badgeCount?: number;
+  /** Spoken form of the badge ("Matches, 3 new matches"). Falls back to `label`. */
+  badgeA11yLabel?: string;
   onPress: () => void;
 }) {
   const reduced = useReducedMotion();
@@ -82,7 +85,7 @@ export function TabBarItem({
       hitSlop={8}
       accessibilityRole="tab"
       accessibilityState={{ selected: focused }}
-      accessibilityLabel={label}
+      accessibilityLabel={badgeA11yLabel ?? label}
     >
       <AView style={[styles.stack, stackStyle]}>
         <View style={styles.iconArea}>

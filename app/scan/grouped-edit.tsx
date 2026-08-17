@@ -173,7 +173,11 @@ export default function GroupedEditScreen() {
   // passes real handlers, so that screen is unaffected.
 
   return (
-    <Screen padded={false} edges={['top', 'bottom']}>
+    // `scroll={false}` for the same reason as grouped-review.tsx: otherwise
+    // Screen's own ScrollView wraps the header, the KeyboardAwareScrollView below
+    // and the Save footer — nesting same-axis scrollers, un-pinning the footer,
+    // and double-reserving the bottom inset (~48px dead gap under the CTA).
+    <Screen padded={false} scroll={false} edges={['top', 'bottom']}>
       <HStack
         align="center"
         justify="space-between"

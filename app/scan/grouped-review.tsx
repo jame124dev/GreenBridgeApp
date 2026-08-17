@@ -213,7 +213,14 @@ export default function GroupedReviewHub() {
   };
 
   return (
-    <Screen padded={false} edges={['top', 'bottom']}>
+    // `scroll={false}` is required, not cosmetic: without it Screen wraps the
+    // header, the inner ScrollView below AND the "pinned" Submit footer in a
+    // SECOND vertical ScrollView (flexGrow:1 + its own bottom padding). That
+    // nested same-axis scroller meant the footer was not actually pinned, and
+    // the bottom inset was reserved twice (SafeAreaView 'bottom' edge + the
+    // outer scroller), leaving a ~48px dead gap under the primary CTA.
+    // detection.tsx has the identical 3-region layout and does this correctly.
+    <Screen padded={false} scroll={false} edges={['top', 'bottom']}>
       {/* Stitch "Review Inventory" redesign: left-aligned bold header with a
           hairline rule, instead of the old centered title + right spacer. */}
       <HStack

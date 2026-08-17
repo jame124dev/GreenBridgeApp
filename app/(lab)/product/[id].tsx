@@ -67,6 +67,14 @@ export default function LabProductDetail() {
         </Pressable>
       </View>
 
+      {/* No `bottomInset`: there is no tab bar on this pushed screen, and
+          MarketplaceWebView reserves the OS bottom inset itself when the prop is
+          omitted (see its Props JSDoc). Passing `insets.bottom` here would be a
+          second control for the same job — and the reason this screen's listing
+          page used to draw its sticky action bar under the Android 3-button nav
+          bar was exactly that the reservation was the caller's job. The header
+          above is the only inset this screen owns (`insets.top`; the root is a
+          bare View and the Stack has headerShown:false, so nothing double-pads). */}
       <MarketplaceWebView path={path} hideSiteHeader />
     </View>
   );

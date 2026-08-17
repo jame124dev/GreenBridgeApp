@@ -1,4 +1,5 @@
 import { greenbidz } from '@/api/greenbidzClient';
+import { resetLabSocket } from '@/features/lab/messages/socket';
 import { getAuthConfigError } from '@/lib/env';
 import { IS_CUSTOMER } from '@/lib/flags';
 import { mmkv } from '@/lib/mmkv';
@@ -211,5 +212,10 @@ async function persist({
   await setSecureItem('auth.accessToken', token);
   await setSecureItem('auth.refreshToken', refreshToken);
   mmkv.set('auth.userId', userId);
+  // Every access-token write funnels through here (sign-in AND the pending →
+  // approved recheck, which rotates the token with no logout in between). A
+  // socket opened under the old token would keep sending it, so drop it and let
+  // the next `getLabSocket()` handshake with the token just stored.
+  resetLabSocket();
 }
 

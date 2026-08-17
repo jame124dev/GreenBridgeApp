@@ -8,6 +8,7 @@ import {
   View,
   type View as RNView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown } from 'lucide-react-native';
 
@@ -19,6 +20,15 @@ import { fonts } from '@/theme/typography';
 // (the home-screen language switcher). Each option renders as a bordered
 // card; active option uses the deep-forest brand color + green-50 fill.
 // Built directly on RN `Modal` so it's immune to library incompat issues.
+//
+// ⚠️ Bottom-anchored card, forced edge-to-edge Android: with a flat 28px pad the
+// Cancel Pressable's lower half sat on the 48dp 3-button navigation bar (tap →
+// system Back) and it clipped the option list's last row. Every form dropdown
+// built on this primitive inherited that, so the inset is read here. Mirrors
+// Sheet.tsx / LanguageSheet.tsx.
+
+// Design floor for the card's bottom padding; raised by the live inset.
+const SHEET_PADDING_BOTTOM = 28;
 
 export type PickerOption = {
   label: string;
@@ -46,6 +56,7 @@ export function PickerSelect({
   subtitle,
 }: Props) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const scrollRef = useRef<ScrollView | null>(null);
   const layoutMap = useRef<Record<string, number>>({});
@@ -95,7 +106,9 @@ export function PickerSelect({
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
 
         <View style={styles.sheet} pointerEvents="box-none">
-          <View style={styles.sheetInner}>
+          <View
+            style={[styles.sheetInner, { paddingBottom: Math.max(insets.bottom, SHEET_PADDING_BOTTOM) }]}
+          >
             <RNText style={styles.title}>{sheetTitle}</RNText>
             {subtitle ? <RNText style={styles.subtitle}>{subtitle}</RNText> : null}
 
@@ -171,7 +184,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 18,
-    paddingBottom: 28,
+    // paddingBottom lives at the render site (safe-area aware, floor
+    // SHEET_PADDING_BOTTOM) — a literal here would be always-overridden noise.
     maxWidth: 460,
     width: '100%',
     alignSelf: 'center',

@@ -29,8 +29,21 @@ const iconInputFieldCls = 'flex-1 py-2.5 font-sans text-xl text-brand-foreground
  * S6.2.b2.i — converted to NativeWind. The per-row layout stays as nested
  * Views; remove-button hitslop kept inline. Installation segmented + marketplace
  * pill row both className-driven.
+ *
+ * `variant` (default `'draft'` — existing behaviour, byte-for-byte):
+ *   'edit' is the published-listing editor (`app/(lab)/listing-edit.tsx`).
+ *   The v1 edit contract carries ONE `location` string and no country, and the
+ *   listing already has an address, so in that variant the card
+ *     - skips the empty-state autofill effect. In the draft flow "no address
+ *       yet" means "guess one from GPS/profile"; on a published listing the
+ *       same code would silently overwrite the seller's real pickup address
+ *       (an INSTANT-apply field) with wherever the phone happens to be.
+ *     - renders a single address row and hides "Add another location".
+ *     - hides the country picker, because a country change could not be sent
+ *       and an input whose value is discarded is worse than no input.
  */
-export function LocationCard() {
+export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit' } = {}) {
+  const isEdit = variant === 'edit';
   const { t } = useTranslation();
   const { control, setValue, watch } = useFormContext<DetailFormInput>();
   const [locating, setLocating] = useState(false);
@@ -48,6 +61,7 @@ export function LocationCard() {
   const userProfile = useUserProfile();
 
   useEffect(() => {
+    if (isEdit) return;
     let cancelled = false;
     (async () => {
       const cur = useScanDraft.getState().current;
@@ -89,7 +103,7 @@ export function LocationCard() {
     return () => {
       cancelled = true;
     };
-  }, [setValue, userProfile.data]);
+  }, [isEdit, setValue, userProfile.data]);
 
   const useMyLocation = async () => {
     haptics.tap();
@@ -156,7 +170,7 @@ export function LocationCard() {
     );
   };
 
-  const rowCount = Math.max(locations.length, locationCountries.length, 1);
+  const rowCount = isEdit ? 1 : Math.max(locations.length, locationCountries.length, 1);
 
   return (
     <View className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl gap-sm">
@@ -219,7 +233,10 @@ export function LocationCard() {
           </View>
           {/* W4 (scan_v3): country is now a sheet-picker, not free-text.
               The Pressable mimics the existing iconInput shell so the visual
-              rhythm with the address row above stays intact. */}
+              rhythm with the address row above stays intact.
+              Hidden in the 'edit' variant — country is not an editable field in
+              the v1 listing-edit contract. */}
+          {isEdit ? null : (
           <Pressable
             className={iconInputCls}
             style={{ marginTop: 6, minHeight: 44 }}
@@ -250,9 +267,11 @@ export function LocationCard() {
             </View>
             <MaterialIcons name="expand-more" size={20} color={brand.placeholder} />
           </Pressable>
+          )}
         </View>
       ))}
 
+      {isEdit ? null : (
       <Pressable
         onPress={addRow}
         className="flex-row items-center justify-center gap-1.5 border border-brand-border-strong border-dashed rounded-xs py-2.5"
@@ -264,6 +283,7 @@ export function LocationCard() {
           {t('mobile.detail.addLocation', { defaultValue: 'Add another location' })}
         </Text>
       </Pressable>
+      )}
 
       <Controller
         control={control}

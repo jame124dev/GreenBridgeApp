@@ -4111,6 +4111,15 @@
       "notifyOfferHint": "A buyer sends you a direct offer",
       "notifyPayment": "Payment status",
       "notifyPaymentHint": "Payouts, refunds, and payment failures",
+      "pushOffTitle": "Push notifications are off",
+      "pushOffBody": "Turn them on to hear about bids, offers and payment updates as they happen.",
+      "pushOffAction": "Turn on notifications",
+      "pushSetupTitle": "Push notifications aren't set up yet",
+      "pushOpeningSettings": "Opening your device notification settings…",
+      "pushWaitingAnswer": "Waiting for your answer to the permission prompt…",
+      "pushUnavailableTitle": "Push notifications aren't available in this app version",
+      "pushUnavailableBody": "There's nothing to change in your settings — we'll switch them on in a future update. Alerts still appear while you're using the app.",
+      "pushOnToast": "Push notifications are on",
       "removeInterest": "Remove {{name}}",
       "verificationDesc": "Complete each step to earn the Verified Seller badge.",
       "verificationTitle": "Trust & Verification",
@@ -4626,7 +4635,18 @@
       "listingFallback": "Listing",
       "rowA11y": "Conversation with {{name}} about {{title}}",
       "composerDefault": "Message…",
-      "sendMessage": "Send message"
+      "sendMessage": "Send message",
+      "reconnecting": "Reconnecting…",
+      "unreadOne": "{{count}} unread message",
+      "unreadOther": "{{count}} unread messages",
+      "allCaughtUp": "All caught up",
+      "refreshFailed": "Couldn't refresh — pull down to try again",
+      "resultCountOne": "{{count}} result",
+      "resultCountOther": "{{count}} results",
+      "clearSearch": "Clear search",
+      "noMessagesYet": "No messages yet",
+      "tabBadgeA11yOne": "{{label}}, {{count}} unread message",
+      "tabBadgeA11yOther": "{{label}}, {{count}} unread messages"
     },
     "labUpdate": {
       "readyTitle": "Update ready",
@@ -4634,6 +4654,7 @@
       "restart": "Restart now",
       "restarting": "Restarting…",
       "later": "Later",
+      "version": "GreenBidz version {{version}}",
       "builtIn": "built-in",
       "downloading": "Downloading an update…"
     },
@@ -4657,6 +4678,8 @@
       "listingInfo": "Listing info",
       "activeNow": "● Active now",
       "connecting": "Connecting…",
+      "reconnecting": "Reconnecting…",
+      "queued": "Waiting for connection…",
       "viewListingA11y": "View listing {{id}}",
       "listingNumber": "Listing #{{id}}",
       "tapToView": "Tap to view this listing",
@@ -4696,14 +4719,25 @@
         "shipToBangkok": "Can you ship to Bangkok?",
         "bestPrice": "What's your best price?"
       },
-      "sendMessage": "Send message"
+      "sendMessage": "Send message",
+      "sending": "Sending…",
+      "sent": "Sent",
+      "sendFailed": "Not sent — tap to retry",
+      "sendFailedA11y": "Message not sent. Tap to try again.",
+      "loadingBody": "Connecting to the chat service and fetching your messages with {{name}}.",
+      "errorOpenTitle": "Couldn't open this conversation",
+      "errorOpenBody": "We couldn't reach the chat service. Check your connection and try again, or go back to your messages.",
+      "startersLabel": "Not sure where to start?",
+      "starterA11y": "Use this opener: {{text}}"
     },
     "labNav": {
       "home": "Home",
       "browse": "Browse",
       "matches": "Matches",
       "chat": "Chat",
-      "account": "Account"
+      "account": "Account",
+      "badgeA11yOne": "{{label}}, {{count}} match",
+      "badgeA11yOther": "{{label}}, {{count}} matches"
     },
     "labProcessing": {
       "title": {
@@ -4790,7 +4824,7 @@
       "emptyText": "You haven't saved any wants yet. Post a request and we'll find matches for you.",
       "addWant": "Add a want",
       "statActiveWants": "Active wants",
-      "statNewMatches": "New matches",
+      "statMatches": "Matches",
       "statTopFit": "Top fit",
       "filters": {
         "all": "All",
@@ -4996,6 +5030,143 @@
         "item_grade": "What's its grade?",
         "dimensions": "Dimensions (L × W × H)?",
         "product_content": "Add a short description"
+      }
+    },
+    "listingEdit": {
+      "title": "Edit listing",
+      "and": "and",
+      "retry": "Try again",
+      "backToListings": "Back to my listings",
+      "editAction": "Edit",
+      "editA11y": "Edit {{title}}",
+      "soldRowHint": "Sold listings can't be edited.",
+      "listLoading": "Loading your listings…",
+      "listLoadFailed": "We couldn't load your listings just now.",
+      "listEmpty": "Listings you publish show up here, ready to edit.",
+      "listCount": "{{n}} total",
+      "resolvingTitle": "Finding the item in this listing…",
+      "loadingTitle": "Opening your listing for editing…",
+      "noTargetTitle": "We don't know which listing to open",
+      "noTargetBody": "Pick a listing from your list and tap Edit.",
+      "noItemsTitle": "There is nothing to edit yet",
+      "noItemsBody": "This listing has no items in it.",
+      "pickItemTitle": "Which item do you want to edit?",
+      "pickItemBody": "This listing holds {{n}} items. Each one is edited on its own.",
+      "soldTitle": "This listing has sold",
+      "soldBody": "A sold listing stays exactly as the buyer saw it, so it can no longer be edited.",
+      "notOwnerTitle": "This listing isn't yours",
+      "notOwnerBody": "Only the seller who published a listing can change it.",
+      "lockedTitle": "This listing can't be edited right now",
+      "lockedBody": "Editing is switched off for this listing. Our team can tell you why.",
+      "pendingTitle": "You already have changes waiting for approval",
+      "pendingBody": "You sent them on {{when}}. Our team checks them before buyers see them, and your listing keeps its current details until then.",
+      "pendingChangesHeading": "Waiting for approval",
+      "pendingHint": "You can make new changes as soon as this one has been reviewed.",
+      "fromTo": "{{from}} → {{to}}",
+      "instantBadge": "Live right away",
+      "reviewBadge": "Needs approval",
+      "mixedBadge": "Partly checked",
+      "mixedHint": "Changing {{fields}} needs approval first. Everything else here goes live as soon as you save.",
+      "changedNeedsApproval": "Changed. {{fields}} waits for approval before buyers see it.",
+      "changedGoesLive": "Changed. {{fields}} goes live the moment you save.",
+      "marketplaceLabel": "Marketplace",
+      "lockedTag": "Locked",
+      "marketplaceLockedHint": "A listing stays on the marketplace it was published to. Message us if this item belongs somewhere else.",
+      "marketplaceLockedA11y": "Marketplace {{marketplace}}, locked",
+      "photosManage": "Manage photos",
+      "photosManageHint": "Remove any photo you no longer want buyers to see.",
+      "photosLastOne": "This is the last photo. A listing needs at least one, so it can't be removed.",
+      "photosNone": "This listing has no photos.",
+      "photosRemove": "Remove",
+      "photosRemoveA11y": "Remove photo {{index}}",
+      "photosDone": "Done",
+      "photoNumber": "Photo {{index}}",
+      "photosRemovedReview": "Photos to remove: {{n}}. Photo changes need approval before buyers see them.",
+      "photosRemovedInstant": "Photos to remove: {{n}}. This goes live as soon as you save.",
+      "save": "Save changes",
+      "savingExplain": "Saving — sending only what you changed…",
+      "noChanges": "Nothing changed yet",
+      "summaryAllInstant": "Ready to save: {{n}}. All of it goes live right away.",
+      "summaryMixed": "Ready to save: {{n}}. {{fields}} waits for approval; the rest goes live right away.",
+      "discardTitle": "Discard your changes?",
+      "discardBody": "You haven't saved them yet, so they will be lost.",
+      "discardConfirm": "Discard",
+      "discardCancel": "Keep editing",
+      "savedTitle": "Your listing is updated",
+      "savedPartlyTitle": "Part of it is live, part needs approval",
+      "savedNothingTitle": "Nothing needed saving",
+      "savedNothingBody": "Your listing already matches what you entered.",
+      "savedLiveHeading": "Live now",
+      "savedLiveSentence": "{{fields}} updated on your live listing.",
+      "savedPendingHeading": "Waiting for approval",
+      "savedPendingSentence": "{{fields}} needs approval first. Your listing stays live with its current details until our team says yes.",
+      "done": "Done",
+      "section": {
+        "photos": "Photos",
+        "identity": "Title and brand",
+        "description": "Description",
+        "category": "Category, condition and grade",
+        "pricing": "Price and quantity",
+        "location": "Pickup and installation"
+      },
+      "modeIntro": {
+        "split": "Small details go live the moment you save. Changes to the title, price, category or photos are checked by our team first, and your listing keeps its current version until then.",
+        "instant": "Every change you save goes live on your listing straight away.",
+        "review_all": "Every change is checked by our team before buyers see it. Your listing stays live with its current details until then."
+      },
+      "field": {
+        "title": "Title",
+        "description": "Description",
+        "brand": "Brand",
+        "category": "Category",
+        "condition": "Condition",
+        "grade": "Grade",
+        "operationStatus": "Installation",
+        "quantity": "Quantity",
+        "priceFormat": "Price type",
+        "price": "Price",
+        "currency": "Currency",
+        "location": "Pickup location",
+        "photos": "Photos",
+        "specs": "Specifications"
+      },
+      "error": {
+      "saleRecordBlocked": {
+        "title": "One field couldn't be changed",
+        "body": "The rest of your changes were saved. This listing doesn't have a price or sale record yet, so that part has to be set up before it can be edited."
+      },
+        "unauthorized": {
+          "title": "Your sign-in has expired",
+          "body": "Sign in again, then open the listing to keep editing."
+        },
+        "forbidden": {
+          "title": "This listing isn't yours to edit",
+          "body": "Only the seller who published it can change it. Check that you are signed in to the right account."
+        },
+        "sold": {
+          "title": "This listing has sold",
+          "body": "Sold listings can no longer be changed, so nothing was saved."
+        },
+        "invalid": {
+          "title": "We couldn't save those changes",
+          "body": "Check the fields marked above, fix anything highlighted, then save again."
+        },
+        "notFound": {
+          "title": "We couldn't find this listing",
+          "body": "It may have been removed. Go back to your listings and pick another one."
+        },
+        "offline": {
+          "title": "No connection",
+          "body": "Check your connection and try again."
+        },
+        "server": {
+          "title": "Something went wrong on our side",
+          "body": "This one is on us, not you. Try again in a moment."
+        },
+        "unknown": {
+          "title": "We couldn't save your changes",
+          "body": "Try again — and if it keeps happening, tell our team."
+        }
       }
     },
     "labNotif": {

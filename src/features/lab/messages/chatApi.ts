@@ -6,6 +6,7 @@
 //
 //   REST  GET  /chat/buyer/:buyerId/sellers            → inbox (conversation list)
 //   REST  GET  /chat/conversation/:id/messages         → thread (paginated)
+//   REST  GET  /notifications/:userId?unread=true       → per-conversation unread
 //   REST  PUT  /notifications/read_by_batch             → mark a thread read
 //   SOCK  emit joinChat        → ack { conversation_id } (open/create a conversation)
 //   SOCK  emit chat_message    → send (server echoes back via the `chat_message` event)
@@ -90,6 +91,72 @@ export async function fetchBatchSeller(
 export async function listBuyerConversations(buyerId: number | string): Promise<ConversationRow[]> {
   const res = await greenbidz.get(`/chat/buyer/${buyerId}/sellers`, { params: { platform: PLATFORM } });
   return asArray<ConversationRow>(res.data?.sellerList?.data);
+}
+
+/* ── Unread counts ─────────────────────────────────────────────────────────── */
+
+/**
+ * Per-conversation unread counts, keyed by `${batchId}:${sellerId}`.
+ *
+ * WHY THIS EXISTS: the inbox endpoint does NOT carry unread counts. Node's
+ * `getSellerListForBuyer` builds each row as
+ * `{ ...sellerMap[c.seller_id], batch_id, lastMessageAt }` — there is no
+ * `unreadCount` field on any deploy, so anything summing `row.unreadCount` is
+ * structurally always 0 (a tab badge that can never appear, and an "All caught
+ * up" line the app cannot substantiate).
+ *
+ * The count that DOES exist is the notification ledger: when a seller replies,
+ * Node creates a `type: 'chat'` notification for the buyer carrying `batch_id` +
+ * `seller_id` (socket/socket.js `sendNotification`), and the thread's own
+ * `markConversationRead` → `PUT /notifications/read_by_batch` clears exactly
+ * those rows for that (batch, seller). So "unread chat notifications grouped by
+ * (batch, seller)" IS the per-conversation unread count, already maintained by
+ * the same read/unread lifecycle the thread drives.
+ */
+export interface ChatUnreadCounts {
+  total: number;
+  byConversation: Record<string, number>;
+}
+
+/** The grouping key for `ChatUnreadCounts.byConversation`. */
+export function conversationUnreadKey(
+  batchId: number | string | null | undefined,
+  sellerId: number | string | null | undefined,
+): string {
+  return `${batchId ?? ''}:${sellerId ?? ''}`;
+}
+
+interface UnreadNotificationRow {
+  type?: string | null;
+  batch_id?: number | string | null;
+  seller_id?: number | string | null;
+  isRead?: boolean;
+}
+
+/** Unread buyer↔seller chat notifications for this user, grouped per conversation.
+ *  Platform-scoped first, then unscoped if that comes back empty — the same
+ *  two-step the notification bell uses (older rows predate `platform`). */
+export async function fetchChatUnreadCounts(userId: number | string): Promise<ChatUnreadCounts> {
+  const read = async (params: Record<string, unknown>) => {
+    const res = await greenbidz.get(`/notifications/${userId}`, { params });
+    return asArray<UnreadNotificationRow>(res.data?.notifications);
+  };
+  let rows = await read({ unread: true, platform: PLATFORM });
+  if (rows.length === 0) rows = await read({ unread: true });
+
+  const byConversation: Record<string, number> = {};
+  let total = 0;
+  for (const row of rows) {
+    // `type` is 'chat' for a seller→buyer message. 'Admin Chat' rows belong to
+    // the admin user id, never to a buyer, but exclude them by name anyway.
+    if ((row.type ?? '').toString().trim().toLowerCase() !== 'chat') continue;
+    if (row.isRead === true) continue;
+    if (row.batch_id == null || row.seller_id == null) continue;
+    const key = conversationUnreadKey(row.batch_id, row.seller_id);
+    byConversation[key] = (byConversation[key] ?? 0) + 1;
+    total += 1;
+  }
+  return { total, byConversation };
 }
 
 /** One conversation's messages, newest-last. `beforeMessageId` pages older. */
@@ -202,8 +269,22 @@ export function openConversation(args: {
   });
 }
 
-/** Send a message on an open conversation. The server echoes it back on the
- *  `chat_message` event (so the sender's thread reconciles the optimistic bubble). */
+/**
+ * Send a message on an open conversation. The server echoes it back on the
+ * `chat_message` event (so the sender's thread reconciles the optimistic bubble).
+ *
+ * Returns `false` when the socket is NOT connected and nothing was emitted.
+ * Callers must honour that: socket.io buffers a non-volatile emit made while
+ * disconnected and flushes it on the next connect with no expiry, which produced
+ * a bubble that failed, then a delivery 90 seconds later, then the same message
+ * on screen twice. The outbox in `useChatThread` owns the queue instead, so
+ * "when to send" is a decision this app makes and can reconcile.
+ *
+ * `client_msg_id` is FORWARD-COMPAT ONLY: today's Node handler builds its echo
+ * from `savedMessage.toJSON()` and does not reflect unknown fields back, so
+ * reconciliation cannot key on it yet (see useChatThread's server-truth
+ * reconcile). Once the backend echoes it, claiming an echo becomes exact.
+ */
 export function sendChatMessage(args: {
   conversationId: string | number;
   batchId: number;
@@ -211,9 +292,12 @@ export function sendChatMessage(args: {
   receiverId: number;
   senderRole: ChatRole;
   message: string;
-}): void {
-  const { conversationId, batchId, senderId, receiverId, senderRole, message } = args;
-  getLabSocket().emit('chat_message', {
+  clientMsgId?: string;
+}): boolean {
+  const { conversationId, batchId, senderId, receiverId, senderRole, message, clientMsgId } = args;
+  const socket = getLabSocket();
+  if (!socket.connected) return false;
+  socket.emit('chat_message', {
     conversation_id: conversationId,
     batch_id: `batch-${batchId}`,
     sender_id: String(senderId),
@@ -221,5 +305,7 @@ export function sendChatMessage(args: {
     sender_role: senderRole,
     message,
     platform: PLATFORM,
+    ...(clientMsgId ? { client_msg_id: clientMsgId } : {}),
   });
+  return true;
 }

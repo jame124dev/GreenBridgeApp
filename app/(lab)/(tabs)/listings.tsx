@@ -3,16 +3,18 @@
 // FrostedTabBar SHOWS and, per its OWNED_BY_TAB map, the ACCOUNT tab renders
 // active while you're here (my listings = an account/seller concern).
 //
-// Content reuses the seller RecentSubmissionsList (same useRecentSubmissions
-// source as Home + the History tab), with a higher limit and row taps → listing
-// detail already wired inside it.
+// Content uses `MyListingsEditList` — the same `useRecentSubmissions` source
+// and row layout as Home's read-only `RecentSubmissionsList`, plus the one
+// thing this screen is for: an Edit action per listing. Home and History keep
+// the read-only list; this is the seller's management view, so it is the right
+// (and only) home for the edit entry point.
 import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft } from 'lucide-react-native';
 
 import { Screen, Text } from '@/components/ui';
-import { RecentSubmissionsList } from '@/components/scanner/RecentSubmissionsList';
+import { MyListingsEditList } from '@/features/listings/components/MyListingsEditList';
 import { useTabBarHeight, LabScreenBg } from '@/features/lab/components';
 import { haptics } from '@/lib/haptics';
 import { greenDarkest, spacing } from '@/constants/theme';
@@ -53,7 +55,7 @@ export default function LabListings() {
         </Text>
       </View>
 
-      <RecentSubmissionsList limit={30} title={t('mobile.labHome.allListings')} />
+      <MyListingsEditList limit={30} />
     </Screen>
     </LabScreenBg>
   );

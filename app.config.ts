@@ -19,11 +19,19 @@ export default (): ExpoConfig => ({
   name: 'GreenBidz',
   slug: 'greenbridge',
   scheme: 'greenbridge',
-  // 1.0.1 — native in-app registration + the seller-upgrade application.
-  // TESTFLIGHT ONLY: no App Store version record for 1.0.1 is to be created and
-  // nothing is to be submitted for review (owner's instruction 2026-08-11).
-  // 1.0.0 (16) remains approved and Pending Developer Release, untouched.
-  version: '1.0.1',
+  // 1.0.3 — GreenBidz brand lockup in the Home header and splash (was "101LAB"),
+  // the notification permission ask moved off the sign-in screen and the repeat
+  // "Notifications Not Available" launch dialog removed, the Matches tab badge
+  // switched from a hardcoded 3 to the real count, the version line's doubled
+  // separator fixed and made translatable, money on the scan review screen shown
+  // as an ISO code rather than an ambiguous "$"/"NT$", and the seller
+  // "edit my listing" flow (its API still has to ship server-side first).
+  // 1.0.2 — seller approval moved from scan-start to submit-time, plus the
+  // translations for the Home blank states and the sell-gate notice.
+  // 1.0.1 was native in-app registration + the seller-upgrade application.
+  // 1.0.0 (16) was approved and Pending Developer Release; that approval was
+  // given up to submit 1.0.2, which had the sign-up flow 1.0.0 was missing.
+  version: '1.0.3',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   userInterfaceStyle: 'light',

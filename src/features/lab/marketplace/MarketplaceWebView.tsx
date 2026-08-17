@@ -23,13 +23,13 @@ import type {
   WebViewNavigation,
   ShouldStartLoadRequest,
 } from 'react-native-webview/lib/WebViewTypes';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, WifiOff } from 'lucide-react-native';
 
 import { Text } from '@/components/ui';
 import { brand, fonts, greenDarkest, lab, radius, spacing } from '@/constants/theme';
-import { getMarketplaceUrl } from '@/lib/env';
 import { haptics } from '@/lib/haptics';
 import { registerMarketplaceAuthClear } from '@/lib/marketplaceWebView';
 import {
@@ -38,47 +38,11 @@ import {
   buildInjectedAuthJS,
   buildSetAuthCall,
 } from './webAuthBridge';
+import { marketplaceNavDecision, marketplaceUri } from './navPolicy';
 
-const MARKETPLACE_URL = getMarketplaceUrl();
-
-// Host of the configured marketplace origin — always kept in-view (covers a
-// local dev server like 10.0.2.2:3200 as well as the live site).
-const MARKETPLACE_HOST = (() => {
-  try {
-    return new URL(MARKETPLACE_URL).hostname.toLowerCase();
-  } catch {
-    return '';
-  }
-})();
-
-/** Append `?app=1` (embed flag) to a marketplace path, preserving any query. */
-export function marketplaceUri(path: string): string {
-  const clean = path.startsWith('/') ? path : `/${path}`;
-  const sep = clean.includes('?') ? '&' : '?';
-  return `${MARKETPLACE_URL}${clean}${sep}app=1`;
-}
-
-// Keep these hosts inside the WebView; everything else (maps, mailto:, tel:,
-// linkedin, storage.googleapis.com, payment redirects…) opens in the system
-// browser via Linking.
-function isInternalUrl(url: string): boolean {
-  try {
-    if (url.startsWith('about:')) return true;
-    const u = new URL(url);
-    if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
-    const h = u.hostname.toLowerCase();
-    return (
-      (MARKETPLACE_HOST && h === MARKETPLACE_HOST) ||
-      h === '101lab.co' ||
-      h.endsWith('.101lab.co') ||
-      h === 'greenbidz.com' ||
-      h.endsWith('.greenbidz.com')
-    );
-  } catch {
-    // Unparseable → let the WebView handle it rather than bouncing to the OS.
-    return true;
-  }
-}
+// Re-exported so existing importers (`MarketplacePrewarm`, the product screen)
+// keep their import path; the implementation now lives in navPolicy.ts.
+export { marketplaceUri };
 
 type WebEvent =
   | { type: 'message-seller'; batchId: number; sellerId: number | string; sellerName?: string }
@@ -90,7 +54,16 @@ export type MarketplaceWebViewHandle = { reload: () => void };
 type Props = {
   /** Marketplace path to load, e.g. `/buyer-marketplace` or `/buyer-marketplace/123`. */
   path: string;
-  /** Space to reserve at the bottom for an absolute tab bar (0 on pushed screens). */
+  /**
+   * Extra space for an OVERLAYING tab bar. When 0/omitted the component
+   * reserves the OS bottom inset itself, so it can never sit under the Android
+   * navigation bar — a caller forgetting this prop is no longer a bug.
+   *
+   * A tab-bar height already CONTAINS the OS inset (`useTabBarHeight()` = 66 +
+   * insets.bottom), which is why a supplied value replaces the inset instead of
+   * stacking on top of it. Browse passes `useTabBarHeight()`; pushed screens
+   * (product detail) pass nothing.
+   */
   bottomInset?: number;
   /** Register the auth-clear callback (only the persistent Browse tab should). */
   registerAuthClear?: boolean;
@@ -139,6 +112,16 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
   ) {
     const router = useRouter();
     const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
+
+    // THE single bottom reservation for every surface of this component (frame +
+    // both overlays). Computed here, not by the caller, because Android is forced
+    // edge-to-edge: the WebView's own last row of pixels IS the strip the
+    // 3-button navigation bar draws over. An overlaying tab bar wins when the
+    // caller passes one (its height already includes insets.bottom); otherwise we
+    // fall back to the OS inset so a pushed screen that passes nothing is still
+    // safe by construction.
+    const reservedBottom = bottomInset > 0 ? bottomInset : insets.bottom;
 
     const webRef = useRef<WebView>(null);
     const canGoBackRef = useRef(false);
@@ -207,9 +190,13 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
     useImperativeHandle(ref, () => ({ reload }), [reload]);
 
     const onShouldStartLoadWithRequest = useCallback((req: ShouldStartLoadRequest): boolean => {
-      if (isInternalUrl(req.url)) return true;
-      Linking.openURL(req.url).catch(() => {});
-      return false;
+      // `hasTargetFrame` is sent by the iOS native module but missing from the
+      // library's TS type, hence the cast.
+      const { allow, openExternally } = marketplaceNavDecision(
+        req as ShouldStartLoadRequest & { hasTargetFrame?: boolean },
+      );
+      if (openExternally) Linking.openURL(openExternally).catch(() => {});
+      return allow;
     }, []);
 
     const onMessage = useCallback(
@@ -275,7 +262,15 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
             domStorageEnabled
             thirdPartyCookiesEnabled
             sharedCookiesEnabled
-            originWhitelist={[MARKETPLACE_URL, 'https://101lab.co', 'https://*.greenbidz.com']}
+            // '*' on purpose — this does NOT loosen anything. `originWhitelist`
+            // is a pure-JS pre-filter inside react-native-webview: any URL that
+            // FAILS it is sent straight to `Linking.openURL` by the library and
+            // our `onShouldStartLoadWithRequest` is never consulted. That
+            // bypass is what opened the listing page's `maps.google.com` map
+            // iframe in the Maps app. Passing '*' routes every request through
+            // marketplaceNavDecision above, which applies the same host rules
+            // for top-level navigation *and* keeps iframes in-app.
+            originWhitelist={['*']}
             setSupportMultipleWindows={false}
             onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
             onMessage={onMessage}
@@ -292,7 +287,7 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
                 setErrored(true);
               }
             }}
-            // Shrink the WebView by the tab-bar inset on BOTH platforms.
+            // Shrink the WebView by `reservedBottom` on BOTH platforms.
             //
             // `contentInset` alone (the previous iOS-only approach) adjusts the
             // SCROLL inset, which does clear scrolled content — but it cannot
@@ -305,21 +300,35 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
             // Shrinking the frame moves the viewport bottom above the tab bar,
             // which clears scrolled content AND fixed elements. contentInset is
             // then 0 — keeping it would double the padding.
-            style={[styles.web, bottomInset ? { marginBottom: bottomInset } : null]}
+            //
+            // The SAME argument is why the OS bottom inset must live in this
+            // margin too, not in a contentInset: on the pushed listing page the
+            // web draws its own `position: fixed` bottom action bar, so with a
+            // full-height frame that bar lays out against a viewport whose
+            // bottom edge is the physical screen edge — i.e. underneath the
+            // Android 3-button navigation bar, where taps hit Back/Home instead
+            // of the CTA. Reserving it in the frame moves the web viewport
+            // above the nav bar, so a fixed element has nowhere unreachable to
+            // go. `styles.webWrap` paints the reserved strip in the page
+            // background (`lab.bg`) so it reads as page, not a black band.
+            style={[styles.web, reservedBottom ? { marginBottom: reservedBottom } : null]}
             contentInset={{ bottom: 0 }}
           />
         ) : null}
 
-        {/* Card-grid skeleton — shown until first paint / onLoadEnd. */}
+        {/* Card-grid skeleton — shown until first paint / onLoadEnd. Same
+            reservation as the frame: the skeleton is absolutely filled to the
+            wrapper, so without it the bottom card row runs under the nav bar. */}
         {loading && !errored ? (
-          <View style={[styles.overlay, { paddingBottom: bottomInset }]} pointerEvents="none">
+          <View style={[styles.overlay, { paddingBottom: reservedBottom }]} pointerEvents="none">
             <SkeletonGrid />
           </View>
         ) : null}
 
-        {/* Error / offline state. */}
+        {/* Error / offline state. Its Retry button is the screen's only way out,
+            so the reservation here is a recovery guarantee, not cosmetics. */}
         {errored ? (
-          <View style={[styles.overlay, styles.errorState, { paddingBottom: bottomInset }]}>
+          <View style={[styles.overlay, styles.errorState, { paddingBottom: reservedBottom }]}>
             <View style={styles.errorIcon}>
               <WifiOff size={26} color={brand.textMuted} strokeWidth={2} />
             </View>
@@ -371,7 +380,10 @@ function SkeletonGrid() {
 }
 
 const styles = StyleSheet.create({
-  webWrap: { flex: 1, position: 'relative' },
+  // `lab.bg` matches `styles.web` below: the strip reserved by `reservedBottom`
+  // is this wrapper showing through under the shrunken WebView, so it has to be
+  // the page's own background or the nav-bar area reads as a mismatched band.
+  webWrap: { flex: 1, position: 'relative', backgroundColor: lab.bg },
   web: { flex: 1, backgroundColor: lab.bg },
 
   overlay: {

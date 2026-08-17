@@ -4093,6 +4093,15 @@
       "notifyOfferHint": "买家向您发送直接报价",
       "notifyPayment": "支付状态",
       "notifyPaymentHint": "打款、退款和支付失败",
+      "pushOffTitle": "推送通知已关闭",
+      "pushOffBody": "开启后，出价、报价和付款进展会第一时间通知您。",
+      "pushOffAction": "开启通知",
+      "pushSetupTitle": "还没有开启推送通知",
+      "pushOpeningSettings": "正在打开设备的通知设置…",
+      "pushWaitingAnswer": "正在等待您对权限请求作出选择…",
+      "pushUnavailableTitle": "当前版本的应用暂不支持推送通知",
+      "pushUnavailableBody": "无需更改任何设置，我们会在后续版本中开启。使用应用时仍会收到应用内提醒。",
+      "pushOnToast": "推送通知已开启",
       "removeInterest": "移除 {{name}}",
       "verificationDesc": "完成每个步骤即可获得“认证卖家”标识。",
       "verificationTitle": "信任与认证",
@@ -4598,7 +4607,18 @@
       "listingFallback": "商品",
       "rowA11y": "与 {{name}} 关于 {{title}} 的会话",
       "composerDefault": "发送消息…",
-      "sendMessage": "发送消息"
+      "sendMessage": "发送消息",
+      "reconnecting": "重新连接中…",
+      "unreadOne": "{{count}} 条未读消息",
+      "unreadOther": "{{count}} 条未读消息",
+      "allCaughtUp": "全部已读",
+      "refreshFailed": "刷新失败 — 下拉重试",
+      "resultCountOne": "{{count}} 个结果",
+      "resultCountOther": "{{count}} 个结果",
+      "clearSearch": "清除搜索",
+      "noMessagesYet": "暂无消息",
+      "tabBadgeA11yOne": "{{label}}，{{count}} 条未读消息",
+      "tabBadgeA11yOther": "{{label}}，{{count}} 条未读消息"
     },
     "labUpdate": {
       "readyTitle": "更新已就绪",
@@ -4606,6 +4626,7 @@
       "restart": "立即重启",
       "restarting": "正在重启…",
       "later": "稍后",
+      "version": "GreenBidz 版本 {{version}}",
       "builtIn": "内置",
       "downloading": "正在下载更新…"
     },
@@ -4630,6 +4651,8 @@
       "listingInfo": "商品信息",
       "activeNow": "● 在线",
       "connecting": "连接中…",
+      "reconnecting": "重新连接中…",
+      "queued": "等待网络连接…",
       "viewListingA11y": "查看商品 {{id}}",
       "listingNumber": "商品 #{{id}}",
       "tapToView": "点击查看此商品",
@@ -4668,14 +4691,25 @@
         "shipToBangkok": "可以发货到曼谷吗？",
         "bestPrice": "您的最优价是多少？"
       },
-      "sendMessage": "发送消息"
+      "sendMessage": "发送消息",
+      "sending": "发送中…",
+      "sent": "已发送",
+      "sendFailed": "未发送 — 轻触重试",
+      "sendFailedA11y": "消息未发送。轻触重试。",
+      "loadingBody": "正在连接聊天服务并获取您与 {{name}} 的消息。",
+      "errorOpenTitle": "无法打开此会话",
+      "errorOpenBody": "我们无法连接聊天服务。请检查网络连接后重试，或前往消息。",
+      "startersLabel": "不知从何开始？",
+      "starterA11y": "使用这句开场：{{text}}"
     },
     "labNav": {
       "home": "首页",
       "browse": "浏览",
       "matches": "匹配",
       "chat": "聊天",
-      "account": "账户"
+      "account": "账户",
+      "badgeA11yOne": "{{label}}，{{count}} 个匹配",
+      "badgeA11yOther": "{{label}}，{{count}} 个匹配"
     },
     "labProcessing": {
       "title": {
@@ -4762,7 +4796,7 @@
       "emptyText": "您还没有保存任何求购。发布一个需求，我们将为您寻找匹配的商品。",
       "addWant": "添加求购",
       "statActiveWants": "活跃求购",
-      "statNewMatches": "新匹配",
+      "statMatches": "匹配",
       "statTopFit": "最高匹配度",
       "filters": {
         "all": "全部",
@@ -4968,6 +5002,143 @@
         "item_grade": "它的等级是什么？",
         "dimensions": "尺寸（长 × 宽 × 高）？",
         "product_content": "添加简短描述"
+      }
+    },
+    "listingEdit": {
+      "title": "编辑商品",
+      "and": "和",
+      "retry": "重试",
+      "backToListings": "返回我的商品",
+      "editAction": "编辑",
+      "editA11y": "编辑 {{title}}",
+      "soldRowHint": "已售出的商品无法编辑。",
+      "listLoading": "正在加载您的商品…",
+      "listLoadFailed": "暂时无法加载您的商品。",
+      "listEmpty": "您发布的商品会显示在这里，可随时编辑。",
+      "listCount": "共 {{n}} 件",
+      "resolvingTitle": "正在查找该商品中的物品…",
+      "loadingTitle": "正在打开商品以便编辑…",
+      "noTargetTitle": "不清楚要打开哪个商品",
+      "noTargetBody": "请先在列表中选择一个商品，然后点按“编辑”。",
+      "noItemsTitle": "暂时没有可编辑的内容",
+      "noItemsBody": "该商品中没有任何物品。",
+      "pickItemTitle": "您要编辑哪一件物品？",
+      "pickItemBody": "该商品包含 {{n}} 件物品，需要逐件编辑。",
+      "soldTitle": "该商品已售出",
+      "soldBody": "已售出的商品会保持买家看到的样子，因此不能再编辑。",
+      "notOwnerTitle": "这不是您的商品",
+      "notOwnerBody": "只有发布该商品的卖家才能修改它。",
+      "lockedTitle": "该商品目前无法编辑",
+      "lockedBody": "该商品的编辑功能已关闭，我们的团队可以为您说明原因。",
+      "pendingTitle": "您已有修改正在等待审核",
+      "pendingBody": "您在 {{when}} 提交了这些修改。我们的团队会先审核，买家才会看到；在此之前，您的商品仍显示现有内容。",
+      "pendingChangesHeading": "等待审核",
+      "pendingHint": "本次审核完成后，您就可以再次修改。",
+      "fromTo": "{{from}} → {{to}}",
+      "instantBadge": "立即生效",
+      "reviewBadge": "需要审核",
+      "mixedBadge": "部分需审核",
+      "mixedHint": "修改{{fields}}需要先通过审核，这里的其他内容保存后立即生效。",
+      "changedNeedsApproval": "已修改。{{fields}}需通过审核，买家才会看到。",
+      "changedGoesLive": "已修改。{{fields}}保存后立即生效。",
+      "marketplaceLabel": "交易平台",
+      "lockedTag": "已锁定",
+      "marketplaceLockedHint": "商品会保留在发布时选择的交易平台上。若这件物品应属于其他平台，请联系我们。",
+      "marketplaceLockedA11y": "交易平台 {{marketplace}}，已锁定",
+      "photosManage": "管理照片",
+      "photosManageHint": "删除您不希望买家再看到的照片。",
+      "photosLastOne": "这是最后一张照片。商品至少需要保留一张，因此无法删除。",
+      "photosNone": "该商品没有照片。",
+      "photosRemove": "删除",
+      "photosRemoveA11y": "删除第 {{index}} 张照片",
+      "photosDone": "完成",
+      "photoNumber": "第 {{index}} 张照片",
+      "photosRemovedReview": "待删除照片：{{n}} 张。照片修改需通过审核，买家才会看到。",
+      "photosRemovedInstant": "待删除照片：{{n}} 张。保存后立即生效。",
+      "save": "保存修改",
+      "savingExplain": "正在保存 — 仅提交您改动过的内容…",
+      "noChanges": "尚未有任何修改",
+      "summaryAllInstant": "待保存：{{n}} 项，全部立即生效。",
+      "summaryMixed": "待保存：{{n}} 项。{{fields}}需等待审核，其余立即生效。",
+      "discardTitle": "要放弃修改吗？",
+      "discardBody": "这些修改尚未保存，放弃后将会丢失。",
+      "discardConfirm": "放弃",
+      "discardCancel": "继续编辑",
+      "savedTitle": "商品已更新",
+      "savedPartlyTitle": "部分已生效，部分待审核",
+      "savedNothingTitle": "没有需要保存的内容",
+      "savedNothingBody": "您的商品内容与填写的完全一致。",
+      "savedLiveHeading": "已生效",
+      "savedLiveSentence": "{{fields}}已在您的在售商品上更新。",
+      "savedPendingHeading": "等待审核",
+      "savedPendingSentence": "{{fields}}需先通过审核。在团队确认之前，您的商品会继续显示现有内容。",
+      "done": "完成",
+      "section": {
+        "photos": "照片",
+        "identity": "标题与品牌",
+        "description": "描述",
+        "category": "类别、状况与等级",
+        "pricing": "价格与数量",
+        "location": "提货与安装"
+      },
+      "modeIntro": {
+        "split": "细节内容保存后立即生效。标题、价格、类别或照片的改动会先由我们的团队审核，在此之前商品仍显示现有版本。",
+        "instant": "您保存的每一项改动都会立即显示在商品上。",
+        "review_all": "所有改动都会先由我们的团队审核，买家才会看到。在此之前，您的商品仍显示现有内容。"
+      },
+      "field": {
+        "title": "标题",
+        "description": "描述",
+        "brand": "品牌",
+        "category": "类别",
+        "condition": "状况",
+        "grade": "等级",
+        "operationStatus": "安装状态",
+        "quantity": "数量",
+        "priceFormat": "计价方式",
+        "price": "价格",
+        "currency": "货币",
+        "location": "提货地点",
+        "photos": "照片",
+        "specs": "规格"
+      },
+      "error": {
+      "saleRecordBlocked": {
+        "title": "有一个字段无法修改",
+        "body": "您其他的修改已保存。此商品尚未设置价格或销售记录，需先完成设置才能修改该部分。"
+      },
+        "unauthorized": {
+          "title": "登录已过期",
+          "body": "请重新登录，然后再打开该商品继续编辑。"
+        },
+        "forbidden": {
+          "title": "您无权编辑该商品",
+          "body": "只有发布它的卖家才能修改。请确认您登录的是正确的账号。"
+        },
+        "sold": {
+          "title": "该商品已售出",
+          "body": "已售出的商品不能再修改，本次内容未被保存。"
+        },
+        "invalid": {
+          "title": "无法保存这些修改",
+          "body": "请检查上方标记的字段，修正标红的内容后再保存。"
+        },
+        "notFound": {
+          "title": "找不到该商品",
+          "body": "它可能已被移除。请返回商品列表另选一个。"
+        },
+        "offline": {
+          "title": "没有网络连接",
+          "body": "请检查网络连接后重试。"
+        },
+        "server": {
+          "title": "我们这边出了点问题",
+          "body": "这是我们的问题，不是您的操作有误。请稍后再试。"
+        },
+        "unknown": {
+          "title": "无法保存您的修改",
+          "body": "请再试一次；如果仍然失败，请告诉我们的团队。"
+        }
       }
     },
     "labNotif": {

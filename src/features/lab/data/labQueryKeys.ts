@@ -33,8 +33,19 @@ export const labKeys = {
   /** Matches for ONE want (Python `GET /wtb/{id}/matches`). */
   wantMatches: (wtbId: number) => [ROOT, 'wantMatches', wtbId] as const,
 
+  /** PREFIX for every per-want match query — invalidate them all in one call.
+   *  My Wants pulls to refresh the wants list AND their matches; without this
+   *  prefix the pull only refetched `wants()`, so the summary strip and every
+   *  WantCard kept serving stale matches while the spinner implied otherwise. */
+  wantMatchesAll: () => [ROOT, 'wantMatches'] as const,
+
   /** Buyer↔seller Messages inbox (Node `GET /chat/buyer/:id/sellers`). */
   conversations: () => [ROOT, 'conversations'] as const,
+
+  /** Per-conversation unread counts, derived from the unread `type: 'chat'`
+   *  notification ledger (`GET /notifications/:id?unread=true`) — the inbox
+   *  endpoint carries no unread field. See chatApi.fetchChatUnreadCounts. */
+  chatUnread: () => [ROOT, 'chatUnread'] as const,
 
   /** Deal Room conversation meta (header/counterparty). */
   deal: (id: string) => [ROOT, 'deal', id] as const,
@@ -50,5 +61,6 @@ export type LabQueryKey =
   | ReturnType<typeof labKeys.match>
   | ReturnType<typeof labKeys.wantMatches>
   | ReturnType<typeof labKeys.conversations>
+  | ReturnType<typeof labKeys.chatUnread>
   | ReturnType<typeof labKeys.deal>
   | ReturnType<typeof labKeys.dealMessages>;

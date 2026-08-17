@@ -16,17 +16,16 @@
 // Tab bar SHOWS here. A matched product's "View details" opens the Match Detail
 // screen (stack route `/(lab)/match/<wtb_id:product_id>`); "View all N" on a
 // WantCard opens the per-want All-matches screen (`/(lab)/want/<id>`).
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Plus, Search, Sparkles } from 'lucide-react-native';
 
 import { EmptyState, Screen, Text } from '@/components/ui';
-import { LabScreenBg } from '@/features/lab/components';
+import { LabScreenBg, useTabBarHeight } from '@/features/lab/components';
 import { brand, fonts, greenDarkest, greenMedium, lab, radius, spacing } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { WTB_ENABLED } from '@/lib/flags';
@@ -37,7 +36,11 @@ import { isActiveStatus, relevancePercent } from '@/features/lab/wants/data/want
 import { WantCard } from '@/features/lab/wants/components/WantCard';
 import { AddWantSheet } from '@/features/lab/wants/components/AddWantSheet';
 
-const NEUTRALS = { title: '#10201A', sub: '#6B7A72' } as const;
+// Screen ink comes from the shared lab palette rather than screen-local hex, so
+// this surface can never drift from the redesigned Messages/inbox screens.
+// `lab.ink` IS the former local #10201A; `lab.inkSub` (#5E6E66) is a shade
+// darker than the former #6B7A72, which also lifts the secondary text contrast.
+const NEUTRALS = { title: lab.ink, sub: lab.inkSub } as const;
 // Prototype screen gutter (NOT on the 4px scale) — mirrors the feed + detail.
 const LAB_GUTTER = 22;
 
@@ -48,12 +51,40 @@ const isPausedStatus = (status?: string | null) => (status ?? '').toLowerCase() 
 
 export default function LabMyWants() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  // Live FrostedTabBar height (66 + bottom inset) instead of a hardcoded 96 +
+  // inset: the magic number over-reserved ~30px of dead scroll space under the
+  // last WantCard AND was a second copy of the bar's geometry that would silently
+  // desync if the bar changed. Matches listings.tsx / account.tsx / home.tsx.
+  const tabBarHeight = useTabBarHeight();
   const { t } = useTranslation();
   const [addOpen, setAddOpen] = useState(false);
   const [filter, setFilter] = useState<WantFilter>('all');
 
-  const { wants, isLoading, isRefetching, isError, isEmpty, refetch } = useWants();
+  const { wants, isLoading, isError, isEmpty, refetch } = useWants();
+
+  // Pull-to-refresh has to refresh the MATCHES too, not just the wants list.
+  // `useWants().refetch` only refetches `labKeys.wants()`; every want's matches
+  // live in separate `labKeys.wantMatches(id)` queries, so the old
+  // `onRefresh={refetch}` returned a fresh want list while the summary strip and
+  // all the WantCards still showed the matches from before the pull.
+  //
+  // `refreshing` is a LOCAL pull flag, not react-query's `isRefetching`: that
+  // flag is true for BACKGROUND refetches as well, so the control used to spin
+  // by itself when a query invalidated with nobody pulling.
+  const qc = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+  const onPullRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: labKeys.wants() }),
+        // Prefix key → matches EVERY wantMatches(id) entry in one call.
+        qc.invalidateQueries({ queryKey: labKeys.wantMatchesAll() }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [qc]);
 
   // Aggregate matches across every want — reads straight from the SAME cache the
   // WantCards fill (`labKeys.wantMatches`), so this adds no network round-trips.
@@ -67,19 +98,35 @@ export default function LabMyWants() {
 
   const summary = useMemo(() => {
     const activeWants = wants.filter((w) => isActiveStatus(w.status)).length;
-    let newMatches = 0;
+    // TOTAL matched products, which is all this data supports: `listWantMatches`
+    // returns the current match set with no seen/unseen marker anywhere, so a
+    // "new" count cannot be derived. The stat is therefore labelled "Matches" —
+    // it used to say "New matches", which meant a buyer whose 3 wants each held
+    // 5 month-old matches read "15 New matches" on every single visit.
+    let totalMatches = 0;
     let topFit: number | null = null;
     for (const q of matchQueries) {
       const rows = q.data ?? [];
-      newMatches += rows.length;
+      totalMatches += rows.length;
       for (const m of rows) {
         const pct = relevancePercent(m);
         if (pct != null && (topFit == null || pct > topFit)) topFit = pct;
       }
     }
     const matchesLoading = matchQueries.some((q) => q.isLoading);
-    return { activeWants, newMatches, topFit, matchesLoading };
+    return { activeWants, totalMatches, topFit, matchesLoading };
   }, [wants, matchQueries]);
+
+  // Per-filter counts, so the segmented control says what is behind each option
+  // instead of making the user tap to find out (and land on an empty list).
+  const filterCounts = useMemo(
+    () => ({
+      all: wants.length,
+      active: wants.filter((w) => isActiveStatus(w.status)).length,
+      paused: wants.filter((w) => isPausedStatus(w.status)).length,
+    }),
+    [wants],
+  );
 
   const filteredWants = useMemo(() => {
     if (filter === 'active') return wants.filter((w) => isActiveStatus(w.status));
@@ -113,13 +160,18 @@ export default function LabMyWants() {
       edges={['top']}
       keyboardAware={false}
       refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={greenDarkest} colors={[greenDarkest]} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onPullRefresh}
+          tintColor={greenDarkest}
+          colors={[greenDarkest]}
+        />
       }
       style={{ backgroundColor: 'transparent' }}
       contentContainerStyle={{
         paddingTop: 16,
         paddingHorizontal: LAB_GUTTER,
-        paddingBottom: 96 + insets.bottom,
+        paddingBottom: tabBarHeight + spacing['2xl'],
       }}
     >
       {/* Header */}
@@ -180,9 +232,9 @@ export default function LabMyWants() {
             </View>
             <View style={styles.stat}>
               <Text style={[styles.statNum, { color: greenMedium }]}>
-                {summary.matchesLoading ? '—' : summary.newMatches}
+                {summary.matchesLoading ? '—' : summary.totalMatches}
               </Text>
-              <Text style={styles.statLabel}>{t('mobile.labWants.statNewMatches')}</Text>
+              <Text style={styles.statLabel}>{t('mobile.labWants.statMatches')}</Text>
             </View>
             <View style={styles.stat}>
               <Text style={styles.statNum}>
@@ -204,16 +256,20 @@ export default function LabMyWants() {
             {FILTER_KEYS.map((key) => {
               const on = key === filter;
               const label = t(`mobile.labWants.filters.${key}`);
+              const count = filterCounts[key];
               return (
                 <Pressable
                   key={key}
                   onPress={() => selectFilter(key)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: on }}
-                  accessibilityLabel={t('mobile.labWants.filterA11y', { filter: label })}
+                  // Count spoken as well as shown — a screen-reader user gets the
+                  // same "is there anything in here?" answer a sighted user does.
+                  accessibilityLabel={`${t('mobile.labWants.filterA11y', { filter: label })}, ${count}`}
                   style={[styles.segBtn, on && styles.segBtnOn]}
                 >
                   <Text style={[styles.segText, on && styles.segTextOn]}>{label}</Text>
+                  <Text style={[styles.segCount, on && styles.segCountOn]}>{count}</Text>
                 </Pressable>
               );
             })}
@@ -312,7 +368,16 @@ const styles = StyleSheet.create({
     padding: 4,
     marginBottom: spacing.lg,
   },
-  segBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 44, paddingVertical: 8, borderRadius: radius.sm },
+  segBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    minHeight: 44,
+    paddingVertical: 8,
+    borderRadius: radius.sm,
+  },
   segBtnOn: {
     backgroundColor: brand.surface,
     shadowColor: '#0E3B2E',
@@ -323,6 +388,15 @@ const styles = StyleSheet.create({
   },
   segText: { fontFamily: fonts.bold, fontSize: 12.5, color: NEUTRALS.sub },
   segTextOn: { color: brand.primary },
+  // The count is deliberately quieter than the label: it is an answer to "how
+  // many", not a second thing to read. Tabular figures so 1→10 doesn't reflow.
+  segCount: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    color: lab.inkMeta,
+    fontVariant: ['tabular-nums'],
+  },
+  segCountOn: { color: greenMedium },
 
   notice: {
     borderRadius: radius.lg,

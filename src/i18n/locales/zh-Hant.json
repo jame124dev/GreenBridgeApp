@@ -4093,6 +4093,15 @@
       "notifyOfferHint": "買家向您傳送直接報價",
       "notifyPayment": "付款狀態",
       "notifyPaymentHint": "撥款、退款和付款失敗",
+      "pushOffTitle": "推播通知已關閉",
+      "pushOffBody": "開啟後，出價、報價和付款進度會第一時間通知您。",
+      "pushOffAction": "開啟通知",
+      "pushSetupTitle": "尚未開啟推播通知",
+      "pushOpeningSettings": "正在開啟裝置的通知設定…",
+      "pushWaitingAnswer": "正在等待您對權限請求做出選擇…",
+      "pushUnavailableTitle": "目前版本的應用程式暫不支援推播通知",
+      "pushUnavailableBody": "無需變更任何設定，我們會在後續版本中開啟。使用應用程式時仍會收到應用內提醒。",
+      "pushOnToast": "推播通知已開啟",
       "removeInterest": "移除 {{name}}",
       "verificationDesc": "完成每個步驟即可獲得「認證賣家」標章。",
       "verificationTitle": "信任與認證",
@@ -4598,7 +4607,18 @@
       "listingFallback": "商品",
       "rowA11y": "與 {{name}} 關於 {{title}} 的會話",
       "composerDefault": "傳送訊息…",
-      "sendMessage": "傳送訊息"
+      "sendMessage": "傳送訊息",
+      "reconnecting": "重新連線中…",
+      "unreadOne": "{{count}} 條未讀訊息",
+      "unreadOther": "{{count}} 條未讀訊息",
+      "allCaughtUp": "全部已讀",
+      "refreshFailed": "重新載入失敗 — 下拉重試",
+      "resultCountOne": "{{count}} 個結果",
+      "resultCountOther": "{{count}} 個結果",
+      "clearSearch": "清除搜尋",
+      "noMessagesYet": "暫無訊息",
+      "tabBadgeA11yOne": "{{label}}，{{count}} 條未讀訊息",
+      "tabBadgeA11yOther": "{{label}}，{{count}} 條未讀訊息"
     },
     "labUpdate": {
       "readyTitle": "更新已就緒",
@@ -4606,6 +4626,7 @@
       "restart": "立即重新啟動",
       "restarting": "正在重新啟動…",
       "later": "稍後",
+      "version": "GreenBidz 版本 {{version}}",
       "builtIn": "內建",
       "downloading": "正在下載更新…"
     },
@@ -4630,6 +4651,8 @@
       "listingInfo": "商品資訊",
       "activeNow": "● 線上",
       "connecting": "連線中…",
+      "reconnecting": "重新連線中…",
+      "queued": "等待網路連線…",
       "viewListingA11y": "檢視商品 {{id}}",
       "listingNumber": "商品 #{{id}}",
       "tapToView": "點選檢視此商品",
@@ -4668,14 +4691,25 @@
         "shipToBangkok": "可以發貨到曼谷嗎？",
         "bestPrice": "您的最優價是多少？"
       },
-      "sendMessage": "傳送訊息"
+      "sendMessage": "傳送訊息",
+      "sending": "傳送中…",
+      "sent": "已傳送",
+      "sendFailed": "未傳送 — 輕觸重試",
+      "sendFailedA11y": "訊息未傳送。輕觸重試。",
+      "loadingBody": "正在連線聊天服務並取得您與 {{name}} 的訊息。",
+      "errorOpenTitle": "無法開啟此會話",
+      "errorOpenBody": "我們無法連線聊天服務。請檢查網路連線後重試，或前往訊息。",
+      "startersLabel": "不知道從哪裡開始？",
+      "starterA11y": "使用這句開場：{{text}}"
     },
     "labNav": {
       "home": "首頁",
       "browse": "瀏覽",
       "matches": "匹配",
       "chat": "聊天",
-      "account": "賬戶"
+      "account": "賬戶",
+      "badgeA11yOne": "{{label}}，{{count}} 個匹配",
+      "badgeA11yOther": "{{label}}，{{count}} 個匹配"
     },
     "labProcessing": {
       "title": {
@@ -4762,7 +4796,7 @@
       "emptyText": "您還沒有儲存任何求購。釋出一個需求，我們將為您尋找匹配的商品。",
       "addWant": "新增求購",
       "statActiveWants": "活躍求購",
-      "statNewMatches": "新匹配",
+      "statMatches": "匹配",
       "statTopFit": "最高匹配度",
       "filters": {
         "all": "全部",
@@ -4968,6 +5002,143 @@
         "item_grade": "它的等級是什麼？",
         "dimensions": "尺寸（長 × 寬 × 高）？",
         "product_content": "新增簡短描述"
+      }
+    },
+    "listingEdit": {
+      "title": "編輯刊登",
+      "and": "與",
+      "retry": "再試一次",
+      "backToListings": "返回我的刊登",
+      "editAction": "編輯",
+      "editA11y": "編輯 {{title}}",
+      "soldRowHint": "已售出的刊登無法編輯。",
+      "listLoading": "正在載入您的刊登…",
+      "listLoadFailed": "目前無法載入您的刊登。",
+      "listEmpty": "您刊登的商品會顯示在這裡，隨時可以編輯。",
+      "listCount": "共 {{n}} 筆",
+      "resolvingTitle": "正在尋找這筆刊登中的品項…",
+      "loadingTitle": "正在開啟刊登以供編輯…",
+      "noTargetTitle": "不確定要開啟哪一筆刊登",
+      "noTargetBody": "請先在清單中選一筆刊登，再點選「編輯」。",
+      "noItemsTitle": "目前沒有可編輯的內容",
+      "noItemsBody": "這筆刊登裡沒有任何品項。",
+      "pickItemTitle": "您要編輯哪一件品項？",
+      "pickItemBody": "這筆刊登包含 {{n}} 件品項，需要逐件編輯。",
+      "soldTitle": "這筆刊登已售出",
+      "soldBody": "已售出的刊登會維持買家看到的樣子，因此無法再編輯。",
+      "notOwnerTitle": "這不是您的刊登",
+      "notOwnerBody": "只有刊登這件商品的賣家才能修改。",
+      "lockedTitle": "這筆刊登目前無法編輯",
+      "lockedBody": "這筆刊登的編輯功能已關閉，我們的團隊可以向您說明原因。",
+      "pendingTitle": "您已有修改正在等待審核",
+      "pendingBody": "您在 {{when}} 送出了這些修改。我們的團隊會先審核，買家才看得到；在此之前，您的刊登仍顯示現有內容。",
+      "pendingChangesHeading": "等待審核",
+      "pendingHint": "這次審核完成後，您就可以再做新的修改。",
+      "fromTo": "{{from}} → {{to}}",
+      "instantBadge": "立即生效",
+      "reviewBadge": "需要審核",
+      "mixedBadge": "部分需審核",
+      "mixedHint": "修改{{fields}}需先通過審核，這裡其他內容儲存後立即生效。",
+      "changedNeedsApproval": "已修改。{{fields}}需通過審核，買家才會看到。",
+      "changedGoesLive": "已修改。{{fields}}儲存後立即生效。",
+      "marketplaceLabel": "交易平台",
+      "lockedTag": "已鎖定",
+      "marketplaceLockedHint": "刊登會保留在當初選擇的交易平台上。若這件品項應屬於其他平台，請與我們聯絡。",
+      "marketplaceLockedA11y": "交易平台 {{marketplace}}，已鎖定",
+      "photosManage": "管理照片",
+      "photosManageHint": "移除您不希望買家再看到的照片。",
+      "photosLastOne": "這是最後一張照片。刊登至少要保留一張，因此無法移除。",
+      "photosNone": "這筆刊登沒有照片。",
+      "photosRemove": "移除",
+      "photosRemoveA11y": "移除第 {{index}} 張照片",
+      "photosDone": "完成",
+      "photoNumber": "第 {{index}} 張照片",
+      "photosRemovedReview": "待移除照片：{{n}} 張。照片異動需通過審核，買家才會看到。",
+      "photosRemovedInstant": "待移除照片：{{n}} 張。儲存後立即生效。",
+      "save": "儲存修改",
+      "savingExplain": "正在儲存 — 只送出您改動過的內容…",
+      "noChanges": "尚未有任何修改",
+      "summaryAllInstant": "待儲存：{{n}} 項，全部立即生效。",
+      "summaryMixed": "待儲存：{{n}} 項。{{fields}}需等待審核，其餘立即生效。",
+      "discardTitle": "要放棄修改嗎？",
+      "discardBody": "這些修改尚未儲存，放棄後就會消失。",
+      "discardConfirm": "放棄",
+      "discardCancel": "繼續編輯",
+      "savedTitle": "刊登已更新",
+      "savedPartlyTitle": "部分已生效，部分待審核",
+      "savedNothingTitle": "沒有需要儲存的內容",
+      "savedNothingBody": "您的刊登內容與填寫的完全相同。",
+      "savedLiveHeading": "已生效",
+      "savedLiveSentence": "{{fields}}已在您上架中的刊登更新。",
+      "savedPendingHeading": "等待審核",
+      "savedPendingSentence": "{{fields}}需先通過審核。在團隊確認前，您的刊登會繼續顯示現有內容。",
+      "done": "完成",
+      "section": {
+        "photos": "照片",
+        "identity": "標題與品牌",
+        "description": "說明",
+        "category": "類別、狀況與等級",
+        "pricing": "價格與數量",
+        "location": "取貨與安裝"
+      },
+      "modeIntro": {
+        "split": "細節內容儲存後立即生效。標題、價格、類別或照片的異動會先由我們的團隊審核，在此之前刊登仍顯示現有版本。",
+        "instant": "您儲存的每一項異動都會立刻顯示在刊登上。",
+        "review_all": "所有異動都會先由我們的團隊審核，買家才看得到。在此之前，您的刊登仍顯示現有內容。"
+      },
+      "field": {
+        "title": "標題",
+        "description": "說明",
+        "brand": "品牌",
+        "category": "類別",
+        "condition": "狀況",
+        "grade": "等級",
+        "operationStatus": "安裝狀態",
+        "quantity": "數量",
+        "priceFormat": "計價方式",
+        "price": "價格",
+        "currency": "幣別",
+        "location": "取貨地點",
+        "photos": "照片",
+        "specs": "規格"
+      },
+      "error": {
+      "saleRecordBlocked": {
+        "title": "有一個欄位無法修改",
+        "body": "您其他的修改已儲存。此商品尚未設定價格或銷售記錄，需先完成設定才能修改該部分。"
+      },
+        "unauthorized": {
+          "title": "登入已逾期",
+          "body": "請重新登入，再開啟刊登繼續編輯。"
+        },
+        "forbidden": {
+          "title": "您無權編輯這筆刊登",
+          "body": "只有刊登它的賣家才能修改。請確認您登入的是正確的帳號。"
+        },
+        "sold": {
+          "title": "這筆刊登已售出",
+          "body": "已售出的刊登無法再修改，因此這次的內容並未儲存。"
+        },
+        "invalid": {
+          "title": "無法儲存這些修改",
+          "body": "請檢查上方標示的欄位，修正標紅的內容後再儲存。"
+        },
+        "notFound": {
+          "title": "找不到這筆刊登",
+          "body": "它可能已被移除。請回到刊登清單另選一筆。"
+        },
+        "offline": {
+          "title": "沒有網路連線",
+          "body": "請檢查網路連線後再試一次。"
+        },
+        "server": {
+          "title": "我們這邊出了狀況",
+          "body": "這是我們的問題，不是您操作有誤。請稍後再試。"
+        },
+        "unknown": {
+          "title": "無法儲存您的修改",
+          "body": "請再試一次；若持續發生，請告訴我們的團隊。"
+        }
       }
     },
     "labNotif": {
