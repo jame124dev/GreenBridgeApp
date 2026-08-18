@@ -52,8 +52,79 @@ export function emptyDetailDefaults(): DetailFormInput {
 const GRADES: readonly string[] = ['A', 'B', 'C', 'D'];
 
 /**
- * DraftItem -> RHF values, and the ONE place a persisted draft is made
- * schema-valid.
+ * The ONE place a persisted draft is made schema-valid — every `detailSchema`
+ * field that has no checklist row and no control in the editor gets a
+ * guaranteed-valid value here.
+ *
+ * Applied at BOTH seams, which is the whole point of it being a DraftItem ->
+ * DraftItem function rather than living inside `draftToFormValues`:
+ *
+ *   VALIDATION  `draftToFormValues` (below) -> the RHF form, `getRequiredStatus`
+ *               and `getDraftRequiredStatus` (requiredStatus.ts) — so a legacy
+ *               draft never renders "every row green, Submit dead".
+ *   SUBMISSION  `services/scanner/submitGroupedListings.ts` — the grouped submit
+ *               reads the queued DraftItems STRAIGHT from the store, never
+ *               through the form. Repairing only the validation seam would turn
+ *               "invisibly blocked" into "silently submitted junk": the review
+ *               hub's ready gate is `getDraftRequiredStatus(item).allComplete`
+ *               (grouped-review.tsx:99, :159), so a resumed draft holding
+ *               `grade: 'Z'` / `quantity: undefined` / `marketplace: 'shopify'`
+ *               would read READY and then be serialised raw by
+ *               `productMetaFromItem` (item_grade 'Z', quantity "undefined",
+ *               allowed_sites ['LabGreenbidz'] for a marketplace that is not
+ *               101lab). Enforced by
+ *               `services/scanner/__tests__/groupedSubmitCoercion.test.ts`.
+ *
+ * The single-item submit path needs no call: `submitSingleValidated` patches the
+ * draft with `buildDraftPatch(validated form values, …)` before it hands the
+ * draft to `createListing.mutate`, and those values came through
+ * `draftToFormValues` — i.e. through here. `__tests__/requiredStatusGap.test.ts`
+ * ("buildDraftPatch carries the repaired values") locks that reasoning down.
+ *
+ * Fields WITH a checklist row are deliberately NOT repaired — an empty title
+ * must stay empty so the seller is asked for it. `condition` / `locations` are
+ * only normalised to arrays (an absent array would crash the submit builders);
+ * their emptiness, which the seller can see and fix, is preserved.
+ */
+export function coerceDraftDefaults(draft: DraftItem): DraftItem {
+  const locations = Array.isArray(draft.locations) ? draft.locations : [];
+  const countriesRaw = Array.isArray(draft.locationCountries) ? draft.locationCountries : [];
+  return {
+    ...draft,
+    condition: Array.isArray(draft.condition) ? draft.condition : [],
+    // No UI in the editor, and never submitted — buildFormData derives
+    // operation_status[] from `installation` instead (buildFormData.ts:185-187, :263).
+    operationStatus: draft.operationStatus?.length
+      ? draft.operationStatus
+      : [...DEFAULT_OPERATION_STATUS],
+    priceFormat: draft.priceFormat === 'offer' ? 'offer' : 'buyNow',
+    // PricingCard offers exactly these two (CURRENCY_OPTIONS); legacy drafts may
+    // still hold HKD/CNY/JPY/THB from before the list was narrowed.
+    priceCurrency: draft.priceCurrency === 'TWD' ? 'TWD' : 'USD',
+    // The stepper already clamps at 1 (PricingCard.tsx:98); this covers drafts
+    // persisted before `quantity` existed.
+    quantity:
+      typeof draft.quantity === 'number' && Number.isFinite(draft.quantity) && draft.quantity >= 1
+        ? Math.floor(draft.quantity)
+        : 1,
+    locations,
+    // schema.ts:107-113 requires one country slot per location row.
+    locationCountries: locations.map((_, i) => countriesRaw[i] ?? ''),
+    grade: GRADES.includes(draft.grade) ? draft.grade : 'A',
+    // Accepts all four canonical values and repairs anything else. '101lab' is
+    // this app's own legacy lenient fallback (scanDraftStore.ts:211-212).
+    marketplace: marketplaceFromSiteType(draft.marketplace) ?? '101lab',
+    installation: draft.installation === 'installed' ? 'installed' : 'deinstalled',
+    listingDurationDays:
+      Number.isInteger(draft.listingDurationDays) && draft.listingDurationDays > 0
+        ? draft.listingDurationDays
+        : 90,
+  };
+}
+
+/**
+ * DraftItem -> RHF values. The repairs live in `coerceDraftDefaults` (above);
+ * this is the projection onto `DetailFormInput`.
  *
  * Why the coercion lives here: `detailSchema` gates Submit on 14 fields
  * (schema.ts:20-61) but the checklist shows 7 rows and `rowForPath`
@@ -70,51 +141,33 @@ const GRADES: readonly string[] = ['A', 'B', 'C', 'D'];
  * must stay empty so the seller is asked for it.
  */
 export function draftToFormValues(draft: DraftItem): DetailFormInput {
-  const locations = Array.isArray(draft.locations) ? draft.locations : [];
-  const countriesRaw = Array.isArray(draft.locationCountries) ? draft.locationCountries : [];
+  const d = coerceDraftDefaults(draft);
   return {
-    title: draft.title ?? '',
-    description: draft.description ?? '',
-    categoryId: draft.categoryId ?? '',
-    customSubcategory: draft.customSubcategory ?? '',
-    parentCategoryId: draft.parentCategoryId ?? '',
-    parentCategoryName: draft.parentCategoryName ?? '',
-    condition: Array.isArray(draft.condition) ? draft.condition : [],
-    // No UI in the editor, and never submitted — buildFormData derives
-    // operation_status[] from `installation` instead (buildFormData.ts:185-187, :263).
-    operationStatus: draft.operationStatus?.length
-      ? draft.operationStatus
-      : [...DEFAULT_OPERATION_STATUS],
-    priceFormat: draft.priceFormat === 'offer' ? 'offer' : 'buyNow',
-    pricePerUnit: draft.pricePerUnit ?? '',
-    // PricingCard offers exactly these two (CURRENCY_OPTIONS); legacy drafts may
-    // still hold HKD/CNY/JPY/THB from before the list was narrowed.
-    priceCurrency: draft.priceCurrency === 'TWD' ? 'TWD' : 'USD',
-    // The stepper already clamps at 1 (PricingCard.tsx:98); this covers drafts
-    // persisted before `quantity` existed.
-    quantity:
-      typeof draft.quantity === 'number' && Number.isFinite(draft.quantity) && draft.quantity >= 1
-        ? Math.floor(draft.quantity)
-        : 1,
-    locations,
-    // schema.ts:107-113 requires one country slot per location row.
-    locationCountries: locations.map((_, i) => countriesRaw[i] ?? ''),
-    brand: draft.brand ?? '',
-    model: draft.model ?? '',
-    year: draft.year ?? '',
-    weight: draft.weight ?? '',
-    dimensions: draft.dimensions ?? '',
-    co2Emissions: draft.co2Emissions ?? '',
-    grade: GRADES.includes(draft.grade) ? draft.grade : 'A',
-    serialNumber: draft.serialNumber ?? '',
-    // Accepts all four canonical values and repairs anything else. '101lab' is
-    // this app's own legacy lenient fallback (scanDraftStore.ts:211-212).
-    marketplace: marketplaceFromSiteType(draft.marketplace) ?? '101lab',
-    installation: draft.installation === 'installed' ? 'installed' : 'deinstalled',
-    listingDurationDays:
-      Number.isInteger(draft.listingDurationDays) && draft.listingDurationDays > 0
-        ? draft.listingDurationDays
-        : 90,
+    title: d.title ?? '',
+    description: d.description ?? '',
+    categoryId: d.categoryId ?? '',
+    customSubcategory: d.customSubcategory ?? '',
+    parentCategoryId: d.parentCategoryId ?? '',
+    parentCategoryName: d.parentCategoryName ?? '',
+    condition: d.condition,
+    operationStatus: d.operationStatus,
+    priceFormat: d.priceFormat,
+    pricePerUnit: d.pricePerUnit ?? '',
+    priceCurrency: d.priceCurrency,
+    quantity: d.quantity,
+    locations: d.locations,
+    locationCountries: d.locationCountries,
+    brand: d.brand ?? '',
+    model: d.model ?? '',
+    year: d.year ?? '',
+    weight: d.weight ?? '',
+    dimensions: d.dimensions ?? '',
+    co2Emissions: d.co2Emissions ?? '',
+    grade: d.grade,
+    serialNumber: d.serialNumber ?? '',
+    marketplace: d.marketplace,
+    installation: d.installation,
+    listingDurationDays: d.listingDurationDays,
   };
 }
 

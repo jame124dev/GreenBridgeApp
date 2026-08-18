@@ -2,6 +2,8 @@ import { describe, it, expect } from '@jest/globals';
 
 import { OTHER_SUBCATEGORY_ID } from '@/features/scanner/constants';
 import {
+  buildDraftPatch,
+  coerceDraftDefaults,
   draftToFormValues,
   emptyDetailDefaults,
 } from '@/features/scanner/components/detail/formMapping';
@@ -177,5 +179,61 @@ describe('required-status: no invisible Submit blockers', () => {
       : new Set(parsed.error.issues.map((i) => String(i.path[0])));
     for (const f of DEFAULTED) expect(failing.has(f)).toBe(false);
     expect(parsed.success).toBe(true);
+  });
+
+  /**
+   * The repair must reach the WIRE, not just the form — validating one shape and
+   * submitting another is worse than blocking. The grouped path is covered by
+   * `src/services/scanner/__tests__/groupedSubmitCoercion.test.ts` (it calls
+   * `coerceDraftDefaults` at the submission seam); the single-item path is
+   * covered by this test, because `submitSingleValidated` publishes the draft it
+   * has just patched with the validated form values
+   * (useDetailController.ts: `patch(buildUpdated(values))` then
+   * `createListing.mutate(useScanDraft.getState().current …)`).
+   */
+  it('buildDraftPatch carries the repaired values back onto the draft', () => {
+    const junk = validDraft({
+      operationStatus: [],
+      quantity: undefined as unknown as number,
+      grade: 'Z' as unknown as DraftItem['grade'],
+      marketplace: 'shopify' as unknown as DraftItem['marketplace'],
+      installation: undefined as unknown as DraftItem['installation'],
+      listingDurationDays: 0,
+      priceCurrency: 'JPY' as unknown as DraftItem['priceCurrency'],
+      priceFormat: undefined as unknown as DraftItem['priceFormat'],
+      locationCountries: [],
+    });
+    // What the form holds after `reset(draftToFormValues(draft))` and what
+    // `handleSubmit` therefore hands to the valid path.
+    const patched = buildDraftPatch(draftToFormValues(junk), junk, undefined);
+    expect(patched.grade).toBe('A');
+    expect(patched.quantity).toBe(1);
+    expect(patched.marketplace).toBe('101lab');
+    expect(patched.priceCurrency).toBe('USD');
+    expect(patched.priceFormat).toBe('buyNow');
+    expect(patched.installation).toBe('deinstalled');
+    expect(patched.listingDurationDays).toBe(90);
+    expect(patched.locationCountries).toHaveLength(patched.locations.length);
+    // The seller's own values survive untouched.
+    expect(patched.title).toBe(junk.title);
+    expect(patched.pricePerUnit).toBe(junk.pricePerUnit);
+  });
+
+  it('coerceDraftDefaults is idempotent and never rewrites a seller field', () => {
+    const junk = validDraft({
+      grade: 'Z' as unknown as DraftItem['grade'],
+      quantity: 0,
+      title: '',
+      pricePerUnit: '',
+      condition: [] as unknown as DraftItem['condition'],
+    });
+    const once = coerceDraftDefaults(junk);
+    expect(coerceDraftDefaults(once)).toEqual(once);
+    // Empty title / price / condition must STAY empty — they own visible rows,
+    // and the seller has to be asked for them.
+    expect(once.title).toBe('');
+    expect(once.pricePerUnit).toBe('');
+    expect(once.condition).toEqual([]);
+    expect(getDraftRequiredStatus(once).allComplete).toBe(false);
   });
 });

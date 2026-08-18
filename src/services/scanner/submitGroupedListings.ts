@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 
 import { greenbidz } from '@/api/greenbidzClient';
+import { coerceDraftDefaults } from '@/features/scanner/components/detail/formMapping';
 import { marketplaceToPlatform } from '@/features/scanner/constants';
 import type { DraftItem } from '@/stores/scanDraftStore';
 import type { BatchVisibility } from '@/types/batch';
@@ -69,6 +70,23 @@ export async function submitGroupedListings(
     throw new Error('Cannot submit an empty group');
   }
 
+  /**
+   * M-7 SUBMISSION SEAM. The queued items come STRAIGHT from the store — this
+   * path never goes through the detail form, so nothing else repairs them. The
+   * review hub's ready gate is `getDraftRequiredStatus(item).allComplete`
+   * (grouped-review.tsx:99, :159), and that runs `coerceDraftDefaults` via
+   * `draftToFormValues`; without the same call here a resumed draft holding
+   * `grade: 'Z'` / `quantity: undefined` / `priceCurrency: 'JPY'` /
+   * `marketplace: 'shopify'` would read READY on screen and then be POSTed raw
+   * (item_grade 'Z', quantity "undefined", price_currency 'JPY', and `?type=` +
+   * allowed_sites silently defaulted to the lab marketplace). Validating one
+   * shape and submitting another is the bug; one function, both seams.
+   *
+   * Fields the seller can SEE (title/description/category/condition/price/
+   * location) are untouched by the coercion, so nothing typed is overwritten.
+   */
+  const items = input.items.map(coerceDraftDefaults);
+
   // ── DIAG: multi-submit debugging — see grouped-review.tsx for context ────
   console.log('[multi-submit] submitGroupedListings entry', {
     itemCount: input.items.length,
@@ -80,7 +98,7 @@ export async function submitGroupedListings(
 
   const fd = new FormData();
 
-  const productsMeta = input.items.map((item) =>
+  const productsMeta = items.map((item) =>
     productMetaFromItem(item, {
       sellerId: input.sellerId,
       sellerName: input.sellerName,
@@ -98,7 +116,7 @@ export async function submitGroupedListings(
 
   // Group-level country: take from the first item's first locationCountry.
   // Web does the same (`submitSmartBatch.ts:50-57`).
-  const groupCountry = input.items[0]?.locationCountries[0] ?? '';
+  const groupCountry = items[0]?.locationCountries[0] ?? '';
   if (groupCountry) {
     fd.append('auction_group_json', JSON.stringify({ country: groupCountry }));
   }
@@ -111,8 +129,8 @@ export async function submitGroupedListings(
   // names `services/groupedListingSubmitService.js` parses).
   // DIAG: collect per-index file counts for logging at the end of the loop.
   const fileTally: { index: number; images: number; documents: number }[] = [];
-  for (let i = 0; i < input.items.length; i++) {
-    const item = input.items[i];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     for (let p = 0; p < item.photos.length; p++) {
       const photo = item.photos[p];
       await appendFile(
@@ -150,7 +168,7 @@ export async function submitGroupedListings(
   // once and items inherit). W3 (scan_v3): now uses the hoisted helper from
   // constants.ts; falls back to env site type if the marketplace doesn't map
   // (defensive — all 4 known marketplaces map cleanly).
-  const platform = marketplaceToPlatform(input.items[0]?.marketplace) ?? getSiteType();
+  const platform = marketplaceToPlatform(items[0]?.marketplace) ?? getSiteType();
   const url = `/wp/create-grouped-listings?lang=${encodeURIComponent(input.language)}&type=${encodeURIComponent(platform)}`;
 
   // ── DIAG: about to POST ──────────────────────────────────────────────────
