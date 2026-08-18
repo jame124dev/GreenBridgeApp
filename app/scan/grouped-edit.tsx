@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 import { FormProvider, useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -230,10 +230,16 @@ export default function GroupedEditScreen() {
         </KeyboardAwareScrollView>
       </FormProvider>
 
-      <View
-        className="px-md pt-sm pb-md bg-brand-background"
-        style={{ borderTopWidth: 1, borderTopColor: brand.border }}
-      >
+      {/* M-11 — same lift as app/scan/detail.tsx, for the same reason (S1,
+          2026-08-18): with `KeyboardProvider` enabled the library disables
+          Android's adjustResize window shrink and adds no bottom padding of its
+          own, so the IME draws over this footer. Both platforms wrapped; iOS is
+          unverified on win32. */}
+      <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+        <View
+          className="px-md pt-sm pb-md bg-brand-background"
+          style={{ borderTopWidth: 1, borderTopColor: brand.border }}
+        >
         {/* D6: local brand-CTA override (pre-coding note D-1) — does NOT touch
             the shared `Button` primitive, so the rest of the app keeps its
             current emerald primary. Disabled = flat neutral fill (NOT
@@ -293,7 +299,8 @@ export default function GroupedEditScreen() {
             </Pressable>
           );
         })()}
-      </View>
+        </View>
+      </KeyboardStickyView>
     </Screen>
   );
 }

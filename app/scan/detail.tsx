@@ -2,7 +2,8 @@ import { useCallback, useState } from 'react';
 import { FormProvider } from 'react-hook-form';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { View } from 'react-native';
+import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner-native';
 
@@ -22,6 +23,7 @@ import {
   RequiredChecklist,
   SpecsCard,
   useDetailController,
+  useRowScroller,
 } from '@/features/scanner/components/detail';
 import { routes } from '@/lib/routes';
 import { useScanDraft } from '@/stores/scanDraftStore';
@@ -49,7 +51,10 @@ export default function DetailScreen() {
   const editingGroupedItem = useScanDraft((s) => s.editingGroupedItem);
   const isGrouped = mode === 'grouped';
 
-  const controller = useDetailController();
+  // M-8/M-9: the footer chips and the invalid-submit alert both jump to the card
+  // that owns a required row.
+  const { scrollRef, registerRow, scrollToRow } = useRowScroller();
+  const controller = useDetailController({ scrollToRow });
   const { form, submitting, addMorePhotos, onSubmitSingle, onAddAnother, onReviewGroup, onSaveAndReturnToReview } = controller;
 
   // Task 8 — "Save as draft". First save on a session calls `createDraft`;
@@ -113,47 +118,83 @@ export default function DetailScreen() {
       <SafeAreaView className="flex-1 bg-brand-background" edges={['top', 'bottom']}>
         <DetailAppBar />
         <KeyboardAwareScrollView
+          ref={scrollRef}
           className="flex-1"
           contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 8 }}
           keyboardShouldPersistTaps="handled"
           bottomOffset={24}
         >
-          <PhotosCard
-            photos={draft.photos ?? []}
-            rearrangeLabel={t('mobile.review.rearrange')}
-            onRearrange={() => router.push(routes.scanReorderPhotosEdit())}
-            onAddMore={addMorePhotos}
-          />
-          <IdentityCard />
-          <DescriptionCard />
+          <View onLayout={registerRow('photos')}>
+            <PhotosCard
+              photos={draft.photos ?? []}
+              rearrangeLabel={t('mobile.review.rearrange')}
+              onRearrange={() => router.push(routes.scanReorderPhotosEdit())}
+              onAddMore={addMorePhotos}
+            />
+          </View>
+          <View onLayout={registerRow('title')}>
+            <IdentityCard />
+          </View>
+          <View onLayout={registerRow('description')}>
+            <DescriptionCard />
+          </View>
           <MarketplaceCard />
-          <CategoryConditionCard />
+          {/* Category AND condition both live in this one card, so both rows
+              register the SAME wrapper. Do not nest two wrappers: the inner y
+              would be 0 relative to the outer and the jump would be a no-op.
+              Splitting the card is M-2's job, in another phase. */}
+          <View
+            onLayout={(e) => {
+              registerRow('category')(e);
+              registerRow('condition')(e);
+            }}
+          >
+            <CategoryConditionCard />
+          </View>
           <ProfitIntelligenceCard aiPrices={draft.aiPrices} />
-          <PricingCard />
+          <View onLayout={registerRow('price')}>
+            <PricingCard />
+          </View>
           <SpecsCard />
           <DocumentsCard draft={draft} />
           {/* VisibilityCard removed for now — all listings ship as PUBLIC
               (the default on emptyDraft + sessionVisibility). Re-mount when
               product calls for it; the underlying store fields stay intact. */}
-          <LocationCard />
+          <View onLayout={registerRow('location')}>
+            <LocationCard />
+          </View>
           <RequiredChecklist draft={draft} />
         </KeyboardAwareScrollView>
-        {/* Only single mode submits from this screen — in grouped mode the footer
-            leads to the review hub, which carries its own copy of this notice. */}
-        {!isGrouped && <SellerApprovalNotice />}
-        <DetailFooter
-          isGrouped={isGrouped}
-          editingGroupedItem={editingGroupedItem}
-          queuedCount={queuedCount}
-          allRequired={required.allComplete}
-          submitting={submitting}
-          onSubmitSingle={onSubmitSingle}
-          onAddAnother={onAddAnother}
-          onReviewGroup={onReviewGroup}
-          onSaveAndReturnToReview={onSaveAndReturnToReview}
-          onSaveDraft={handleSaveDraft}
-          savingDraft={savingDraft}
-        />
+        {/* M-11 — lift the notice + footer above the keyboard. Wrapped for BOTH
+            platforms per the S1 observation (2026-08-18): `KeyboardProvider` is
+            mounted with `enabled` defaulting to true (app/_layout.tsx:176), which
+            makes react-native-keyboard-controller call
+            `setDecorFitsSystemWindows(window, false)` and skip its own bottom
+            padding (`!active` gate, EdgeToEdgeReactViewGroup.kt:115) — so Android's
+            manifest `adjustResize` does NOT shrink the window and the IME draws
+            over this block. `KeyboardAwareScrollView` only rescues content INSIDE
+            the scroll; the footer is its sibling. iOS is unverified on the win32
+            machine this was built on — check it on a Mac before 1.0.4 ships. */}
+        <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+          {/* Only single mode submits from this screen — in grouped mode the footer
+              leads to the review hub, which carries its own copy of this notice. */}
+          {!isGrouped && <SellerApprovalNotice />}
+          <DetailFooter
+            isGrouped={isGrouped}
+            editingGroupedItem={editingGroupedItem}
+            queuedCount={queuedCount}
+            allRequired={required.allComplete}
+            submitting={submitting}
+            onSubmitSingle={onSubmitSingle}
+            onAddAnother={onAddAnother}
+            onReviewGroup={onReviewGroup}
+            onSaveAndReturnToReview={onSaveAndReturnToReview}
+            onSaveDraft={handleSaveDraft}
+            savingDraft={savingDraft}
+            required={required}
+            onPressRow={scrollToRow}
+          />
+        </KeyboardStickyView>
       </SafeAreaView>
     </FormProvider>
   );
