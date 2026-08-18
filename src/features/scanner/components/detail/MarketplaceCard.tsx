@@ -74,6 +74,20 @@ export function MarketplaceCard() {
                 );
               })}
             </View>
+            {/* M-10 — one line of "what belongs here" under the pills, the same
+                pattern LocationCard.tsx:320-327 uses for INSTALLATION_OPTIONS'
+                hint. Four codenames with no explanation is the state the
+                marketplace unlock (M-4) would otherwise ship. The copy has ONE
+                home — MARKETPLACE_OPTIONS[].description (integration doc C7) —
+                with the locale key overriding it per language. */}
+            {marketplace ? (
+              <Text className="font-sans text-sm text-brand-text-muted mt-xs">
+                {t(
+                  `mobile.detail.marketplaceOption.${marketplace}.description`,
+                  MARKETPLACE_OPTIONS.find((o) => o.value === marketplace)?.description ?? '',
+                )}
+              </Text>
+            ) : null}
           </View>
         )}
       />
