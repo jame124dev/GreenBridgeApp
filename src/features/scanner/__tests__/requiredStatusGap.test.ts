@@ -88,6 +88,22 @@ function validDraft(overrides: Partial<DraftItem> = {}): DraftItem {
   } as DraftItem;
 }
 
+/**
+ * UNDOCUMENTED CHANGE, written down here (2026-08-18).
+ *
+ * `getDraftRequiredStatus` no longer projects `categoryName`. The deleted
+ * `draftToFormInput` used to pass `categoryName: draft.categoryName ?? ''`; its
+ * replacement `draftToFormValues` (formMapping.ts) omits the field — dropped in
+ * c490428 ("M-7 — no schema-required field can block Submit invisibly") without a
+ * word about it in the commit message.
+ *
+ * Validation is unaffected: `categoryName` is `.optional()` in `detailSchema`
+ * (schema.ts:26) and the `superRefine` never reads it, so an absent value cannot
+ * produce an issue and cannot change any row or `allComplete`. It is recorded
+ * because it was a silent behaviour change, not because it is a bug — if anything
+ * ever starts requiring `categoryName`, this is the line that explains why the
+ * form values do not carry it.
+ */
 describe('required-status: no invisible Submit blockers', () => {
   it('sanity: a complete draft is submittable', () => {
     expect(getDraftRequiredStatus(validDraft()).allComplete).toBe(true);
@@ -135,6 +151,22 @@ describe('required-status: no invisible Submit blockers', () => {
     expect(status.rows.category).toBe(false);
   });
 
+  /**
+   * KNOWN LIMIT — do not over-trust this guard.
+   *
+   * It enumerates the issue paths of `detailSchema.safeParse({})`, which returns
+   * only the 14 BASE-OBJECT fields. Zod does not run `superRefine` when the base
+   * parse fails, so the three paths that are required CONDITIONALLY —
+   * `pricePerUnit` (required only when priceFormat === 'buyNow'),
+   * `parentCategoryId` and `customSubcategory` (required only when categoryId is
+   * the OTHER sentinel) — never appear in `paths` at all. They are in ROW_MAPPED
+   * above because a human put them there, not because this case proved it.
+   *
+   * So: a field made conditionally required via a NEW `superRefine` branch will
+   * NOT trip this guard. It needs its own `rowForPath` mapping plus its own
+   * explicit case — the way "Other with no typed brand" (above) covers the
+   * customSubcategory branch. If you add a superRefine rule, add a test with it.
+   */
   it('every path detailSchema can require is either a row or a defaulted field', () => {
     const parsed = detailSchema.safeParse({});
     expect(parsed.success).toBe(false);
@@ -217,6 +249,44 @@ describe('required-status: no invisible Submit blockers', () => {
     // The seller's own values survive untouched.
     expect(patched.title).toBe(junk.title);
     expect(patched.pricePerUnit).toBe(junk.pricePerUnit);
+  });
+
+  /**
+   * S5.2 location/country parity, decided deliberately (2026-08-18). The two
+   * directions are NOT symmetric:
+   *   SHORT countries -> padded. Adding an empty slot invents nothing and is what
+   *     schema.ts:107-113 needs, so the repair is safe and silent.
+   *   LONG countries  -> kept. Truncating silently destroyed a country the seller
+   *     had typed and left the draft green; `locationCountries` is row-mapped, and
+   *     row-mapped fields are never silently rewritten here. See the reasoning
+   *     block at the `locationCountries` line in `formMapping.ts`.
+   */
+  it('pads a SHORT locationCountries array up to one slot per location row', () => {
+    const padded = coerceDraftDefaults(
+      validDraft({ locations: ['Taipei', 'Osaka'], locationCountries: ['Taiwan'] }),
+    );
+    expect(padded.locationCountries).toEqual(['Taiwan', '']);
+    // A missing country is optional per row, so padding leaves the draft valid.
+    expect(getDraftRequiredStatus(padded).allComplete).toBe(true);
+  });
+
+  it('keeps SURPLUS countries and turns the Location row red instead', () => {
+    // How this happens: a location row was dropped without its country — a
+    // resumed server draft (hydrateScanDraftFromPayload casts the blob unchecked)
+    // or an older build.
+    const surplus = coerceDraftDefaults(
+      validDraft({ locations: ['Taipei'], locationCountries: ['Taiwan', 'Japan'] }),
+    );
+    // Not dropped: 'Japan' is the seller's own typing, not ours to delete.
+    expect(surplus.locationCountries).toEqual(['Taiwan', 'Japan']);
+    // ...and not silent either — parity fails, and it fails onto a VISIBLE row,
+    // which LocationCard renders (max(locations, countries) rows) so the seller
+    // can fill the empty address or remove the row.
+    const status = getDraftRequiredStatus(surplus);
+    expect(status.rows.location).toBe(false);
+    expect(status.allComplete).toBe(false);
+    // The surplus must neither grow nor shrink on a second pass.
+    expect(coerceDraftDefaults(surplus)).toEqual(surplus);
   });
 
   it('coerceDraftDefaults is idempotent and never rewrites a seller field', () => {

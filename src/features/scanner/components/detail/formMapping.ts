@@ -108,8 +108,28 @@ export function coerceDraftDefaults(draft: DraftItem): DraftItem {
         ? Math.floor(draft.quantity)
         : 1,
     locations,
-    // schema.ts:107-113 requires one country slot per location row.
-    locationCountries: locations.map((_, i) => countriesRaw[i] ?? ''),
+    // schema.ts:107-113 requires one country slot per location row, so a SHORT
+    // countries array is PADDED — a pure repair that invents nothing.
+    //
+    // A LONG one is deliberately NOT truncated (2026-08-18). The old
+    // `locations.map(...)` did truncate, which silently destroyed a country the
+    // seller had typed AND left the draft reading green. `locationCountries` is
+    // row-mapped (requiredStatus.rowForPath -> 'location'), and this function's
+    // contract for row-mapped fields is that they are never silently rewritten —
+    // an empty title stays empty so the seller is asked for it. Surplus countries
+    // get the same treatment: they survive, the parity check fails, and the
+    // Location row goes red so the seller is TOLD. It is also fixable, not a dead
+    // end: LocationCard's draft variant renders
+    // `max(locations.length, locationCountries.length, 1)` rows
+    // (LocationCard.tsx:173), so the orphaned country appears as a row with an
+    // empty address the seller can fill or remove (removeRow splices both
+    // arrays). Nothing downstream widens either — every submit consumer reads
+    // `locationCountries[0]` only (buildFormData.ts:196/:283,
+    // useCreateListing.ts:47, submitGroupedListings.ts:119).
+    locationCountries:
+      countriesRaw.length > locations.length
+        ? [...countriesRaw]
+        : locations.map((_, i) => countriesRaw[i] ?? ''),
     grade: GRADES.includes(draft.grade) ? draft.grade : 'A',
     // Accepts all four canonical values and repairs anything else. '101lab' is
     // this app's own legacy lenient fallback (scanDraftStore.ts:211-212).
