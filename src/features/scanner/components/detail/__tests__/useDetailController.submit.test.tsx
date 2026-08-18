@@ -182,6 +182,14 @@ describe('useDetailController — the zero-photos guard on the valid path (M-9)'
     expect(scrollToRow).toHaveBeenCalledWith('photos');
   });
 
+  /**
+   * NOTE FOR PHASE 4 (integration doc C4): the routing gate goes in this
+   * controller as a `missingRouting()` guard beside `missingPhotos()`, so it will
+   * make THIS test fail — `validDraft()` carries no resolved routing field. That
+   * failure is the point: fix it by adding the field to the fixture and adding a
+   * sibling case for "routing unresolved does not reach createListing", never by
+   * loosening the assertion.
+   */
   it('a complete draft still submits', async () => {
     const { result } = mount(validDraft());
     await act(async () => {
