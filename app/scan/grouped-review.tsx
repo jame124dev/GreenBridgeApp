@@ -22,6 +22,7 @@ import {
   getDraftRequiredStatus,
   type RequiredRowKey,
 } from '@/features/scanner/requiredStatus';
+import { useRequiredRowLabel } from '@/features/scanner/requiredRowLabels';
 import { useSubmitGroupedListing } from '@/features/scanner/useSubmitGroupedListing';
 import {
   SellerApprovalNotice,
@@ -513,6 +514,7 @@ function HubRow({
   disabled: boolean;
 }) {
   const { t } = useTranslation();
+  const labelForRow = useRequiredRowLabel();
   const hero = item.photos[0]?.uri;
   const title =
     item.title?.trim() ||
@@ -539,33 +541,7 @@ function HubRow({
   // ship UPPERCASE in en.json) then lowercase to keep the chip sentence-case.
   // Cap at 2 names + "+N more" when longer.
   const missingLabel = (() => {
-    const labelForKey = (k: RequiredRowKey): string => {
-      switch (k) {
-        case 'photos':
-          return t('mobile.detail.colPhotos', { defaultValue: 'Photos' });
-        case 'title':
-          return t('mobile.detail.sectionTitle', { defaultValue: 'Title' });
-        case 'description':
-          return t('mobile.detail.sectionDescription', {
-            defaultValue: 'Description',
-          });
-        case 'category':
-          return t('mobile.detail.sectionCategory', {
-            defaultValue: 'Category',
-          });
-        case 'condition':
-          return t('mobile.detail.sectionCondition', {
-            defaultValue: 'Condition',
-          });
-        case 'price':
-          return t('mobile.detail.sectionPrice', { defaultValue: 'Price' });
-        case 'location':
-          return t('mobile.detail.sectionLocation', {
-            defaultValue: 'Location',
-          });
-      }
-    };
-    const names = missingKeys.map((k) => labelForKey(k).toLowerCase());
+    const names = missingKeys.map((k) => labelForRow(k).toLowerCase());
     const head = names.slice(0, 2).join(', ');
     const extra = names.length - 2;
     const preview = extra > 0 ? `${head} +${extra} more` : head;

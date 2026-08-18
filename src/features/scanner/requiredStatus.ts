@@ -1,6 +1,7 @@
 import type { DraftItem } from '@/stores/scanDraftStore';
 
 import { detailSchema, type DetailFormInput } from './schema';
+import { draftToFormValues } from './components/detail/formMapping';
 
 // Single source of truth for the Detail screen's "what's still required" state.
 // Both the REQUIRED bar and the Submit-disabled gate read from here, so the bar
@@ -36,10 +37,14 @@ export type RequiredStatus = {
   allComplete: boolean;
 };
 
-// Map a zod issue's top-level path to a visible bar row. Fields without a row
-// (operationStatus, quantity) return null — they still gate `allComplete` via
-// the full schema parse below, they just aren't surfaced as their own row.
-function rowForPath(path: PropertyKey[]): RequiredRowKey | null {
+// Map a zod issue's top-level path to a visible bar row. The fields that still
+// return null (operationStatus, priceFormat, priceCurrency, quantity, grade,
+// marketplace, installation, listingDurationDays) have no row BY DESIGN:
+// `formMapping.draftToFormValues` guarantees each of them a schema-valid value
+// before the form mounts, so they cannot block Submit invisibly. If you add a
+// required field to detailSchema it needs a row HERE or a default THERE —
+// `__tests__/requiredStatusGap.test.ts` enforces exactly that.
+export function rowForPath(path: PropertyKey[]): RequiredRowKey | null {
   switch (path[0]) {
     case 'title':
       return 'title';
@@ -56,50 +61,15 @@ function rowForPath(path: PropertyKey[]): RequiredRowKey | null {
     case 'locations':
     case 'locationCountries':
       return 'location';
+    // "Other (type brand)": schema.ts:74-92 blocks Submit on these two when
+    // categoryId is the OTHER sentinel. Both are user-reachable (pick Other,
+    // leave the brand box empty) and belong to the visible Category row.
+    case 'parentCategoryId':
+    case 'customSubcategory':
+      return 'category';
     default:
       return null;
   }
-}
-
-/**
- * W6 (scan_v3) — DraftItem → DetailFormInput projection so the same required-
- * status engine can be queried from the grouped-review summary (which works
- * with `DraftItem[]`) without duplicating the schema's validation logic. Keeps
- * `getRequiredStatus` as the single source of truth.
- */
-function draftToFormInput(draft: DraftItem): DetailFormInput {
-  return {
-    title: draft.title,
-    description: draft.description,
-    categoryId: draft.categoryId ?? '',
-    categoryName: draft.categoryName ?? '',
-    // "Other (type brand)" fields — must be projected too, else the schema's
-    // superRefine (which requires customSubcategory when categoryId is the
-    // Other sentinel) sees them as undefined and falsely blocks every valid
-    // grouped "Other" item. Mirrors formMapping.draftToFormValues.
-    customSubcategory: draft.customSubcategory ?? '',
-    parentCategoryId: draft.parentCategoryId ?? '',
-    parentCategoryName: draft.parentCategoryName ?? '',
-    condition: draft.condition,
-    operationStatus: draft.operationStatus,
-    priceFormat: draft.priceFormat,
-    pricePerUnit: draft.pricePerUnit,
-    priceCurrency: draft.priceCurrency,
-    quantity: draft.quantity,
-    locations: draft.locations,
-    locationCountries: draft.locationCountries,
-    brand: draft.brand,
-    model: draft.model,
-    year: draft.year,
-    weight: draft.weight,
-    dimensions: draft.dimensions,
-    co2Emissions: draft.co2Emissions,
-    grade: draft.grade,
-    serialNumber: draft.serialNumber,
-    marketplace: draft.marketplace,
-    installation: draft.installation,
-    listingDurationDays: draft.listingDurationDays,
-  };
 }
 
 /**
@@ -108,7 +78,7 @@ function draftToFormInput(draft: DraftItem): DetailFormInput {
  * per-item `quickStatus: 'verified' | 'has_issues'` badges + the submit gate.
  */
 export function getDraftRequiredStatus(draft: DraftItem): RequiredStatus {
-  return getRequiredStatus(draftToFormInput(draft), draft.photos?.length ?? 0);
+  return getRequiredStatus(draftToFormValues(draft), draft.photos?.length ?? 0);
 }
 
 export function getRequiredStatus(
