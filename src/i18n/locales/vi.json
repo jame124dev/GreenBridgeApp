@@ -3805,6 +3805,23 @@
       "selectThumb": "Chọn ảnh {{idx}}",
       "viewPhoto": "Xem ảnh {{idx}} trong {{total}}",
       "profitIntelligence": "Phân tích lợi nhuận",
+      "profitAiEstimate": "Ước tính bằng AI — hãy kiểm tra trước khi đăng",
+      "profitNoEstimate": "Chưa có ước tính giá",
+      "profitNoEstimateHint": "AI không trả về khoảng giá bán lại cho mặt hàng này. Hãy tự đặt giá bên dưới.",
+      "marketplaceOption": {
+        "101lab": {
+          "description": "Thiết bị phòng thí nghiệm và khoa học"
+        },
+        "101machine": {
+          "description": "Máy móc công nghiệp và sản xuất"
+        },
+        "101it": {
+          "description": "Thiết bị IT và điện tử"
+        },
+        "101recycle": {
+          "description": "Phế liệu, vật tư dư và vật liệu tái chế"
+        }
+      },
       "scrapValueBaseline": "Giá trị phế liệu cơ bản",
       "potentialProfit": "Lợi nhuận tiềm năng",
       "profitInsight": "Bán trên {{marketplace}} có thể giúp bạn kiếm thêm {{percent}}% so với chỉ bán phế liệu.",

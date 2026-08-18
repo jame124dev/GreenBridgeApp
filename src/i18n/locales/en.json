@@ -3803,6 +3803,23 @@
       "selectThumb": "Select photo {{idx}}",
       "viewPhoto": "View photo {{idx}} of {{total}}",
       "profitIntelligence": "Profit intelligence",
+      "profitAiEstimate": "AI estimate — verify before publishing",
+      "profitNoEstimate": "No price estimate",
+      "profitNoEstimateHint": "The AI did not return a resale range for this item. Set your own price below.",
+      "marketplaceOption": {
+        "101lab": {
+          "description": "Lab & scientific equipment"
+        },
+        "101machine": {
+          "description": "Industrial & production machinery"
+        },
+        "101it": {
+          "description": "IT hardware & electronics"
+        },
+        "101recycle": {
+          "description": "Scrap, surplus & recyclable materials"
+        }
+      },
       "scrapValueBaseline": "Scrap value baseline",
       "potentialProfit": "Potential profit",
       "profitInsight": "Selling on {{marketplace}} could earn you {{percent}}% more than scrap value alone.",

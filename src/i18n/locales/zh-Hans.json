@@ -3789,6 +3789,23 @@
       "selectThumb": "选择照片 {{idx}}",
       "viewPhoto": "查看第 {{idx}} 张，共 {{total}} 张",
       "profitIntelligence": "获利分析",
+      "profitAiEstimate": "AI 估算 — 发布前请核实",
+      "profitNoEstimate": "暂无价格估算",
+      "profitNoEstimateHint": "AI 未返回该物品的转售价格区间。请在下方自行设定价格。",
+      "marketplaceOption": {
+        "101lab": {
+          "description": "实验室与科研设备"
+        },
+        "101machine": {
+          "description": "工业与生产机械"
+        },
+        "101it": {
+          "description": "IT 硬件与电子设备"
+        },
+        "101recycle": {
+          "description": "废料、剩余物资与回收材料"
+        }
+      },
       "scrapValueBaseline": "废料价值基准",
       "potentialProfit": "潜在获利",
       "profitInsight": "在 {{marketplace}} 上架可比直接卖废料多赚 {{percent}}%。",

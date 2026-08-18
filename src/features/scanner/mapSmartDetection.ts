@@ -111,8 +111,8 @@ function coerceTierPrice(value: unknown): AiPriceTier | null {
 
 /**
  * Build the AiPrices bundle that powers ProfitIntelligenceCard. Returns null
- * when the AI didn't return any tier so the card can fall back to its static
- * stub (rather than render a half-empty insight). Currency falls back to USD
+ * when the AI didn't return any tier; the card then renders its honest empty
+ * state ("No price estimate") instead of figures. Currency falls back to USD
  * since the backend default is USD; only "TWD" is accepted as an override.
  */
 export function pickAiPrices(

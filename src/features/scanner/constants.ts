@@ -37,14 +37,24 @@ export const DEFAULT_OPERATION_STATUS = ['working'];
 // Order + labels mirror web (`ReviewSubmitScreen.tsx#MARKETPLACES`) so the
 // pill row is visually identical across platforms: 101LAB → 101MACHINE →
 // 101IT → 101RECYCLE, all caps, no spaces.
+//
+// M-10: `description` is the one-line "what belongs here" hint. After the
+// marketplace unlock a seller is shown four codenames with no explanation, while
+// the lower-stakes `installation` field has shipped a per-option hint since S5.1
+// (INSTALLATION_OPTIONS below). These strings are the ENGLISH FALLBACK; the
+// rendered value is `mobile.detail.marketplaceOption.<value>.description`, which
+// ships in all six locales. M-3's marketplace sheet reads the same field — this
+// is the ONE home for marketplace description copy (integration doc C7), so do
+// not add a second `hint`/`hintKey` field beside it.
 export const MARKETPLACE_OPTIONS: {
   value: '101lab' | '101machine' | '101recycle' | '101it';
   label: string;
+  description: string;
 }[] = [
-  { value: '101lab',     label: '101LAB' },
-  { value: '101machine', label: '101MACHINE' },
-  { value: '101it',      label: '101IT' },
-  { value: '101recycle', label: '101RECYCLE' },
+  { value: '101lab',     label: '101LAB',     description: 'Lab & scientific equipment' },
+  { value: '101machine', label: '101MACHINE', description: 'Industrial & production machinery' },
+  { value: '101it',      label: '101IT',      description: 'IT hardware & electronics' },
+  { value: '101recycle', label: '101RECYCLE', description: 'Scrap, surplus & recyclable materials' },
 ];
 
 export const INSTALLATION_OPTIONS: {

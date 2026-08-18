@@ -3724,6 +3724,23 @@
       "selectThumb": "写真を選択 {{idx}}",
       "viewPhoto": "写真 {{idx}}/{{total}} を表示",
       "profitIntelligence": "収益インテリジェンス",
+      "profitAiEstimate": "AI推定 — 公開前にご確認ください",
+      "profitNoEstimate": "価格の推定はありません",
+      "profitNoEstimateHint": "この商品の再販価格帯はAIから返されませんでした。下で価格を設定してください。",
+      "marketplaceOption": {
+        "101lab": {
+          "description": "研究室・科学機器"
+        },
+        "101machine": {
+          "description": "産業・生産機械"
+        },
+        "101it": {
+          "description": "IT機器・電子機器"
+        },
+        "101recycle": {
+          "description": "スクラップ・余剰品・リサイクル材"
+        }
+      },
       "scrapValueBaseline": "廃材価値の基準",
       "potentialProfit": "潜在的な利益",
       "profitInsight": "{{marketplace}} で出品すれば、廃材として売るより {{percent}}% 多く稼げます。",

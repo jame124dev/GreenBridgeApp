@@ -4,23 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { Info, TrendingUp } from 'lucide-react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import { MARKETPLACE_OPTIONS } from '@/features/scanner/constants';
 import { convertPrice, formatCurrency } from '@/features/scanner/currencyFx';
 import type { DetailFormInput } from '@/features/scanner/schema';
 import type { AiPriceTier, AiPrices } from '@/features/scanner/smartDetectionTypes';
 import type { SupportedCurrency } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
-
-// Static fallbacks for the case where the AI didn't return tier prices. Both
-// are USD canonical — `formatCurrency` converts to the current pill at render
-// time so toggling USD↔TWD updates the card in-place. Once we trust the API
-// always returns tier prices we can drop these.
-const STATIC_SCRAP_BASELINE_USD = 12_500;
-const STATIC_POTENTIAL_PROFIT_USD = 4_200;
-const STATIC_PROFIT_PERCENT = 33;
-// AI-suggested marketplace fallback. The card prefers the seller's current
-// `marketplace` choice when no AI hint is available.
-const STATIC_SUGGESTED_MARKETPLACE = '101machine' as const;
 
 const ECO_TEAL = '#00B289';
 const ECO_TEAL_SURFACE = '#E6F7F1';
@@ -28,11 +16,11 @@ const MONO_FONT = 'JetBrainsMono_400Regular';
 
 type Props = {
   /**
-   * AI-derived tier prices from `mapSmartDetection` / `mapAnalyze`. When
-   * provided AND the bundle has both `scrap` and `used`, the card computes
-   * scrap baseline / potential profit / percent uplift live. Missing or
-   * incomplete bundles fall back to the static stub so the card never
-   * renders half-empty.
+   * AI-derived tier prices from `mapSmartDetection` / `mapAnalyze`. When the
+   * bundle carries BOTH `scrap` and `used`, the card computes the scrap baseline
+   * and the potential-profit range live. Anything else — null, or only one of the
+   * two tiers — renders the card's "No price estimate" state (M-5). There is no
+   * fabricated-fallback path any more.
    */
   aiPrices?: AiPrices | null;
 };
@@ -40,79 +28,50 @@ type Props = {
 type DerivedFigures = {
   /** Canonical USD scrap-value range for display. min===max for point values. */
   scrapUsd: AiPriceTier;
-  /** Canonical USD potential-profit range (sell-on-marketplace − scrap). */
+  /** Canonical USD potential-profit range (resale − scrap). */
   profitUsd: AiPriceTier;
-  /** Integer percent uplift over scrap (midpoint-based). Capped at 999. */
-  percent: number;
-  /** Marks the card with the "AI" badge in the header. */
-  fromAi: boolean;
 };
 
-/** Midpoint of a price tier — used for percent calculations. */
-function midpoint(t: AiPriceTier): number {
-  return (t.min + t.max) / 2;
-}
-
 /**
- * Compute the USD-canonical figures the card displays. Pulls from the AI
- * bundle when available; falls back to the static stub. Ranges are preserved
- * end-to-end so the card shows "$5,000 – $10,000" when the AI is uncertain,
- * and collapses to a single figure when the AI returns a point estimate. The
- * percent uplift uses midpoints to keep the insight sentence tidy (one
- * number rather than a range).
+ * Compute the USD-canonical figures the card displays, or NULL when the AI did
+ * not return both a scrap and a used tier.
+ *
+ * M-5: there is no fabricated fallback any more. The old one rendered
+ * $12,500 / $4,200 / 33% — three numbers nobody had measured — with the AI badge
+ * hidden, so it read as analysis (SCAN_FLOW_BACKEND.md §3, MULTI_MARKETPLACE_PLAN
+ * §1 item 3). Missing tiers now produce an honest empty state.
+ *
+ * The percent uplift is gone too, and not because of a rendering bug: it was
+ * `round(profitMid / scrapMid × 100)` capped at 999, and over 72 real DEV
+ * responses the MEDIAN was 999 with 45/72 (63%) hitting the cap
+ * (SCAN_FLOW_BACKEND.md:389). A number that is usually its own display ceiling is
+ * not information. It comes back when the scrap figure is grounded in something
+ * other than the model's guess — a separate project (plan §9).
  */
-function deriveFigures(aiPrices: AiPrices | null | undefined): DerivedFigures {
-  // Require BOTH scrap and used to derive — used-only or scrap-only can't
-  // power a "you'd make N% more" claim. Fall back to static stub otherwise.
-  if (aiPrices && aiPrices.scrap != null && aiPrices.used != null) {
-    const scrapSrc = aiPrices.scrap;
-    const usedSrc = aiPrices.used;
-    // Normalize the source currency to USD canonical so the rest of the card
-    // (which formats through the current pill) stays consistent regardless
-    // of AI source unit.
-    const scrapUsd: AiPriceTier = {
-      min: convertPrice(scrapSrc.min, aiPrices.currency, 'USD'),
-      max: convertPrice(scrapSrc.max, aiPrices.currency, 'USD'),
-    };
-    const usedUsd: AiPriceTier = {
-      min: convertPrice(usedSrc.min, aiPrices.currency, 'USD'),
-      max: convertPrice(usedSrc.max, aiPrices.currency, 'USD'),
-    };
-    // Profit range bounds: lowest possible profit is `used.min - scrap.max`
-    // (worst-case marketplace, best-case scrap); highest possible profit is
-    // `used.max - scrap.min`. Floor at 0 so the bottom never reads negative
-    // — a "potential profit" can't be a loss in the card's framing.
-    const profitUsd: AiPriceTier = {
+function deriveFigures(aiPrices: AiPrices | null | undefined): DerivedFigures | null {
+  // Require BOTH scrap and used: a used-only or scrap-only bundle cannot produce
+  // a profit range at all.
+  if (!aiPrices || aiPrices.scrap == null || aiPrices.used == null) return null;
+  const scrapSrc = aiPrices.scrap;
+  const usedSrc = aiPrices.used;
+  // Normalize to USD canonical so the rest of the card (which formats through the
+  // current currency pill) stays consistent regardless of the AI's source unit.
+  const scrapUsd: AiPriceTier = {
+    min: convertPrice(scrapSrc.min, aiPrices.currency, 'USD'),
+    max: convertPrice(scrapSrc.max, aiPrices.currency, 'USD'),
+  };
+  const usedUsd: AiPriceTier = {
+    min: convertPrice(usedSrc.min, aiPrices.currency, 'USD'),
+    max: convertPrice(usedSrc.max, aiPrices.currency, 'USD'),
+  };
+  // Lowest possible profit is `used.min - scrap.max`, highest is
+  // `used.max - scrap.min`. Floor at 0 so the bottom never reads as a loss.
+  return {
+    scrapUsd,
+    profitUsd: {
       min: Math.max(0, usedUsd.min - scrapUsd.max),
       max: Math.max(0, usedUsd.max - scrapUsd.min),
-    };
-    // Midpoint percent — one number for the insight copy, ignoring the
-    // range so the sentence reads naturally.
-    const scrapMid = midpoint(scrapUsd);
-    const profitMid = midpoint(profitUsd);
-    const rawPct = scrapMid > 0 ? Math.round((profitMid / scrapMid) * 100) : 0;
-    return {
-      scrapUsd,
-      profitUsd,
-      percent: Math.min(rawPct, 999),
-      fromAi: true,
-    };
-  }
-  // Static stub — wrap the point values in a tier so the formatting helper
-  // doesn't need to branch on shape.
-  const stubScrap: AiPriceTier = {
-    min: STATIC_SCRAP_BASELINE_USD,
-    max: STATIC_SCRAP_BASELINE_USD,
-  };
-  const stubProfit: AiPriceTier = {
-    min: STATIC_POTENTIAL_PROFIT_USD,
-    max: STATIC_POTENTIAL_PROFIT_USD,
-  };
-  return {
-    scrapUsd: stubScrap,
-    profitUsd: stubProfit,
-    percent: STATIC_PROFIT_PERCENT,
-    fromAi: false,
+    },
   };
 }
 
@@ -134,28 +93,28 @@ function formatTier(
 
 /**
  * Profit Intelligence card — anchors the seller's pricing decision on the
- * AI-derived scrap floor + potential uplift on the recommended marketplace.
- * Renders above PricingCard in detail/grouped-edit. When the AI didn't
- * return tier prices, falls back to a static stub so the card still
- * communicates the concept rather than disappearing.
+ * AI-derived scrap floor + the potential uplift over scrapping the item.
+ * Renders above PricingCard in detail/grouped-edit. When the AI didn't return
+ * tier prices the card says so ("No price estimate") and points the seller at
+ * PricingCard below; it no longer invents figures to fill the space (M-5).
+ *
+ * The card does NOT read `marketplace`. It used to, to render an
+ * "AI-suggested marketplace" that was really the seller's own current choice —
+ * circular the moment the AI can write that field.
  */
 export function ProfitIntelligenceCard({ aiPrices }: Props) {
   const { t } = useTranslation();
   const { watch } = useFormContext<DetailFormInput>();
   const priceCurrency = watch('priceCurrency');
-  const marketplace = watch('marketplace');
 
-  const { scrapUsd, profitUsd, percent, fromAi } = deriveFigures(aiPrices);
+  const figures = deriveFigures(aiPrices);
 
-  const scrapDisplay = formatTier(scrapUsd, priceCurrency);
-  const profitDisplay = formatTier(profitUsd, priceCurrency, { signed: true });
-
-  // Prefer the seller's current marketplace selection over the static
-  // suggestion — the card stays in sync as they tap a different pill.
-  const suggestedKey = marketplace ?? STATIC_SUGGESTED_MARKETPLACE;
-  const suggestedLabel =
-    MARKETPLACE_OPTIONS.find((m) => m.value === suggestedKey)?.label ??
-    String(suggestedKey).toUpperCase();
+  // Guarded because `const` cannot be declared inside JSX; `figures` is narrowed
+  // to non-null in the branch that renders them, so '' is never displayed.
+  const scrapDisplay = figures ? formatTier(figures.scrapUsd, priceCurrency) : '';
+  const profitDisplay = figures
+    ? formatTier(figures.profitUsd, priceCurrency, { signed: true })
+    : '';
 
   return (
     <View
@@ -190,7 +149,7 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
             defaultValue: 'Profit intelligence',
           })}
         </Text>
-        {fromAi ? (
+        {figures ? (
           <View
             className="flex-row items-center bg-brand-primary-accent px-1.5 rounded-xs"
             style={{ gap: 2, paddingVertical: 1 }}
@@ -203,83 +162,105 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
         ) : null}
       </View>
 
-      {/* Stacked stats — side-by-side caused overlap at TWD scale where the
-          right column's "+NT$ 132,300" with the up-arrow ran into the left
-          column's "NT$ 393,750". Vertical layout is robust at any amount. */}
-      <View style={{ gap: 12 }}>
+      {figures === null ? (
+        /* Honest empty state (UX_DESIGN_RULES "Empty states": never a blank or a
+           fabricated panel — say what happened and where to go next). The AI
+           returned no scrap/used pair for this item, so there is nothing to show
+           and PricingCard directly below is where the seller sets the number. */
         <View style={{ gap: 4 }}>
-          <Text
-            style={{
-              fontFamily: MONO_FONT,
-              fontSize: 11,
-              lineHeight: 14,
-              letterSpacing: 0.6,
-              color: brand.textMuted,
-              textTransform: 'uppercase',
-            }}
-          >
-            {t('mobile.detail.scrapValueBaseline', {
-              defaultValue: 'Scrap value baseline',
-            })}
+          <Text className="font-semi text-2xl text-brand-foreground">
+            {t('mobile.detail.profitNoEstimate', { defaultValue: 'No price estimate' })}
           </Text>
-          <Text
-            className="font-bold"
-            style={{
-              fontSize: 22,
-              lineHeight: 28,
-              color: brand.foreground,
-            }}
-            numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-          >
-            {scrapDisplay}
+          <Text className="font-sans text-base text-brand-text-muted" style={{ lineHeight: 18 }}>
+            {t('mobile.detail.profitNoEstimateHint', {
+              defaultValue:
+                'The AI did not return a resale range for this item. Set your own price below.',
+            })}
           </Text>
         </View>
-
-        <View
-          style={{
-            height: 1,
-            backgroundColor: brand.border,
-            marginVertical: 2,
-          }}
-        />
-
-        <View style={{ gap: 4 }}>
-          <Text
-            style={{
-              fontFamily: MONO_FONT,
-              fontSize: 11,
-              lineHeight: 14,
-              letterSpacing: 0.6,
-              color: brand.textMuted,
-              textTransform: 'uppercase',
-            }}
-          >
-            {t('mobile.detail.potentialProfit', {
-              defaultValue: 'Potential profit',
-            })}
-          </Text>
-          <View className="flex-row items-center" style={{ gap: 6 }}>
-            <TrendingUp size={20} color={ECO_TEAL} strokeWidth={2.5} />
+      ) : (
+        /* Stacked stats — side-by-side caused overlap at TWD scale where the
+           right column's "+NT$ 132,300" with the up-arrow ran into the left
+           column's "NT$ 393,750". Vertical layout is robust at any amount. */
+        <View style={{ gap: 12 }}>
+          <View style={{ gap: 4 }}>
             <Text
-              className="font-bold flex-1"
+              style={{
+                fontFamily: MONO_FONT,
+                fontSize: 11,
+                lineHeight: 14,
+                letterSpacing: 0.6,
+                color: brand.textMuted,
+                textTransform: 'uppercase',
+              }}
+            >
+              {t('mobile.detail.scrapValueBaseline', {
+                defaultValue: 'Scrap value baseline',
+              })}
+            </Text>
+            <Text
+              className="font-bold"
               style={{
                 fontSize: 22,
                 lineHeight: 28,
-                color: ECO_TEAL,
+                color: brand.foreground,
               }}
               numberOfLines={2}
               adjustsFontSizeToFit
               minimumFontScale={0.75}
             >
-              {profitDisplay}
+              {scrapDisplay}
             </Text>
           </View>
-        </View>
-      </View>
 
-      {/* Info row with the AI-suggested marketplace + percent uplift */}
+          <View
+            style={{
+              height: 1,
+              backgroundColor: brand.border,
+              marginVertical: 2,
+            }}
+          />
+
+          <View style={{ gap: 4 }}>
+            <Text
+              style={{
+                fontFamily: MONO_FONT,
+                fontSize: 11,
+                lineHeight: 14,
+                letterSpacing: 0.6,
+                color: brand.textMuted,
+                textTransform: 'uppercase',
+              }}
+            >
+              {t('mobile.detail.potentialProfit', {
+                defaultValue: 'Potential profit',
+              })}
+            </Text>
+            <View className="flex-row items-center" style={{ gap: 6 }}>
+              <TrendingUp size={20} color={ECO_TEAL} strokeWidth={2.5} />
+              <Text
+                className="font-bold flex-1"
+                style={{
+                  fontSize: 22,
+                  lineHeight: 28,
+                  color: ECO_TEAL,
+                }}
+                numberOfLines={2}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+              >
+                {profitDisplay}
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* M-5: was "Selling on {{marketplace}} could earn you {{percent}}% more than
+          scrap value alone." Deleted: the percent hit its own 999 cap in 63% of
+          real responses, and `{{marketplace}}` was the seller's own current choice
+          dressed up as an AI suggestion. What is left is the one true thing we can
+          say about these numbers. */}
       <View
         style={{
           flexDirection: 'row',
@@ -300,11 +281,8 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
             color: brand.foreground,
           }}
         >
-          {t('mobile.detail.profitInsight', {
-            defaultValue:
-              'Selling on {{marketplace}} could earn you {{percent}}% more than scrap value alone.',
-            marketplace: suggestedLabel,
-            percent,
+          {t('mobile.detail.profitAiEstimate', {
+            defaultValue: 'AI estimate — verify before publishing',
           })}
         </Text>
       </View>

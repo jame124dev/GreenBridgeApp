@@ -200,7 +200,7 @@ export function CategoryConditionCard() {
         name="categoryId"
         render={({ fieldState }) => (
           <View className="gap-1.5">
-            <FieldLabel text={t('mobile.detail.sectionCategory')} required />
+            <FieldLabel text={t('mobile.detail.sectionCategory')} required ai />
             {categories.isLoading ? (
               <ActivityIndicator color={brand.primary} />
             ) : categories.isError ? (

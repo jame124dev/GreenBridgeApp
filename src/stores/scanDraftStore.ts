@@ -162,8 +162,8 @@ export type DraftItem = {
   listingDurationDays: number;
   /**
    * AI-derived tier prices (scrap floor / used baseline / new ceiling). Powers
-   * the Profit Intelligence card; null when the AI didn't return them and the
-   * card falls back to its static stub.
+   * the Profit Intelligence card; null when the AI didn't return them, and the
+   * card then shows "No price estimate".
    */
   aiPrices: AiPrices | null;
 };
@@ -257,8 +257,8 @@ function emptyDraft(photos: Photo[]): DraftItem {
 /**
  * Lift legacy `aiPrices.scrap = 5000` shape (or any partial bag from a
  * persisted draft) up to the new `{ min, max }` tier shape. Anything we
- * can't recognize → null, and the Profit Intelligence card falls back to
- * its static stub for that draft.
+ * can't recognize → null, and the Profit Intelligence card shows
+ * "No price estimate" for that draft.
  */
 function migrateAiPrices(raw: unknown): AiPrices | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -320,7 +320,7 @@ function migrateDraft(d: DraftItem): DraftItem {
   // `aiPrices` shape changed from `{ scrap: 5000 }` to `{ scrap: { min, max } }`
   // when the backend started returning range strings. Lift any legacy
   // point-number persistence to the tier shape, and null out anything we
-  // can't recognize so the card cleanly falls back to its static stub.
+  // can't recognize so the card cleanly shows "No price estimate".
   const aiPrices = migrateAiPrices(d.aiPrices);
 
   return {

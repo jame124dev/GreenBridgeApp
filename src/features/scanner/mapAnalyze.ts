@@ -54,7 +54,7 @@ export function mapAnalyzeResponse(data: Record<string, unknown>): AiResult {
 
   // ProfitIntelligenceCard tier prices (scrap/used/new). The analyze endpoint
   // returns the same shape as smart-detect, so share the parser. Null when
-  // the AI didn't include `prices` — the card falls back to its static stub.
+  // the AI didn't include `prices` — the card shows its "no estimate" state.
   const aiPrices = pickAiPrices(
     (data as SmartProductData).prices,
     currencyRaw,

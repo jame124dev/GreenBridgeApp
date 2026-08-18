@@ -126,7 +126,7 @@ export type SmartItemFields = {
   /**
    * AI-derived market-tier prices for ProfitIntelligenceCard. Stored as
    * numbers in `currency` units (USD for now per backend default). Null when
-   * the AI didn't return them — the card falls back to a static stub.
+   * the AI didn't return them — the card shows "No price estimate".
    */
   aiPrices: AiPrices | null;
   /** Cosmetic mirror that drives the "✨ AI" badges on Detail. */

@@ -3708,6 +3708,23 @@
       "selectThumb": "เลือกรูปภาพ {{idx}}",
       "viewPhoto": "ดูรูปที่ {{idx}} จาก {{total}}",
       "profitIntelligence": "ข้อมูลกำไร",
+      "profitAiEstimate": "การประมาณโดย AI — ตรวจสอบก่อนเผยแพร่",
+      "profitNoEstimate": "ยังไม่มีการประมาณราคา",
+      "profitNoEstimateHint": "AI ไม่ได้ให้ช่วงราคาขายต่อของสินค้านี้ กรุณาตั้งราคาด้านล่าง",
+      "marketplaceOption": {
+        "101lab": {
+          "description": "อุปกรณ์ห้องปฏิบัติการและวิทยาศาสตร์"
+        },
+        "101machine": {
+          "description": "เครื่องจักรอุตสาหกรรมและการผลิต"
+        },
+        "101it": {
+          "description": "ฮาร์ดแวร์ไอทีและอิเลกทรอนิกส์"
+        },
+        "101recycle": {
+          "description": "เศษวัสดุ ของเหลือใช้ และวัสดุรีไซเคิล"
+        }
+      },
       "scrapValueBaseline": "มูลค่าเศษวัสดุพื้นฐาน",
       "potentialProfit": "กำไรที่อาจได้รับ",
       "profitInsight": "การขายบน {{marketplace}} อาจทำให้คุณได้กำไรมากกว่าการขายเป็นเศษวัสดุ {{percent}}%",
