@@ -260,32 +260,42 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
           scrap value alone." Deleted: the percent hit its own 999 cap in 63% of
           real responses, and `{{marketplace}}` was the seller's own current choice
           dressed up as an AI suggestion. What is left is the one true thing we can
-          say about these numbers. */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          gap: 8,
-          backgroundColor: ECO_TEAL_SURFACE,
-          borderRadius: 8,
-          padding: 12,
-        }}
-      >
-        <Info size={16} color={ECO_TEAL} strokeWidth={2.5} style={{ marginTop: 1 }} />
-        <Text
-          className="flex-1"
+          say about these numbers.
+
+          Gated on `figures` — the disclaimer used to sit OUTSIDE the ternary, so
+          the empty state read "No price estimate" and then, two lines below,
+          "AI estimate — verify before publishing" about an estimate that does not
+          exist. It describes the figures, so it only renders with them. Kept as a
+          separate guard rather than a fragment inside the ternary so the diff is
+          this block and nothing else; the empty state already carries its own
+          next-step line ("Set your own price below"). */}
+      {figures !== null && (
+        <View
           style={{
-            fontFamily: 'Inter_400Regular',
-            fontSize: 13,
-            lineHeight: 18,
-            color: brand.foreground,
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: 8,
+            backgroundColor: ECO_TEAL_SURFACE,
+            borderRadius: 8,
+            padding: 12,
           }}
         >
-          {t('mobile.detail.profitAiEstimate', {
-            defaultValue: 'AI estimate — verify before publishing',
-          })}
-        </Text>
-      </View>
+          <Info size={16} color={ECO_TEAL} strokeWidth={2.5} style={{ marginTop: 1 }} />
+          <Text
+            className="flex-1"
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 13,
+              lineHeight: 18,
+              color: brand.foreground,
+            }}
+          >
+            {t('mobile.detail.profitAiEstimate', {
+              defaultValue: 'AI estimate — verify before publishing',
+            })}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }

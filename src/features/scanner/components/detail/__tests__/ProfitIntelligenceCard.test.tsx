@@ -44,6 +44,13 @@ describe('ProfitIntelligenceCard — honesty (M-5)', () => {
     expect(getByText(/No price estimate/i)).toBeTruthy();
     // ...and no AI badge on content the AI never produced.
     expect(queryByText('AI')).toBeNull();
+    // ...and no disclaimer about an estimate that does not exist. The
+    // `mobile.detail.profitAiEstimate` row used to sit OUTSIDE the `figures`
+    // ternary, so the empty state said "No price estimate" and then, two lines
+    // below, "AI estimate — verify before publishing". The populated case below
+    // asserts the disclaimer IS present; this is the other half of that pair.
+    expect(queryByText(/AI estimate/i)).toBeNull();
+    expect(queryByText(/verify before publishing/i)).toBeNull();
   });
 
   it('never renders a percentage, capped or otherwise', () => {
