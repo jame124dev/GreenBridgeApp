@@ -132,8 +132,13 @@ export function CategoryConditionCard() {
       if (bridged) resolved = bridged;
     }
     // Resolved id is a real leaf option → adopt it.
-    if (categories.data.options.some((o) => o.id === resolved)) {
+    const resolvedOption = categories.data.options.find((o) => o.id === resolved);
+    if (resolvedOption) {
       setValue('categoryId', resolved, { shouldValidate: false });
+      // The bridged id belongs to the CURRENT locale's tree, so the name the AI
+      // sent (an EN one) is now wrong. Re-read it here, or the offline fallback
+      // would show an English leaf name under a zh/ja/th tree.
+      setValue('categoryName', resolvedOption.name ?? '', { shouldValidate: false });
       return;
     }
     // Parent-only result: the AI returned a top-level category with no kept
@@ -149,10 +154,14 @@ export function CategoryConditionCard() {
       setValue('parentCategoryId', String(parent.id), { shouldValidate: false });
       setValue('parentCategoryName', parent.name ?? '', { shouldValidate: false });
       setValue('categoryId', '', { shouldValidate: false });
+      // No leaf any more, so no leaf name: leaving it would let the offline
+      // fallback name a category the form no longer holds.
+      setValue('categoryName', '', { shouldValidate: false });
       return;
     }
-    // Truly stale/unknown id → drop it.
+    // Truly stale/unknown id → drop it, name included.
     setValue('categoryId', '', { shouldValidate: false });
+    setValue('categoryName', '', { shouldValidate: false });
   }, [
     categories.data,
     enCategories.data,
@@ -182,27 +191,73 @@ export function CategoryConditionCard() {
     defaultValue: 'Other (type brand)',
   });
 
-  // What the collapsed row shows. Four states, in priority order:
+  // Names the row can fall back on when the TREE cannot answer — offline, or
+  // during the first fetch. Every path that sets a category also sets these
+  // (processing.tsx patches categoryId + categoryName together from the AI,
+  // `applyPick` below writes both, the hydrate effect above keeps them in step,
+  // and CLEARED_CATEGORY_*_FIELDS clears all of them), so they describe the
+  // CURRENT id rather than a previous one.
+  const watchedCategoryName = watch('categoryName');
+  /** No tree at all: the fetch failed (offline) or has not landed yet. */
+  const treeUnavailable = parents.length === 0;
+
+  // What the collapsed row shows. In priority order:
   //   Other picked → "Parent › Other (type brand)"
-  //   leaf picked  → the flattened label ("Parent › Sub", or the parent's own
-  //                  name on a flat tree)
+  //   leaf picked  → the flattened tree label ("Parent › Sub", or the parent's
+  //                  own name on a flat tree); with no tree, the names the DRAFT
+  //                  carries; with neither, an honest "can't load its name"
   //   parent only  → "Parent › pick a subcategory" — shows what the AI DID
   //                  resolve instead of discarding it, while the empty leaf keeps
   //                  Submit blocked (schema.ts:23)
   //   nothing      → '' (the row renders the "Not set" prompt)
+  //
+  // ⛔ Device pass 2026-08-19: offline this row read "Not set — pick a category"
+  // while a category WAS selected, because only the first of those branches
+  // existed and offline `options` is empty. That is not cosmetic — it invites the
+  // seller to re-pick and lose an answer that would have submitted fine. The
+  // "nothing" branch is deliberately still reachable: replacing the prompt with
+  // "can't load its name" on an EMPTY category would be the same lie reversed.
   const selectedLabel = useMemo(() => {
     if (categoryId === OTHER_SUBCATEGORY_ID) {
       const parentName = watchedParentCategoryName || selectedParent?.name || '';
       return parentName ? `${parentName} › ${otherLabel}` : otherLabel;
     }
-    if (categoryId) return options.find((o) => o.id === categoryId)?.label ?? '';
-    if (selectedParent) {
-      return `${selectedParent.name} › ${t('mobile.detail.categoryPickSubcategory', {
+    if (categoryId) {
+      const fromTree = options.find((o) => o.id === categoryId)?.label;
+      if (fromTree) return fromTree;
+      const leaf = (watchedCategoryName ?? '').trim();
+      const parentName = (watchedParentCategoryName || selectedParent?.name || '').trim();
+      // The guard is what stops a FLAT tree (/machines, /101recycle) rendering
+      // "Metalworking Equipment › Metalworking Equipment": there the parent IS
+      // the leaf, so both names are the same string.
+      if (leaf) return parentName && parentName !== leaf ? `${parentName} › ${leaf}` : leaf;
+      if (treeUnavailable) {
+        return t('mobile.detail.categoryNamesUnavailable', {
+          defaultValue: "Category selected — can't load its name right now",
+        });
+      }
+      // Tree loaded and the id is not in it: genuinely stale. Say nothing and let
+      // the hydrate effect above drop or bridge it.
+      return '';
+    }
+    // Parent-only, tree or no tree.
+    const parentOnly = selectedParent?.name || watchedParentCategoryName || '';
+    if (parentOnly) {
+      return `${parentOnly} › ${t('mobile.detail.categoryPickSubcategory', {
         defaultValue: 'pick a subcategory',
       })}`;
     }
     return '';
-  }, [categoryId, options, selectedParent, watchedParentCategoryName, otherLabel, t]);
+  }, [
+    categoryId,
+    options,
+    selectedParent,
+    watchedCategoryName,
+    watchedParentCategoryName,
+    treeUnavailable,
+    otherLabel,
+    t,
+  ]);
 
   // The ONLY place this card writes the category fields, and it is reachable
   // exclusively from the sheet's own Pressables — i.e. user-initiated. Never
@@ -211,6 +266,18 @@ export function CategoryConditionCard() {
     setValue('categoryId', pick.categoryId, { shouldValidate: true });
     setValue('parentCategoryId', pick.parentCategoryId, { shouldValidate: false });
     setValue('parentCategoryName', pick.parentCategoryName, { shouldValidate: false });
+    // Keep the leaf NAME in step with the leaf id, so the offline fallback in
+    // `selectedLabel` can never show a PREVIOUS pick's name beside a new id.
+    // Safe to read `options` here: a pick is only reachable from the sheet's
+    // rows, which only exist once the tree has loaded. The sentinel has no leaf
+    // name of its own — the parent fields carry its meaning.
+    setValue(
+      'categoryName',
+      pick.categoryId === OTHER_SUBCATEGORY_ID
+        ? ''
+        : options.find((o) => o.id === pick.categoryId)?.name ?? '',
+      { shouldValidate: false },
+    );
     // A real leaf leaves "Other" behind — drop any stale typed brand so it is
     // never submitted (same reason as the old parent-pill and subcategory rows).
     if (pick.categoryId !== OTHER_SUBCATEGORY_ID) {

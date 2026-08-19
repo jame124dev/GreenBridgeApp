@@ -24,6 +24,11 @@ export function emptyDetailDefaults(): DetailFormInput {
     title: '',
     description: '',
     categoryId: '',
+    // Carried on the form since the 2026-08-19 offline fix: it is what the
+    // collapsed category row falls back on when the category TREE cannot be
+    // fetched. `buildDraftPatch` still derives the submitted `categoryName` from
+    // the tree options, so this is a display value, never the submit source.
+    categoryName: '',
     customSubcategory: '',
     parentCategoryId: '',
     parentCategoryName: '',
@@ -166,6 +171,11 @@ export function draftToFormValues(draft: DraftItem): DetailFormInput {
     title: d.title ?? '',
     description: d.description ?? '',
     categoryId: d.categoryId ?? '',
+    // The draft already knows the leaf's name (processing.tsx patches
+    // categoryId + categoryName together from the AI, and buildDraftPatch writes
+    // it on every save), so an OFFLINE form can name the seller's pick without
+    // the category tree. See CategoryConditionCard's selectedLabel.
+    categoryName: d.categoryName ?? '',
     customSubcategory: d.customSubcategory ?? '',
     parentCategoryId: d.parentCategoryId ?? '',
     parentCategoryName: d.parentCategoryName ?? '',

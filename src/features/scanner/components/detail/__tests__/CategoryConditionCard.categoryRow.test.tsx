@@ -204,6 +204,41 @@ describe('the row opens the sheet, and a pick writes the form', () => {
     expect(held.form!.getValues('customSubcategory')).toBe('');
   });
 
+  // The leaf NAME has to move with the leaf ID. It is what the collapsed row
+  // falls back on when the category tree cannot be fetched
+  // (CategoryConditionCard.offlineLabel.test.tsx), so a pick that updates the id
+  // and leaves the name behind would make that fallback show the PREVIOUS pick's
+  // name beside the new id — a worse lie than the "Not set" it replaced.
+  it('writes the leaf NAME too, so the offline label can never go stale', async () => {
+    const { getByText, getByPlaceholderText, held } = renderCard({
+      categoryId: '2019',
+      categoryName: 'Metalworking Equipment',
+      parentCategoryId: '2019',
+      parentCategoryName: 'Metalworking Equipment',
+    });
+    await press(getByText('Metalworking Equipment'));
+    await type(getByPlaceholderText(SEARCH), 'centrif');
+    await press(getByText('Centrifugation'));
+
+    expect(held.form!.getValues('categoryId')).toBe('5578');
+    expect(held.form!.getValues('categoryName')).toBe('Centrifugation');
+  });
+
+  it('clears the leaf NAME when the pick is the Other sentinel', async () => {
+    // Other has no leaf name of its own; the parent fields carry its meaning.
+    const { getByText, held } = renderCard({
+      categoryId: '5578',
+      categoryName: 'Centrifugation',
+      parentCategoryId: '5375',
+      parentCategoryName: 'Lab Infrastructure & Essentials',
+    });
+    await press(getByText('Lab Infrastructure & Essentials › Centrifugation'));
+    await press(getByText('Other (type brand)'));
+
+    expect(held.form!.getValues('categoryId')).toBe(OTHER_SUBCATEGORY_ID);
+    expect(held.form!.getValues('categoryName')).toBe('');
+  });
+
   it('keeps the typed brand when the pick IS Other', async () => {
     const { getByText, held } = renderCard({
       categoryId: '5578',
