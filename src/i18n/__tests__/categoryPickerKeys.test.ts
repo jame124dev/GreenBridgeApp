@@ -44,7 +44,8 @@ const LOCALES = { en, zhHant, zhHans, ja, th, vi };
 describe('category picker i18n', () => {
   for (const [name, dict] of Object.entries(LOCALES)) {
     it(`${name} has all 11 mobile.detail category-picker keys`, () => {
-      const detail = (dict as { mobile?: { detail?: Record<string, unknown> } }).mobile?.detail ?? {};
+      const detail =
+        (dict as unknown as { mobile?: { detail?: Record<string, unknown> } }).mobile?.detail ?? {};
       for (const k of REQUIRED) {
         expect(detail[k]).toBeTruthy();
       }
@@ -56,7 +57,8 @@ describe('category picker i18n', () => {
       // A translator dropping the placeholder does not fail to render — it renders
       // "No category matches" with the query silently missing, and "Loading
       // categories…", which is the generic spinner copy this phase replaced.
-      const detail = (dict as { mobile: { detail: Record<string, string> } }).mobile.detail;
+      const detail = (dict as unknown as { mobile: { detail: Record<string, string> } }).mobile
+        .detail;
       for (const [k, token] of Object.entries(INTERPOLATED)) {
         expect(detail[k]).toContain(token);
       }
@@ -69,8 +71,9 @@ describe('category picker i18n', () => {
     // "Pick a category, then a subcategory" (two steps) while this one is "Search,
     // or browse by group" — so a future copy change to one does not silently move
     // the other.
-    const detail = (en as { mobile: { detail: Record<string, string> } }).mobile.detail;
-    const labEdit = (en as { mobile: { labEdit: Record<string, string> } }).mobile.labEdit;
+    const detail = (en as unknown as { mobile: { detail: Record<string, string> } }).mobile.detail;
+    const labEdit = (en as unknown as { mobile: { labEdit: Record<string, string> } }).mobile
+      .labEdit;
     expect(detail.selectCategorySubtitle).not.toBe(labEdit.selectCategorySubtitle);
   });
 });
