@@ -69,7 +69,17 @@ describe('C4 — the single-mode submit guard', () => {
     expect(src).toContain('const missingRouting = (): boolean => {');
     expect(src).toContain('isRoutingResolved(draftNow)');
     // The call, immediately after the photos guard, inside the VALID path.
-    expect(src).toContain('if (missingPhotos()) return;\n    if (missingRouting()) return;');
+    // REGEX, not a literal two-line string: `useDetailController.ts` is LF
+    // today but `app/_layout.tsx` in this same repo is CRLF, so one
+    // line-ending normalisation pass (a `.gitattributes`, an editor, a
+    // checkout on a differently-configured machine) would flip this file and a
+    // literal \n would stop matching. It fails SAFE — red, not green — but
+    // red-for-the-wrong-reason still costs an afternoon. \r?\n plus \s* pins the
+    // ORDER and the ADJACENCY of the two guards without pinning the bytes
+    // between them.
+    expect(src).toMatch(
+      /if \(missingPhotos\(\)\) return;\r?\n\s*if \(missingRouting\(\)\) return;/,
+    );
     // Phase 5's seam comment must be GONE — leaving it tells the next reader the
     // work is still outstanding.
     expect(src).not.toContain('SEAM FOR PHASE 4');

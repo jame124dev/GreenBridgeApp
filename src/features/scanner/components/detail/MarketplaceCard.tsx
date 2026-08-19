@@ -14,8 +14,13 @@
  * re-opens the hydration race documented in useDetailController.
  *
  * The `description` render that used to live here moved with the picker. Its
- * guard moved too — see `__tests__/marketplaceDescriptionRender.test.tsx`, which
- * now RENDERS the sheet instead of grepping this file's source.
+ * guard moved too — see `__tests__/MarketplaceSheet.test.tsx`, which RENDERS the
+ * sheet and asserts every option's description, plus
+ * `../../__tests__/marketplaceOptions.test.ts`, which pins
+ * `MARKETPLACE_OPTIONS[].description` as the ONE home for that copy and asserts
+ * this file renders nothing. (An earlier docblock named
+ * `__tests__/marketplaceDescriptionRender.test.tsx`; no such file was ever
+ * written — the guard landed under the two names above.)
  *
  * Delete this file and its two mount sites in the review-screen restructure,
  * not here.
