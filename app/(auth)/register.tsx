@@ -39,7 +39,6 @@ import {
   type RegisterCredentialsInput,
 } from '@/features/auth/schema';
 import { spacing } from '@/constants/theme';
-import { IS_CUSTOMER } from '@/lib/flags';
 import { LoginError } from '@/services/auth/login';
 
 const FOREST = '#14452f';
@@ -50,7 +49,7 @@ const HAIRLINE = '#E1E5EC';
 
 // Post-auth landing route — mirrors HOME_ROUTE in login.tsx / _layout.tsx so a
 // brand-new account lands in the right app for this bundle.
-const HOME_ROUTE = IS_CUSTOMER ? '/(lab)/(tabs)/home' : '/(tabs)';
+const HOME_ROUTE = '/(lab)/(tabs)/home';
 
 const STEP_ORDER = ['credentials', 'code'] as const;
 

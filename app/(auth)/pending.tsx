@@ -66,12 +66,11 @@ import { SellerStatusCard } from '@/features/seller/SellerStatusCard';
 import { useSellerUpgradeStatus } from '@/features/seller/useSellerUpgrade';
 import { LoginError, type ApprovalStateExtra } from '@/services/auth/login';
 import { useAuth } from '@/stores/authStore';
-import { IS_CUSTOMER } from '@/lib/flags';
 import { haptics } from '@/lib/haptics';
 
 // Post-auth landing route for this bundle — mirrors HOME_ROUTE in _layout.tsx /
 // login.tsx so "Continue" lands in the right app.
-const HOME_ROUTE = IS_CUSTOMER ? '/(lab)/(tabs)/home' : '/(tabs)';
+const HOME_ROUTE = '/(lab)/(tabs)/home';
 
 // ── brand palette (the app renders light-only — app.config userInterfaceStyle) ──
 const FOREST_DEEP = '#0f3a27';

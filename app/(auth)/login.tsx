@@ -13,7 +13,6 @@ import { Button, Card, Input, LanguageSheet, Screen, Text } from '@/components/u
 import { spacing } from '@/constants/theme';
 import { loginSchema, type LoginInput } from '@/features/auth/schema';
 import { useLogin } from '@/features/auth/useLogin';
-import { IS_CUSTOMER } from '@/lib/flags';
 import { LoginError, type ApprovalStateExtra } from '@/services/auth/login';
 import { toast } from 'sonner-native';
 import { useAuth } from '@/stores/authStore';
@@ -42,7 +41,7 @@ import { getBranding } from '@/theme/branding';
 // so a `router.replace` here leaves the (auth) group at the right destination —
 // otherwise a customer would land on the seller tabs (the AuthGuard can no
 // longer correct it once we're outside the auth group).
-const HOME_ROUTE = IS_CUSTOMER ? '/(lab)/(tabs)/home' : '/(tabs)';
+const HOME_ROUTE = '/(lab)/(tabs)/home';
 
 // Stitch palette (GreenBidz Seller Login Redesign — project 8600847790717829846):
 // authority navy for primary actions, eco-teal as the card accent + footer badge.

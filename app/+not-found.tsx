@@ -2,12 +2,11 @@ import { Link, Stack } from 'expo-router';
 import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { IS_CUSTOMER } from '@/lib/flags';
 
 // Fork the "home" target the same way the rest of the app does — the seller
 // tabs vs the customer (lab) home — instead of always dropping into the seller
 // group.
-const HOME_ROUTE = IS_CUSTOMER ? '/(lab)/(tabs)/home' : '/(tabs)';
+const HOME_ROUTE = '/(lab)/(tabs)/home';
 
 export default function NotFoundScreen() {
   const { t } = useTranslation();

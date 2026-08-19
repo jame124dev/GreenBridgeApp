@@ -44,14 +44,13 @@ import {
 } from '@/features/scanner/routing/supportedMarketplaces';
 import { isSessionExpired } from '@/lib/authSession';
 import { warnMissingEnvInDev } from '@/lib/env';
-import { IS_CUSTOMER } from '@/lib/flags';
 import { queryClient } from '@/lib/queryClient';
 import { initOneSignal, loginOneSignal } from '@/lib/onesignal';
 import { useAuth } from '@/stores/authStore';
 
 // Post-auth home route for this bundle: the customer (lab) app or the seller
 // tabs. Selected once at build time by the EXPO_PUBLIC_USER_TYPE fork.
-const HOME_ROUTE = IS_CUSTOMER ? '/(lab)/(tabs)/home' : '/(tabs)';
+const HOME_ROUTE = '/(lab)/(tabs)/home';
 
 warnMissingEnvInDev();
 
