@@ -4,6 +4,7 @@
 // detail.tsx for S2.1; new field UIs (brand/model/year/grade/specs) land in S2.2.
 
 export { CategoryConditionCard } from './CategoryConditionCard';
+export { CategoryPickerSheet, type CategoryPick } from './CategoryPickerSheet';
 export { DescriptionCard } from './DescriptionCard';
 export { DetailAppBar } from './DetailAppBar';
 export { DetailFooter } from './DetailFooter';

@@ -45,10 +45,18 @@ type SheetProps = {
   snapTo?: string | number;
   /** Max scrollable area height in px. Default 380. */
   maxHeight?: number;
+  /**
+   * Rendered BETWEEN the title block and the scrollable body, so it stays put
+   * while the list scrolls. Added for the category sheet's search field: with 62
+   * leaves under 4 parents, a search box placed as the first CHILD (the
+   * CountryPicker pattern, `CountryPicker.tsx:50-66`) scrolls out of reach after
+   * one flick.
+   */
+  stickyHeader?: React.ReactNode;
   children: React.ReactNode;
 };
 
-export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, children }: SheetProps) {
+export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, stickyHeader, children }: SheetProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   // Swipe-down-to-dismiss. Translate the inner card with the drag; past a
@@ -117,7 +125,20 @@ export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, chil
             {subtitle ? <RNText style={styles.subtitle}>{subtitle}</RNText> : null}
           </View>
 
-          <ScrollView style={{ maxHeight }} showsVerticalScrollIndicator={false}>
+          {stickyHeader}
+
+          <ScrollView
+            style={{ maxHeight }}
+            showsVerticalScrollIndicator={false}
+            // A focused TextInput above the list (stickyHeader, or a first child
+            // as in CountryPicker) otherwise eats the first tap on every row:
+            // ScrollView defaults to keyboardShouldPersistTaps='never', so the
+            // tap is consumed dismissing the keyboard and never reaches
+            // Sheet.Option's onPress — "type `centrif`, tap the row, nothing
+            // happens". "handled", not "always": a tap on empty space still
+            // dismisses the keyboard, a tap on a child still fires.
+            keyboardShouldPersistTaps="handled"
+          >
             {children}
           </ScrollView>
 
@@ -146,7 +167,8 @@ type SheetOptionProps = {
   header?: boolean;
   /** Optional extra style merged onto the (non-header) card container. */
   style?: StyleProp<ViewStyle>;
-  onPress: () => void;
+  /** Omit for a non-interactive row (e.g. a `header` section label). */
+  onPress?: () => void;
 };
 
 Sheet.Option = function SheetOption({
@@ -163,7 +185,10 @@ Sheet.Option = function SheetOption({
     return (
       <Pressable
         onPress={onPress}
-        accessibilityRole="button"
+        // A handler-less header is a SECTION LABEL, not a button: reporting
+        // accessibilityRole="button" on it promises a tap that does nothing.
+        disabled={!onPress}
+        accessibilityRole={onPress ? 'button' : 'header'}
         accessibilityState={{ selected: active }}
         style={[styles.headerOption, active && styles.headerOptionActive]}
       >
