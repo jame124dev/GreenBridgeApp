@@ -167,7 +167,19 @@ type SheetOptionProps = {
   header?: boolean;
   /** Optional extra style merged onto the (non-header) card container. */
   style?: StyleProp<ViewStyle>;
-  /** Omit for a non-interactive row (e.g. a `header` section label). */
+  /**
+   * Omit for a non-interactive row (e.g. a `header` section label).
+   *
+   * ⚠️ NOTE (M-3 sweep, 2026-08-19): NO product code currently omits it. The
+   * handler-less path is a leftover of the rejected all-parents-expanded picker
+   * design — Phase 3 shipped the accordion, whose parent headers are all
+   * tappable. It is KEPT, not deleted, because this is a shared primitive with
+   * ~10 consumers and `disabled={!onPress}` + the role switch below are what
+   * stop a section label from announcing itself as a button that does nothing.
+   * Deleting defensive correctness because today's callers happen to miss the
+   * path is how that a11y bug comes back. `__tests__/Sheet.test.tsx` covers both
+   * branches.
+   */
   onPress?: () => void;
 };
 

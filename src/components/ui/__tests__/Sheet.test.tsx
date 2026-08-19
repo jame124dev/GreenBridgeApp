@@ -64,6 +64,11 @@ describe('Sheet — stickyHeader', () => {
   });
 });
 
+// M-3 sweep, 2026-08-19: no product code takes the handler-less branch today
+// (Phase 3's accordion makes every parent header tappable). These two tests are
+// therefore guarding the PRIMITIVE's contract, not a live call site — which is
+// exactly why they stay: they are what makes it safe for the next consumer to
+// omit `onPress`.
 describe('Sheet.Option — a header without a handler is inert', () => {
   it('announces itself as a header, is disabled, and swallows the tap', () => {
     const { getByRole, queryByRole } = render(<Sheet.Option header label="LAB INFRASTRUCTURE" />);

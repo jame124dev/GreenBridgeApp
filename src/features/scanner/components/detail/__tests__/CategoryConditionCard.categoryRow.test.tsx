@@ -1,6 +1,6 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { act, render, fireEvent } from '@testing-library/react-native';
 import { FormProvider, useForm, type UseFormReturn } from 'react-hook-form';
 
 // MMKV is a native module with no jest binary; `@/api/greenbidzClient` (reached
@@ -150,24 +150,51 @@ describe('the collapsed category row says what is currently picked', () => {
   });
 });
 
+/**
+ * Press, then let react-hook-form settle.
+ *
+ * `applyPick` calls `setValue(..., { shouldValidate: true })`, and RHF's
+ * zodResolver validation is ASYNC — it resolves on a microtask AFTER the
+ * synchronous `fireEvent.press` returns, so React commits that state update
+ * outside `act()` and warns. The assertions passed anyway (they read
+ * `getValues`, not rendered output), which is why the warnings survived Phase 3.
+ * Flushing here removes SIX of the eight warnings and makes the tests assert a
+ * SETTLED form rather than one mid-validation. The two that remain come from
+ * `@expo/vector-icons`' `Icon`, which setStates when its font finishes loading —
+ * a third-party async, not this card's, and the same two appear in
+ * `CategoryConditionCard.aiBadge.test.tsx`. Silencing those means stubbing the
+ * icon set in every render suite in the repo, which is wider than a sweep.
+ */
+const press = async (node: Parameters<typeof fireEvent.press>[0]) => {
+  await act(async () => {
+    fireEvent.press(node);
+  });
+};
+
+const type = async (node: Parameters<typeof fireEvent.changeText>[0], text: string) => {
+  await act(async () => {
+    fireEvent.changeText(node, text);
+  });
+};
+
 describe('the row opens the sheet, and a pick writes the form', () => {
-  it('is closed until the row is tapped', () => {
+  it('is closed until the row is tapped', async () => {
     const { getByText, queryByPlaceholderText } = renderCard();
     expect(queryByPlaceholderText(SEARCH)).toBeNull();
-    fireEvent.press(getByText(NOT_SET));
+    await press(getByText(NOT_SET));
     expect(queryByPlaceholderText(SEARCH)).not.toBeNull();
   });
 
-  it('writes categoryId + BOTH parent fields, and drops a stale typed brand', () => {
+  it('writes categoryId + BOTH parent fields, and drops a stale typed brand', async () => {
     const { getByText, getByPlaceholderText, held } = renderCard({
       categoryId: OTHER_SUBCATEGORY_ID,
       parentCategoryId: '5375',
       parentCategoryName: 'Lab Infrastructure & Essentials',
       customSubcategory: 'Eppendorf',
     });
-    fireEvent.press(getByText('Lab Infrastructure & Essentials › Other (type brand)'));
-    fireEvent.changeText(getByPlaceholderText(SEARCH), 'centrif');
-    fireEvent.press(getByText('Centrifugation'));
+    await press(getByText('Lab Infrastructure & Essentials › Other (type brand)'));
+    await type(getByPlaceholderText(SEARCH), 'centrif');
+    await press(getByText('Centrifugation'));
 
     expect(held.form!.getValues('categoryId')).toBe('5578');
     expect(held.form!.getValues('parentCategoryId')).toBe('5375');
@@ -177,36 +204,36 @@ describe('the row opens the sheet, and a pick writes the form', () => {
     expect(held.form!.getValues('customSubcategory')).toBe('');
   });
 
-  it('keeps the typed brand when the pick IS Other', () => {
+  it('keeps the typed brand when the pick IS Other', async () => {
     const { getByText, held } = renderCard({
       categoryId: '5578',
       parentCategoryId: '5375',
       parentCategoryName: 'Lab Infrastructure & Essentials',
       customSubcategory: 'Eppendorf',
     });
-    fireEvent.press(getByText('Lab Infrastructure & Essentials › Centrifugation'));
+    await press(getByText('Lab Infrastructure & Essentials › Centrifugation'));
     // Accordion: the parent holding the pick is already open, so Other is reachable.
-    fireEvent.press(getByText('Other (type brand)'));
+    await press(getByText('Other (type brand)'));
 
     expect(held.form!.getValues('categoryId')).toBe(OTHER_SUBCATEGORY_ID);
     expect(held.form!.getValues('parentCategoryId')).toBe('5375');
     expect(held.form!.getValues('customSubcategory')).toBe('Eppendorf');
   });
 
-  it('commits a flat parent as its own leaf AND its own parent', () => {
+  it('commits a flat parent as its own leaf AND its own parent', async () => {
     const { getByText, held } = renderCard();
-    fireEvent.press(getByText(NOT_SET));
-    fireEvent.press(getByText('Metalworking Equipment'));
+    await press(getByText(NOT_SET));
+    await press(getByText('Metalworking Equipment'));
 
     expect(held.form!.getValues('categoryId')).toBe('2019');
     expect(held.form!.getValues('parentCategoryId')).toBe('2019');
     expect(held.form!.getValues('parentCategoryName')).toBe('Metalworking Equipment');
   });
 
-  it('closes the sheet after a pick', () => {
+  it('closes the sheet after a pick', async () => {
     const { getByText, queryByPlaceholderText } = renderCard();
-    fireEvent.press(getByText(NOT_SET));
-    fireEvent.press(getByText('Metalworking Equipment'));
+    await press(getByText(NOT_SET));
+    await press(getByText('Metalworking Equipment'));
     expect(queryByPlaceholderText(SEARCH)).toBeNull();
   });
 });

@@ -23,11 +23,18 @@ import path from 'path';
  *
  * (b) The card actually mounts the sheet and feeds it the four things it cannot
  *     derive: the tree, the loading/error flags with a retry, and the current
- *     pick. `CategoryConditionCard` is not renderable under jest (it needs a
- *     react-hook-form provider, React Query and the whole detail form), so the
- *     sheet's behaviour lives in `CategoryPickerSheet.test.tsx` and the seam
- *     between them lives here — which is precisely what an unrelated refactor
- *     deletes by accident.
+ *     pick. The sheet's own behaviour lives in `CategoryPickerSheet.test.tsx`
+ *     and the seam between the two lives here — which is precisely what an
+ *     unrelated refactor deletes by accident.
+ *
+ *     ⚠️ CORRECTION (M-3 sweep, 2026-08-19): this note used to claim
+ *     `CategoryConditionCard` "is not renderable under jest". That was true when
+ *     it was written and is not any more — `CategoryConditionCard.aiBadge.test.tsx`
+ *     and `.categoryRow.test.tsx` both render it, by stubbing the two hooks that
+ *     reach axios/MMKV plus `react-i18next`. The seam assertions below are still
+ *     the right tool for the PROP WIRING (a render test would have to reproduce
+ *     the whole picker to see it), but do not cite the old claim as a reason not
+ *     to write a render test.
  *
  * (c) The hydrate/bridge effect and its NOTE survive. They are the reason the
  *     AI's auto-filled category is still on screen; M-2 moved the presentation
