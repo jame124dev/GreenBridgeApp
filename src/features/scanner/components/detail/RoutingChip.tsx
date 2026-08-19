@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -41,6 +41,50 @@ const CONFIDENCE_BAND = {
 const band = (c: number): keyof typeof CONFIDENCE_BAND =>
   c >= 0.85 ? 'high' : c >= 0.6 ? 'medium' : 'low';
 
+/**
+ * ⛔ The ask CTA's fill lives HERE, in a StyleSheet object passed as an ARRAY —
+ * never in a `style={({ pressed }) => …}` callback.
+ *
+ * WHY (measured, not guessed). NativeWind registers every RN primitive with
+ * `cssInterop(Pressable, { className: 'style' })`
+ * (react-native-css-interop/dist/runtime/components.js), and because `target`
+ * ('style') differs from `source` ('className'), `getNormalizeConfig` also sets
+ * `inlineProp: 'style'`. The interop therefore takes over the INLINE style prop
+ * too: `collectInlineRules` pushes it as a declaration and `applyRules` merges it
+ * with `{ ...declaration }`. Spreading a FUNCTION yields `{}` — so the whole
+ * style object is silently replaced by an empty one, and `renderComponent`'s
+ * `props = { ...props, ...possiblyAnimatedProps }` then overwrites the original
+ * callback with that `{}`. The button rendered with no fill, no padding and no
+ * minHeight (measured 23dp on device: just the label's line box) while the child
+ * <Text>'s own inline color — an OBJECT, which spreads fine — still applied.
+ * White text on the pale amber card: the one CTA in the ask state, invisible.
+ *
+ * Arrays and objects are safe (`collectInlineRules` recurses arrays and skips
+ * falsy entries, and later entries win), which is why `pressed` is now a piece of
+ * React state fed by onPressIn/onPressOut rather than a callback argument.
+ *
+ * `minHeight`, NOT `height` — the TH/VI labels wrap onto two lines.
+ *
+ * A test holds this down: RoutingChipCtaStyle.test.tsx registers the same
+ * cssInterop mapping the runtime does (jest skips it — `wrapJSX` guards the
+ * registration with `process.env.NODE_ENV !== 'test'`, which is exactly why the
+ * bug shipped past a green suite) and asserts the RESOLVED fill and height.
+ */
+const styles = StyleSheet.create({
+  askCta: {
+    marginTop: 4,
+    minHeight: 48,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: brand.primary,
+  },
+  askCtaPressed: { backgroundColor: brand.primaryDim },
+  askCtaLabel: { color: brand.primaryForeground },
+});
+
 interface Props {
   draft: DraftItem;
   /**
@@ -77,6 +121,9 @@ export function RoutingChip({ draft, onConfirm }: Props) {
   const { watch, setValue } = useFormContext<DetailFormInput>();
   const supported = useSupportedMarketplaces();
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Press feedback as STATE, not as a `style={({ pressed }) => …}` argument —
+  // see the `styles` note above for why the callback form renders unstyled.
+  const [ctaPressed, setCtaPressed] = useState(false);
 
   const current = watch('marketplace');
   const state = deriveRoutingState({
@@ -170,28 +217,24 @@ export function RoutingChip({ draft, onConfirm }: Props) {
             It is a real Pressable, not a disabled-looking button, because
             tapping it must DO the thing it names: a dead control is what
             UX_DESIGN_RULES.md's "every action provides feedback" rules out.
-            minHeight, not height — Thai and Vietnamese labels wrap. */}
+            ⛔ Style comes from `styles` as an ARRAY. Do not "simplify" it back
+            into a `style={({ pressed }) => …}` callback — NativeWind's interop
+            spreads the inline style prop and `{ ...aFunction }` is `{}`, which
+            is what made this the invisible-CTA bug. */}
         <Pressable
           onPress={() => {
             haptics.tap();
             setSheetOpen(true);
           }}
+          onPressIn={() => setCtaPressed(true)}
+          onPressOut={() => setCtaPressed(false)}
           accessibilityRole="button"
           accessibilityLabel={t('mobile.detail.routing.askCta', {
             defaultValue: 'Choose a marketplace to continue',
           })}
-          style={({ pressed }) => ({
-            marginTop: 4,
-            minHeight: 48,
-            borderRadius: 8,
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: pressed ? brand.primaryDim : brand.primary,
-          })}
+          style={[styles.askCta, ctaPressed && styles.askCtaPressed]}
         >
-          <Text className="font-semi text-2xl" style={{ color: brand.primaryForeground }}>
+          <Text className="font-semi text-2xl" style={styles.askCtaLabel}>
             {t('mobile.detail.routing.askCta', {
               defaultValue: 'Choose a marketplace to continue',
             })}

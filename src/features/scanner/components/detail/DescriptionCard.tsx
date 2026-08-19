@@ -2,18 +2,13 @@ import { Text, TextInput, View } from 'react-native';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+import { DESCRIPTION_MAX } from '@/features/scanner/descriptionLimit';
 import type { DetailFormInput } from '@/features/scanner/schema';
 
 import { FieldLabel } from './FieldLabel';
 
 const inputCls =
   'bg-brand-surface border border-brand-border-strong rounded-xs px-md py-2.5 font-sans text-xl text-brand-foreground';
-
-/**
- * The seller-facing limit. ONE constant, read by the input's `maxLength`, by the
- * counter and by the over-limit line, so the three can never disagree.
- */
-const DESCRIPTION_MAX = 500;
 
 export function DescriptionCard() {
   const { t } = useTranslation();
@@ -26,12 +21,15 @@ export function DescriptionCard() {
         name="description"
         render={({ field: { value, onChange, onBlur }, fieldState }) => {
           // `maxLength` below stops the SELLER at the limit, but it does not
-          // truncate a value written programmatically — and the AI's own
-          // generated description regularly arrives over it (635 characters
-          // measured on a BD FACSVerse scan, device pass 2026-08-19) through
-          // `reset(draftToFormValues(draft))`. So "over the limit" is a real,
-          // reachable state that the seller did not cause, and rendering it in
-          // the same grey as "97/500" showed them a silently-invalid field.
+          // truncate a value written programmatically — the AI's own generated
+          // description used to arrive over it (635 characters on a BD FACSVerse
+          // scan, 543 on an AOI machine; device passes 2026-08-19) through
+          // `reset(draftToFormValues(draft))`.
+          //
+          // Both AI mappers now cap at DESCRIPTION_MAX (`fitDescription`), so a
+          // NEW draft can no longer be born over the limit. This state is still
+          // reachable — a draft persisted in MMKV before that fix keeps its long
+          // text — so the warning stays, and it must not be a silent grey "97/500".
           //
           // Same treatment the lab listing editor already gives it
           // (`LabListingEditSheet.tsx:817` counterOver -> `:1293`

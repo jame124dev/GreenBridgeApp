@@ -3,6 +3,7 @@ import {
   defaultCurrencyForSite,
   marketplaceFromSiteType,
 } from './constants';
+import { fitDescription } from './descriptionLimit';
 import { normalizeCondition, normalizeOperationStatus } from './normalize';
 import type {
   AiPriceTier,
@@ -182,7 +183,12 @@ export function mapProductData(
   const categoryName = subId ? subName : parentName;
 
   const name = String(data.name ?? '');
-  const description = String(data.equipment_description ?? '');
+  // Capped to DESCRIPTION_MAX here, at the boundary where the AI's text becomes
+  // form state — the AI generated 543 characters against the 500 limit and the
+  // seller was told to shorten it. ONE const feeds both the form field and the
+  // `ai` snapshot below, so they cannot disagree about what the AI "said".
+  // See descriptionLimit.ts for why the cut is here and not at the field limit.
+  const description = fitDescription(data.equipment_description);
 
   // S4: extract spec fields from smart-detect product data (same shape as
   // analyze-process-images). Previously silently dropped — now plumbed

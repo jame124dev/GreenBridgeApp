@@ -1,5 +1,6 @@
 import { normalizeCondition, normalizeOperationStatus } from './normalize';
 import { DEFAULT_OPERATION_STATUS, marketplaceFromSiteType } from './constants';
+import { fitDescription } from './descriptionLimit';
 import { pickAiPrices, pickPrice } from './mapSmartDetection';
 import type { SmartProductData } from './smartDetectionTypes';
 import type { AiResult, ItemGrade } from '@/stores/scanDraftStore';
@@ -89,7 +90,11 @@ export function mapAnalyzeResponse(data: Record<string, unknown>): AiResult {
 
   return {
     name: String(data.name ?? ''),
-    description: String(data.equipment_description ?? ''),
+    // Capped to DESCRIPTION_MAX here, at the boundary where the AI's text becomes
+    // form state — the AI generated 543 characters against the 500 limit and the
+    // seller was told to shorten it. See descriptionLimit.ts for why the cut is
+    // here and not at the field limit or at submit.
+    description: fitDescription(data.equipment_description),
     condition: normalizeCondition(data.condition as string | string[] | undefined),
     operationStatus: operationStatus.length ? operationStatus : [...DEFAULT_OPERATION_STATUS],
     suggestedPrice,
