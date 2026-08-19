@@ -52,6 +52,18 @@ export function mapAnalyzeResponse(data: Record<string, unknown>): AiResult {
   const siteTypeRaw = coerceTrimmed(data.site_type);
   const suggestedMarketplace = marketplaceFromSiteType(siteTypeRaw);
 
+  // M-6 — same routing signal on the /analyze-process-images path. The backend
+  // runs the same `normalizeIdentityAndConfidence` choke point
+  // (controller/wordPressSmart.js:828-829) so `needs_clearer_photo` is present
+  // here too; the other three arrive with S0-2 / S0-3a. Carried, never compared
+  // (plan §2.1 — no threshold in v1).
+  const d = data as SmartProductData;
+  const needsClearerPhoto = d.needs_clearer_photo === true;
+  const siteTypeConfidence =
+    typeof d.site_type_confidence === 'number' ? d.site_type_confidence : null;
+  const siteTypeSource = d.site_type_source ?? null;
+  const categorySource = d.category_source ?? null;
+
   // ProfitIntelligenceCard tier prices (scrap/used/new). The analyze endpoint
   // returns the same shape as smart-detect, so share the parser. Null when
   // the AI didn't include `prices` — the card shows its "no estimate" state.
@@ -98,6 +110,10 @@ export function mapAnalyzeResponse(data: Record<string, unknown>): AiResult {
     locations:    extractLocations(data.locations),
     country:      coerceTrimmed(data.country),
     suggestedMarketplace,
+    needsClearerPhoto,
+    siteTypeConfidence,
+    siteTypeSource,
+    categorySource,
     prices:       aiPrices,
     categoryId,
     categoryName,

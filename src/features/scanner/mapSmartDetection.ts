@@ -149,12 +149,25 @@ function taxonomyId(ref: SmartProductData['product_cat']): string | null {
  * is deliberately ignored.)
  * Currency overrides the server's hardcoded "USD" with the site default.
  */
-export function mapProductData(data: SmartProductData, siteType: string): SmartItemFields {
+export function mapProductData(
+  data: SmartProductData,
+  /**
+   * ⚠️ THE DEPLOYMENT'S site type (`getSiteType()`), NEVER `data.site_type`.
+   * Plan §6.4: the marketplace does NOT drive the currency on the AI path. The
+   * backend always returns USD (prompt at
+   * controller/wordPressSmart.js:374/:386/:398/:409) and nothing between
+   * `pickPrice` and `defaultCurrencyForSite` converts, so relabelling a USD
+   * number as TWD for 101it is a 31.5× under-price written straight to
+   * `_product_currency`. TWD-native pricing is a BACKEND change (return TWD
+   * prices), not an app-side relabel.
+   */
+  deploymentSiteType: string,
+): SmartItemFields {
   const price = pickPrice(data.price);
   const condition = normalizeCondition(data.condition);
   const opStatusRaw = normalizeOperationStatus(data.operation_status);
   const operationStatus = opStatusRaw.length ? opStatusRaw : [...DEFAULT_OPERATION_STATUS];
-  const currency = defaultCurrencyForSite(siteType);
+  const currency = defaultCurrencyForSite(deploymentSiteType);
 
   // Prefer the AI's subcategory id when present — it's the more specific
   // leaf and is the value the detail form expects. Fall back to the parent
@@ -187,6 +200,15 @@ export function mapProductData(data: SmartProductData, siteType: string): SmartI
   // so the store's apply layer falls back to env-default.
   const suggestedMarketplace = marketplaceFromSiteType(data.site_type);
 
+  // M-6 — carry the routing signal verbatim. No arithmetic, no comparison:
+  // `siteTypeConfidence` exists to be DISPLAYED (plan §2.3) and is deliberately
+  // not used in any branch (plan §2.1 — no threshold in v1).
+  const needsClearerPhoto = data.needs_clearer_photo === true;
+  const siteTypeConfidence =
+    typeof data.site_type_confidence === 'number' ? data.site_type_confidence : null;
+  const siteTypeSource = data.site_type_source ?? null;
+  const categorySource = data.category_source ?? null;
+
   const aiPrices = pickAiPrices(data.prices, data.currency);
 
   return {
@@ -207,6 +229,10 @@ export function mapProductData(data: SmartProductData, siteType: string): SmartI
     co2Emissions,
     grade,
     suggestedMarketplace,
+    needsClearerPhoto,
+    siteTypeConfidence,
+    siteTypeSource,
+    categorySource,
     aiPrices,
     ai: {
       name,
@@ -223,6 +249,10 @@ export function mapProductData(data: SmartProductData, siteType: string): SmartI
       co2Emissions,
       grade,
       suggestedMarketplace,
+      needsClearerPhoto,
+      siteTypeConfidence,
+      siteTypeSource,
+      categorySource,
       prices: aiPrices,
     },
   };
@@ -230,7 +260,8 @@ export function mapProductData(data: SmartProductData, siteType: string): SmartI
 
 export function mapSmartDetection(
   res: SmartDetectionResponse,
-  siteType: string,
+  /** ⚠️ THE DEPLOYMENT'S site type — see `mapProductData` above. */
+  deploymentSiteType: string,
 ): MappedSmartDetection {
   const rawProducts = Array.isArray(res.products) ? res.products : [];
 
@@ -247,7 +278,7 @@ export function mapSmartDetection(
     documentIndexes: (Array.isArray(p.document_indexes) ? p.document_indexes : []).filter(
       (i) => Number.isInteger(i) && i >= 0,
     ),
-    fields: mapProductData(p.data ?? {}, siteType),
+    fields: mapProductData(p.data ?? {}, deploymentSiteType),
   }));
 
   // Treat as multiple only when the server says so AND there's genuinely more
@@ -255,9 +286,25 @@ export function mapSmartDetection(
   const isMultiple = res.detection?.suggested_mode === 'multiple' && products.length > 1;
   const mode: ListingMode = isMultiple ? 'grouped' : 'single';
 
+  // §6.4 — the backend sets `merged_single` to the FIRST product that has data
+  // (controller/wordPressSmart.js:3451-3453), so on a MIXED batch its
+  // `site_type` is product 0's marketplace, not the batch's. Anything that
+  // falls back to `mergedSingleFields` ("it's actually one product") would then
+  // silently adopt the wrong marketplace, wrong category tree and wrong submit
+  // target. Strip the routing claim when the batch is mixed; the draft then
+  // falls back to the deployment default and, because the routing signal is
+  // gone, the chip asks.
+  const distinctSiteTypes = new Set(
+    rawProducts
+      .map((p) => marketplaceFromSiteType(p?.data?.site_type))
+      .filter((m): m is NonNullable<typeof m> => m != null),
+  );
+  const mergedIsMixed = distinctSiteTypes.size > 1;
+
+  const mergedRaw = res.merged_single ?? rawProducts[0]?.data ?? {};
   const mergedSingleFields = mapProductData(
-    res.merged_single ?? rawProducts[0]?.data ?? {},
-    siteType,
+    mergedIsMixed ? { ...mergedRaw, site_type: undefined } : mergedRaw,
+    deploymentSiteType,
   );
 
   const rawConfidence = res.detection?.confidence;

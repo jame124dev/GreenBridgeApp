@@ -35,6 +35,30 @@ export type SmartProductData = {
   // W2 (scan_v3): backend prompt now asks the AI to also return site_type,
   // which the seller-side uses to pre-pick the marketplace.
   site_type?: string;
+  /**
+   * Multi-marketplace unlock (M-6). All four are optional; THREE of the four
+   * are actually emitted today (verified against backend `8383b62`, §0.4):
+   *   - `needs_clearer_photo`  — LIVE. Stamped per product at
+   *     controller/wordPressSmart.js:828-829 (model self-report OR the
+   *     deterministic "no brand AND no model" backstop), true on 37.5% of
+   *     products. The primary v1 ask-trigger; needed no backend change.
+   *   - `site_type_confidence` — LIVE since S0-2. `buildRoutingSignal`
+   *     (wordPressSmart.js:1987-2013) computes it; processProductGroup stamps
+   *     it at :2125. Clamped to [0,1], rounded to 2 dp, defaults 0.75.
+   *     ⛔ CARRIED FOR DISPLAY ONLY. Never compared to a threshold (plan
+   *     §2.1) — and now that it is a real number, that rule is breakable.
+   *   - `site_type_source`     — LIVE since S0-2, stamped at :2126. The enum
+   *     below is the WHOLE wire enum (:1701, :1712, :1726, :1731, :2000).
+   *     `regex_override` and `low_confidence_fallback` are ask-triggers.
+   *   - `category_source`      — NOT YET ON THE WIRE. Arrives with S0-3a, and
+   *     the values are the SERVER's: 'ai' | 'fuzzy' | 'unresolved'
+   *     (integration C6 / Decision 2). NOT 'llm', and NOT 'default_parent',
+   *     which S0-3a makes unreachable by construction.
+   */
+  needs_clearer_photo?: boolean;
+  site_type_confidence?: number;
+  site_type_source?: 'hint' | 'vision' | 'regex_override' | 'low_confidence_fallback';
+  category_source?: 'ai' | 'fuzzy' | 'unresolved';
   // Server replaces these with DB-matched {id,name}; id === '' means "no match".
   product_cat?: SmartTaxonomyRef;
   subcategory?: SmartTaxonomyRef;
@@ -83,6 +107,13 @@ export type SmartDetectionResponse = {
   products: SmartProduct[];
   suggested_terms: Record<string, string[]>;
   /**
+   * Upload-level OR of every product's needs_clearer_photo
+   * (wordPressSmart.js:3506-3508). NOT the ask-trigger — it is merged at the
+   * payload's top level, so it cannot say WHICH product was unclear. Read the
+   * per-product `products[].data.needs_clearer_photo` instead.
+   */
+  needs_clearer_photo?: boolean;
+  /**
    * Canonical image stream the backend ran the AI against. Equals the
    * input `image_urls` for a photo-only scan; for PDF or mixed scans
    * the backend appends each extracted PDF page as its own URL here.
@@ -123,6 +154,12 @@ export type SmartItemFields = {
   // MarketplaceKey when recognizable. Null means the AI didn't say or said
   // something off-list — the store falls back to env default in that case.
   suggestedMarketplace: '101lab' | '101machine' | '101recycle' | '101it' | null;
+  /** M-6 routing signal, carried verbatim. See SmartProductData above. */
+  needsClearerPhoto: boolean;
+  siteTypeConfidence: number | null;
+  siteTypeSource: 'hint' | 'vision' | 'regex_override' | 'low_confidence_fallback' | null;
+  /** Integration C6 — the SERVER's enum. No 'llm', no 'default_parent'. */
+  categorySource: 'ai' | 'fuzzy' | 'unresolved' | null;
   /**
    * AI-derived market-tier prices for ProfitIntelligenceCard. Stored as
    * numbers in `currency` units (USD for now per backend default). Null when

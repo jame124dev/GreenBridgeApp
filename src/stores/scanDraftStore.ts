@@ -5,6 +5,19 @@ import {
   defaultCurrencyForSite,
   marketplaceFromSiteType as strictMarketplaceFromSiteType,
 } from '@/features/scanner/constants';
+import {
+  CLEARED_CATEGORY_DRAFT_FIELDS,
+  routingNeedsAsk,
+  shouldPrefillCategory,
+  signalFromSmartFields,
+} from '@/features/scanner/routing/routingState';
+import type { CategorySource, RoutingSource } from '@/features/scanner/routing/routingState';
+// ⚠️ `supportedMarketplacesCache`, NEVER `supportedMarketplaces`. The latter
+// imports `@/api/greenbidzClient`, which calls `attachGreenbidzInterceptors` at
+// module load (greenbidzClient.ts:24) and pulls axios + services/auth/logout +
+// features/lab/messages/socket into this store's graph — and therefore into
+// scanDraftStore.test.ts and scanDraftStore.hydrate.test.ts (blocker (e)).
+import { supportedNow } from '@/features/scanner/routing/supportedMarketplacesCache';
 import { mmkv } from '@/lib/mmkv';
 import { readCachedLocation } from '@/features/location/pickupStore';
 import { getSiteType } from '@/services/scanner/buildFormData';
@@ -62,6 +75,11 @@ export type AiResult = {
   // the AI verdict instead of always defaulting to env. Null = AI said
   // nothing useful; caller falls back to env default.
   suggestedMarketplace?: MarketplaceKey | null;
+  /** M-6 routing signal (see features/scanner/smartDetectionTypes.ts). */
+  needsClearerPhoto?: boolean;
+  siteTypeConfidence?: number | null;
+  siteTypeSource?: RoutingSource | null;
+  categorySource?: CategorySource | null;
   /**
    * AI-derived market-tier prices (scrap / used / new) — backs the Profit
    * Intelligence card on the detail screen. Optional because not every AI
@@ -157,6 +175,18 @@ export type DraftItem = {
   grade: ItemGrade;
   serialNumber: string;
   marketplace: MarketplaceKey;
+  /**
+   * M-3/M-4 — the seller has answered the routing question (or there was never
+   * a question to answer). `false` blocks Submit for this item until the
+   * RoutingChip's sheet is used. Optional so persisted 1.0.3 drafts and
+   * manual-entry drafts read as `true` via `isRoutingResolved`.
+   */
+  marketplaceConfirmed?: boolean;
+  /** M-6 routing signal, persisted so grouped-review can render per-row state. */
+  needsClearerPhoto?: boolean;
+  siteTypeConfidence?: number | null;
+  siteTypeSource?: RoutingSource | null;
+  categorySource?: CategorySource | null;
   installation: InstallationMode;
   /** No backend field today — S5 will hide the picker until backend lands. */
   listingDurationDays: number;
@@ -248,6 +278,14 @@ function emptyDraft(photos: Photo[]): DraftItem {
     grade: 'A',
     serialNumber: '',
     marketplace: marketplaceFromSiteType(siteType),
+    // Manual entry: the deployment's own marketplace IS the answer, there is
+    // no AI claim to confirm. `true` so the footer is never blocked on a
+    // question the seller was never asked.
+    marketplaceConfirmed: true,
+    needsClearerPhoto: false,
+    siteTypeConfidence: null,
+    siteTypeSource: null,
+    categorySource: null,
     installation: 'deinstalled',
     listingDurationDays: 90,
     aiPrices: null,
@@ -343,6 +381,13 @@ function migrateDraft(d: DraftItem): DraftItem {
     parentCategoryId: d.parentCategoryId ?? '',
     parentCategoryName: d.parentCategoryName ?? '',
     marketplace: d.marketplace ?? marketplaceFromSiteType(siteType),
+    // Persisted 1.0.3 drafts predate the routing question — treat them as
+    // answered so an upgrade can never wedge an in-flight draft.
+    marketplaceConfirmed: d.marketplaceConfirmed ?? true,
+    needsClearerPhoto: d.needsClearerPhoto ?? false,
+    siteTypeConfidence: d.siteTypeConfidence ?? null,
+    siteTypeSource: d.siteTypeSource ?? null,
+    categorySource: d.categorySource ?? null,
     installation: d.installation ?? 'deinstalled',
     listingDurationDays: d.listingDurationDays ?? 90,
     aiPrices,
