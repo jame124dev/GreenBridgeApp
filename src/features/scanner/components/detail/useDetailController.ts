@@ -12,6 +12,7 @@ import {
   canSubmitListing,
   redirectToSellerApplication,
 } from '@/features/seller/sellerSubmitGate';
+import { isRoutingResolved } from '@/features/scanner/routing/routingState';
 import { useLabCategories } from '@/features/scanner/useLabCategories';
 import { useRequiredRowLabel } from '@/features/scanner/requiredRowLabels';
 import {
@@ -52,8 +53,6 @@ export function useDetailController(opts?: {
   const enqueueCurrentItem = useScanDraft((s) => s.enqueueCurrentItem);
   const prepareGroupedReview = useScanDraft((s) => s.prepareGroupedReview);
   const createListing = useCreateListing();
-  const currentMarketplace = useScanDraft((s) => s.current?.marketplace);
-  const categories = useLabCategories(currentMarketplace);
 
   useEffect(() => {
     setLastStep('detail');
@@ -64,6 +63,21 @@ export function useDetailController(opts?: {
     defaultValues: emptyDetailDefaults(),
   });
   const { handleSubmit, reset } = form;
+
+  // M-4 Step 8-6 — read the marketplace from the FORM, not the store.
+  // `CategoryConditionCard` renders its tree from `watch('marketplace')`, so
+  // reading the store here would resolve `categoryName` against the PREVIOUS
+  // marketplace's tree for one render after the RoutingChip changes the form
+  // value — and `buildDraftPatch`'s
+  // `categoryOptions?.find((o) => o.id === values.categoryId)` (formMapping.ts)
+  // would then miss and land `categoryName: null`. That is NOT cosmetic:
+  // `category_name` IS submitted (buildFormData.ts:164 single / :271 grouped),
+  // so a null silently drops the field from the payload.
+  //
+  // ⚠️ `form` must be created ABOVE this pair, or it is used before
+  // initialisation. Order: useForm -> form.watch -> useLabCategories.
+  const currentMarketplace = form.watch('marketplace');
+  const categories = useLabCategories(currentMarketplace);
   const labelForRow = useRequiredRowLabel();
 
   const draft = useScanDraft((s) => s.current);
@@ -184,23 +198,36 @@ export function useDetailController(opts?: {
   };
 
   /**
-   * SEAM FOR PHASE 4 (integration doc C4) — the routing gate goes HERE, not in the
-   * footer. S9 changed the single-mode Submit to `disabled={!!submitting}`, so
-   * `allRequired` now feeds only the grouped-mode buttons; and
-   * `marketplaceConfirmed` is a DRAFT field (`scanDraftStore.ts` `DraftItem`), not
-   * a `detailSchema` field, so `handleSubmit` cannot see it and `onInvalid` can
-   * never fire for it. ANDing `isRoutingResolved(draft)` into `allRequired` would
-   * therefore be a silent no-op on the single-item path.
+   * C4 — after S9 the single-mode Submit is no longer disabled on state
+   * (DetailFooter: `disabled={!!submitting}`), and `marketplaceConfirmed` is a
+   * DRAFT field, not a `detailSchema` field — so `handleSubmit` cannot see it
+   * and `onInvalid` can never fire for it. Without this guard M-3/M-4's routing
+   * gate is bypassed on the single-item path and an item with
+   * `marketplaceConfirmed: false` submits: `marketplace` drives `allowed_sites[]`
+   * (buildFormData.ts:223-224) and therefore the product's `site_id`, so that
+   * ships a listing to a marketplace nobody chose.
    *
-   * Phase 4 must add a `missingRouting()` guard that mirrors `missingPhotos()`
-   * exactly — read the draft from `useScanDraft.getState().current`, return false
-   * when `isRoutingResolved(draftNow)`, otherwise `haptics.error()` + `Alert.alert`
-   * and return true — and call it as the second statement of
-   * `submitSingleValidated`, immediately after `if (missingPhotos()) return;`.
+   * Mirrors `missingPhotos()` exactly. It does NOT go through `alertMissing`
+   * because routing is not a `RequiredRowKey` — `REQUIRED_ROWS` has seven
+   * entries and `marketplace` is not one of them, and making it one changes
+   * `getRequiredStatus`'s signature in a file M-7 owns (integration C4 defers
+   * that "fuller option" explicitly). If a later phase adds the eighth row,
+   * delete this function and use `alertMissing(['marketplace'])`.
    */
+  const missingRouting = (): boolean => {
+    const draftNow = useScanDraft.getState().current;
+    if (!draftNow || isRoutingResolved(draftNow)) return false;
+    haptics.error();
+    Alert.alert(
+      t('mobile.groupedEdit.missingTitle', { defaultValue: 'Some fields are missing' }),
+      t('mobile.detail.routing.askCta', { defaultValue: 'Choose a marketplace to continue' }),
+    );
+    return true;
+  };
 
   const submitSingleValidated = handleSubmit((values) => {
     if (missingPhotos()) return;
+    if (missingRouting()) return;
     const updated = buildUpdated(values);
     if (!updated) return;
     patch(updated);

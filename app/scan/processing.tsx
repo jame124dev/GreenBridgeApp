@@ -14,7 +14,16 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner-native';
 
 import { AppImage, Button, Screen, Stack } from '@/components/ui';
-import { manualEntryDefaults } from '@/features/scanner/constants';
+import { manualEntryDefaults, marketplaceFromSiteType } from '@/features/scanner/constants';
+import {
+  CLEARED_CATEGORY_DRAFT_FIELDS,
+  routingNeedsAsk,
+  shouldPrefillCategory,
+  signalFromAiResult,
+} from '@/features/scanner/routing/routingState';
+// ⚠️ `supportedMarketplacesCache`, NEVER `supportedMarketplaces` — same import
+// rule as the store: the latter drags axios + the auth/socket graph in.
+import { supportedNow } from '@/features/scanner/routing/supportedMarketplacesCache';
 import { routes } from '@/lib/routes';
 import { SMART_DETECT_ENABLED, backgroundRecognitionEnabled, IS_CUSTOMER } from '@/lib/flags';
 import { useAnalyzeImages } from '@/features/scanner/useAnalyzeImages';
@@ -28,6 +37,7 @@ import type {
 import { shouldSkipDetectionChoice } from '@/features/scanner/smartDetectionRouting';
 import { haptics } from '@/lib/haptics';
 import { useScanDraft } from '@/stores/scanDraftStore';
+import type { AiResult, DraftItem } from '@/stores/scanDraftStore';
 import { useAuth } from '@/stores/authStore';
 import { clearStoredJobId } from '@/stores/recognitionJobStore';
 import {
@@ -70,6 +80,44 @@ const PHASE_TO_STEP: Record<StagePhase, number> = {
   extracting_products: 2,
   done: 3,
 };
+
+/**
+ * M-4 lock 3. The analyze path's half of lock 2, expressed with the SAME two
+ * decision functions so the two paths cannot drift.
+ *
+ * `marketplace` is patched ONLY when the AI named a supported marketplace, so an
+ * absent or off-list verdict leaves `emptyDraft`'s env default in place rather
+ * than clobbering it with a guess. `marketplaceConfirmed` records whether the
+ * chip must ask, and the category is cleared when the routed tree cannot be
+ * trusted (§0.5).
+ *
+ * Module scope so it is not re-created per render.
+ */
+function routingPatchFromAi(ai: AiResult): Partial<DraftItem> {
+  const supported = supportedNow();
+  const signal = signalFromAiResult(ai);
+  const usable =
+    signal.suggestedMarketplace && supported.includes(signal.suggestedMarketplace)
+      ? signal.suggestedMarketplace
+      : null;
+  // Judge the prefill on what the draft will ACTUALLY hold, the same rule lock 2
+  // uses. Judging the AI's rejected verdict would clear a category that is fine.
+  // `?? '101lab'` mirrors the store's own lenient wrapper
+  // (scanDraftStore.ts:240-242): the STRICT helper returns null for an
+  // off-list SITE_TYPE, and this value only picks which tree's category is
+  // being judged, so it must never be null.
+  const marketplace = usable ?? marketplaceFromSiteType(getSiteType()) ?? '101lab';
+  const prefill = shouldPrefillCategory({ marketplace, signal });
+  return {
+    ...(usable ? { marketplace: usable } : {}),
+    marketplaceConfirmed: !routingNeedsAsk({ signal, supported }),
+    needsClearerPhoto: signal.needsClearerPhoto,
+    siteTypeConfidence: signal.siteTypeConfidence,
+    siteTypeSource: signal.siteTypeSource,
+    categorySource: signal.categorySource,
+    ...(prefill ? {} : CLEARED_CATEGORY_DRAFT_FIELDS),
+  };
+}
 
 export default function ProcessingScreen() {
   const { t, i18n } = useTranslation();
@@ -501,11 +549,10 @@ export default function ProcessingScreen() {
               dimensions:   ai.dimensions ?? '',
               co2Emissions: ai.co2Emissions ?? '',
               grade:        ai.grade ?? 'A',
-              // Marketplace is LOCKED to this deployment's site (web parity:
-              // `lockedMarketplace = marketplaceFromSiteType(SITE_TYPE)`). This
-              // build is 101lab-only, so we never let the AI's detected
-              // site_type flip the marketplace — the draft keeps its env
-              // default from emptyDraft.
+              // M-4 lock 3 — the marketplace/routing patch is NOT here. It is
+              // the LAST spread in this object (just above `lastStep`), because
+              // it may CLEAR the category and the `ai.categoryId` spread below
+              // would otherwise overwrite the clear. See routingPatchFromAi.
               // ProfitIntelligenceCard tier prices. Only patch when the AI
               // returned them — null would clobber a prior value if the user
               // navigated back into a finished draft.
@@ -524,6 +571,20 @@ export default function ProcessingScreen() {
                     locationCountries: ai.locations.map(() => ai.country ?? ''),
                   }
                 : {}),
+              // ── M-4 lock 3 + §0.5 owner decision ───────────────────────
+              // The analyze path (`/wp/analyze-process-images`, reached when
+              // `useSmart === false`, i.e. manual GROUPED mode) now applies the
+              // AI's detected marketplace too.
+              //
+              // LAST on purpose: when the routed tree is untrusted this spread
+              // clears the five category fields, and it must therefore come
+              // AFTER the `ai.categoryId` spread above.
+              //
+              // Shares lock 2's decision functions rather than re-deriving the
+              // trigger inline: `routingNeedsAsk` and `shouldPrefillCategory`
+              // live in routingState.ts and have ONE implementation
+              // (blocker (d)).
+              ...routingPatchFromAi(ai),
               lastStep: 'detail',
             });
             // Re-check for consistency with the useSmart branch above — this

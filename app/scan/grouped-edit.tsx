@@ -62,15 +62,23 @@ export default function GroupedEditScreen() {
 
   const item = Number.isFinite(index) ? queuedItems[index] : undefined;
 
-  // Categories for THIS item's marketplace — keyed via the hook's queryKey so
-  // navigating to a different item's editor re-fetches the right tree.
-  const categories = useLabCategories(item?.marketplace);
-  const categoryOptions = categories.data?.options;
-
   const form = useForm<DetailFormInput>({
     resolver: zodResolver(detailSchema),
     defaultValues: item ? draftToFormValues(item) : undefined,
   });
+
+  // Categories for THIS item's marketplace — keyed via the hook's queryKey so
+  // navigating to a different item's editor re-fetches the right tree.
+  //
+  // M-4 Step 8-6 — read the FORM, not the store item. `CategoryConditionCard`
+  // renders its tree from `watch('marketplace')`, and this screen has NO reset
+  // effect (defaultValues are set once), so after the RoutingChip changes the
+  // form value the store item still holds the old marketplace until Save. A
+  // store read here would resolve `categoryName` against the wrong tree and
+  // land `null`, which silently drops `category_name` from the submit payload.
+  // ⚠️ `useForm` must stay ABOVE this line.
+  const categories = useLabCategories(form.watch('marketplace'));
+  const categoryOptions = categories.data?.options;
 
   // Bounce back if the index is bad or the item went away while we were here.
   useEffect(() => {

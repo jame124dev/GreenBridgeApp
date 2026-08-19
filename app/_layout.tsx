@@ -38,6 +38,10 @@ import { spacing } from '@/constants/theme';
 import { TAB_BAR_BASE_HEIGHT } from '@/features/lab/components/FrostedTabBar';
 import { PushPermissionGate } from '@/features/notifications';
 import { BackgroundRecognitionWatcher } from '@/features/scanner/BackgroundRecognitionWatcher';
+import {
+  fetchSupportedMarketplaces,
+  SUPPORTED_QUERY_KEY,
+} from '@/features/scanner/routing/supportedMarketplaces';
 import { isSessionExpired } from '@/lib/authSession';
 import { warnMissingEnvInDev } from '@/lib/env';
 import { IS_CUSTOMER } from '@/lib/flags';
@@ -155,6 +159,28 @@ export default function RootLayout() {
     // Init only — the permission ask is deliberately NOT here (it fired on the
     // login screen). PushPermissionGate owns it, post-auth.
     initOneSignal();
+    // M-12 / blocker (a) — warm the supported-marketplaces cache BEFORE any
+    // scan can build a draft. `draftFromSmartFields` reads the MMKV cache
+    // SYNCHRONOUSLY via `supportedNow()`, and it runs from
+    // `applySmartDetection`, which processing-v2.tsx invokes long before
+    // RoutingChip mounts on detail.tsx. Without this, a fresh install's FIRST
+    // scan sees one marketplace, throws away the AI's verdict and stamps
+    // `marketplaceConfirmed: true` — i.e. behaves exactly like 1.0.3, for every
+    // user, on every install.
+    //
+    // `queryClient` is a module singleton (src/lib/queryClient.ts), so this
+    // works even though the effect is OUTSIDE the QueryClientProvider below —
+    // do not "fix" that by moving the effect. `staleTime` must match
+    // useSupportedMarketplaces', or RoutingChip's mount refetches immediately.
+    //
+    // Fire-and-forget: `fetchSupportedMarketplaces` never rejects (it resolves
+    // to the cached or fallback list), so there is nothing to catch and nothing
+    // to block on.
+    void queryClient.prefetchQuery({
+      queryKey: SUPPORTED_QUERY_KEY,
+      queryFn: fetchSupportedMarketplaces,
+      staleTime: 30 * 60_000,
+    });
   }, [hydrate, reset, router]);
 
   // Identify the signed-in user to OneSignal so backend external_id sends land.

@@ -27,11 +27,17 @@ jest.mock('@/lib/mmkv', () => {
       set: (k: string, v: string) => store.set(k, v),
       getString: (k: string) => store.get(k),
       remove: (k: string) => store.delete(k),
+      // M-4 Step 8-8 — exposed so the supported-marketplaces cache can be
+      // cleared between tests. Without it the cold-cache test passes or fails
+      // depending on file order, which is the worst kind of flake.
+      __store: store,
     },
   };
 });
 
-import { useScanDraft } from '../scanDraftStore';
+import { mmkv } from '@/lib/mmkv';
+import { writeCachedSupported } from '@/features/scanner/routing/supportedMarketplacesCache';
+import { useScanDraft, type MarketplaceKey } from '../scanDraftStore';
 import { mapSmartDetection } from '@/features/scanner/mapSmartDetection';
 import type {
   MappedSmartDetection,
@@ -41,6 +47,7 @@ import type {
 const photo = (i: number) => ({ uri: `file://${i}.jpg`, width: 1, height: 1 });
 
 beforeEach(() => {
+  (mmkv as unknown as { __store: Map<string, string> }).__store.clear();
   useScanDraft.getState().reset();
 });
 
@@ -234,6 +241,145 @@ describe('scanDraftStore Phase 0', () => {
         'grouped',
       );
       expect(useScanDraft.getState().pendingDetection).toBeNull();
+    });
+  });
+
+  describe('M-4 lock 2 — applySmartDetection adopts the AI marketplace', () => {
+    // A minimal two-product response where product 0 is 101it and product 1 is
+    // lab, so we can watch the queue take TWO different marketplaces.
+    const MIXED: SmartDetectionResponse = {
+      success: true,
+      language: 'en',
+      detection: { suggested_mode: 'multiple', confidence: 0.9, summary: '2 items' },
+      merged_single: {
+        name: 'ASUS PA279CV', equipment_description: 'monitor', condition: 'used',
+        price: '450', site_type: '101it',
+      },
+      products: [
+        {
+          id: 'p-0', image_indexes: [0], document_indexes: [],
+          data: {
+            name: 'ASUS PA279CV', equipment_description: 'monitor', condition: 'used',
+            price: '450', site_type: '101it',
+            product_cat: { id: '5501', name: 'Monitors' },
+          },
+        },
+        {
+          id: 'p-1', image_indexes: [1], document_indexes: [],
+          data: {
+            name: 'Hsiangtai CN-1050', equipment_description: 'centrifuge', condition: 'used',
+            price: '1200', site_type: 'LabGreenbidz',
+            product_cat: { id: '5375', name: 'Lab Infrastructure & Essentials' },
+          },
+        },
+      ],
+      suggested_terms: {},
+    } as unknown as SmartDetectionResponse;
+
+    const machinesItem = (over: Record<string, unknown> = {}) =>
+      ({
+        success: true,
+        language: 'en',
+        detection: { suggested_mode: 'single', confidence: 0.9, summary: '1 item' },
+        merged_single: {
+          name: 'Lincoln welding fixture', equipment_description: 'fixture',
+          condition: 'used', price: '900', site_type: 'machines',
+          product_cat: { id: '5300', name: 'Boring & Drilling Machines' },
+          ...over,
+        },
+        products: [
+          {
+            id: 'p-0', image_indexes: [0], document_indexes: [],
+            data: {
+              name: 'Lincoln welding fixture', equipment_description: 'fixture',
+              condition: 'used', price: '900', site_type: 'machines',
+              product_cat: { id: '5300', name: 'Boring & Drilling Machines' },
+              ...over,
+            },
+          },
+        ],
+        suggested_terms: {},
+      }) as unknown as SmartDetectionResponse;
+
+    const warm = (list: MarketplaceKey[]) => writeCachedSupported(list);
+
+    // ⛔ THE TEST THIS PHASE EXISTS FOR. Revert lock 2 to
+    // `marketplace: marketplaceFromSiteType(getSiteType())` and this goes RED.
+    it('takes the AI marketplace per product when the server list allows it', async () => {
+      warm(['101lab', '101machine', '101it']);
+      const mapped = mapSmartDetection(MIXED, 'LabGreenbidz');
+      await useScanDraft.getState().applySmartDetection(mapped, [photo(0), photo(1)], 'grouped');
+
+      const q = useScanDraft.getState().queuedItems;
+      expect(q).toHaveLength(2);
+      expect(q[0].marketplace).toBe('101it');
+      expect(q[1].marketplace).toBe('101lab');
+    });
+
+    // ⛔ blocker (a) — the COLD-CACHE hole, as a unit test. With no cache warmed,
+    // `supportedNow()` is ['101lab'], so the AI's 101it verdict is discarded AND
+    // the draft is stamped confirmed. This PINS that as the fail-closed
+    // contract, which is why V-0 (a warm first scan) has to be an on-device
+    // check: this is what the release-day bug looks like, and from inside a unit
+    // test it is indistinguishable from correct fail-closed behaviour.
+    it('falls back to the deployment marketplace and does NOT ask when the cache is cold', async () => {
+      const mapped = mapSmartDetection(MIXED, 'LabGreenbidz');
+      await useScanDraft.getState().applySmartDetection(mapped, [photo(0), photo(1)], 'grouped');
+
+      const q = useScanDraft.getState().queuedItems;
+      expect(q[0].marketplace).toBe('101lab');       // 101it discarded
+      expect(q[0].marketplaceConfirmed).toBe(true);  // 1.0.3 behaviour, no chip
+    });
+
+    it('keeps the deployment marketplace and ASKS when the AI names a withheld one', async () => {
+      warm(['101lab', '101machine']);                // 101it withheld
+      const mapped = mapSmartDetection(MIXED, 'LabGreenbidz');
+      await useScanDraft.getState().applySmartDetection(mapped, [photo(0), photo(1)], 'grouped');
+
+      const q = useScanDraft.getState().queuedItems;
+      expect(q[0].marketplace).toBe('101lab');
+      expect(q[0].marketplaceConfirmed).toBe(false); // the chip must ask
+      expect(q[1].marketplaceConfirmed).toBe(true);  // lab item is fine
+    });
+
+    it('asks when needs_clearer_photo is true, and persists that on the draft', async () => {
+      warm(['101lab', '101machine', '101it']);
+      const mapped = mapSmartDetection(
+        machinesItem({ needs_clearer_photo: true }),
+        'LabGreenbidz',
+      );
+      await useScanDraft.getState().applySmartDetection(mapped, [photo(0)], 'single');
+
+      const cur = useScanDraft.getState().current!;
+      expect(cur.needsClearerPhoto).toBe(true);
+      expect(cur.marketplaceConfirmed).toBe(false);
+    });
+
+    // ⛔ §0.5 OWNER DECISION — APPROVED 2026-08-18. A machines-routed item must
+    // NOT arrive carrying "Boring & Drilling Machines" as though the seller had
+    // picked it. Note the AI's id IS valid for the machines tree, so
+    // CategoryConditionCard would never clear it — the clear has to happen in
+    // the store.
+    it('clears the AI category on a machines-routed item', async () => {
+      warm(['101lab', '101machine', '101it']);
+      const mapped = mapSmartDetection(machinesItem(), 'LabGreenbidz');
+      expect(mapped.products[0].fields.categoryId).toBe('5300');   // the AI DID send one
+
+      await useScanDraft.getState().applySmartDetection(mapped, [photo(0)], 'single');
+
+      const cur = useScanDraft.getState().current!;
+      expect(cur.marketplace).toBe('101machine');
+      expect(cur.categoryId ?? '').toBe('');
+      expect(cur.categoryName ?? '').toBe('');
+      expect(cur.parentCategoryId ?? '').toBe('');
+      expect(cur.customSubcategory ?? '').toBe('');
+    });
+
+    it('keeps the AI category on a lab-routed item', async () => {
+      warm(['101lab', '101machine', '101it']);
+      const mapped = mapSmartDetection(MIXED, 'LabGreenbidz');
+      await useScanDraft.getState().applySmartDetection(mapped, [photo(0), photo(1)], 'grouped');
+      expect(useScanDraft.getState().queuedItems[1].categoryId).toBe('5375');
     });
   });
 

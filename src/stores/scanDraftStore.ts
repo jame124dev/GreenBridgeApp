@@ -411,12 +411,35 @@ function defaultSession(): PersistedScan {
   };
 }
 
+/**
+ * M-4 lock 2. Adopt the AI's marketplace only when the server list allows it;
+ * otherwise keep the deployment default (`routingNeedsAsk` then makes the chip
+ * ask, so an unsupported suggestion is never silently swallowed).
+ */
+function pickAppliedMarketplace(
+  suggested: MarketplaceKey | null,
+  supported: MarketplaceKey[],
+): MarketplaceKey {
+  if (suggested && supported.includes(suggested)) return suggested;
+  return marketplaceFromSiteType(getSiteType());
+}
+
 function draftFromSmartFields(
   photos: Photo[],
   fields: SmartItemFields,
   visibility: BatchVisibility,
 ): DraftItem {
   const base = emptyDraft(photos);
+  // One read of the supported list, shared by all three decisions below, so a
+  // mid-function cache write cannot make them disagree with each other.
+  const supported = supportedNow();
+  const signal = signalFromSmartFields(fields);
+  const appliedMarketplace = pickAppliedMarketplace(fields.suggestedMarketplace, supported);
+  const mustAsk = routingNeedsAsk({ signal, supported });
+  // `prefill` is judged on `appliedMarketplace`, NOT on fields.suggestedMarketplace:
+  // if the AI said 101machine but the server list withholds it, the draft lands on
+  // the deployment default and it is THAT tree's category being judged.
+  const prefill = shouldPrefillCategory({ marketplace: appliedMarketplace, signal });
   // Pickup location is a DEVICE value (location permission → pickupStore), NOT
   // a backend/AI field. Seed each grouped draft from the cached device location
   // so the review hub reflects the real location and doesn't flag it missing.
@@ -450,12 +473,43 @@ function draftFromSmartFields(
     dimensions: fields.dimensions,
     co2Emissions: fields.co2Emissions,
     grade: fields.grade,
-    // Marketplace is LOCKED to this deployment's site (like the web:
-    // `lockedMarketplace = marketplaceFromSiteType(SITE_TYPE)`). This build is
-    // 101lab-only, so we ignore the AI's detected site_type for the marketplace
-    // and always use the env value — otherwise a mis-detected site_type could
-    // flip the form to 101it/101machine (wrong categories, wrong submit URL).
-    marketplace: marketplaceFromSiteType(getSiteType()),
+    // ── M-4 lock 2 + §0.5 owner decision ─────────────────────────────────
+    //
+    // The AI's detected marketplace now REACHES the draft.
+    //
+    // `supportedNow()` reads the M-12 MMKV cache SYNCHRONOUSLY (this function is
+    // pure and runs inside `applySmartDetection`). The cache is warmed at app
+    // launch by `app/_layout.tsx`'s prefetch. Without that prefetch this reads
+    // ONE marketplace on a fresh install and the whole unlock is a no-op on the
+    // first scan; the two ship together.
+    //
+    // ⚠️ This is the ONLY place the AI may write `marketplace`, and it happens
+    // ONCE at draft construction. Never write it from a `watch` effect —
+    // useDetailController.ts documents the hydration race that caused: the
+    // form's default flips to the AI's value, a marketplace watch-effect reads
+    // that as a user switch, and the AI's auto-filled category is wiped before
+    // the tree even loads.
+    marketplace: appliedMarketplace,
+    marketplaceConfirmed: !mustAsk,
+    needsClearerPhoto: fields.needsClearerPhoto,
+    siteTypeConfidence: fields.siteTypeConfidence,
+    siteTypeSource: fields.siteTypeSource,
+    categorySource: fields.categorySource,
+    // §0.5 OWNER DECISION — APPROVED 2026-08-18. When the routed marketplace's
+    // tree cannot produce a trustworthy default (machines: `pickDefaultParent`
+    // returns tree[0] = 5300 "Boring & Drilling Machines") or the server itself
+    // says `category_source: 'unresolved'`, the AI's category is NOT presented
+    // as an answer. It must be CLEARED here, in the write —
+    // CategoryConditionCard only clears ids that are absent from the loaded
+    // tree, and a machines id under a machines marketplace IS present, so
+    // nothing downstream would ever drop it. `RoutingChip`'s `categoryNotSet`
+    // line is the explanation; this spread is the mechanism.
+    //
+    // DRAFT shape (categoryId/categoryName -> null), matching emptyDraft. The
+    // FORM shape is a different constant — CLEARED_CATEGORY_FORM_FIELDS.
+    // MUST stay AFTER `categoryId`/`categoryName` above, or the spread is a
+    // no-op: a later key in an object literal wins.
+    ...(prefill ? {} : CLEARED_CATEGORY_DRAFT_FIELDS),
     aiPrices: fields.aiPrices,
     ai: fields.ai,
     aiSkipped: false,
