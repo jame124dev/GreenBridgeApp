@@ -1,0 +1,1735 @@
+{
+  "__meta": {
+    "source": "https://testapi.greenbidz.com/api/v1 (DEV)",
+    "captured": "2026-08-19"
+  },
+  "lab_en": {
+    "url": "/product/lab/category?language=en",
+    "status": 200,
+    "data": [
+      {
+        "id": 5375,
+        "name": "Lab Infrastructure & Essentials",
+        "slug": "lab-infrastructure-essentials",
+        "count": 0,
+        "subcategories": [
+          {
+            "id": 5573,
+            "name": "Autoclaves and Sterilisation",
+            "slug": "autoclaves-and-sterilisation",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5578,
+            "name": "Centrifugation",
+            "slug": "centrifugation",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5411,
+            "name": "Cold Storage (-80C Freezers, LN2 Tanks)",
+            "slug": "cold-storage-80c-freezers-ln2-tanks",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5583,
+            "name": "Degassers",
+            "slug": "degassers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5749,
+            "name": "Desiccators",
+            "slug": "desiccators-2",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5754,
+            "name": "Freeze Drying",
+            "slug": "freeze-drying",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5412,
+            "name": "Fume Hoods & Biosafety Cabinets",
+            "slug": "fume-hoods-biosafety-cabinets",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5759,
+            "name": "Gas Generators",
+            "slug": "gas-generators",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5415,
+            "name": "General Lab Tools (Balances, Pipettes, Stirrers)",
+            "slug": "general-lab-tools-balances-pipettes-stirrers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5603,
+            "name": "Glasswares Washing and Drying",
+            "slug": "glasswares-washing-and-drying",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5719,
+            "name": "Handheld UV Lamps",
+            "slug": "handheld-uv-lamps",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5608,
+            "name": "Hotplates, Heating Mantles and Benchtop Heating",
+            "slug": "hotplates-heating-mantles-and-benchtop-heating",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5613,
+            "name": "Ice Machines",
+            "slug": "ice-machines",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5618,
+            "name": "Incubators and Growth Chambers",
+            "slug": "incubators-and-growth-chambers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5533,
+            "name": "Lab Equipment for Teaching",
+            "slug": "lab-equipment-for-teaching",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5413,
+            "name": "Lab Furniture & Benches",
+            "slug": "lab-furniture-benches",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5784,
+            "name": "Laboratory Air Pumps and Compressors",
+            "slug": "laboratory-air-pumps-and-compressors",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5563,
+            "name": "Laboratory Automation",
+            "slug": "laboratory-automation",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5628,
+            "name": "Laboratory Fluid Pumps and Dispensers",
+            "slug": "laboratory-fluid-pumps-and-dispensers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5633,
+            "name": "Laboratory Furniture",
+            "slug": "laboratory-furniture",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5538,
+            "name": "Laboratory Glassware & Plastics",
+            "slug": "laboratory-glassware-plastics",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5638,
+            "name": "Laboratory Heat Sealers",
+            "slug": "laboratory-heat-sealers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5568,
+            "name": "Laboratory Pickers and Robotics",
+            "slug": "laboratory-pickers-and-robotics",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5804,
+            "name": "Light Boxes and Illuminators",
+            "slug": "light-boxes-and-illuminators",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5648,
+            "name": "Mixers, Shakers and Stirrers",
+            "slug": "mixers-shakers-and-stirrers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5704,
+            "name": "Other Lab Equipment",
+            "slug": "other-lab-equipment",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5653,
+            "name": "Ovens and Furnaces",
+            "slug": "ovens-and-furnaces",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5819,
+            "name": "Pipettes",
+            "slug": "pipettes",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5663,
+            "name": "Process Equipment",
+            "slug": "process-equipment",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5709,
+            "name": "Radiation Handling Equipment",
+            "slug": "radiation-handling-equipment-2",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5668,
+            "name": "Refrigeration and Cryogenic Storage",
+            "slug": "refrigeration-and-cryogenic-storage",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5834,
+            "name": "Rotary Evaporation",
+            "slug": "rotary-evaporation",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5839,
+            "name": "Safety Cabinets and other Workstations",
+            "slug": "safety-cabinets-and-other-workstations",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5683,
+            "name": "Sonicators",
+            "slug": "sonicators",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5714,
+            "name": "Vintage and Antique Laboratory Equipment",
+            "slug": "vintage-and-antique-laboratory-equipment-2",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5849,
+            "name": "Water Baths, Chillers and Benchtop Cooling",
+            "slug": "water-baths-chillers-and-benchtop-cooling",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5693,
+            "name": "Water Purification",
+            "slug": "water-purification",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5414,
+            "name": "Water Purification Systems",
+            "slug": "water-purification-systems",
+            "count": 0,
+            "parent": 5375
+          }
+        ]
+      },
+      {
+        "id": 5371,
+        "name": "Life Sciences & Biotech (Bio)",
+        "slug": "life-sciences-biotech-bio",
+        "count": 0,
+        "subcategories": [
+          {
+            "id": 5383,
+            "name": "Bioreactors & Fermenters",
+            "slug": "bioreactors-fermenters",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5384,
+            "name": "Cell Culture & Analysis",
+            "slug": "cell-culture-analysis",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5385,
+            "name": "Centrifuges (Floor, Tabletop, Ultra)",
+            "slug": "centrifuges-floor-tabletop-ultra",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5386,
+            "name": "Genomics & PCR",
+            "slug": "genomics-pcr",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5387,
+            "name": "Incubators & Shakers",
+            "slug": "incubators-shakers",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5388,
+            "name": "Microscopy & Imaging Systems",
+            "slug": "microscopy-imaging-systems",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5390,
+            "name": "Sterilization & Autoclaves",
+            "slug": "",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5389,
+            "name": "Protein Purification (FPLC)",
+            "slug": "fplc",
+            "count": 0,
+            "parent": 5371
+          }
+        ]
+      },
+      {
+        "id": 5372,
+        "name": "Pharmaceutical & Analytical (Pharma)",
+        "slug": "pharmaceutical-analytical-pharma",
+        "count": 0,
+        "subcategories": [
+          {
+            "id": 5391,
+            "name": "Chromatography (HPLC, GC, TLC)",
+            "slug": "chromatography-hplc-gc-tlc",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5394,
+            "name": "Dissolution & Tablet Testing",
+            "slug": "dissolution-tablet-testing",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5392,
+            "name": "Mass Spectrometry (LC-MS, GC-MS)",
+            "slug": "mass-spectrometry-lc-ms-gc-ms",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5396,
+            "name": "Pharmaceutical Processing (Mixers, Granulators)",
+            "slug": "pharmaceutical-processing-mixers-granulators",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5397,
+            "name": "Sample Preparation (Evaporators, Freeze Dryers)",
+            "slug": "sample-preparation-evaporators-freeze-dryers",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5393,
+            "name": "Spectroscopy (UV-Vis, FTIR, NMR)",
+            "slug": "spectroscopy-uv-vis-ftir-nmr",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5398,
+            "name": "Thermal Analysis (DSC, TGA)",
+            "slug": "thermal-analysis-dsc-tga",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5395,
+            "name": "Liquid Handling & Lab Automation",
+            "slug": "",
+            "count": 0,
+            "parent": 5372
+          }
+        ]
+      },
+      {
+        "id": 5373,
+        "name": "Test & Measurement (T&M)",
+        "slug": "",
+        "count": 0,
+        "subcategories": [
+          {
+            "id": 5399,
+            "name": "Calibration & Standards",
+            "slug": "calibration-standards",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5400,
+            "name": "Electronic Test (Oscilloscopes, Multimeters)",
+            "slug": "electronic-test-oscilloscopes-multimeters",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5401,
+            "name": "Environmental Chambers (Temp/Humidity)",
+            "slug": "environmental-chambers-temp-humidity",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5402,
+            "name": "Materials Testing (UTM, Hardness)",
+            "slug": "materials-testing-utm-hardness",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5403,
+            "name": "Metrology & Inspection (CMM, Vision Systems)",
+            "slug": "metrology-inspection-cmm-vision-systems",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5404,
+            "name": "Physical Property Testing (Viscometers, Rheometers)",
+            "slug": "physical-property-testing-viscometers-rheometers",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5405,
+            "name": "Pressure, Flow & Vacuum Measurement",
+            "slug": "pressure-flow-vacuum-measurement",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5406,
+            "name": "Signal Generators & Analyzers",
+            "slug": "signal-generators-analyzers",
+            "count": 0,
+            "parent": 5373
+          }
+        ]
+      }
+    ]
+  },
+  "machines_en": {
+    "url": "/product/machines/category?language=en",
+    "status": 200,
+    "data": [
+      {
+        "id": 5300,
+        "name": "Boring & Drilling Machines",
+        "slug": "boring-drilling-machines"
+      },
+      {
+        "id": 5301,
+        "name": "Grinding & Finishing",
+        "slug": "grinding-finishing"
+      },
+      {
+        "id": 5305,
+        "name": "Laser & Plasma Cutting",
+        "slug": "laser-plasma-cutting"
+      },
+      {
+        "id": 5299,
+        "name": "Lathes",
+        "slug": "lathes"
+      },
+      {
+        "id": 5296,
+        "name": "Machining Centers",
+        "slug": "machining-centers"
+      },
+      {
+        "id": 5339,
+        "name": "Material Handling",
+        "slug": "material-handling"
+      },
+      {
+        "id": 5316,
+        "name": "Milling Machines",
+        "slug": "milling-machines"
+      },
+      {
+        "id": 5303,
+        "name": "Press Brakes & Shears",
+        "slug": "press-brakes-shears"
+      },
+      {
+        "id": 5304,
+        "name": "Punching & Forging",
+        "slug": "punching-forging"
+      },
+      {
+        "id": 5302,
+        "name": "Sawing Machines",
+        "slug": "sawing-machines"
+      },
+      {
+        "id": 5315,
+        "name": "Scrap",
+        "slug": "scrap"
+      },
+      {
+        "id": 5862,
+        "name": "Semiconductor Equipment",
+        "slug": "semiconductor-equipment"
+      },
+      {
+        "id": 5306,
+        "name": "Welding Equipment",
+        "slug": "welding-equipment"
+      }
+    ]
+  },
+  "it_en": {
+    "url": "/product/it/category?language=en",
+    "status": 200,
+    "data": [
+      {
+        "id": 5523,
+        "name": "Components",
+        "slug": "components",
+        "subcategories": [
+          {
+            "id": 5524,
+            "name": "GPU Accelerators",
+            "slug": "gpu-accelerators"
+          }
+        ]
+      },
+      {
+        "id": 5421,
+        "name": "Laptops & Desktops",
+        "slug": "laptops-desktops",
+        "subcategories": [
+          {
+            "id": 5432,
+            "name": "Dell",
+            "slug": "dell"
+          },
+          {
+            "id": 5434,
+            "name": "HP",
+            "slug": "hp"
+          },
+          {
+            "id": 5433,
+            "name": "Lenovo",
+            "slug": "lenovo"
+          },
+          {
+            "id": 5431,
+            "name": "MacBooks",
+            "slug": "macbooks"
+          }
+        ]
+      },
+      {
+        "id": 5443,
+        "name": "Server",
+        "slug": "server",
+        "subcategories": [
+          {
+            "id": 5444,
+            "name": "Cisco",
+            "slug": "cisco"
+          },
+          {
+            "id": 5445,
+            "name": "Dell EMC",
+            "slug": "dell-emc"
+          },
+          {
+            "id": 5446,
+            "name": "Fujitsu",
+            "slug": "fujitsu"
+          },
+          {
+            "id": 5447,
+            "name": "HPE",
+            "slug": "hpe"
+          },
+          {
+            "id": 5448,
+            "name": "IBM",
+            "slug": "ibm"
+          },
+          {
+            "id": 5449,
+            "name": "Lenovo",
+            "slug": "lenovo-2"
+          }
+        ]
+      },
+      {
+        "id": 5419,
+        "name": "Smartphones",
+        "slug": "smartphones",
+        "subcategories": [
+          {
+            "id": 5422,
+            "name": "Apple",
+            "slug": "apple"
+          },
+          {
+            "id": 5424,
+            "name": "Google",
+            "slug": "google"
+          },
+          {
+            "id": 5425,
+            "name": "Huawei",
+            "slug": "huawei"
+          },
+          {
+            "id": 5427,
+            "name": "Motorola",
+            "slug": "motorola"
+          },
+          {
+            "id": 5426,
+            "name": "One Plus",
+            "slug": "one-plus"
+          },
+          {
+            "id": 5423,
+            "name": "Samsung",
+            "slug": "samsung"
+          }
+        ]
+      },
+      {
+        "id": 5420,
+        "name": "Tablets",
+        "slug": "tablets",
+        "subcategories": [
+          {
+            "id": 5428,
+            "name": "iPad",
+            "slug": "ipad"
+          },
+          {
+            "id": 5430,
+            "name": "Microsoft Surface",
+            "slug": "microsoft-surface"
+          },
+          {
+            "id": 5429,
+            "name": "Samsung Tab",
+            "slug": "samsung-tab"
+          }
+        ]
+      },
+      {
+        "id": 5485,
+        "name": "Telecommunications & Communication Equipment",
+        "slug": "telecommunications-communication-equipment",
+        "subcategories": [
+          {
+            "id": 5498,
+            "name": "Communication accessories",
+            "slug": "communication-accessories"
+          },
+          {
+            "id": 5491,
+            "name": "IP phones",
+            "slug": "ip-phones"
+          },
+          {
+            "id": 5492,
+            "name": "PBX systems",
+            "slug": "pbx-systems"
+          },
+          {
+            "id": 5493,
+            "name": "VoIP gateways",
+            "slug": "voip-gateways"
+          },
+          {
+            "id": 5490,
+            "name": "Walkie-talkies (two-way radios)",
+            "slug": "walkie-talkies-two-way-radios"
+          }
+        ]
+      }
+    ]
+  },
+  "recycle_en": {
+    "url": "/product/category?lang=en",
+    "status": 200,
+    "data": [
+      {
+        "term_id": 1147,
+        "term_taxonomy_id": 1147,
+        "name": "Material Handling Equipment",
+        "slug": "material-handling-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1148,
+        "term_taxonomy_id": 1148,
+        "name": "Construction &amp; Earthmoving Equipment",
+        "slug": "construction-earthmoving-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1151,
+        "term_taxonomy_id": 1151,
+        "name": "Agricultural Equipment",
+        "slug": "agricultural-forestry-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1183,
+        "term_taxonomy_id": 1183,
+        "name": "Shop &amp; Maintenance Tools",
+        "slug": "shop-maintenance-tools",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1193,
+        "term_taxonomy_id": 1193,
+        "name": "Test &amp; Measurement Equipment",
+        "slug": "test-measurement-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1205,
+        "term_taxonomy_id": 1205,
+        "name": "Industrial Equipment, Parts &amp; Systems",
+        "slug": "industrial-equipment-systems",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1207,
+        "term_taxonomy_id": 1207,
+        "name": "Printing Equipment",
+        "slug": "printing-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1227,
+        "term_taxonomy_id": 1227,
+        "name": "IT &amp; Data Center Equipment",
+        "slug": "it-data-center-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1239,
+        "term_taxonomy_id": 1239,
+        "name": "Food Processing Equipment",
+        "slug": "food-processing-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1242,
+        "term_taxonomy_id": 1242,
+        "name": "Plastics Processing Equipment",
+        "slug": "plastics-processing-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1251,
+        "term_taxonomy_id": 1251,
+        "name": "Automotive &amp; Transportation Equipment",
+        "slug": "automotive-transportation-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1261,
+        "term_taxonomy_id": 1261,
+        "name": "Pharmaceutical &amp; Lab Equipment",
+        "slug": "pharmaceutical-lab-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1271,
+        "term_taxonomy_id": 1271,
+        "name": "Energy, Power &amp; Utilities",
+        "slug": "energy-power-utilities",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1281,
+        "term_taxonomy_id": 1281,
+        "name": "Surplus &amp; Scrap Materials",
+        "slug": "surplus-scrap-materials",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1339,
+        "term_taxonomy_id": 1339,
+        "name": "Packaging Equipment",
+        "slug": "packaging-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1344,
+        "term_taxonomy_id": 1344,
+        "name": "Automation &amp; Robotics",
+        "slug": "automation-robotics",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1352,
+        "term_taxonomy_id": 1352,
+        "name": "Semiconductor &amp; Electronics Manufacturing",
+        "slug": "semiconductor-electronics-manufacturing",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1918,
+        "term_taxonomy_id": 1918,
+        "name": "Others",
+        "slug": "others",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 1954,
+        "term_taxonomy_id": 1954,
+        "name": "Recycling Technology",
+        "slug": "recycling-technology",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 2019,
+        "term_taxonomy_id": 2019,
+        "name": "Metalworking Equipment",
+        "slug": "metalworking-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 2020,
+        "term_taxonomy_id": 2020,
+        "name": "Woodworking Equipment",
+        "slug": "woodworking-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 2046,
+        "term_taxonomy_id": 2046,
+        "name": "Transport &amp; Logistics Equipment",
+        "slug": "transport-logistics-equipment",
+        "description": "",
+        "thumbnail_id": "0"
+      },
+      {
+        "term_id": 5234,
+        "term_taxonomy_id": 5234,
+        "name": "Industrial Equipment",
+        "slug": "industrial-equipment",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5268,
+        "term_taxonomy_id": 5268,
+        "name": "Laboratory Equipment",
+        "slug": "laboratory-equipment",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5278,
+        "term_taxonomy_id": 5278,
+        "name": "Laboratory Modules",
+        "slug": "laboratory-modules",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5283,
+        "term_taxonomy_id": 5283,
+        "name": "Process Equipment",
+        "slug": "process-equipment",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5288,
+        "term_taxonomy_id": 5288,
+        "name": "Other Equipment",
+        "slug": "other-equipment",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5319,
+        "term_taxonomy_id": 5319,
+        "name": "Laser &amp; Plasma Cutting",
+        "slug": "laser-plasma-cutting",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5324,
+        "term_taxonomy_id": 5324,
+        "name": "Scrap",
+        "slug": "scrap",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5329,
+        "term_taxonomy_id": 5329,
+        "name": "Grinding &amp; Finishing",
+        "slug": "grinding-finishing",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5334,
+        "term_taxonomy_id": 5334,
+        "name": "車床 (CNC 與傳統)",
+        "slug": "%e8%bb%8a%e5%ba%8a-cnc-%e8%88%87%e5%82%b3%e7%b5%b1",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5341,
+        "term_taxonomy_id": 5341,
+        "name": "Lathes (CNC &amp; Conventional)",
+        "slug": "lathes-cnc-conventional",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5346,
+        "term_taxonomy_id": 5346,
+        "name": "Boring &amp; Drilling Machines",
+        "slug": "boring-drilling-machines",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5351,
+        "term_taxonomy_id": 5351,
+        "name": "Press Brakes &amp; Shears",
+        "slug": "press-brakes-shears",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5356,
+        "term_taxonomy_id": 5356,
+        "name": "Punching &amp; Forging",
+        "slug": "punching-forging",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5361,
+        "term_taxonomy_id": 5361,
+        "name": "Material Handling",
+        "slug": "material-handling",
+        "description": "",
+        "thumbnail_id": null
+      },
+      {
+        "term_id": 5366,
+        "term_taxonomy_id": 5366,
+        "name": "test",
+        "slug": "test",
+        "description": "",
+        "thumbnail_id": null
+      }
+    ]
+  },
+  "lab_zhhant": {
+    "url": "/product/lab/category?language=zh-hant",
+    "status": 200,
+    "data": [
+      {
+        "id": 5375,
+        "name": "實驗室基礎設施與必備工具",
+        "slug": "lab-infrastructure-essentials",
+        "count": 0,
+        "subcategories": [
+          {
+            "id": 5573,
+            "name": "Autoclaves and Sterilisation",
+            "slug": "autoclaves-and-sterilisation",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5578,
+            "name": "Centrifugation",
+            "slug": "centrifugation",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5411,
+            "name": "低溫儲存 (-80C 冷凍櫃、液氮罐)",
+            "slug": "cold-storage-80c-freezers-ln2-tanks",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5583,
+            "name": "Degassers",
+            "slug": "degassers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5749,
+            "name": "Desiccators",
+            "slug": "desiccators-2",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5754,
+            "name": "Freeze Drying",
+            "slug": "freeze-drying",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5412,
+            "name": "排煙櫃與生物安全櫃",
+            "slug": "fume-hoods-biosafety-cabinets",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5759,
+            "name": "Gas Generators",
+            "slug": "gas-generators",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5415,
+            "name": "通用實驗工具 (天平、微量移液器、攪拌器)",
+            "slug": "general-lab-tools-balances-pipettes-stirrers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5603,
+            "name": "Glasswares Washing and Drying",
+            "slug": "glasswares-washing-and-drying",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5719,
+            "name": "Handheld UV Lamps",
+            "slug": "handheld-uv-lamps",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5608,
+            "name": "Hotplates, Heating Mantles and Benchtop Heating",
+            "slug": "hotplates-heating-mantles-and-benchtop-heating",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5613,
+            "name": "Ice Machines",
+            "slug": "ice-machines",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5618,
+            "name": "Incubators and Growth Chambers",
+            "slug": "incubators-and-growth-chambers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5533,
+            "name": "Lab Equipment for Teaching",
+            "slug": "lab-equipment-for-teaching",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5413,
+            "name": "實驗室家具與工作台",
+            "slug": "lab-furniture-benches",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5784,
+            "name": "Laboratory Air Pumps and Compressors",
+            "slug": "laboratory-air-pumps-and-compressors",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5563,
+            "name": "Laboratory Automation",
+            "slug": "laboratory-automation",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5628,
+            "name": "Laboratory Fluid Pumps and Dispensers",
+            "slug": "laboratory-fluid-pumps-and-dispensers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5633,
+            "name": "Laboratory Furniture",
+            "slug": "laboratory-furniture",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5538,
+            "name": "Laboratory Glassware & Plastics",
+            "slug": "laboratory-glassware-plastics",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5638,
+            "name": "Laboratory Heat Sealers",
+            "slug": "laboratory-heat-sealers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5568,
+            "name": "Laboratory Pickers and Robotics",
+            "slug": "laboratory-pickers-and-robotics",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5804,
+            "name": "Light Boxes and Illuminators",
+            "slug": "light-boxes-and-illuminators",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5648,
+            "name": "Mixers, Shakers and Stirrers",
+            "slug": "mixers-shakers-and-stirrers",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5704,
+            "name": "Other Lab Equipment",
+            "slug": "other-lab-equipment",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5653,
+            "name": "Ovens and Furnaces",
+            "slug": "ovens-and-furnaces",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5819,
+            "name": "Pipettes",
+            "slug": "pipettes",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5663,
+            "name": "Process Equipment",
+            "slug": "process-equipment",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5709,
+            "name": "Radiation Handling Equipment",
+            "slug": "radiation-handling-equipment-2",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5668,
+            "name": "Refrigeration and Cryogenic Storage",
+            "slug": "refrigeration-and-cryogenic-storage",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5834,
+            "name": "Rotary Evaporation",
+            "slug": "rotary-evaporation",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5839,
+            "name": "Safety Cabinets and other Workstations",
+            "slug": "safety-cabinets-and-other-workstations",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5683,
+            "name": "Sonicators",
+            "slug": "sonicators",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5714,
+            "name": "Vintage and Antique Laboratory Equipment",
+            "slug": "vintage-and-antique-laboratory-equipment-2",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5849,
+            "name": "Water Baths, Chillers and Benchtop Cooling",
+            "slug": "water-baths-chillers-and-benchtop-cooling",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5693,
+            "name": "Water Purification",
+            "slug": "water-purification",
+            "count": 0,
+            "parent": 5375
+          },
+          {
+            "id": 5414,
+            "name": "純水系統",
+            "slug": "water-purification-systems",
+            "count": 0,
+            "parent": 5375
+          }
+        ]
+      },
+      {
+        "id": 5371,
+        "name": "生命科學與生物技術",
+        "slug": "life-sciences-biotech-bio",
+        "count": 0,
+        "subcategories": [
+          {
+            "id": 5383,
+            "name": "生物反應器與發酵槽",
+            "slug": "bioreactors-fermenters",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5384,
+            "name": "細胞培養與分析",
+            "slug": "cell-culture-analysis",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5385,
+            "name": "離心機 (落地式、桌上型、超高速)",
+            "slug": "centrifuges-floor-tabletop-ultra",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5386,
+            "name": "基因體學與 PCR",
+            "slug": "genomics-pcr",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5387,
+            "name": "培養箱與震盪器",
+            "slug": "incubators-shakers",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5388,
+            "name": "顯微鏡與影像系統",
+            "slug": "microscopy-imaging-systems",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5390,
+            "name": "滅菌與高壓滅菌器",
+            "slug": "",
+            "count": 0,
+            "parent": 5371
+          },
+          {
+            "id": 5389,
+            "name": "蛋白質純化 (FPLC)",
+            "slug": "fplc",
+            "count": 0,
+            "parent": 5371
+          }
+        ]
+      },
+      {
+        "id": 5372,
+        "name": "製藥與分析",
+        "slug": "pharmaceutical-analytical-pharma",
+        "count": 0,
+        "subcategories": [
+          {
+            "id": 5391,
+            "name": "層析儀 (HPLC, GC, TLC)",
+            "slug": "chromatography-hplc-gc-tlc",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5394,
+            "name": "溶離與錠劑測試",
+            "slug": "dissolution-tablet-testing",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5392,
+            "name": "質譜儀 (LC-MS, GC-MS)",
+            "slug": "mass-spectrometry-lc-ms-gc-ms",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5396,
+            "name": "製藥加工 (混合機、造粒機)",
+            "slug": "pharmaceutical-processing-mixers-granulators",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5397,
+            "name": "樣品製備 (蒸發儀、冷凍乾燥機)",
+            "slug": "sample-preparation-evaporators-freeze-dryers",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5393,
+            "name": "光譜儀 (UV-Vis, FTIR, NMR)",
+            "slug": "spectroscopy-uv-vis-ftir-nmr",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5398,
+            "name": "熱分析 (DSC, TGA)",
+            "slug": "thermal-analysis-dsc-tga",
+            "count": 0,
+            "parent": 5372
+          },
+          {
+            "id": 5395,
+            "name": "液體處理與實驗室自動化",
+            "slug": "",
+            "count": 0,
+            "parent": 5372
+          }
+        ]
+      },
+      {
+        "id": 5373,
+        "name": "測試與測量",
+        "slug": "",
+        "count": 0,
+        "subcategories": [
+          {
+            "id": 5399,
+            "name": "校準與標準件",
+            "slug": "calibration-standards",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5400,
+            "name": "電子測試 (示波器、三用電表)",
+            "slug": "electronic-test-oscilloscopes-multimeters",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5401,
+            "name": "環境試驗箱 (溫濕度)",
+            "slug": "environmental-chambers-temp-humidity",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5402,
+            "name": "材料測試 (萬能試驗機、硬度計)",
+            "slug": "materials-testing-utm-hardness",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5403,
+            "name": "計量與檢測 (三次元量測儀、影像量測系統)",
+            "slug": "metrology-inspection-cmm-vision-systems",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5404,
+            "name": "物理性質測試 (黏度計、流變儀)",
+            "slug": "physical-property-testing-viscometers-rheometers",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5405,
+            "name": "壓力、流量與真空測量",
+            "slug": "pressure-flow-vacuum-measurement",
+            "count": 0,
+            "parent": 5373
+          },
+          {
+            "id": 5406,
+            "name": "訊號產生器與分析儀",
+            "slug": "signal-generators-analyzers",
+            "count": 0,
+            "parent": 5373
+          }
+        ]
+      }
+    ]
+  },
+  "machines_zhhant": {
+    "url": "/product/machines/category?language=zh-hant",
+    "status": 200,
+    "data": [
+      {
+        "id": 5297,
+        "name": "加工中心",
+        "slug": ""
+      },
+      {
+        "id": 5318,
+        "name": "廢料",
+        "slug": "%e5%bb%a2%e6%96%99"
+      },
+      {
+        "id": 5311,
+        "name": "折彎機與剪板機",
+        "slug": "%e6%8a%98%e5%bd%8e%e6%a9%9f%e8%88%87%e5%89%aa%e6%9d%bf%e6%a9%9f"
+      },
+      {
+        "id": 5312,
+        "name": "沖壓與鍛造",
+        "slug": "%e6%b2%96%e5%a3%93%e8%88%87%e9%8d%9b%e9%80%a0"
+      },
+      {
+        "id": 5314,
+        "name": "焊接設備",
+        "slug": "%e7%84%8a%e6%8e%a5%e8%a8%ad%e5%82%99"
+      },
+      {
+        "id": 5340,
+        "name": "物料搬运",
+        "slug": "%e7%89%a9%e6%96%99%e6%90%ac%e8%bf%90"
+      },
+      {
+        "id": 5309,
+        "name": "研磨與拋光",
+        "slug": ""
+      },
+      {
+        "id": 5307,
+        "name": "車床 (CNC 與傳統)",
+        "slug": "%e8%bb%8a%e5%ba%8a-cnc-%e8%88%87%e5%82%b3%e7%b5%b1"
+      },
+      {
+        "id": 5317,
+        "name": "銑床",
+        "slug": "%e9%8a%91%e5%ba%8a"
+      },
+      {
+        "id": 5310,
+        "name": "鋸床",
+        "slug": "%e9%8b%b8%e5%ba%8a"
+      },
+      {
+        "id": 5308,
+        "name": "鏜床與鑽床",
+        "slug": ""
+      },
+      {
+        "id": 5313,
+        "name": "雷射與電漿切割",
+        "slug": "%e9%9b%b7%e5%b0%84%e8%88%87%e9%9b%bb%e6%bc%bf%e5%88%87%e5%89%b2"
+      }
+    ]
+  },
+  "it_zhhant": {
+    "url": "/product/it/category?language=zh-hant",
+    "status": 200,
+    "data": [
+      {
+        "id": 5523,
+        "name": "Components",
+        "slug": "components",
+        "subcategories": [
+          {
+            "id": 5524,
+            "name": "GPU Accelerators",
+            "slug": "gpu-accelerators"
+          }
+        ]
+      },
+      {
+        "id": 5421,
+        "name": "Laptops & Desktops",
+        "slug": "laptops-desktops",
+        "subcategories": [
+          {
+            "id": 5432,
+            "name": "Dell",
+            "slug": "dell"
+          },
+          {
+            "id": 5434,
+            "name": "HP",
+            "slug": "hp"
+          },
+          {
+            "id": 5433,
+            "name": "Lenovo",
+            "slug": "lenovo"
+          },
+          {
+            "id": 5431,
+            "name": "MacBooks",
+            "slug": "macbooks"
+          }
+        ]
+      },
+      {
+        "id": 5443,
+        "name": "Server",
+        "slug": "server",
+        "subcategories": [
+          {
+            "id": 5444,
+            "name": "Cisco",
+            "slug": "cisco"
+          },
+          {
+            "id": 5445,
+            "name": "Dell EMC",
+            "slug": "dell-emc"
+          },
+          {
+            "id": 5446,
+            "name": "Fujitsu",
+            "slug": "fujitsu"
+          },
+          {
+            "id": 5447,
+            "name": "HPE",
+            "slug": "hpe"
+          },
+          {
+            "id": 5448,
+            "name": "IBM",
+            "slug": "ibm"
+          },
+          {
+            "id": 5449,
+            "name": "Lenovo",
+            "slug": "lenovo-2"
+          }
+        ]
+      },
+      {
+        "id": 5419,
+        "name": "Smartphones",
+        "slug": "smartphones",
+        "subcategories": [
+          {
+            "id": 5422,
+            "name": "Apple",
+            "slug": "apple"
+          },
+          {
+            "id": 5424,
+            "name": "Google",
+            "slug": "google"
+          },
+          {
+            "id": 5425,
+            "name": "Huawei",
+            "slug": "huawei"
+          },
+          {
+            "id": 5427,
+            "name": "Motorola",
+            "slug": "motorola"
+          },
+          {
+            "id": 5426,
+            "name": "One Plus",
+            "slug": "one-plus"
+          },
+          {
+            "id": 5423,
+            "name": "Samsung",
+            "slug": "samsung"
+          }
+        ]
+      },
+      {
+        "id": 5420,
+        "name": "Tablets",
+        "slug": "tablets",
+        "subcategories": [
+          {
+            "id": 5428,
+            "name": "iPad",
+            "slug": "ipad"
+          },
+          {
+            "id": 5430,
+            "name": "Microsoft Surface",
+            "slug": "microsoft-surface"
+          },
+          {
+            "id": 5429,
+            "name": "Samsung Tab",
+            "slug": "samsung-tab"
+          }
+        ]
+      },
+      {
+        "id": 5485,
+        "name": "Telecommunications & Communication Equipment",
+        "slug": "telecommunications-communication-equipment",
+        "subcategories": [
+          {
+            "id": 5498,
+            "name": "Communication accessories",
+            "slug": "communication-accessories"
+          },
+          {
+            "id": 5491,
+            "name": "IP phones",
+            "slug": "ip-phones"
+          },
+          {
+            "id": 5492,
+            "name": "PBX systems",
+            "slug": "pbx-systems"
+          },
+          {
+            "id": 5493,
+            "name": "VoIP gateways",
+            "slug": "voip-gateways"
+          },
+          {
+            "id": 5490,
+            "name": "Walkie-talkies (two-way radios)",
+            "slug": "walkie-talkies-two-way-radios"
+          }
+        ]
+      }
+    ]
+  }
+}
