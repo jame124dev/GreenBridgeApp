@@ -1,11 +1,14 @@
+// `useEffect` STAYS — the hydrate/bridge effect below uses it. Only the
+// `selectedParentId` sync effect was deleted with the parent pill row.
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import {
   CONDITION_LABELS,
+  MARKETPLACE_OPTIONS,
   OTHER_SUBCATEGORY_ID,
   VALID_CONDITION_KEYS,
   type ConditionKey,
@@ -15,10 +18,12 @@ import {
   useEnLabCategories,
   useLabCategories,
 } from '@/features/scanner/useLabCategories';
-import { bridgeCategoryId } from '@/services/scanner/fetchCategories';
+import { bridgeCategoryId, flattenCategoryOptions } from '@/services/scanner/fetchCategories';
 import type { ItemGrade } from '@/stores/scanDraftStore';
+import { haptics } from '@/lib/haptics';
 import { brand } from '@/constants/theme';
 
+import { CategoryPickerSheet, type CategoryPick } from './CategoryPickerSheet';
 import { FieldLabel } from './FieldLabel';
 
 const GRADES: ItemGrade[] = ['A', 'B', 'C', 'D'];
@@ -31,14 +36,15 @@ const otherInputCls =
 /**
  * Category + condition + grade picker.
  *
- * Category mirrors the web seller form's two-dropdown pattern:
- *   - Parent picker (always shown).
- *   - Subcategory picker (only shown when the selected parent actually has
- *     subcategories — flat marketplaces like /machines have none, so the
- *     parent IS the leaf).
+ * M-2: category is ONE row (label + the current pick + Change) that opens
+ * `CategoryPickerSheet`. It used to be two stacked 240 px nested `ScrollView`s
+ * inside the page scroll — ~5 rows visible at a time over 62 leaves, 38 of them
+ * under one parent, with no search.
  *
  * The form's `categoryId` always holds the leaf id (sub when nested, parent
- * when flat) so the submit-time wiring stays unchanged.
+ * when flat) so the submit-time wiring stays unchanged. The "Other (type brand)"
+ * text input stays HERE rather than moving into the sheet: the seller has to see
+ * and edit it after the sheet closes.
  */
 export function CategoryConditionCard() {
   const { t, i18n } = useTranslation();
@@ -51,6 +57,9 @@ export function CategoryConditionCard() {
   const selectedConditions = watch('condition');
   const categoryId = watch('categoryId');
   const watchedParentCategoryId = watch('parentCategoryId');
+  // Reactive on purpose: the collapsed row's label reads it, and `getValues`
+  // inside a useMemo would not re-render when the hydrate effect writes it.
+  const watchedParentCategoryName = watch('parentCategoryName');
 
   const parents = categories.data?.categories ?? [];
 
@@ -77,17 +86,6 @@ export function CategoryConditionCard() {
     }
     return '';
   }, [categoryId, parents, watchedParentCategoryId]);
-
-  const [selectedParentId, setSelectedParentId] = useState(derivedParentId);
-
-  // Keep local parent state in sync when the form value changes externally
-  // (marketplace switch, AI fill, draft hydrate). The setState IS the
-  // effect's purpose — mirror the derived parent-id into a local component
-  // state used by the parent-pill highlight.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedParentId(derivedParentId);
-  }, [derivedParentId]);
 
   // Clear stale categoryId when the marketplace switches and the prior leaf
   // is no longer present in the new tree. `categoryName` doesn't need its own
@@ -175,22 +173,49 @@ export function CategoryConditionCard() {
     setValue('condition', next, { shouldValidate: true });
   };
 
-  const selectedParent = parents.find((c) => String(c.id) === selectedParentId);
-  const subs = selectedParent?.subcategories ?? [];
-  const isFlatLeaf = selectedParent != null && subs.length === 0;
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const options = useMemo(() => flattenCategoryOptions(parents), [parents]);
+  const selectedParent = parents.find((c) => String(c.id) === derivedParentId);
+  const marketplaceLabel =
+    MARKETPLACE_OPTIONS.find((o) => o.value === marketplace)?.label ?? '';
+  const otherLabel = t('mobile.detail.subCategoryOther', {
+    defaultValue: 'Other (type brand)',
+  });
 
-  const onPickParent = (id: string) => {
-    setSelectedParentId(id);
-    const cat = parents.find((c) => String(c.id) === id);
-    const catSubs = cat?.subcategories ?? [];
-    // Flat marketplace → parent IS the leaf; commit immediately.
-    // Nested → reset leaf so user picks a sub next.
-    setValue('categoryId', catSubs.length === 0 ? id : '', { shouldValidate: false });
-    // Track the parent so the "Other" card can file under it; keep the typed
-    // brand from a previous parent out of a fresh selection.
-    setValue('parentCategoryId', id);
-    setValue('parentCategoryName', cat?.name ?? '');
-    setValue('customSubcategory', '');
+  // What the collapsed row shows. Four states, in priority order:
+  //   Other picked → "Parent › Other (type brand)"
+  //   leaf picked  → the flattened label ("Parent › Sub", or the parent's own
+  //                  name on a flat tree)
+  //   parent only  → "Parent › pick a subcategory" — shows what the AI DID
+  //                  resolve instead of discarding it, while the empty leaf keeps
+  //                  Submit blocked (schema.ts:23)
+  //   nothing      → '' (the row renders the "Not set" prompt)
+  const selectedLabel = useMemo(() => {
+    if (categoryId === OTHER_SUBCATEGORY_ID) {
+      const parentName = watchedParentCategoryName || selectedParent?.name || '';
+      return parentName ? `${parentName} › ${otherLabel}` : otherLabel;
+    }
+    if (categoryId) return options.find((o) => o.id === categoryId)?.label ?? '';
+    if (selectedParent) {
+      return `${selectedParent.name} › ${t('mobile.detail.categoryPickSubcategory', {
+        defaultValue: 'pick a subcategory',
+      })}`;
+    }
+    return '';
+  }, [categoryId, options, selectedParent, watchedParentCategoryName, otherLabel, t]);
+
+  // The ONLY place this card writes the category fields, and it is reachable
+  // exclusively from the sheet's own Pressables — i.e. user-initiated. Never
+  // move any of this into an effect keyed on `marketplace`: see the NOTE above.
+  const applyPick = (pick: CategoryPick) => {
+    setValue('categoryId', pick.categoryId, { shouldValidate: true });
+    setValue('parentCategoryId', pick.parentCategoryId, { shouldValidate: false });
+    setValue('parentCategoryName', pick.parentCategoryName, { shouldValidate: false });
+    // A real leaf leaves "Other" behind — drop any stale typed brand so it is
+    // never submitted (same reason as the old parent-pill and subcategory rows).
+    if (pick.categoryId !== OTHER_SUBCATEGORY_ID) {
+      setValue('customSubcategory', '', { shouldValidate: false });
+    }
   };
 
   return (
@@ -201,52 +226,36 @@ export function CategoryConditionCard() {
         render={({ fieldState }) => (
           <View className="gap-1.5">
             <FieldLabel text={t('mobile.detail.sectionCategory')} required ai />
-            {categories.isLoading ? (
-              <ActivityIndicator color={brand.primary} />
-            ) : categories.isError ? (
-              <Text className="text-brand-destructive text-md">
-                {t('mobile.detail.categoriesLoadFailed')}
-              </Text>
-            ) : (
-              <ScrollView
-                style={{ maxHeight: 240 }}
-                contentContainerStyle={{ paddingBottom: 4 }}
-                nestedScrollEnabled
-                keyboardShouldPersistTaps="handled"
+            <Pressable
+              className="flex-row items-center gap-sm border border-brand-border-strong rounded-xs px-md py-2.5"
+              onPress={() => {
+                haptics.tap();
+                setSheetOpen(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('mobile.detail.sectionCategory')}: ${
+                selectedLabel ||
+                t('mobile.detail.categoryNotSet', { defaultValue: 'Not set — pick a category' })
+              }`}
+            >
+              <Text
+                className={`flex-1 font-label-medium text-lg ${
+                  selectedLabel ? 'text-brand-foreground' : 'text-brand-placeholder'
+                }`}
+                numberOfLines={2}
               >
-                {parents.map((cat) => {
-                  const id = String(cat.id);
-                  const active = selectedParentId === id;
-                  return (
-                    <Pressable
-                      key={cat.id}
-                      className={`flex-row items-center justify-between gap-sm border rounded-xs px-md py-2.5 ${
-                        active
-                          ? 'border-brand-primary border-2 bg-brand-primary-surface'
-                          : 'border-brand-border-strong'
-                      }`}
-                      style={{ marginTop: 6 }}
-                      onPress={() => onPickParent(id)}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: active }}
-                      accessibilityLabel={cat.name}
-                    >
-                      <Text
-                        className={`flex-1 ${active ? 'font-label text-brand-primary text-lg' : 'font-label-medium text-lg text-brand-foreground'}`}
-                        numberOfLines={1}
-                      >
-                        {cat.name}
-                      </Text>
-                      <MaterialIcons
-                        name={active ? 'check-circle' : 'chevron-right'}
-                        size={20}
-                        color={active ? brand.primary : brand.placeholder}
-                      />
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            )}
+                {selectedLabel ||
+                  t('mobile.detail.categoryNotSet', {
+                    defaultValue: 'Not set — pick a category',
+                  })}
+              </Text>
+              <Text className="font-label text-md text-brand-primary">
+                {selectedLabel
+                  ? t('mobile.detail.change', { defaultValue: 'Change' })
+                  : t('mobile.detail.choose', { defaultValue: 'Choose' })}
+              </Text>
+              <MaterialIcons name="chevron-right" size={20} color={brand.placeholder} />
+            </Pressable>
             {fieldState.error ? (
               <Text className="text-brand-destructive text-md">{fieldState.error.message}</Text>
             ) : null}
@@ -254,138 +263,52 @@ export function CategoryConditionCard() {
         )}
       />
 
-      {selectedParent && !isFlatLeaf ? (
+      {/* The typed brand for "Other" stays on the CARD, not in the sheet: the
+          seller must see and edit it after the sheet closes. Same field, same
+          validation (schema.ts superRefine), one less place to look. */}
+      {categoryId === OTHER_SUBCATEGORY_ID ? (
         <Controller
           control={control}
-          name="categoryId"
-          render={({ field: { value, onChange } }) => (
+          name="customSubcategory"
+          render={({ field: { value: brandValue, onChange: onBrandChange, onBlur }, fieldState }) => (
             <View className="gap-1.5">
               <FieldLabel
                 text={t('mobile.detail.sectionSubcategory', { defaultValue: 'SUBCATEGORY' })}
                 required
               />
-              <ScrollView
-                style={{ maxHeight: 240 }}
-                contentContainerStyle={{ paddingBottom: 4 }}
-                nestedScrollEnabled
-                keyboardShouldPersistTaps="handled"
-              >
-                {subs.map((sub) => {
-                  const id = String(sub.id);
-                  const active = value === id;
-                  return (
-                    <Pressable
-                      key={sub.id}
-                      className={`flex-row items-center justify-between gap-sm border rounded-xs px-md py-2.5 ${
-                        active
-                          ? 'border-brand-primary border-2 bg-brand-primary-surface'
-                          : 'border-brand-border-strong'
-                      }`}
-                      style={{ marginTop: 6 }}
-                      onPress={() => {
-                        // Real sub picked → leaves "Other" naturally; drop any
-                        // stale typed brand so it's never submitted.
-                        onChange(id);
-                        setValue('customSubcategory', '');
-                      }}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: active }}
-                      accessibilityLabel={`${selectedParent.name} ${sub.name}`}
-                    >
-                      <Text
-                        className={`flex-1 ${active ? 'font-label text-brand-primary text-lg' : 'font-label-medium text-lg text-brand-foreground'}`}
-                        numberOfLines={1}
-                      >
-                        {sub.name}
-                      </Text>
-                      <MaterialIcons
-                        name={active ? 'check-circle' : 'chevron-right'}
-                        size={20}
-                        color={active ? brand.primary : brand.placeholder}
-                      />
-                    </Pressable>
-                  );
+              <TextInput
+                className={otherInputCls}
+                value={brandValue ?? ''}
+                onChangeText={onBrandChange}
+                onBlur={onBlur}
+                maxLength={60}
+                placeholder={t('mobile.detail.subCategoryOtherPlaceholder', {
+                  defaultValue: 'Enter brand name',
                 })}
-
-              </ScrollView>
-
-              {/* "Other (type brand)" lives OUTSIDE the maxHeight:240 brand
-                  ScrollView so it is ALWAYS visible below the (scrollable) brand
-                  list — inside it, it was the clipped 5th row under the fold.
-                  Files the product under the selected PARENT and sends the typed
-                  brand as suggested_subcategory. */}
-              {(() => {
-                const active = value === OTHER_SUBCATEGORY_ID;
-                return (
-                  <Pressable
-                    key="__other__"
-                    className={`flex-row items-center justify-between gap-sm border rounded-xs px-md py-2.5 ${
-                      active
-                        ? 'border-brand-primary border-2 bg-brand-primary-surface'
-                        : 'border-brand-border-strong'
-                    }`}
-                    style={{ marginTop: 6 }}
-                    onPress={() => {
-                      onChange(OTHER_SUBCATEGORY_ID);
-                      setValue('parentCategoryId', selectedParentId);
-                      setValue('parentCategoryName', selectedParent?.name ?? '');
-                    }}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={t('mobile.detail.subCategoryOther', {
-                      defaultValue: 'Other (type brand)',
-                    })}
-                  >
-                    <Text
-                      className={`flex-1 ${active ? 'font-label text-brand-primary text-lg' : 'font-label-medium text-lg text-brand-foreground'}`}
-                      numberOfLines={1}
-                    >
-                      {t('mobile.detail.subCategoryOther', {
-                        defaultValue: 'Other (type brand)',
-                      })}
-                    </Text>
-                    <MaterialIcons
-                      name={active ? 'check-circle' : 'chevron-right'}
-                      size={20}
-                      color={active ? brand.primary : brand.placeholder}
-                    />
-                  </Pressable>
-                );
-              })()}
-
-              {value === OTHER_SUBCATEGORY_ID ? (
-                <Controller
-                  control={control}
-                  name="customSubcategory"
-                  render={({
-                    field: { value: brandValue, onChange: onBrandChange, onBlur },
-                    fieldState,
-                  }) => (
-                    <View className="gap-1.5" style={{ marginTop: 6 }}>
-                      <TextInput
-                        className={otherInputCls}
-                        value={brandValue ?? ''}
-                        onChangeText={onBrandChange}
-                        onBlur={onBlur}
-                        maxLength={60}
-                        placeholder={t('mobile.detail.subCategoryOtherPlaceholder', {
-                          defaultValue: 'Enter brand name',
-                        })}
-                        placeholderTextColor={brand.placeholder}
-                      />
-                      {fieldState.error ? (
-                        <Text className="text-brand-destructive text-md">
-                          {fieldState.error.message}
-                        </Text>
-                      ) : null}
-                    </View>
-                  )}
-                />
+                placeholderTextColor={brand.placeholder}
+              />
+              {fieldState.error ? (
+                <Text className="text-brand-destructive text-md">{fieldState.error.message}</Text>
               ) : null}
             </View>
           )}
         />
       ) : null}
+
+      <CategoryPickerSheet
+        visible={sheetOpen}
+        categories={parents}
+        loading={categories.isLoading}
+        error={categories.isError}
+        onRetry={() => {
+          void categories.refetch();
+        }}
+        marketplaceLabel={marketplaceLabel}
+        value={categoryId ?? ''}
+        parentId={watchedParentCategoryId ?? ''}
+        onSelect={applyPick}
+        onClose={() => setSheetOpen(false)}
+      />
 
       <View className="gap-1.5">
         <FieldLabel text={t('mobile.detail.sectionCondition')} required />

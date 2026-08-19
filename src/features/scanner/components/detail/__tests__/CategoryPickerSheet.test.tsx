@@ -31,6 +31,12 @@ jest.mock('react-native-reanimated', () => {
 // `app/(lab)/account/__tests__/delete.test.tsx:18`.
 jest.mock('@/lib/mmkv', () => ({ mmkv: { getString: () => undefined, set: () => {} } }));
 
+// Real en resources, so the assertions read the SHIPPED copy rather than the
+// `defaultValue` fallbacks — and so `{{marketplace}}` / `{{q}}` are actually
+// interpolated (`t` with no i18next instance returns the raw string). Same
+// pattern as `app/(lab)/account/__tests__/delete.test.tsx:40`.
+import '@/i18n';
+
 import { OTHER_SUBCATEGORY_ID } from '@/features/scanner/constants';
 import type { LabCategory } from '@/services/scanner/fetchCategories';
 

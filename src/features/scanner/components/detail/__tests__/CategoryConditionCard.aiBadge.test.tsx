@@ -21,13 +21,28 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 // `fetchCategories` pulls in the axios client -> MMKV (a Nitro module with no
-// jest binary). Only `bridgeCategoryId` is used, and only for AI-pick locale
-// bridging, which no assertion here touches.
-jest.mock('@/services/scanner/fetchCategories', () => ({ bridgeCategoryId: () => null }));
+// jest binary). `bridgeCategoryId` is used for AI-pick locale bridging and
+// `flattenCategoryOptions` (M-2) for the collapsed row's label — neither is
+// touched by an assertion here, but both must exist or the card throws on render.
+jest.mock('@/services/scanner/fetchCategories', () => ({
+  bridgeCategoryId: () => null,
+  flattenCategoryOptions: () => [],
+}));
 jest.mock('@/features/scanner/useLabCategories', () => ({
   useLabCategories: () => ({ isLoading: false, isError: false, data: { options: [] } }),
   useEnLabCategories: () => ({ isLoading: false, isError: false, data: { options: [] } }),
 }));
+// M-2: the card now mounts `CategoryPickerSheet`, and `Sheet` reads the bottom
+// safe-area inset in the primitive (so all ~10 consumers clear an Android
+// 3-button nav bar at once). Same stub as
+// `app/(lab)/account/__tests__/delete.test.tsx:10-14`.
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
+  SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
+}));
+// The card's collapsed row taps haptics on press; expo-haptics has no jest binary.
+jest.mock('@/lib/haptics', () => ({ haptics: { tap: jest.fn() } }));
 
 import { CategoryConditionCard } from '@/features/scanner/components/detail/CategoryConditionCard';
 import { emptyDetailDefaults } from '@/features/scanner/components/detail/formMapping';

@@ -3,7 +3,12 @@ import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { Sheet, Text } from '@/components/ui';
+// Deep imports, not the `@/components/ui` barrel: the barrel re-exports Button
+// (-> react-native-reanimated) and LanguageSheet (-> MMKV), and this component is
+// mounted by CategoryConditionCard, which three screens render. Pulling two
+// primitives should not pull the worklets runtime into that graph.
+import { Sheet } from '@/components/ui/Sheet';
+import { Text } from '@/components/ui/Text';
 import { OTHER_SUBCATEGORY_ID } from '@/features/scanner/constants';
 import { flattenCategoryOptions, type LabCategory } from '@/services/scanner/fetchCategories';
 import { brand } from '@/constants/theme';
