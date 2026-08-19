@@ -25,6 +25,7 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const DETAIL = 'app/scan/detail.tsx';
 const GEDIT = 'app/scan/grouped-edit.tsx';
 const GREVIEW = 'app/scan/grouped-review.tsx';
+const PROCESSING = 'app/scan/processing.tsx';
 
 describe('M-3 — the chip is mounted on BOTH editors', () => {
   for (const rel of [DETAIL, GEDIT]) {
@@ -136,5 +137,62 @@ describe('M-3 — the hub shows each row its destination (plan §6.2)', () => {
     const src = read(GREVIEW);
     expect(src).not.toContain('<RoutingChip');
     expect(src).not.toMatch(/marketplace:\s/);
+  });
+});
+
+/**
+ * M-4 lock 3 — the ANALYZE screen's seam. Added 2026-08-19 after review found it
+ * missing: deleting the single spread below removed the whole of lock 3 (the
+ * marketplace adoption, `marketplaceConfirmed`, all four carried routing fields
+ * and the §0.5 category clear) and the full suite stayed 123 suites / 1147 tests
+ * green with tsc at exit 0. Grouped scans ALWAYS take this branch, so it is the
+ * most travelled path in the feature and it was the least guarded.
+ *
+ * Two halves, both needed: the DECISION is unit-tested directly in
+ * `routingState.test.ts` (17 tests — that only became possible once the function
+ * moved out of this un-importable route file), and the CALL SITE is here.
+ *
+ * Assertions are `indexOf` / `toContain` on single-line fragments only:
+ * `processing.tsx` has MIXED line endings (1183 CRLF + 5 LF-only lines), so
+ * anything spanning a newline would pin bytes that have already drifted once.
+ */
+describe('M-4 lock 3 — the analyze path applies the routing patch', () => {
+  const MARK = '...routingPatchFromAi(';
+
+  it('spreads routingPatchFromAi into the analyze onSuccess patch', () => {
+    expect(read(PROCESSING)).toContain(MARK);
+  });
+
+  it('imports it from routingState — the ONE home — and defines no local copy', () => {
+    const src = read(PROCESSING);
+    expect(src).toContain(
+      "import { routingPatchFromAi } from '@/features/scanner/routing/routingState';",
+    );
+    // A second definition here is the three-copies regression blocker (d) exists
+    // for, and it would also make the unit tests in routingState.test.ts a lie.
+    expect(src).not.toMatch(/function\s+routingPatchFromAi/);
+  });
+
+  it('passes the live supported list and the build fallback, not hardcoded values', () => {
+    const src = read(PROCESSING);
+    const at = src.indexOf(MARK);
+    const args = src.slice(at, at + 400);
+    expect(args).toContain('supported: supportedNow(),');
+    expect(args).toContain('fallbackMarketplace: marketplaceFromSiteType(getSiteType())');
+  });
+
+  // The ordering constraint the call site's own comment states, and the reason
+  // this spread is written where it is: when the routed tree is untrusted the
+  // patch CLEARS the five category fields, so anything spreading `ai.categoryId`
+  // afterwards would silently undo the clear.
+  it('is the LAST spread in the patch — after ai.categoryId, before lastStep', () => {
+    const src = read(PROCESSING);
+    const at = src.indexOf(MARK);
+    const catAt = src.indexOf('...(ai.categoryId');
+    const lastStepAt = src.indexOf("lastStep: 'detail',", at);
+    expect(catAt).toBeGreaterThan(-1);
+    expect(catAt).toBeLessThan(at);
+    expect(lastStepAt).toBeGreaterThan(at);
+    expect(src.slice(at + MARK.length, lastStepAt)).not.toContain('...');
   });
 });

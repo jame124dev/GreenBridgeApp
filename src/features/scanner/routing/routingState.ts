@@ -189,6 +189,68 @@ export const CLEARED_CATEGORY_FORM_FIELDS = Object.freeze({
 }>;
 
 /**
+ * ⛔ M-4 lock 3 — THE ONE HOME for the analyze path's routing patch.
+ *
+ * The analyze path's half of lock 2, expressed with the SAME two decision
+ * functions so the two paths cannot drift. `app/scan/processing.tsx` spreads the
+ * result into the `patch()` it builds from the AI response.
+ *
+ * `marketplace` is patched ONLY when the AI named a marketplace this build
+ * actually supports, so an absent or off-list verdict leaves `emptyDraft`'s env
+ * default in place rather than clobbering it with a guess — note the key is
+ * OMITTED, not set to undefined, because the result is spread over a draft.
+ * `marketplaceConfirmed` records whether the chip must ask, and the five
+ * category fields are cleared when the routed tree cannot be trusted (§0.5).
+ *
+ * WHY IT LIVES HERE and not in the route file, where it started: while it was a
+ * module-scope helper inside `processing.tsx` it was unreachable from jest (that
+ * file needs expo-router, the SSE client and MMKV), so deleting the one spread
+ * that calls it removed ALL of lock 3 with the whole suite still green. It is
+ * pure — `supported` and `fallbackMarketplace` are ARGUMENTS, exactly as in
+ * `routingNeedsAsk` — which is what lets it sit in this import-type-only module
+ * (blocker (d)) next to the two decisions it composes, and be unit-tested
+ * directly in `src/features/scanner/__tests__/routingState.test.ts`.
+ *
+ * ⚠️ Do NOT read `supportedNow()` / `getSiteType()` in here. Both are MMKV/expo
+ * reads; pulling either in would break blocker (d) and drag the scan store's
+ * import graph along with it. The call site does those reads and passes values.
+ */
+export function routingPatchFromAi(args: {
+  ai: AiResult;
+  /** `supportedNow()` at the call site. */
+  supported: MarketplaceKey[];
+  /**
+   * The build's OWN marketplace — what the draft will hold when the AI's verdict
+   * is absent or rejected. `marketplaceFromSiteType(getSiteType()) ?? '101lab'`
+   * at the call site, mirroring the store's lenient wrapper
+   * (scanDraftStore.ts:240-242): the STRICT helper returns null for an off-list
+   * SITE_TYPE, and this value only picks which tree's category is being judged,
+   * so it must never be null.
+   */
+  fallbackMarketplace: MarketplaceKey;
+}): Partial<DraftItem> {
+  const { ai, supported, fallbackMarketplace } = args;
+  const signal = signalFromAiResult(ai);
+  const usable =
+    signal.suggestedMarketplace && supported.includes(signal.suggestedMarketplace)
+      ? signal.suggestedMarketplace
+      : null;
+  // Judge the prefill on what the draft will ACTUALLY hold, the same rule lock 2
+  // uses. Judging the AI's rejected verdict would clear a category that is fine.
+  const marketplace = usable ?? fallbackMarketplace;
+  const prefill = shouldPrefillCategory({ marketplace, signal });
+  return {
+    ...(usable ? { marketplace: usable } : {}),
+    marketplaceConfirmed: !routingNeedsAsk({ signal, supported }),
+    needsClearerPhoto: signal.needsClearerPhoto,
+    siteTypeConfidence: signal.siteTypeConfidence,
+    siteTypeSource: signal.siteTypeSource,
+    categorySource: signal.categorySource,
+    ...(prefill ? {} : CLEARED_CATEGORY_DRAFT_FIELDS),
+  };
+}
+
+/**
  * The v1 routing decision. THREE states, exactly as plan §2.2:
  *   confirmed + prefill      — "Listing on 101MACHINE — change", category pre-filled
  *   confirmed + no prefill   — marketplace stated, category reads "Not set"

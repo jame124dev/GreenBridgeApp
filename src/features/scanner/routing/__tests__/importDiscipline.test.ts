@@ -57,11 +57,16 @@ describe('blocker (d) — routingState.ts stays import-type-only', () => {
     }
   });
 
-  it('the ask-trigger and the prefill rule have exactly ONE definition each', () => {
-    // Both are exported from routingState.ts and nowhere else. A second
+  it('the ask-trigger, the prefill rule and the analyze patch have ONE definition each', () => {
+    // All three are exported from routingState.ts and nowhere else. A second
     // `function routingNeedsAsk` anywhere in src/ or app/ is the three-copies
     // regression blocker (d) was raised for. Test files are excluded — this file
     // quotes the patterns it searches for.
+    //
+    // `routingPatchFromAi` joined the list on 2026-08-19: it USED to be a
+    // module-scope helper in app/scan/processing.tsx, where jest could not reach
+    // it, so a copy drifting back into a route file is exactly the regression to
+    // block.
     const roots = ['src', 'app'];
     const hits: string[] = [];
     const walk = (dir: string) => {
@@ -74,7 +79,8 @@ describe('blocker (d) — routingState.ts stays import-type-only', () => {
           const src = read(rel);
           if (
             /function\s+routingNeedsAsk\b/.test(src) ||
-            /function\s+shouldPrefillCategory\b/.test(src)
+            /function\s+shouldPrefillCategory\b/.test(src) ||
+            /function\s+routingPatchFromAi\b/.test(src)
           ) {
             hits.push(rel);
           }

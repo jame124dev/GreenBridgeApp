@@ -15,12 +15,7 @@ import { toast } from 'sonner-native';
 
 import { AppImage, Button, Screen, Stack } from '@/components/ui';
 import { manualEntryDefaults, marketplaceFromSiteType } from '@/features/scanner/constants';
-import {
-  CLEARED_CATEGORY_DRAFT_FIELDS,
-  routingNeedsAsk,
-  shouldPrefillCategory,
-  signalFromAiResult,
-} from '@/features/scanner/routing/routingState';
+import { routingPatchFromAi } from '@/features/scanner/routing/routingState';
 // ⚠️ `supportedMarketplacesCache`, NEVER `supportedMarketplaces` — same import
 // rule as the store: the latter drags axios + the auth/socket graph in.
 import { supportedNow } from '@/features/scanner/routing/supportedMarketplacesCache';
@@ -81,43 +76,13 @@ const PHASE_TO_STEP: Record<StagePhase, number> = {
   done: 3,
 };
 
-/**
- * M-4 lock 3. The analyze path's half of lock 2, expressed with the SAME two
- * decision functions so the two paths cannot drift.
- *
- * `marketplace` is patched ONLY when the AI named a supported marketplace, so an
- * absent or off-list verdict leaves `emptyDraft`'s env default in place rather
- * than clobbering it with a guess. `marketplaceConfirmed` records whether the
- * chip must ask, and the category is cleared when the routed tree cannot be
- * trusted (§0.5).
- *
- * Module scope so it is not re-created per render.
- */
-function routingPatchFromAi(ai: AiResult): Partial<DraftItem> {
-  const supported = supportedNow();
-  const signal = signalFromAiResult(ai);
-  const usable =
-    signal.suggestedMarketplace && supported.includes(signal.suggestedMarketplace)
-      ? signal.suggestedMarketplace
-      : null;
-  // Judge the prefill on what the draft will ACTUALLY hold, the same rule lock 2
-  // uses. Judging the AI's rejected verdict would clear a category that is fine.
-  // `?? '101lab'` mirrors the store's own lenient wrapper
-  // (scanDraftStore.ts:240-242): the STRICT helper returns null for an
-  // off-list SITE_TYPE, and this value only picks which tree's category is
-  // being judged, so it must never be null.
-  const marketplace = usable ?? marketplaceFromSiteType(getSiteType()) ?? '101lab';
-  const prefill = shouldPrefillCategory({ marketplace, signal });
-  return {
-    ...(usable ? { marketplace: usable } : {}),
-    marketplaceConfirmed: !routingNeedsAsk({ signal, supported }),
-    needsClearerPhoto: signal.needsClearerPhoto,
-    siteTypeConfidence: signal.siteTypeConfidence,
-    siteTypeSource: signal.siteTypeSource,
-    categorySource: signal.categorySource,
-    ...(prefill ? {} : CLEARED_CATEGORY_DRAFT_FIELDS),
-  };
-}
+// M-4 lock 3 lives in `features/scanner/routing/routingState.ts` as
+// `routingPatchFromAi`, beside the two decision functions it composes. It was a
+// module-scope helper HERE until the 2026-08-19 review: this file is not
+// importable under jest (expo-router + the SSE client + MMKV), so with the
+// function inside it, deleting the one spread that calls it removed the whole of
+// lock 3 with the full suite still green. Its decision is unit-tested in
+// routingState.test.ts and this CALL SITE in routingWiring.test.ts.
 
 export default function ProcessingScreen() {
   const { t, i18n } = useTranslation();
@@ -584,7 +549,11 @@ export default function ProcessingScreen() {
               // trigger inline: `routingNeedsAsk` and `shouldPrefillCategory`
               // live in routingState.ts and have ONE implementation
               // (blocker (d)).
-              ...routingPatchFromAi(ai),
+              ...routingPatchFromAi({
+                ai,
+                supported: supportedNow(),
+                fallbackMarketplace: marketplaceFromSiteType(getSiteType()) ?? '101lab',
+              }),
               lastStep: 'detail',
             });
             // Re-check for consistency with the useSmart branch above — this

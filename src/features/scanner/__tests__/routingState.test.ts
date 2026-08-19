@@ -6,6 +6,7 @@ import {
   deriveRoutingState,
   isRoutingResolved,
   routingNeedsAsk,
+  routingPatchFromAi,
   routingWhyLine,
   shouldPrefillCategory,
   signalFromAiResult,
@@ -366,5 +367,167 @@ describe('routingWhyLine', () => {
   });
   it('invents nothing when there is nothing to say', () => {
     expect(routingWhyLine(draft({}))).toBeNull();
+  });
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// M-4 lock 3 — the analyze path's patch.
+//
+// ⛔ WHY THIS BLOCK EXISTS. Before it, deleting the single spread
+// `...routingPatchFromAi(...)` from `app/scan/processing.tsx` removed the WHOLE
+// of lock 3 — marketplace adoption, `marketplaceConfirmed`, all four carried
+// routing fields and the approved machines/recycle category clear — and the full
+// suite stayed 123 suites / 1147 tests green with tsc at exit 0. GROUPED scans
+// always take that branch, so it is the most travelled path in the feature.
+// Third time on this project that a phase's headline behaviour was free to
+// delete (Step 8-8 was the first, C4's call site the second), so it is closed
+// the same way: the DECISION is pinned here, the CALL SITE in
+// `routingWiring.test.ts`.
+//
+// The function is pure because `supported` and `fallbackMarketplace` are
+// arguments — the same trick `routingNeedsAsk` uses, and what keeps
+// `routingState.ts` import-type-only for blocker (d).
+// ─────────────────────────────────────────────────────────────────────────────
+const aiFrom = (over: Partial<RoutingSignal>): AiResult =>
+  ({
+    name: 'Hsiangtai CN-1050',
+    description: 'benchtop centrifuge',
+    condition: ['used'],
+    operationStatus: ['working'],
+    suggestedPrice: '1200',
+    currency: 'USD',
+    suggestedMarketplace: null,
+    needsClearerPhoto: false,
+    siteTypeConfidence: null,
+    siteTypeSource: null,
+    categorySource: null,
+    ...over,
+  }) as unknown as AiResult;
+
+/** The analyze path's real arguments: every marketplace on, lab as the build's own. */
+const patchOf = (
+  over: Partial<RoutingSignal>,
+  supported: MarketplaceKey[] = ALL,
+  fallbackMarketplace: MarketplaceKey = '101lab',
+) => routingPatchFromAi({ ai: aiFrom(over), supported, fallbackMarketplace });
+
+describe('routingPatchFromAi — marketplace adoption', () => {
+  it('adopts the AI marketplace when the server list allows it', () => {
+    expect(patchOf({ suggestedMarketplace: '101it' }).marketplace).toBe('101it');
+  });
+
+  it('OMITS the key entirely when the AI named nothing', () => {
+    // Not `marketplace: undefined` — the patch is spread over a draft, so a
+    // present-but-undefined key would clobber `emptyDraft`s env default with
+    // undefined instead of leaving it alone.
+    expect('marketplace' in patchOf({})).toBe(false);
+  });
+
+  it('OMITS the key when the AI named a marketplace this build does not support', () => {
+    const patch = patchOf({ suggestedMarketplace: '101recycle' }, ['101lab', '101it']);
+    expect('marketplace' in patch).toBe(false);
+  });
+});
+
+describe('routingPatchFromAi — the confirmed/ask answer', () => {
+  it('is confirmed on a clean signal', () => {
+    expect(patchOf({ suggestedMarketplace: '101lab' }).marketplaceConfirmed).toBe(true);
+  });
+
+  it('must ask when the nameplate could not be read', () => {
+    expect(
+      patchOf({ suggestedMarketplace: '101lab', needsClearerPhoto: true }).marketplaceConfirmed,
+    ).toBe(false);
+  });
+
+  it('must ask on an override or a low-confidence fallback', () => {
+    for (const siteTypeSource of ['regex_override', 'low_confidence_fallback'] as const) {
+      expect(
+        patchOf({ suggestedMarketplace: '101lab', siteTypeSource }).marketplaceConfirmed,
+      ).toBe(false);
+    }
+  });
+
+  it('must ask when the AI routed somewhere this build cannot list', () => {
+    expect(
+      patchOf({ suggestedMarketplace: '101recycle' }, ['101lab', '101it']).marketplaceConfirmed,
+    ).toBe(false);
+  });
+
+  it('never asks on a single-marketplace build — a fail-closed install is 1.0.3', () => {
+    expect(
+      patchOf({ suggestedMarketplace: null, needsClearerPhoto: true }, ['101lab'])
+        .marketplaceConfirmed,
+    ).toBe(true);
+  });
+});
+
+describe('routingPatchFromAi — the four carried routing fields', () => {
+  it('carries every one of them onto the draft', () => {
+    const patch = patchOf({
+      suggestedMarketplace: '101it',
+      needsClearerPhoto: true,
+      siteTypeConfidence: 0.42,
+      siteTypeSource: 'vision',
+      categorySource: 'fuzzy',
+    });
+    expect(patch.needsClearerPhoto).toBe(true);
+    expect(patch.siteTypeConfidence).toBe(0.42);
+    expect(patch.siteTypeSource).toBe('vision');
+    expect(patch.categorySource).toBe('fuzzy');
+  });
+
+  it('writes explicit nulls/false rather than leaving stale values behind', () => {
+    const patch = patchOf({ suggestedMarketplace: '101lab' });
+    expect(patch.needsClearerPhoto).toBe(false);
+    expect(patch.siteTypeConfidence).toBeNull();
+    expect(patch.siteTypeSource).toBeNull();
+    expect(patch.categorySource).toBeNull();
+  });
+});
+
+describe('routingPatchFromAi — the §0.5 category clear (owner-approved)', () => {
+  const cleared = (patch: Partial<DraftItem>) =>
+    Object.entries(CLEARED_CATEGORY_DRAFT_FIELDS).every(
+      ([k, v]) => patch[k as keyof DraftItem] === v,
+    );
+
+  it('leaves a trusted marketplace resolved category alone', () => {
+    const patch = patchOf({ suggestedMarketplace: '101lab', categorySource: 'ai' });
+    expect('categoryId' in patch).toBe(false);
+    expect(cleared(patch)).toBe(false);
+  });
+
+  it('clears all FIVE fields for a machines-routed item', () => {
+    // /machines is 13 flat parents with zero subcategories, so the backend
+    // pickDefaultParent ships tree[0] on anything it cannot place.
+    expect(cleared(patchOf({ suggestedMarketplace: '101machine' }))).toBe(true);
+  });
+
+  it('clears all FIVE fields for a recycle-routed item', () => {
+    expect(cleared(patchOf({ suggestedMarketplace: '101recycle' }))).toBe(true);
+  });
+
+  it('clears when the server itself says the category is unresolved', () => {
+    expect(
+      cleared(patchOf({ suggestedMarketplace: '101lab', categorySource: 'unresolved' })),
+    ).toBe(true);
+  });
+
+  // ⛔ The subtle one, and the reason `marketplace` is recomputed before the
+  // prefill question is asked. The AI verdict was REJECTED (not on the server
+  // list), so the draft will hold the build's own lab marketplace — judging the
+  // rejected machines verdict would clear a lab category that is perfectly fine.
+  it('judges the prefill on what the draft will ACTUALLY hold, not the rejected verdict', () => {
+    const patch = patchOf({ suggestedMarketplace: '101machine' }, ['101lab', '101it'], '101lab');
+    expect('marketplace' in patch).toBe(false);
+    expect(cleared(patch)).toBe(false);
+  });
+
+  // The mirror image: nothing adopted, and the build's OWN marketplace is one of
+  // the untrusted trees, so the clear must still happen.
+  it('judges against the build fallback when the AI named nothing', () => {
+    expect(cleared(patchOf({}, ALL, '101recycle'))).toBe(true);
   });
 });
