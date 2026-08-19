@@ -224,11 +224,20 @@ export default function GroupedEditScreen() {
             photos={item.photos ?? []}
             rearrangeLabel={t('mobile.review.rearrange')}
           />
-          <IdentityCard />
           {/* M-3 — the same routing chip as detail.tsx, because retargeting a
               per-item marketplace happens in the ITEM EDITOR, not on the hub
               (plan §9): a second write path to `marketplace` re-opens the
-              documented hydration race. */}
+              documented hydration race.
+
+              ABOVE the IdentityCard, exactly as on detail.tsx and exactly as
+              plan Step 9-6 asked. It shipped below it in a48e893 (whose message
+              already claimed "at the TOP of both editors") and the wiring test
+              was relaxed to "above the description" to match. Order matters
+              here: this answer decides which category tree and which currency
+              the fields underneath are edited against, so "where does this item
+              go" has to come before "what is this item" — and the two editors
+              must not disagree about it. Pinned for both files by
+              src/features/scanner/__tests__/routingWiring.test.ts. */}
           <RoutingChip
             draft={item}
             onConfirm={(marketplace) =>
@@ -250,6 +259,7 @@ export default function GroupedEditScreen() {
               })
             }
           />
+          <IdentityCard />
           <DescriptionCard />
           <MarketplaceCard />
           <CategoryConditionCard />

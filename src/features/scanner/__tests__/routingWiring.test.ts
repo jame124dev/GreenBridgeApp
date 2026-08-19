@@ -44,15 +44,26 @@ describe('M-3 — the chip is mounted on BOTH editors', () => {
   // The routing answer decides which category tree and which currency the rest
   // of the form uses, so it belongs at the TOP of the scroll — not as an
   // eleventh card behind ~3,200 px (plan §6.1).
-  it('the chip sits above the identity fields on detail.tsx', () => {
-    const src = read(DETAIL);
-    expect(src.indexOf('<RoutingChip')).toBeLessThan(src.indexOf('<IdentityCard />'));
-  });
-
-  it('the chip sits above the description on grouped-edit.tsx', () => {
-    const src = read(GEDIT);
-    expect(src.indexOf('<RoutingChip')).toBeLessThan(src.indexOf('<DescriptionCard />'));
-  });
+  //
+  // TIGHTENED (device pass, 2026-08-19). This used to assert "above
+  // <IdentityCard />" for detail.tsx but only "above <DescriptionCard />" for
+  // grouped-edit.tsx — which was the WEAKER of the two assertions written to
+  // fit code that had drifted: grouped-edit shipped the chip BELOW IdentityCard
+  // (a48e893, whose own message claims "at the TOP of both editors"). The chip
+  // moved up rather than the plan moving down: "where does this item go" is the
+  // question that decides which category tree and which currency the identity
+  // fields are then edited against, so it belongs above "what is this item", and
+  // the two editors must not disagree about it. One loop, one rule, both files.
+  for (const rel of [DETAIL, GEDIT]) {
+    it(`the chip sits above the identity fields on ${rel}`, () => {
+      const src = read(rel);
+      const chip = src.indexOf('<RoutingChip');
+      const identity = src.indexOf('<IdentityCard />');
+      expect(chip).toBeGreaterThan(-1);
+      expect(identity).toBeGreaterThan(-1);
+      expect(chip).toBeLessThan(identity);
+    });
+  }
 });
 
 describe('blocker (c) — both onConfirm call sites clear the category in the SAME patch', () => {
@@ -68,7 +79,11 @@ describe('blocker (c) — both onConfirm call sites clear the category in the SA
   it('grouped-edit.tsx does the same through patchQueuedItem', () => {
     const src = read(GEDIT);
     const at = src.indexOf('<RoutingChip');
-    const block = src.slice(at, src.indexOf('<DescriptionCard />', at));
+    // Sliced to <IdentityCard /> — the SAME boundary as detail.tsx above, now
+    // that the chip sits above the identity fields on both editors. Slicing to
+    // <DescriptionCard /> would keep passing but would silently tolerate the chip
+    // drifting back down between the two cards.
+    const block = src.slice(at, src.indexOf('<IdentityCard />', at));
     expect(block).toContain('patchQueuedItem(index, {');
     expect(block).toContain('marketplaceConfirmed: true,');
     expect(block).toContain('...CLEARED_CATEGORY_DRAFT_FIELDS,');
