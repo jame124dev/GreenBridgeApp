@@ -1,7 +1,9 @@
 import { Redirect } from 'expo-router';
 
-// History lives in the (tabs) group so the bottom tab bar stays visible.
-// This route remains for back-compat with any older deep links.
+// Kept for back-compat with older deep links. It used to point at the seller
+// fork's `(tabs)/history`; that fork is deleted, so it now lands on the lab
+// app's "My listings", which is the equivalent destination (and where
+// scan/success sends a multi-item submit).
 export default function ActivityHistoryRedirect() {
-  return <Redirect href="/(tabs)/history" />;
+  return <Redirect href="/(lab)/(tabs)/listings" />;
 }

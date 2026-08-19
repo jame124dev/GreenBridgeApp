@@ -2,7 +2,11 @@ import type { Href } from 'expo-router';
 
 /** Typed-route-safe paths (regenerate with `npx expo start` if routes change). */
 export const routes = {
-  scanHome: '/(tabs)' as Href,
+  /**
+   * Where "done / go home" lands. Was the seller shell `/(tabs)`; that fork was
+   * deleted (the app is customer-only now), so this is the lab home.
+   */
+  scanHome: '/(lab)/(tabs)/home' as Href,
   /** (lab) full "my listings" view — reached from Home Recent listings "See all". */
   labListings: '/(lab)/(tabs)/listings' as Href,
   /** (lab) dedicated notifications page — reached from the header bell. */
@@ -13,7 +17,6 @@ export const routes = {
    * seller-upgrade request, and this is where an unapproved user is sent.
    */
   labSellApply: '/(lab)/sell/apply' as Href,
-  profile: '/(tabs)/profile' as Href,
   scanListingMethod: '/scan/listing-method' as Href,
   scanGroupedReview: '/scan/grouped-review' as Href,
   // Round 2 R1/R2 — per-item editor reached from the review-hub. New route

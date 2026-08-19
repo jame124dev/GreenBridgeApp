@@ -12,7 +12,7 @@ export default function Index() {
   // in — and a pending account is a working BUYER session. Only the SELL path is
   // gated, in launchSellerScan(), off /seller-upgrade/my-status.
   if (!profile) return <Redirect href="/(auth)/login" />;
-  // Post-auth fork: customer bundle → (lab) app; seller bundle → existing (tabs).
-  if (IS_CUSTOMER) return <Redirect href="/(lab)/(tabs)/home" />;
-  return <Redirect href="/(tabs)" />;
+  // Single destination: the seller `(tabs)` fork was deleted, so every signed-in
+  // user lands in the (lab) app.
+  return <Redirect href="/(lab)/(tabs)/home" />;
 }

@@ -28,10 +28,9 @@ export function QuickActionsStrip({ onSignOut, signingOut }: Props) {
 
   const goListings = () => {
     haptics.tap();
-    // Fork-aware: the customer (lab) build has no seller (tabs) shell — routing
-    // there drops the user into the seller Home/History/Me nav. Send lab users
-    // to the in-shell "My listings" page (keeps the lab tab bar, Account active).
-    router.push(IS_CUSTOMER ? routes.labListings : '/(tabs)/history');
+    // The in-shell "My listings" page — keeps the lab tab bar, Account active.
+    // (The seller `(tabs)` shell this used to branch to has been deleted.)
+    router.push(routes.labListings);
   };
 
   /**

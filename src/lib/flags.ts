@@ -30,13 +30,17 @@ export const SMART_DETECT_ENABLED = process.env.EXPO_PUBLIC_SMART_DETECT !== '0'
 export const SMART_DETECT_V2_ENABLED = process.env.EXPO_PUBLIC_SMART_DETECT_V2 === '1';
 
 /**
- * Build-time user-type fork. Selects which app the bundle targets: the seller
- * dashboard (default) or the new customer app. Set `EXPO_PUBLIC_USER_TYPE` to
- * `customer` in `.env` and restart Metro; any other value (or unset) is seller.
- * Routing off this flag is the Shell phase — this module only reads it.
+ * There is only ONE app now. The seller-dashboard fork (`app/(tabs)/`) has been
+ * deleted, so `customer` is the only valid value and this no longer reads
+ * `EXPO_PUBLIC_USER_TYPE` — an unset or stale env var (`.env` still says
+ * `seller`) would otherwise send every `IS_CUSTOMER` branch down an arm whose
+ * screens no longer exist.
+ *
+ * Both exports are kept so the ~20 call sites still compile; their seller arms
+ * are now unreachable and can be swept whenever someone is next in those files.
  */
-export const USER_TYPE = (process.env.EXPO_PUBLIC_USER_TYPE === 'customer' ? 'customer' : 'seller') as 'seller' | 'customer';
-export const IS_CUSTOMER = USER_TYPE === 'customer';
+export const USER_TYPE = 'customer' as const;
+export const IS_CUSTOMER = true;
 
 /**
  * (lab) customer-app dynamic flags (NewVersion/dynamic/06-roadmap-risks.md §4).
