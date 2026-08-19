@@ -19,12 +19,14 @@ import {
   PricingCard,
   ProfitIntelligenceCard,
   RequiredChecklist,
+  RoutingChip,
   SpecsCard,
 } from '@/features/scanner/components/detail';
 import {
   buildDraftPatch,
   draftToFormValues,
 } from '@/features/scanner/components/detail/formMapping';
+import { CLEARED_CATEGORY_DRAFT_FIELDS } from '@/features/scanner/routing/routingState';
 import { detailSchema, type DetailFormInput } from '@/features/scanner/schema';
 import { useLabCategories } from '@/features/scanner/useLabCategories';
 import { haptics } from '@/lib/haptics';
@@ -223,6 +225,31 @@ export default function GroupedEditScreen() {
             rearrangeLabel={t('mobile.review.rearrange')}
           />
           <IdentityCard />
+          {/* M-3 — the same routing chip as detail.tsx, because retargeting a
+              per-item marketplace happens in the ITEM EDITOR, not on the hub
+              (plan §9): a second write path to `marketplace` re-opens the
+              documented hydration race. */}
+          <RoutingChip
+            draft={item}
+            onConfirm={(marketplace) =>
+              patchQueuedItem(index, {
+                marketplace,
+                marketplaceConfirmed: true,
+                // ⛔ blocker (c), grouped variant — and here the failure mode is
+                // WORSE than a stale form. `patchQueuedItem` merges immediately,
+                // so without this the STORED item carries the new marketplace
+                // with the OLD categoryId. This screen's `useForm` sets
+                // defaultValues once and has no reset effect, so nothing
+                // re-syncs it, and `onValid` is the only thing that writes the
+                // form back. If the seller leaves via the app bar or the Android
+                // hardware back instead of Save, that mismatched pair PERSISTS —
+                // grouped-review then counts the row ready and the pre-flight
+                // sweep passes it, and submit sends the old tree's id with the
+                // new allowed_sites.
+                ...CLEARED_CATEGORY_DRAFT_FIELDS,
+              })
+            }
+          />
           <DescriptionCard />
           <MarketplaceCard />
           <CategoryConditionCard />

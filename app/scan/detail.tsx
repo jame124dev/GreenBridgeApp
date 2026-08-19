@@ -9,6 +9,10 @@ import { toast } from 'sonner-native';
 
 import { getRequiredStatus } from '@/features/scanner/requiredStatus';
 import {
+  CLEARED_CATEGORY_DRAFT_FIELDS,
+  isRoutingResolved,
+} from '@/features/scanner/routing/routingState';
+import {
   CategoryConditionCard,
   DescriptionCard,
   DetailAppBar,
@@ -21,6 +25,7 @@ import {
   PricingCard,
   ProfitIntelligenceCard,
   RequiredChecklist,
+  RoutingChip,
   SpecsCard,
   useDetailController,
   useRowScroller,
@@ -132,6 +137,37 @@ export default function DetailScreen() {
               onAddMore={addMorePhotos}
             />
           </View>
+          {/* M-3 — the routing answer sits at the TOP of the scroll, above the
+              identity fields, because it decides which category tree and which
+              currency the rest of the form uses. It renders NOTHING when only
+              one marketplace is supported, so a fail-closed install is 1.0.3. */}
+          <RoutingChip
+            draft={draft}
+            onConfirm={(marketplace) =>
+              useScanDraft.getState().patch({
+                marketplace,
+                marketplaceConfirmed: true,
+                // ⛔ blocker (c) — THE SAME PATCH. `patch()` builds
+                // `{ ...cur, ...partial }` and sets a NEW `current` object, which
+                // re-fires useDetailController's `useEffect(..., [draft, reset])`
+                // and runs `reset(draftToFormValues(draft))`. `draftToFormValues`
+                // maps `categoryId: draft.categoryId ?? ''`. So a patch carrying
+                // only `marketplace` RESTORES the old category into the form — and
+                // submit then sends `product_category_ids` from the PREVIOUS tree
+                // with `allowed_sites[]` from the NEW one. The chip's `setValue`
+                // calls cannot win that race; the store patch has to carry the
+                // clear.
+                //
+                // Unconditional: `pick()` only calls `onConfirm` from a tap, and
+                // re-confirming the SAME marketplace still means the seller has
+                // just been shown "we won't guess the category" — clearing is the
+                // honest outcome either way, and RoutingChip.pick already guards
+                // the form-side clear on `m !== current`, so a no-op re-tap looks
+                // unchanged.
+                ...CLEARED_CATEGORY_DRAFT_FIELDS,
+              })
+            }
+          />
           <View onLayout={registerRow('title')}>
             <IdentityCard />
           </View>
@@ -183,7 +219,20 @@ export default function DetailScreen() {
             isGrouped={isGrouped}
             editingGroupedItem={editingGroupedItem}
             queuedCount={queuedCount}
-            allRequired={required.allComplete}
+            // M-3 — an unanswered routing question blocks Submit for the same
+            // reason a missing category does: `marketplace` drives
+            // `allowed_sites[]` (buildFormData.ts:223-224) and therefore the
+            // product's site_id. Kept HERE rather than inside
+            // `getRequiredStatus` so this phase does not collide with M-7,
+            // which owns requiredStatus.ts.
+            //
+            // ⚠️ AFTER PHASE 5 THIS IS NOT ENOUGH ON ITS OWN (integration C4).
+            // The single-mode Submit is `disabled={!!submitting}`, so
+            // `allRequired` feeds only the GROUPED buttons.
+            // `missingRouting()` in useDetailController is what actually stops a
+            // single-mode submit. Keep BOTH: this one keeps the button visibly
+            // disabled in grouped mode, that one is the correctness fix.
+            allRequired={required.allComplete && isRoutingResolved(draft)}
             submitting={submitting}
             onSubmitSingle={onSubmitSingle}
             onAddAnother={onAddAnother}

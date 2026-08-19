@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Store,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -22,7 +23,9 @@ import {
   getDraftRequiredStatus,
   type RequiredRowKey,
 } from '@/features/scanner/requiredStatus';
+import { MARKETPLACE_OPTIONS } from '@/features/scanner/constants';
 import { useRequiredRowLabel } from '@/features/scanner/requiredRowLabels';
+import { isRoutingResolved } from '@/features/scanner/routing/routingState';
 import { useSubmitGroupedListing } from '@/features/scanner/useSubmitGroupedListing';
 import {
   SellerApprovalNotice,
@@ -98,12 +101,16 @@ export default function GroupedReviewHub() {
       queuedItems.map((item) => {
         const status = getDraftRequiredStatus(item);
         const hasPhotos = (item.photos?.length ?? 0) > 0;
-        const ready = status.allComplete && hasPhotos;
+        // M-3 — an unanswered routing question is a missing required answer,
+        // counted alongside the schema rows so the hub's "n of m ready" and the
+        // pre-flight sweep agree with the footer.
+        const routingResolved = isRoutingResolved(item);
+        const ready = status.allComplete && hasPhotos && routingResolved;
         const missingKeys = (Object.keys(status.rows) as RequiredRowKey[]).filter(
           (k) => !status.rows[k],
         );
-        const missingCount = missingKeys.length;
-        return { ready, missingCount, missingKeys };
+        const missingCount = missingKeys.length + (routingResolved ? 0 : 1);
+        return { ready, missingCount, missingKeys, routingResolved };
       }),
     [queuedItems],
   );
@@ -156,7 +163,9 @@ export default function GroupedReviewHub() {
       const it = liveItems[i];
       if (!it) continue;
       const ok =
-        getDraftRequiredStatus(it).allComplete && (it.photos?.length ?? 0) > 0;
+        getDraftRequiredStatus(it).allComplete &&
+        (it.photos?.length ?? 0) > 0 &&
+        isRoutingResolved(it);
       if (!ok) {
         haptics.error();
         Alert.alert(
@@ -308,11 +317,13 @@ export default function GroupedReviewHub() {
 
         <Stack gap="lg">
           {queuedItems.map((item, index) => {
-            const { ready, missingCount, missingKeys } = rowStatuses[index] ?? {
-              ready: false,
-              missingCount: 1,
-              missingKeys: [] as RequiredRowKey[],
-            };
+            const { ready, missingCount, missingKeys, routingResolved } =
+              rowStatuses[index] ?? {
+                ready: false,
+                missingCount: 1,
+                missingKeys: [] as RequiredRowKey[],
+                routingResolved: true,
+              };
             return (
               <HubRow
                 key={item.id}
@@ -321,6 +332,7 @@ export default function GroupedReviewHub() {
                 ready={ready}
                 missingCount={missingCount}
                 missingKeys={missingKeys}
+                routingResolved={routingResolved}
                 onPress={() => onRowTap(index)}
                 disabled={submitGrouped.isPending}
               />
@@ -502,6 +514,7 @@ function HubRow({
   ready,
   missingCount,
   missingKeys,
+  routingResolved,
   onPress,
   disabled,
 }: {
@@ -510,6 +523,8 @@ function HubRow({
   ready: boolean;
   missingCount: number;
   missingKeys: RequiredRowKey[];
+  /** M-3 — false when this item's routing question is still unanswered. */
+  routingResolved: boolean;
   onPress: () => void;
   disabled: boolean;
 }) {
@@ -545,6 +560,14 @@ function HubRow({
     const head = names.slice(0, 2).join(', ');
     const extra = names.length - 2;
     const preview = extra > 0 ? `${head} +${extra} more` : head;
+    // Routing first: it is the answer that decides which tree the other
+    // missing fields even belong to, so naming a category before a marketplace
+    // would send the seller to a picker that is about to be reloaded.
+    if (!routingResolved) {
+      return t('mobile.reviewHub.statusMissingMarketplace', {
+        defaultValue: 'Pick a marketplace',
+      });
+    }
     return t('mobile.reviewHub.statusMissing', {
       defaultValue: 'Missing: {{preview}}',
       preview: preview || 'details',
@@ -624,6 +647,32 @@ function HubRow({
         >
           {title}
         </Text>
+        {/* M-3 / plan §6.2 — the destination, per row, so a mixed upload is
+            legible BEFORE submit ("3 to 101LAB, 1 to 101IT"). READ-ONLY here;
+            retargeting is in the item editor (plan §9) — a second write path to
+            `marketplace` re-opens the documented hydration race. */}
+        <View className="flex-row items-center self-start gap-xs">
+          <Store
+            size={13}
+            color={routingResolved ? brand.textMuted : brand.warningText}
+          />
+          <Text
+            className="font-medium"
+            style={{
+              fontSize: 11,
+              letterSpacing: 0.5,
+              color: routingResolved ? brand.textMuted : brand.warningText,
+            }}
+            numberOfLines={1}
+          >
+            {routingResolved
+              ? (MARKETPLACE_OPTIONS.find((o) => o.value === item.marketplace)?.label ??
+                 item.marketplace)
+              : t('mobile.reviewHub.pickMarketplace', {
+                  defaultValue: 'Marketplace not chosen',
+                })}
+          </Text>
+        </View>
         {/* D3 (F5/F7/F8): inline status chips — call-site overrides so we don't
             touch the shared Badge primitive (which hard-codes `font-bold
             uppercase` on its inner Text and would have app-wide blast radius).

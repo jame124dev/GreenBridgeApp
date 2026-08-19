@@ -16,12 +16,19 @@ import en from '@/i18n/locales/en.json';
  *     reads, so a locale-only test cannot see it disappear),
  *   - option value ↔ locale key parity (a fifth marketplace with no key, or a key
  *     with no option, is a silent blank line on the screen),
- *   - the render site in `MarketplaceCard`, which is asserted from SOURCE on
- *     purpose: the card returns null while `MARKETPLACE_LOCKED = true`
- *     (MarketplaceCard.tsx:22 — flipping it is M-4, another phase), so no render
- *     test can reach the line until then. This is the honest guard available now.
+ *   - the render site, which M-4 MOVED. Before the unlock the picker lived in
+ *     `MarketplaceCard` behind `MARKETPLACE_LOCKED = true`, so the only guard
+ *     available was a grep of that file's source. M-4 flipped the lock: the
+ *     card renders nothing at all and the picker is `MarketplaceSheet`, opened
+ *     from `RoutingChip`. Both read the same key with the same fallback, and
+ *     the sheet is now covered by a REAL render assertion in
+ *     `components/detail/__tests__/MarketplaceSheet.test.tsx`. What is asserted
+ *     from source here is only that neither consumer has dropped the
+ *     key-first/constant-fallback pairing.
  */
 const ROOT = path.resolve(__dirname, '..', '..', '..', '..');
+const SHEET = 'src/features/scanner/components/detail/MarketplaceSheet.tsx';
+const CHIP = 'src/features/scanner/components/detail/RoutingChip.tsx';
 const CARD = 'src/features/scanner/components/detail/MarketplaceCard.tsx';
 
 describe('MARKETPLACE_OPTIONS descriptions (M-10, C7)', () => {
@@ -40,10 +47,37 @@ describe('MARKETPLACE_OPTIONS descriptions (M-10, C7)', () => {
     expect(fromLocale.sort()).toEqual(MARKETPLACE_OPTIONS.map((o) => o.value).sort());
   });
 
-  it('MarketplaceCard renders the selected option description, key first', () => {
+  it('both M-3 consumers read the key first with the constant as fallback', () => {
+    const sheet = fs.readFileSync(path.join(ROOT, SHEET), 'utf8');
+    expect(sheet).toContain('mobile.detail.marketplaceOption.${opt.value}.description');
+    expect(sheet).toContain('defaultValue: opt.description');
+    const chip = fs.readFileSync(path.join(ROOT, CHIP), 'utf8');
+    expect(chip).toContain('mobile.detail.marketplaceOption.${m}.description');
+    expect(chip).toContain('defaultValue: o.description');
+  });
+
+  // C7's other half: this phase must NOT resurrect a second field name or a
+  // second key namespace for the same sentence.
+  it('there is no second description field and no marketplaceHint namespace', () => {
+    for (const rel of [SHEET, CHIP, CARD]) {
+      const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+      expect(src).not.toContain('marketplaceHint');
+      expect(src).not.toContain('hintKey');
+    }
+    expect((en as any).mobile.detail.marketplaceHint).toBeUndefined();
+  });
+
+  // The card is now empty by design (M-4 lock 1). If a picker comes back here
+  // there are two controls writing `marketplace` — the duplicate control
+  // UX_DESIGN_RULES.md forbids, and the hydration race useDetailController
+  // documents.
+  it('MarketplaceCard renders nothing at all', () => {
     const src = fs.readFileSync(path.join(ROOT, CARD), 'utf8');
-    // The i18n key wins; the constant is the fallback argument.
-    expect(src).toContain('mobile.detail.marketplaceOption.${marketplace}.description');
-    expect(src).toContain('MARKETPLACE_OPTIONS.find((o) => o.value === marketplace)?.description');
+    expect(src).toContain('export function MarketplaceCard() {');
+    expect(src).toContain('return null;');
+    expect(src).not.toContain('const MARKETPLACE_LOCKED');
+    // Zero imports is the real invariant: a card that imports nothing cannot
+    // render a picker. (The docblock still NAMES the old flag, on purpose.)
+    expect(src).not.toMatch(/^import /m);
   });
 });
