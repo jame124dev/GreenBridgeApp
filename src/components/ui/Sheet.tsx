@@ -1,13 +1,16 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Keyboard,
   Modal,
   PanResponder,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text as RNText,
   View,
+  useWindowDimensions,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -15,6 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { fonts } from '@/theme/typography';
+
+import { SHEET_CHROME_ESTIMATE, SHEET_PADDING_TOP, sheetLayout } from './sheetLayout';
 
 // Bottom-sheet primitive. Visual language matches `LanguageSheet.tsx` (the
 // home-screen language switcher) and `PickerSelect.tsx`, so every dropdown
@@ -32,9 +37,9 @@ import { fonts } from '@/theme/typography';
 // LabCategorySheet, LabCurrencySheet) are fixed once instead of ten times.
 // Same pattern as `src/features/lab/components/UploadSourceSheet.tsx`.
 
-// Design floor for the card's bottom padding, used as the lower bound against
-// the live safe-area inset (see the Math.max at the render site).
-const SHEET_PADDING_BOTTOM = 28;
+// The geometry — bottom padding floor, top gap, the clamp and the keyboard lift —
+// lives in `./sheetLayout.ts` as a pure function, because both sheet bugs found
+// on 2026-08-19 were arithmetic and arithmetic is the part a test can prove.
 
 type SheetProps = {
   visible: boolean;
@@ -59,6 +64,44 @@ type SheetProps = {
 export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, stickyHeader, children }: SheetProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+
+  /**
+   * Live IME height, 0 when down. Read through RN's own `Keyboard` module rather
+   * than `react-native-keyboard-controller` (which the detail screens use): the
+   * card lives inside a `Modal`, and RNKC's provider does not wrap Modal content.
+   *
+   * ⛔ This is not belt-and-braces, it is the whole of the second fix. On Android
+   * the Modal is NOT resized for the IME, so a short content-height card stays
+   * pinned to the physical bottom and the keyboard draws straight over it —
+   * measured with 2 search matches: card [0,1343][1080,2400] with the IME from
+   * y=1524, i.e. the search field, both result rows AND Cancel all behind it.
+   */
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  /**
+   * Measured height of everything that does NOT scroll: grabber + title +
+   * subtitle + stickyHeader + Cancel. Measured rather than assumed because the
+   * chrome varies per consumer (some pass no subtitle, only the category sheet
+   * passes a search field) and it is what the list's share of the screen is
+   * computed against. `SHEET_CHROME_ESTIMATE` covers the first paint.
+   */
+  const [headerHeight, setHeaderHeight] = useState<number | null>(null);
+  const [footerHeight, setFooterHeight] = useState<number | null>(null);
+  const chromeHeight =
+    headerHeight == null || footerHeight == null
+      ? SHEET_CHROME_ESTIMATE
+      : headerHeight + footerHeight + SHEET_PADDING_TOP;
+
+  const layout = sheetLayout({
+    windowHeight,
+    insetTop: insets.top,
+    insetBottom: insets.bottom,
+    keyboardHeight,
+    requestedMaxHeight: maxHeight,
+    chromeHeight,
+  });
+
   // Swipe-down-to-dismiss. Translate the inner card with the drag; past a
   // threshold, animate it out then close. Bound only to the grabber/header
   // region so it never fights the inner ScrollView. `onClose` is read through a
@@ -70,6 +113,27 @@ export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, stic
   useEffect(() => {
     if (visible) translateY.setValue(0);
   }, [visible, translateY]);
+
+  useEffect(() => {
+    // iOS fires the `will*` pair early enough to move with the IME animation;
+    // Android only has the `did*` pair.
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    // SHOW is ignored while the sheet is closed, so the ~10 sheets that sit
+    // mounted-but-hidden do not re-render every time a keyboard opens elsewhere.
+    // HIDE is NOT gated on `visible`, and that asymmetry is deliberate: a sheet
+    // dismissed WITH the keyboard up would otherwise keep a stale lift and reopen
+    // floating above the bottom of the screen. `setKeyboardHeight(0)` when it is
+    // already 0 is a React bail-out, so this costs a closed sheet nothing.
+    const onShow = Keyboard.addListener(showEvent, (e) => {
+      if (visible) setKeyboardHeight(e?.endCoordinates?.height ?? 0);
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, [visible]);
 
   const pan = useRef(
     PanResponder.create({
@@ -110,25 +174,52 @@ export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, stic
 
       <View style={styles.sheet} pointerEvents="box-none">
         <Animated.View
+          testID="sheet-card"
           style={[
             styles.sheetInner,
-            // Math.max, not "+": 28 is the design's own breathing room, and on a
-            // gesture-nav / iOS device the inset is already ≈ that. Adding both
-            // would open a dead gap under Cancel on some devices and not others.
-            { paddingBottom: Math.max(insets.bottom, SHEET_PADDING_BOTTOM), transform: [{ translateY }] },
+            {
+              // ⛔ BOTH fixes, and they are ONE calculation (see sheetLayout.ts).
+              // `maxHeight` stops the bottom-anchored card overflowing off the
+              // TOP — it used to be bounded by nothing at all, so the category
+              // sheet's 520 dp list + ~218 dp of chrome clipped the grabber, the
+              // title and the subtitle clean out of the hierarchy on a 667 dp
+              // screen and put the search field under the status-bar clock.
+              // `marginBottom` lifts it clear of the IME. Fixing either alone
+              // re-creates the other: lift without clamping and the header goes
+              // off the top; clamp without lifting and a short card stays behind
+              // the keyboard.
+              maxHeight: layout.cardMaxHeight,
+              marginBottom: layout.liftBy,
+              paddingBottom: layout.paddingBottom,
+              transform: [{ translateY }],
+            },
           ]}
         >
-          {/* Grabber + title share the drag region; the ScrollView below scrolls freely. */}
-          <View {...pan.panHandlers}>
-            <View style={styles.grabber} accessibilityElementsHidden importantForAccessibility="no" />
-            {title ? <RNText style={styles.title}>{title}</RNText> : null}
-            {subtitle ? <RNText style={styles.subtitle}>{subtitle}</RNText> : null}
+          {/* One wrapper so the whole non-scrolling top can be measured in a
+              single onLayout. The pan region stays exactly where it was — around
+              the grabber/title only — because `stickyHeader` is a TextInput on
+              the category sheet and a PanResponder wrapped around it would fight
+              the field for the touch. */}
+          <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+            {/* Grabber + title share the drag region; the ScrollView below scrolls freely. */}
+            <View {...pan.panHandlers}>
+              <View
+                style={styles.grabber}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+              />
+              {title ? <RNText style={styles.title}>{title}</RNText> : null}
+              {subtitle ? <RNText style={styles.subtitle}>{subtitle}</RNText> : null}
+            </View>
+            {stickyHeader}
           </View>
 
-          {stickyHeader}
-
           <ScrollView
-            style={{ maxHeight }}
+            // `flexShrink` is the belt to the arithmetic's braces: with the card
+            // capped, it is what makes the LIST give up space to the header and
+            // Cancel instead of the card overflowing upwards, even if the
+            // measured chrome is a few dp out.
+            style={{ maxHeight: layout.scrollMaxHeight, flexShrink: 1 }}
             showsVerticalScrollIndicator={false}
             // A focused TextInput above the list (stickyHeader, or a first child
             // as in CountryPicker) otherwise eats the first tap on every row:
@@ -146,6 +237,7 @@ export function Sheet({ visible, onClose, title, subtitle, maxHeight = 380, stic
             style={styles.cancel}
             onPress={onClose}
             accessibilityRole="button"
+            onLayout={(e) => setFooterHeight(e.nativeEvent.layout.height)}
           >
             <RNText style={styles.cancelText}>
               {t('mobile.home.cancel', { defaultValue: 'Cancel' })}
@@ -267,10 +359,13 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
-    paddingTop: 10,
-    // paddingBottom is set at the render site (safe-area aware, floor
-    // SHEET_PADDING_BOTTOM) — keeping a literal here too would be a second,
-    // always-overridden source of truth.
+    // Same constant the chrome budget subtracts (sheetLayout.ts), so the two
+    // cannot drift.
+    paddingTop: SHEET_PADDING_TOP,
+    // maxHeight / marginBottom / paddingBottom are all set at the render site
+    // from `sheetLayout(...)` — they depend on the window, the insets and the
+    // live keyboard, so a literal here would be a second, always-overridden
+    // source of truth.
     maxWidth: 460,
     width: '100%',
     alignSelf: 'center',
