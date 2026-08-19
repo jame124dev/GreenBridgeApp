@@ -32,7 +32,6 @@ import type {
 import { shouldSkipDetectionChoice } from '@/features/scanner/smartDetectionRouting';
 import { haptics } from '@/lib/haptics';
 import { useScanDraft } from '@/stores/scanDraftStore';
-import type { AiResult, DraftItem } from '@/stores/scanDraftStore';
 import { useAuth } from '@/stores/authStore';
 import { clearStoredJobId } from '@/stores/recognitionJobStore';
 import {

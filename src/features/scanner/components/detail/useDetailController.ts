@@ -81,6 +81,23 @@ export function useDetailController(opts?: {
   const labelForRow = useRequiredRowLabel();
 
   const draft = useScanDraft((s) => s.current);
+  // ⚠️ THE FORM IS A SCRATCH BUFFER OVER THE STORE, and this effect is why.
+  // `draft` is the persisted object; any store write creates a NEW one and this
+  // re-runs, replacing the whole form with the STORED values. Two consequences
+  // worth knowing before you touch anything here:
+  //   1. Blocker (c) DEPENDS on it — RoutingChip's onConfirm patches the cleared
+  //      category into the store precisely so this reset restores the clear.
+  //      `reset(..., { keepDirtyValues: true })` would defeat that and let submit
+  //      send the previous tree's category id with the new allowed_sites[].
+  //   2. Only the four submit paths write form values back, so a JS RESTART (an
+  //      Android config change outside android:configChanges — density, not
+  //      rotation — a low-memory kill, or a dev reload) reverts every edit made
+  //      since the last store write: the category, the title, the price, the
+  //      specs. Reported from the device pass 2026-08-19 as "a config change
+  //      reverts unsaved category edits"; it is not category-specific.
+  // Deliberately NOT fixed in that pass — the three options and their costs are
+  // written up in Docs/multi-marketplace/phases/PHASE_5_APP_HONESTY_AND_FORMS.md
+  // §11.1. Do not "tidy" this into an autosave without reading it.
   useEffect(() => {
     if (!draft) {
       router.replace(routes.scanHome);
