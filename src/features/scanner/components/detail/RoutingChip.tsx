@@ -14,7 +14,6 @@ import {
 import {
   CLEARED_CATEGORY_FORM_FIELDS,
   deriveRoutingState,
-  routingWhyLine,
   signalFromDraft,
 } from '@/features/scanner/routing/routingState';
 import { useSupportedMarketplaces } from '@/features/scanner/routing/useSupportedMarketplaces';
@@ -103,6 +102,31 @@ const styles = StyleSheet.create({
    *  never a filled background, so an option reads as a choice not a status. */
   identityBar: { width: 6, alignSelf: 'stretch' },
   optionText: { flex: 1, minWidth: 0, paddingVertical: 10 },
+  /** Fixed footprint so every wordmark starts the text column at the same x —
+   *  the three marks differ in width by ~30%, which is what made a bare logo
+   *  misalign the rows it sat in. */
+  logoTile: {
+    width: 76,
+    height: 48,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: brand.borderStrong,
+    backgroundColor: brand.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  /** Confidence as a chip, not a sentence. `overflow: hidden` is what makes the
+   *  radius clip on Android when the background sits on the Text itself. */
+  confChip: {
+    color: brand.primary,
+    backgroundColor: brand.primarySurface,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  changeAction: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
   guessTag: {
     color: brand.primary,
     backgroundColor: brand.primarySurface,
@@ -322,70 +346,93 @@ export function RoutingChip({ draft, onConfirm }: Props) {
   }
 
   // ── CONFIRMED ────────────────────────────────────────────────────────────
-  const why = routingWhyLine(draft);
 
   return (
     <View className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl gap-sm">
-      <View className="flex-row items-center justify-between gap-sm">
-        {/* minW-0 so a long marketplace label truncates instead of shoving
-            "Change" off the row. */}
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <FieldLabel
-            text={t('mobile.detail.routing.willListOn', { defaultValue: "WE'LL LIST THIS ON" })}
-            ai
-          />
-          {/* THE REAL MARK, exactly one of them. This is the place the logo earns
-              its space: a single wordmark says "this is where your item is going"
-              faster than any text can, and with only one on screen there is no
-              repetition. The old version drew a dot in `brand.primaryDim` for
-              EVERY marketplace, so the identity slot carried no identity at all.
-              Falls back to the coloured dot + name for 101recycle, which has no
-              logo of its own. */}
-          {/* Logo and the marketplace's one-line description share a row. They
-              were two stacked rows, and with "WHY" on its own row above its own
-              sentence the card spent FIVE rows saying three things. */}
-          <View className="flex-row items-center gap-sm" style={{ marginTop: 4 }}>
-            {logoFor(current) ? (
-              /* 34dp, chosen by rendering 26 / 34 / 44 at device scale and
-                 looking: app_debug/confirmed-logo-sizes.png. At 26 the wordmark
-                 is weak and "by GREENBIDZ" is a smudge — worse than the plain
-                 text it replaced. At 44 it dominates a row that is only a
-                 confirmation. 34 reads cleanly and keeps the card compact.
-                 accessibilityLabel carries the NAME, so screen readers and the
-                 test suite still get "101LAB" even though it is now artwork. */
-              <Image
-                source={logoFor(current)!}
-                style={{ height: 34, width: logoWidthFor(current, 34) }}
-                resizeMode="contain"
-                accessibilityRole="image"
-                accessibilityLabel={labelFor(current)}
+      <FieldLabel
+        text={t('mobile.detail.routing.willListOn', { defaultValue: "WE'LL LIST THIS ON" })}
+        ai
+      />
+
+      {/* ONE ROW: [logo tile] [destination + meta] [Change].
+          The previous version stacked four full-width rows of equal weight —
+          label, logo+description, "AI confidence: High · 100%", "No brand or
+          model was legible in the photos." — with "Change" floating unaligned
+          against the top. The owner's words: "very low design… not like a
+          standard app". Three alternatives were rendered at device scale and
+          compared (app_debug/routing-card-variants.png); this is the one that won.
+
+          THE TILE IS THE KEY PART. A fixed 76x48 box gives every marketplace the
+          same footprint, so the text column starts at the same x whatever the
+          wordmark's width — which is the exact misalignment that made logos
+          unusable in the three-up picker. It also gives the mark somewhere to sit
+          instead of floating against the card.
+
+          Confidence became a CHIP and the nameplate note became inline metadata,
+          because "AI confidence: High · 100%" as a full sentence in body text
+          reads like a log line, not a product. */}
+      <View className="flex-row items-center gap-sm">
+        <View style={styles.logoTile}>
+          {logoFor(current) ? (
+            <Image
+              source={logoFor(current)!}
+              style={{ height: 26, width: Math.min(logoWidthFor(current, 26), 64) }}
+              resizeMode="contain"
+              accessibilityRole="image"
+              accessibilityLabel={labelFor(current)}
+            />
+          ) : (
+            /* 101recycle has no mark of its own — its brand colour and short name
+               carry the identity instead, in the same footprint. */
+            <View className="items-center" accessibilityLabel={labelFor(current)}>
+              <View
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 5,
+                  backgroundColor: MARKETPLACE_COLOR[current],
+                  marginBottom: 3,
+                }}
               />
-            ) : (
-              <>
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: MARKETPLACE_COLOR[current],
-                  }}
-                />
-                <Text
-                  className="font-heading text-4xl text-brand-foreground"
-                  numberOfLines={1}
-                  style={{ flexShrink: 1, minWidth: 0 }}
-                >
-                  {labelFor(current)}
-                </Text>
-              </>
-            )}
-            <Text
-              className="font-sans text-md text-brand-text-muted"
-              numberOfLines={1}
-              style={{ flex: 1, minWidth: 0 }}
-            >
-              {descriptionFor(current)}
-            </Text>
+              <Text className="font-label-medium text-sm text-brand-foreground" numberOfLines={1}>
+                {labelFor(current)}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text
+            className="font-heading-semi text-2xl text-brand-foreground"
+            numberOfLines={1}
+          >
+            {descriptionFor(current)}
+          </Text>
+          {/* Confidence and the nameplate caveat share ONE meta line. Both are
+              secondary facts about a decision already stated above, so neither
+              earns a full-width row of its own. */}
+          <View className="flex-row items-center gap-xs" style={{ marginTop: 4 }}>
+            {state.confidence != null ? (
+              <Text className="font-label-medium text-sm" style={styles.confChip}>
+                {t('mobile.detail.routing.confidenceShort', {
+                  defaultValue: '{{word}} · {{pct}}%',
+                  // Each band keeps its OWN English fallback: a missing
+                  // confMedium/confLow key must not render a LOW score as "High".
+                  word: t(CONFIDENCE_BAND[band(state.confidence)].key, {
+                    defaultValue: CONFIDENCE_BAND[band(state.confidence)].en,
+                  }),
+                  pct: Math.round(state.confidence * 100),
+                })}
+              </Text>
+            ) : null}
+            {/* ⛔ THE NAMEPLATE NOTE IS DELIBERATELY NOT HERE ANY MORE.
+                It was truncating to "No brand or mod…", which says nothing, and
+                it was DUPLICATE: FIX 1b already puts that exact fact under BRAND
+                and MODEL, which are the fields it is about and where a seller can
+                act on it. Two copies of one caveat, one of them unreadable, is
+                worse than one copy in the right place. `routingWhyLine` is no longer
+                used by this component at all; the ask state picks its wording from
+                `state.needsClearerPhoto`. */}
           </View>
         </View>
 
@@ -397,50 +444,13 @@ export function RoutingChip({ draft, onConfirm }: Props) {
           accessibilityRole="button"
           hitSlop={12}
           accessibilityLabel={t('mobile.detail.routing.change', { defaultValue: 'Change' })}
-          style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}
+          style={styles.changeAction}
         >
           <Text className="font-semi text-lg" style={{ color: brand.primaryDim }}>
             {t('mobile.detail.routing.change', { defaultValue: 'Change' })}
           </Text>
         </Pressable>
       </View>
-
-
-      {/* Confidence: word AND number, so the word translates and the number
-          still reads in TH/VI/ZH/JA. Renders ONLY when the server supplied it —
-          a persisted pre-S0-2 draft has null, and a made-up percentage is worse
-          than none. */}
-      {state.confidence != null ? (
-        <Text className="font-sans text-md text-brand-text-muted">
-          {t('mobile.detail.routing.confidence', {
-            defaultValue: 'AI confidence: {{word}} · {{pct}}%',
-            // Each band carries its OWN English fallback. The plan's snippet
-            // passed `defaultValue: 'High'` for all three, so a missing
-            // confMedium/confLow key would have rendered a LOW score as "High"
-            // — a wrong number-word pair, which is worse than no word.
-            word: t(CONFIDENCE_BAND[band(state.confidence)].key, {
-              defaultValue: CONFIDENCE_BAND[band(state.confidence)].en,
-            }),
-            pct: Math.round(state.confidence * 100),
-          })}
-        </Text>
-      ) : null}
-
-      {/* The reason, WITHOUT a "WHY" label above it. A one-word heading
-          introducing a one-line sentence cost a whole row plus its gap, and the
-          sentence already announces itself — "Nameplate reads …" is self-evidently
-          the reason. The label is dropped, not the explanation. */}
-      {why ? (
-        <Text className="font-sans text-md text-brand-text-muted">
-          {t(why.key, {
-            defaultValue:
-              why.key === 'mobile.detail.routing.whyNameplate'
-                ? 'Nameplate reads "{{identity}}".'
-                : 'No brand or model was legible in the photos.',
-            identity: why.identity,
-          })}
-        </Text>
-      ) : null}
 
       {/* "Not set" instead of a guess — plan §2.2 row 3 / §4.1. Says WHY the
           field is empty, so an empty required field reads as a decision rather

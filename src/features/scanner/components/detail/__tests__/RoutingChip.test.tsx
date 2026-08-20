@@ -102,12 +102,14 @@ describe('RoutingChip — CONFIRMED state (Stitch 4a)', () => {
     const { queryByText } = render(
       <Harness item={draft({ marketplaceConfirmed: true, siteTypeConfidence: 0.94 })} />,
     );
-    expect(queryByText('AI confidence: High · 94%')).toBeTruthy();
+    // Confidence is now a CHIP beside the destination, not a full sentence row —
+// "AI confidence: High · 100%" as body copy read like a log line.
+    expect(queryByText('High · 94%')).toBeTruthy();
 
     const bare = render(<Harness item={draft({ marketplaceConfirmed: true })} />);
     // A persisted pre-S0-2 draft has null — a made-up percentage is worse than
     // none, so the row is omitted entirely.
-    expect(bare.queryByText(/AI confidence/)).toBeNull();
+    expect(bare.queryByText(/·\s*\d+%/)).toBeNull();
   });
 
   it('picks the display word by band, and the word is the ONLY thing the number drives', () => {
@@ -119,23 +121,31 @@ describe('RoutingChip — CONFIRMED state (Stitch 4a)', () => {
       const { queryByText } = render(
         <Harness item={draft({ marketplaceConfirmed: true, siteTypeConfidence: c })} />,
       );
-      expect(queryByText(`AI confidence: ${word} · ${Math.round(c * 100)}%`)).toBeTruthy();
+      expect(queryByText(`${word} · ${Math.round(c * 100)}%`)).toBeTruthy();
       // ⛔ plan §2.1 — a low number must NOT turn the statement into a question.
       expect(queryByText("We're not sure where this belongs")).toBeNull();
     }
   });
 
-  it('quotes the nameplate as the reason, and invents nothing when there is none', () => {
+  it('does NOT repeat the nameplate caveat — that moved to BRAND/MODEL', () => {
+    // It used to render here as a full sentence. Two problems: in the compact
+    // one-row card it truncated to "No brand or mod…", which says nothing, and it
+    // DUPLICATED the hint FIX 1b puts under BRAND and MODEL — the fields the
+    // caveat is actually about and where a seller can act on it.
+    // The fact itself is asserted in IdentityCard.nameplateHint.test.tsx; here we
+    // pin that the routing card no longer carries a second, unreadable copy.
     const withPlate = render(
       <Harness item={draft({ marketplaceConfirmed: true, brand: 'Hsiangtai', model: 'CN-1050' })} />,
     );
-    // The "WHY" label was removed to save a row — a one-word heading over a
-    // one-line sentence. The SENTENCE is what matters and it must still be there.
-    expect(withPlate.getByText('Nameplate reads "Hsiangtai CN-1050".')).toBeTruthy();
+    expect(withPlate.queryByText(/Nameplate reads/)).toBeNull();
     expect(withPlate.queryByText('WHY')).toBeNull();
 
-    const without = render(<Harness item={draft({ marketplaceConfirmed: true })} />);
-    expect(without.queryByText(/Nameplate reads/)).toBeNull();
+    const noPlate = render(
+      <Harness item={draft({ marketplaceConfirmed: true, needsClearerPhoto: true })} />,
+    );
+    expect(noPlate.queryByText(/No brand or model was legible/)).toBeNull();
+    // …but the destination is still stated, which is the card's actual job.
+    expect(noPlate.getByLabelText('101LAB')).toBeTruthy();
   });
 
   it('explains an empty category on an untrusted tree instead of leaving it blank', () => {
@@ -188,10 +198,12 @@ describe('RoutingChip — CONFIRMED state (Stitch 4a)', () => {
     expect(queryByText('Hard to tell from this photo')).toBeNull();
     expect(getByText("WE'LL LIST THIS ON")).toBeTruthy();
     expect(getByLabelText('Change')).toBeTruthy();
-    // ...and the unreadable photo is NOT swallowed: the why line says so, on the
-    // brand/model fact it is actually about. (IdentityCard carries the same
-    // truth onto the fields themselves — IdentityCard.nameplateHint.test.tsx.)
-    expect(getByText('No brand or model was legible in the photos.')).toBeTruthy();
+    // ...and the unreadable photo is NOT swallowed — but it is no longer said
+    // HERE. In the compact one-row card this sentence truncated to "No brand or
+    // mod…", so it now lives only under BRAND/MODEL, the fields it is about
+    // (asserted in IdentityCard.nameplateHint.test.tsx). This card must not carry
+    // a second, unreadable copy.
+    expect(queryByText(/No brand or model was legible/)).toBeNull();
   });
 
   // ⛔ FIX 2 (2026-08-20) — a keyword-scorer pick reads as "not set", not as a
