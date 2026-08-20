@@ -43,6 +43,14 @@ export type RoutingState = {
   prefillCategory: boolean;
   confidence: number | null;
   source: RoutingSource | null;
+  /**
+   * WHY we are asking, when `kind === 'ask'`. True ⇒ the photo could not be read
+   * (no legible nameplate); false ⇒ the marketplace itself is genuinely ambiguous.
+   * The card must say which, or it contradicts itself — a wide shot of wireless
+   * earbuds produced "We're not sure where this belongs" next to "Our best guess
+   * is 101IT", when the honest message was "hard to tell from this photo".
+   */
+  needsClearerPhoto: boolean;
 };
 
 /**
@@ -292,6 +300,7 @@ export function deriveRoutingState(args: {
     prefillCategory,
     confidence: signal.siteTypeConfidence,
     source: signal.siteTypeSource,
+    needsClearerPhoto: signal.needsClearerPhoto,
   };
 }
 

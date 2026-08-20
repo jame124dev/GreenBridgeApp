@@ -40,12 +40,24 @@ export function IdentityCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
         render={({ field: { value, onChange, onBlur }, fieldState }) => (
           <View className="gap-1.5">
             <FieldLabel text={t('mobile.detail.sectionTitle')} ai />
+            {/* MULTILINE ON PURPOSE. Titles run to 80 chars and a single-line
+                TextInput on Android scrolls to the caret, so a long AI-written
+                title opened showing its MIDDLE — "…solutions Stream In-Situ TEM"
+                with the start cut off, or "'air of Tan Upholstered Armchairs"
+                missing its first letter. The seller could not read what they
+                were about to publish. Two lines shows the whole thing.
+                `submitBehavior="blurAndSubmit"` keeps Enter closing the keyboard
+                instead of inserting a newline into a title. */}
             <TextInput
               className={titleInputCls}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               maxLength={80}
+              multiline
+              numberOfLines={2}
+              submitBehavior="blurAndSubmit"
+              textAlignVertical="top"
             />
             <Text className="font-label text-sm text-brand-placeholder text-right">
               {value?.length ?? 0}/80

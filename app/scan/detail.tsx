@@ -1,8 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FormProvider } from 'react-hook-form';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View } from 'react-native';
+import { Keyboard, StyleSheet, View } from 'react-native';
 import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner-native';
@@ -21,6 +21,7 @@ import {
   IdentityCard,
   LocationCard,
   MarketplaceCard,
+  OptionalDetailsSection,
   PhotosCard,
   PricingCard,
   ProfitIntelligenceCard,
@@ -118,6 +119,19 @@ export default function DetailScreen() {
   const formValues = form.watch();
   const required = getRequiredStatus(formValues, draft.photos?.length ?? 0);
 
+  // Plain RN listeners rather than a keyboard-controller hook: this only needs a
+  // boolean, and `didShow`/`didHide` fire after the IME has settled, so the
+  // footer does not flicker mid-animation.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
   return (
     <FormProvider {...form}>
       <SafeAreaView className="flex-1 bg-brand-background" edges={['top', 'bottom']}>
@@ -125,7 +139,11 @@ export default function DetailScreen() {
         <KeyboardAwareScrollView
           ref={scrollRef}
           className="flex-1"
-          contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 8 }}
+          // 132, not 48: the sticky footer is ~112pt tall (progress strip + two
+          // buttons + the home-indicator inset) and 48 left the last card sitting
+          // underneath it, so LOCATION and INSTALLATION were unreachable without
+          // fighting the scroll.
+          contentContainerStyle={{ padding: 16, paddingBottom: 132, gap: 8 }}
           keyboardShouldPersistTaps="handled"
           bottomOffset={24}
         >
@@ -191,8 +209,25 @@ export default function DetailScreen() {
           <View onLayout={registerRow('price')}>
             <PricingCard />
           </View>
-          <SpecsCard />
-          <DocumentsCard draft={draft} />
+          {/* Weight / dimensions / CO₂ / serial / documents are ALL optional, and
+              stacked flat they were roughly a third of a 7,483px scroll — each
+              shouting as loudly as price and location. Folded behind one row per
+              the approved design. `filledCount` means a seller never has to open
+              the section to find out they already answered something in it. */}
+          <OptionalDetailsSection
+            filledCount={
+              [
+                formValues.weight,
+                formValues.dimensions,
+                formValues.co2Emissions,
+                formValues.serialNumber,
+              ].filter((v) => String(v ?? '').trim().length > 0).length +
+              (draft.documents?.length ? 1 : 0)
+            }
+          >
+            <SpecsCard />
+            <DocumentsCard draft={draft} />
+          </OptionalDetailsSection>
           {/* VisibilityCard removed for now — all listings ship as PUBLIC
               (the default on emptyDraft + sessionVisibility). Re-mount when
               product calls for it; the underlying store fields stay intact. */}
@@ -211,7 +246,14 @@ export default function DetailScreen() {
             over this block. `KeyboardAwareScrollView` only rescues content INSIDE
             the scroll; the footer is its sibling. iOS is unverified on the win32
             machine this was built on — check it on a Mac before 1.0.4 ships. */}
-        <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+        {/* HIDDEN WHILE TYPING — observed on a Galaxy S20 FE (2026-08-20).
+            KeyboardStickyView lifts this block above the IME, but the scroll view
+            behind it keeps its full height, so the footer landed in the MIDDLE of
+            the screen with form fields visible both above AND below it — WEIGHT
+            above, CO2 EMISSIONS below. It read as a broken overlay rather than a
+            footer. Nobody needs "Save as draft" while editing a field, and it
+            comes straight back on blur, so the honest fix is not to draw it. */}
+        <KeyboardStickyView offset={{ closed: 0, opened: 0 }} style={keyboardOpen ? styles.hidden : undefined}>
           {/* Only single mode submits from this screen — in grouped mode the footer
               leads to the review hub, which carries its own copy of this notice. */}
           {!isGrouped && <SellerApprovalNotice />}
@@ -248,3 +290,9 @@ export default function DetailScreen() {
     </FormProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  // `display: none` rather than unmounting: unmounting the footer would drop the
+  // progress strip's layout registrations and make the row-jump targets stale.
+  hidden: { display: 'none' },
+});

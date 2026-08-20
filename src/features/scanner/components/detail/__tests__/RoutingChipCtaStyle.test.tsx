@@ -94,7 +94,12 @@ import { deriveRoutingState, signalFromDraft } from '@/features/scanner/routing/
 import type { DetailFormInput } from '@/features/scanner/schema';
 import type { DraftItem } from '@/stores/scanDraftStore';
 
-const CTA = 'Choose a marketplace to continue';
+/** Each option's accessibilityLabel is `${label} — ${description}`. */
+const OPTION_LABELS = [
+  '101LAB — Lab & scientific equipment',
+  '101MACHINE — Industrial & production machinery',
+  '101IT — IT hardware & electronics',
+];
 
 /**
  * The real ask trigger, not a guessed prop: `routingNeedsAsk` fires on
@@ -116,7 +121,13 @@ const askDraft = (over: Partial<DraftItem> = {}): DraftItem =>
     ...over,
   }) as unknown as DraftItem;
 
-function Harness({ item }: { item: DraftItem }) {
+function Harness({
+  item,
+  onConfirm = () => {},
+}: {
+  item: DraftItem;
+  onConfirm?: (m: string) => void;
+}) {
   const form = useForm<DetailFormInput>({
     defaultValues: {
       marketplace: '101lab',
@@ -129,7 +140,7 @@ function Harness({ item }: { item: DraftItem }) {
   });
   return (
     <FormProvider {...form}>
-      <RoutingChip draft={item} onConfirm={() => {}} />
+      <RoutingChip draft={item} onConfirm={onConfirm as never} />
     </FormProvider>
   );
 }
@@ -137,7 +148,7 @@ function Harness({ item }: { item: DraftItem }) {
 const flat = (style: unknown) =>
   (StyleSheet.flatten(style as never) ?? {}) as Record<string, unknown>;
 
-describe('RoutingChip ask CTA — the seller can actually SEE the only action', () => {
+describe('RoutingChip ask options — the seller can actually SEE the choices', () => {
   it('the draft under test really is the ask state (guards the fixture, not the UI)', () => {
     const state = deriveRoutingState({
       current: '101lab',
@@ -150,61 +161,60 @@ describe('RoutingChip ask CTA — the seller can actually SEE the only action', 
     expect(state.suggested).toBeNull();
   });
 
-  it('renders the CTA with a real fill, so white label text is legible', () => {
+  it('renders each OPTION ROW with a real fill and border, not an empty object', () => {
     const { getByLabelText, getByText } = render(<Harness item={askDraft()} />);
     expect(getByText("We're not sure where this belongs")).toBeTruthy();
 
-    const cta = flat(getByLabelText(CTA).props.style);
-
-    // ⛔ The regression that shipped: this was `{}` — no fill, so #ffffff label
-    // text on the amber card (#fffbeb) was invisible.
-    expect(cta.backgroundColor).toBe(brand.primary);
-    // …and while unstyled it collapsed to the label's line box (~23dp measured).
-    expect(cta.minHeight).toBe(48);
-    expect(cta.paddingVertical).toBe(10);
-    expect(cta.paddingHorizontal).toBe(12);
-    expect(cta.borderRadius).toBe(8);
-    expect(cta.alignItems).toBe('center');
-  });
-
-  it('keeps the label the contrasting foreground colour, not the card ink', () => {
-    const { getByText } = render(<Harness item={askDraft()} />);
-    expect(flat(getByText(CTA).props.style).color).toBe(brand.primaryForeground);
+    // The inline options replaced the "Choose a marketplace to continue" button
+    // (one tap instead of two). The NativeWind hazard is identical, so the guard
+    // moved with the UI rather than being deleted with it: if these styles ever
+    // come back as `{}`, the rows lose their fill, border and height and the
+    // picker becomes three invisible tap targets on the amber card.
+    for (const label of OPTION_LABELS) {
+      const row = flat(getByLabelText(label).props.style);
+      expect(row.backgroundColor).toBe(brand.surface);
+      expect(row.borderColor).toBe(brand.borderStrong);
+      expect(row.borderWidth).toBe(1);
+      expect(row.minHeight).toBe(56);
+      expect(row.borderRadius).toBe(8);
+    }
   });
 
   it('minHeight rather than height, so a wrapped TH/VI label is not clipped', () => {
     const { getByLabelText } = render(<Harness item={askDraft()} />);
-    const cta = flat(getByLabelText(CTA).props.style);
-    expect(cta.minHeight).toBe(48);
-    expect(cta.height).toBeUndefined();
+    const row = flat(getByLabelText(OPTION_LABELS[0]).props.style);
+    expect(row.minHeight).toBe(56);
+    expect(row.height).toBeUndefined();
   });
 
-  it('still gives press feedback — a darker fill while held, restored on release', () => {
+  it('gives press feedback on the row — tinted while held, restored on release', () => {
     const { getByLabelText } = render(<Harness item={askDraft()} />);
-    const node = getByLabelText(CTA);
+    const node = getByLabelText(OPTION_LABELS[0]);
 
     fireEvent(node, 'pressIn');
-    expect(flat(getByLabelText(CTA).props.style).backgroundColor).toBe(brand.primaryDim);
+    expect(flat(getByLabelText(OPTION_LABELS[0]).props.style).backgroundColor).toBe(
+      brand.primarySurface,
+    );
 
     fireEvent(node, 'pressOut');
-    expect(flat(getByLabelText(CTA).props.style).backgroundColor).toBe(brand.primary);
+    expect(flat(getByLabelText(OPTION_LABELS[0]).props.style).backgroundColor).toBe(brand.surface);
   });
 
-  it('is still the live control that opens the picker, not a styled decoration', () => {
-    const { getByLabelText, queryByText } = render(<Harness item={askDraft()} />);
-    expect(queryByText('Choose a marketplace')).toBeNull();
-    fireEvent.press(getByLabelText(CTA));
-    expect(queryByText('Choose a marketplace')).toBeTruthy();
+  it('answers in ONE tap — the row itself confirms, with no sheet in between', () => {
+    const picked: string[] = [];
+    const { getByLabelText } = render(<Harness item={askDraft()} onConfirm={(m) => picked.push(m)} />);
+    fireEvent.press(getByLabelText(OPTION_LABELS[1]));
+    expect(picked).toEqual(['101machine']);
   });
 
-  it('the ask trigger also fires on needsClearerPhoto, and that CTA is filled too', () => {
+  it('still styles the rows when the ask came from needsClearerPhoto', () => {
     const { getByLabelText } = render(
       <Harness item={askDraft({ ai: null, needsClearerPhoto: true })} />,
     );
-    expect(flat(getByLabelText(CTA).props.style).backgroundColor).toBe(brand.primary);
+    expect(flat(getByLabelText(OPTION_LABELS[0]).props.style).backgroundColor).toBe(brand.surface);
   });
 
-  it('the ask trigger also fires on a low_confidence_fallback route', () => {
+  it('still styles the rows on a low_confidence_fallback route', () => {
     const { getByLabelText } = render(
       <Harness
         item={askDraft({
@@ -213,7 +223,7 @@ describe('RoutingChip ask CTA — the seller can actually SEE the only action', 
         })}
       />,
     );
-    expect(flat(getByLabelText(CTA).props.style).backgroundColor).toBe(brand.primary);
+    expect(flat(getByLabelText(OPTION_LABELS[0]).props.style).backgroundColor).toBe(brand.surface);
   });
 
   it('proves the harness is faithful: a callback style IS silently emptied here', () => {

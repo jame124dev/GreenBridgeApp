@@ -210,12 +210,22 @@ export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
           ) : null}
           <View className={iconInputCls}>
             <MaterialIcons name="location-on" size={20} color={brand.placeholder} />
+            {/* MULTILINE for the same reason the title is: a geocoded address
+                ("Ashiyana … ganj, Lucknow, Uttar Pradesh, 226022") overflows a
+                single line, and Android scrolls a single-line TextInput to the
+                caret — so the field opened showing the MIDDLE of the address with
+                the house and street scrolled off the left. The seller could not
+                see where they were saying the item was. */}
             <TextInput
               className={iconInputFieldCls}
               value={locations[index] ?? ''}
               onChangeText={(v) => updateRow(index, 'address', v)}
               placeholder={t('mobile.detail.addressPlaceholder')}
               placeholderTextColor={brand.placeholder}
+              multiline
+              numberOfLines={2}
+              submitBehavior="blurAndSubmit"
+              textAlignVertical="top"
             />
             {index > 0 ? (
               <Pressable

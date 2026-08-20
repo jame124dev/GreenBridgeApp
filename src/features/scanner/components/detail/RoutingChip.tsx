@@ -1,11 +1,16 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { brand } from '@/constants/theme';
 import { MARKETPLACE_OPTIONS } from '@/features/scanner/constants';
+import {
+  MARKETPLACE_COLOR,
+  logoFor,
+  logoWidthFor,
+} from '@/features/scanner/marketplaceLogos';
 import {
   CLEARED_CATEGORY_FORM_FIELDS,
   deriveRoutingState,
@@ -70,19 +75,42 @@ const band = (c: number): keyof typeof CONFIDENCE_BAND =>
  * registration with `process.env.NODE_ENV !== 'test'`, which is exactly why the
  * bug shipped past a green suite) and asserts the RESOLVED fill and height.
  */
+/**
+ * ⛔ EVERY style here is an object referenced from an ARRAY at the call site.
+ * Do NOT convert any of these into a `style={({ pressed }) => …}` callback:
+ * NativeWind's interop takes over the inline `style` prop and merges it with
+ * `{ ...declaration }`, and spreading a FUNCTION yields `{}` — so the whole
+ * style silently vanishes at runtime while jest still passes (the interop is not
+ * registered when NODE_ENV === 'test'). That is exactly how the ask-state CTA
+ * shipped as white text on a pale background, invisible on a real device.
+ */
 const styles = StyleSheet.create({
-  askCta: {
-    marginTop: 4,
-    minHeight: 48,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  options: { gap: 8, marginTop: 4 },
+  option: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: brand.primary,
+    gap: 12,
+    minHeight: 56,
+    paddingRight: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: brand.borderStrong,
+    backgroundColor: brand.surface,
+    overflow: 'hidden',
   },
-  askCtaPressed: { backgroundColor: brand.primaryDim },
-  askCtaLabel: { color: brand.primaryForeground },
+  optionPressed: { backgroundColor: brand.primarySurface },
+  /** Identity as a bar down the leading edge — the marketplace's own colour,
+   *  never a filled background, so an option reads as a choice not a status. */
+  identityBar: { width: 6, alignSelf: 'stretch' },
+  optionText: { flex: 1, minWidth: 0, paddingVertical: 10 },
+  guessTag: {
+    color: brand.primary,
+    backgroundColor: brand.primarySurface,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
 });
 
 interface Props {
@@ -123,7 +151,7 @@ export function RoutingChip({ draft, onConfirm }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false);
   // Press feedback as STATE, not as a `style={({ pressed }) => …}` argument —
   // see the `styles` note above for why the callback form renders unstyled.
-  const [ctaPressed, setCtaPressed] = useState(false);
+  const [pressedOption, setPressedOption] = useState<MarketplaceKey | null>(null);
 
   const current = watch('marketplace');
   const state = deriveRoutingState({
@@ -189,65 +217,106 @@ export function RoutingChip({ draft, onConfirm }: Props) {
         className="bg-brand-warning-bg border border-brand-warning-border rounded-sm p-2xl gap-sm"
         accessibilityRole="summary"
       >
+        {/* SAY WHICH QUESTION WE ARE ACTUALLY ASKING. Two different things land
+            in this one state and they deserve different words. Observed on a
+            Galaxy S20 FE: a wide desk shot of wireless earbuds produced
+            "We're not sure where this belongs" AND "Our best guess is 101IT" on
+            the same card — which reads as a contradiction, because the app plainly
+            DID know it was IT. The real problem there was the photo (the item is
+            small in a wide frame, so `needsClearerPhoto` fired), not the
+            marketplace. Blaming the marketplace made the app look confused about
+            something obvious and hid the actionable advice: take a closer photo. */}
         <View className="flex-row items-center gap-1.5">
-          <MaterialIcons name="help-outline" size={16} color={brand.warningText} />
+          <MaterialIcons
+            name={state.needsClearerPhoto ? 'photo-camera' : 'help-outline'}
+            size={16}
+            color={brand.warningText}
+          />
           <Text className="font-heading-semi text-3xl text-brand-foreground" style={{ flex: 1 }}>
-            {t('mobile.detail.routing.askTitle', {
-              defaultValue: "We're not sure where this belongs",
-            })}
+            {state.needsClearerPhoto
+              ? t('mobile.detail.routing.askTitlePhoto', {
+                  defaultValue: 'Hard to tell from this photo',
+                })
+              : t('mobile.detail.routing.askTitle', {
+                  defaultValue: "We're not sure where this belongs",
+                })}
           </Text>
         </View>
 
         <Text className="font-sans text-lg text-brand-text-muted">
-          {t('mobile.detail.routing.askBody', {
-            defaultValue: "Pick a marketplace and we'll load the right categories.",
-          })}
+          {state.needsClearerPhoto
+            ? t('mobile.detail.routing.askBodyPhoto', {
+                defaultValue:
+                  'A closer shot of the nameplate would help. You can also just pick the marketplace yourself.',
+              })
+            : t('mobile.detail.routing.askBody', {
+                defaultValue: "Pick a marketplace and we'll load the right categories.",
+              })}
         </Text>
 
-        {state.suggested ? (
-          <Text className="font-sans text-md text-brand-text-muted">
-            {t('mobile.detail.routing.askGuess', {
-              defaultValue: 'Our best guess is {{marketplace}}.',
-              marketplace: labelFor(state.suggested),
-            })}
-          </Text>
-        ) : null}
+        {/* THE OPTIONS, INLINE — one tap, not two.
+            This replaces a "Choose a marketplace to continue" button that opened
+            a sheet: the seller had to tap twice to answer a three-way question
+            that fits on screen. It also removes the separate "Our best guess is
+            101IT." sentence — the guess is now a tag on the row it refers to,
+            which is both shorter and actionable.
 
-        {/* Instructive primary — Stitch 4b's "Choose a marketplace to continue".
-            It is a real Pressable, not a disabled-looking button, because
-            tapping it must DO the thing it names: a dead control is what
-            UX_DESIGN_RULES.md's "every action provides feedback" rules out.
-            ⛔ Style comes from `styles` as an ARRAY. Do not "simplify" it back
-            into a `style={({ pressed }) => …}` callback — NativeWind's interop
-            spreads the inline style prop and `{ ...aFunction }` is `{}`, which
-            is what made this the invisible-CTA bug. */}
-        <Pressable
-          onPress={() => {
-            haptics.tap();
-            setSheetOpen(true);
-          }}
-          onPressIn={() => setCtaPressed(true)}
-          onPressOut={() => setCtaPressed(false)}
-          accessibilityRole="button"
-          accessibilityLabel={t('mobile.detail.routing.askCta', {
-            defaultValue: 'Choose a marketplace to continue',
+            NO LOGO IN THESE ROWS, deliberately. All three marketplace marks are
+            the same globe + "by GREENBIDZ" with one word changed, so side by side
+            they add three identical globes, an illegible sub-line, and — because
+            each wordmark is a different width — descriptions that start at a
+            different x on every row. Rendered and compared before choosing:
+            app_debug/picker-design-compare.png. The identity COLOUR carries the
+            distinction and the name is the biggest thing on the row. The real
+            logo is used in the confirmed state, where there is exactly one.
+
+            Nothing is pre-selected (approved plan §2.2) so a seller cannot
+            confirm a guess by reflex. */}
+        <View style={styles.options}>
+          {supported.map((m) => {
+            const isGuess = state.suggested === m;
+            return (
+              <Pressable
+                key={m}
+                onPress={() => pick(m)}
+                onPressIn={() => setPressedOption(m)}
+                onPressOut={() => setPressedOption(null)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: false }}
+                accessibilityLabel={`${labelFor(m)} — ${descriptionFor(m)}`}
+                style={[styles.option, pressedOption === m && styles.optionPressed]}
+              >
+                <View style={[styles.identityBar, { backgroundColor: MARKETPLACE_COLOR[m] }]} />
+                <View style={styles.optionText}>
+                  <View className="flex-row items-center gap-xs">
+                    <Text
+                      className="font-heading-semi text-3xl text-brand-foreground"
+                      numberOfLines={1}
+                      style={{ flexShrink: 1, minWidth: 0 }}
+                    >
+                      {labelFor(m)}
+                    </Text>
+                    {isGuess ? (
+                      <Text className="font-label-medium text-sm" style={styles.guessTag}>
+                        {t('mobile.detail.routing.bestGuessTag', { defaultValue: 'BEST GUESS' })}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text className="font-sans text-md text-brand-text-muted" numberOfLines={1}>
+                    {descriptionFor(m)}
+                  </Text>
+                </View>
+                <MaterialIcons name="radio-button-unchecked" size={22} color={brand.borderStrong} />
+              </Pressable>
+            );
           })}
-          style={[styles.askCta, ctaPressed && styles.askCtaPressed]}
-        >
-          <Text className="font-semi text-2xl" style={styles.askCtaLabel}>
-            {t('mobile.detail.routing.askCta', {
-              defaultValue: 'Choose a marketplace to continue',
-            })}
-          </Text>
-        </Pressable>
+        </View>
 
         <Text className="font-sans text-md text-brand-text-muted">
           {t('mobile.detail.routing.setOnce', {
             defaultValue: "Category and currency are set once you choose — we won't guess them.",
           })}
         </Text>
-
-        {sheet}
       </View>
     );
   }
@@ -265,23 +334,57 @@ export function RoutingChip({ draft, onConfirm }: Props) {
             text={t('mobile.detail.routing.willListOn', { defaultValue: "WE'LL LIST THIS ON" })}
             ai
           />
-          <View className="flex-row items-center gap-xs" style={{ marginTop: 2 }}>
-            {/* Marketplace identity as a DOT, never a filled background — the
-                statement must not read as a status chip. */}
-            <View
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: brand.primaryDim,
-              }}
-            />
+          {/* THE REAL MARK, exactly one of them. This is the place the logo earns
+              its space: a single wordmark says "this is where your item is going"
+              faster than any text can, and with only one on screen there is no
+              repetition. The old version drew a dot in `brand.primaryDim` for
+              EVERY marketplace, so the identity slot carried no identity at all.
+              Falls back to the coloured dot + name for 101recycle, which has no
+              logo of its own. */}
+          {/* Logo and the marketplace's one-line description share a row. They
+              were two stacked rows, and with "WHY" on its own row above its own
+              sentence the card spent FIVE rows saying three things. */}
+          <View className="flex-row items-center gap-sm" style={{ marginTop: 4 }}>
+            {logoFor(current) ? (
+              /* 34dp, chosen by rendering 26 / 34 / 44 at device scale and
+                 looking: app_debug/confirmed-logo-sizes.png. At 26 the wordmark
+                 is weak and "by GREENBIDZ" is a smudge — worse than the plain
+                 text it replaced. At 44 it dominates a row that is only a
+                 confirmation. 34 reads cleanly and keeps the card compact.
+                 accessibilityLabel carries the NAME, so screen readers and the
+                 test suite still get "101LAB" even though it is now artwork. */
+              <Image
+                source={logoFor(current)!}
+                style={{ height: 34, width: logoWidthFor(current, 34) }}
+                resizeMode="contain"
+                accessibilityRole="image"
+                accessibilityLabel={labelFor(current)}
+              />
+            ) : (
+              <>
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: MARKETPLACE_COLOR[current],
+                  }}
+                />
+                <Text
+                  className="font-heading text-4xl text-brand-foreground"
+                  numberOfLines={1}
+                  style={{ flexShrink: 1, minWidth: 0 }}
+                >
+                  {labelFor(current)}
+                </Text>
+              </>
+            )}
             <Text
-              className="font-heading text-4xl text-brand-foreground"
+              className="font-sans text-md text-brand-text-muted"
               numberOfLines={1}
               style={{ flex: 1, minWidth: 0 }}
             >
-              {labelFor(current)}
+              {descriptionFor(current)}
             </Text>
           </View>
         </View>
@@ -302,7 +405,6 @@ export function RoutingChip({ draft, onConfirm }: Props) {
         </Pressable>
       </View>
 
-      <Text className="font-sans text-md text-brand-text-muted">{descriptionFor(current)}</Text>
 
       {/* Confidence: word AND number, so the word translates and the number
           still reads in TH/VI/ZH/JA. Renders ONLY when the server supplied it —
@@ -324,19 +426,20 @@ export function RoutingChip({ draft, onConfirm }: Props) {
         </Text>
       ) : null}
 
+      {/* The reason, WITHOUT a "WHY" label above it. A one-word heading
+          introducing a one-line sentence cost a whole row plus its gap, and the
+          sentence already announces itself — "Nameplate reads …" is self-evidently
+          the reason. The label is dropped, not the explanation. */}
       {why ? (
-        <View className="gap-1.5" style={{ marginTop: 2 }}>
-          <FieldLabel text={t('mobile.detail.routing.why', { defaultValue: 'WHY' })} />
-          <Text className="font-sans text-md text-brand-text-muted">
-            {t(why.key, {
-              defaultValue:
-                why.key === 'mobile.detail.routing.whyNameplate'
-                  ? 'Nameplate reads "{{identity}}".'
-                  : 'No brand or model was legible in the photos.',
-              identity: why.identity,
-            })}
-          </Text>
-        </View>
+        <Text className="font-sans text-md text-brand-text-muted">
+          {t(why.key, {
+            defaultValue:
+              why.key === 'mobile.detail.routing.whyNameplate'
+                ? 'Nameplate reads "{{identity}}".'
+                : 'No brand or model was legible in the photos.',
+            identity: why.identity,
+          })}
+        </Text>
       ) : null}
 
       {/* "Not set" instead of a guess — plan §2.2 row 3 / §4.1. Says WHY the

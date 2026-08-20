@@ -21,6 +21,7 @@ export { ProfitIntelligenceCard } from './ProfitIntelligenceCard';
 export { RequiredChecklist } from './RequiredChecklist';
 export { RequiredProgressStrip } from './RequiredProgressStrip';
 export { RoutingChip } from './RoutingChip';
+export { OptionalDetailsSection } from './OptionalDetailsSection';
 export { SpecsCard } from './SpecsCard';
 export { VisibilityCard } from './VisibilityCard';
 export { useDetailController } from './useDetailController';

@@ -87,9 +87,13 @@ afterEach(() => {
 
 describe('RoutingChip — CONFIRMED state (Stitch 4a)', () => {
   it('states the destination instead of asking, and offers a quiet Change', () => {
-    const { getByText } = render(<Harness item={draft({ marketplaceConfirmed: true })} />);
+    const { getByText, getByLabelText } = render(
+      <Harness item={draft({ marketplaceConfirmed: true })} />,
+    );
     expect(getByText("WE'LL LIST THIS ON")).toBeTruthy();
-    expect(getByText('101LAB')).toBeTruthy();
+    // The destination is now the marketplace's own wordmark rather than text, so
+    // assert the accessibilityLabel — that is also what a screen reader announces.
+    expect(getByLabelText('101LAB')).toBeTruthy();
     expect(getByText('Change')).toBeTruthy();
     expect(getByText('Lab & scientific equipment')).toBeTruthy();
   });
@@ -121,15 +125,17 @@ describe('RoutingChip — CONFIRMED state (Stitch 4a)', () => {
     }
   });
 
-  it('quotes the nameplate as the WHY, and invents nothing when there is none', () => {
+  it('quotes the nameplate as the reason, and invents nothing when there is none', () => {
     const withPlate = render(
       <Harness item={draft({ marketplaceConfirmed: true, brand: 'Hsiangtai', model: 'CN-1050' })} />,
     );
-    expect(withPlate.getByText('WHY')).toBeTruthy();
+    // The "WHY" label was removed to save a row — a one-word heading over a
+    // one-line sentence. The SENTENCE is what matters and it must still be there.
     expect(withPlate.getByText('Nameplate reads "Hsiangtai CN-1050".')).toBeTruthy();
+    expect(withPlate.queryByText('WHY')).toBeNull();
 
     const without = render(<Harness item={draft({ marketplaceConfirmed: true })} />);
-    expect(without.queryByText('WHY')).toBeNull();
+    expect(without.queryByText(/Nameplate reads/)).toBeNull();
   });
 
   it('explains an empty category on an untrusted tree instead of leaving it blank', () => {
@@ -159,11 +165,47 @@ describe('RoutingChip — CONFIRMED state (Stitch 4a)', () => {
 describe('RoutingChip — ASK state (Stitch 4b)', () => {
   const asking = draft({ marketplaceConfirmed: false, needsClearerPhoto: true });
 
-  it('asks, names the guess, and its CTA names the action', () => {
-    const { getByText } = render(<Harness item={asking} />);
+  it('asks, and offers every supported marketplace inline', () => {
+    const { getByText, getByLabelText } = render(<Harness item={asking} />);
+    expect(getByText('Hard to tell from this photo')).toBeTruthy();
+    // One tap, not two: the options are on the card, not behind a button that
+    // opens a sheet.
+    expect(getByLabelText('101LAB — Lab & scientific equipment')).toBeTruthy();
+    expect(getByLabelText('101MACHINE — Industrial & production machinery')).toBeTruthy();
+    expect(getByLabelText('101IT — IT hardware & electronics')).toBeTruthy();
+  });
+
+  // The ask state has TWO causes and the card must not blame the wrong one. A
+  // wide shot of wireless earbuds on a device showed "We're not sure where this
+  // belongs" ALONGSIDE "Our best guess is 101IT" — a visible contradiction, when
+  // the real problem was an unreadable photo. These two cases pin each wording to
+  // its cause, so neither can drift onto the other.
+  it('blames the PHOTO when the nameplate could not be read', () => {
+    const { getByText, queryByText } = render(
+      <Harness item={draft({ marketplaceConfirmed: false, needsClearerPhoto: true })} />,
+    );
+    expect(getByText('Hard to tell from this photo')).toBeTruthy();
+    expect(
+      getByText(
+        'A closer shot of the nameplate would help. You can also just pick the marketplace yourself.',
+      ),
+    ).toBeTruthy();
+    expect(queryByText("We're not sure where this belongs")).toBeNull();
+  });
+
+  it('blames the MARKETPLACE only when the photo was fine', () => {
+    const { getByText, queryByText } = render(
+      <Harness
+        item={draft({
+          marketplaceConfirmed: false,
+          needsClearerPhoto: false,
+          siteTypeSource: 'low_confidence_fallback',
+        })}
+      />,
+    );
     expect(getByText("We're not sure where this belongs")).toBeTruthy();
     expect(getByText("Pick a marketplace and we'll load the right categories.")).toBeTruthy();
-    expect(getByText('Choose a marketplace to continue')).toBeTruthy();
+    expect(queryByText('Hard to tell from this photo')).toBeNull();
   });
 
   it('sets the expectation about category and currency', () => {
@@ -179,20 +221,19 @@ describe('RoutingChip — ASK state (Stitch 4b)', () => {
     expect(queryByText("WE'LL LIST THIS ON")).toBeNull();
   });
 
-  it('the CTA opens the picker rather than being a dead disabled control', () => {
-    const { getByText, queryByText } = render(<Harness item={asking} />);
-    expect(queryByText('Choose a marketplace')).toBeNull(); // sheet title, closed
-    fireEvent.press(getByText('Choose a marketplace to continue'));
-    expect(queryByText('Choose a marketplace')).toBeTruthy();
+  it('needs no sheet at all — the options are already on screen', () => {
+    const { queryByText, getByLabelText } = render(<Harness item={asking} />);
+    // No intermediate picker: the sheet title must never appear in the ask state.
+    expect(queryByText('Choose a marketplace')).toBeNull();
+    expect(getByLabelText('101LAB — Lab & scientific equipment')).toBeTruthy();
   });
 
-  it('confirming from the sheet reports the chosen marketplace to the screen', () => {
+  it('a single tap on an option reports the chosen marketplace to the screen', () => {
     const picked: string[] = [];
-    const { getByText } = render(
+    const { getByLabelText } = render(
       <Harness item={asking} onConfirm={(m) => picked.push(m)} />,
     );
-    fireEvent.press(getByText('Choose a marketplace to continue'));
-    fireEvent.press(getByText('101MACHINE'));
+    fireEvent.press(getByLabelText('101MACHINE — Industrial & production machinery'));
     expect(picked).toEqual(['101machine']);
   });
 });
