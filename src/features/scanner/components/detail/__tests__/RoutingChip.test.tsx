@@ -160,6 +160,78 @@ describe('RoutingChip — CONFIRMED state (Stitch 4a)', () => {
     );
     expect(queryByText(/Category: not set/)).toBeNull();
   });
+
+  // ⛔ FIX 1 (2026-08-20) — the earbuds case, END TO END through the chip. The
+  // photo could not be read but 101IT was named and supported, so the card must
+  // STATE the destination. Before FIX 1 this exact draft rendered the amber
+  // "We're not sure where this belongs" question.
+  //
+  // `marketplaceConfirmed: false` is LOAD-BEARING and must not be dropped: the
+  // chip computes `confirmed` as `draft.marketplaceConfirmed !== false`, so an
+  // UNSET field reads as already-confirmed and short-circuits the trigger
+  // entirely — the assertions below would then pass no matter what
+  // `routingNeedsAsk` says. `false` is also what the store really writes for an
+  // unanswered draft (`marketplaceConfirmed: !mustAsk`).
+  it('states the destination for an unreadable photo the AI still routed (the earbuds case)', () => {
+    const { getByText, queryByText, getByLabelText } = render(
+      <Harness
+        item={draft({
+          marketplace: '101it',
+          marketplaceConfirmed: false,
+          ai: { suggestedMarketplace: '101it' } as never,
+          needsClearerPhoto: true,
+        })}
+        formMarketplace="101it"
+      />,
+    );
+    expect(queryByText("We're not sure where this belongs")).toBeNull();
+    expect(queryByText('Hard to tell from this photo')).toBeNull();
+    expect(getByText("WE'LL LIST THIS ON")).toBeTruthy();
+    expect(getByLabelText('Change')).toBeTruthy();
+    // ...and the unreadable photo is NOT swallowed: the why line says so, on the
+    // brand/model fact it is actually about. (IdentityCard carries the same
+    // truth onto the fields themselves — IdentityCard.nameplateHint.test.tsx.)
+    expect(getByText('No brand or model was legible in the photos.')).toBeTruthy();
+  });
+
+  // ⛔ FIX 2 (2026-08-20) — a keyword-scorer pick reads as "not set", not as a
+  // confident AI fill. 101LAB is a TRUSTED tree, so `categorySource` is the only
+  // thing withholding the pre-fill: before FIX 2 this rendered no line at all
+  // and the seller saw a 0/7-accuracy guess under the green AI badge.
+  it('explains the blank when the category came from the keyword scorer, not the model', () => {
+    const { getByText } = render(
+      <Harness
+        item={draft({ marketplaceConfirmed: true, marketplace: '101lab', categorySource: 'fuzzy' })}
+        formMarketplace="101lab"
+      />,
+    );
+    expect(
+      getByText('Category: not set — pick one below. We would rather ask than guess.'),
+    ).toBeTruthy();
+  });
+
+  it("says nothing about the category when the MODEL itself picked it ('ai')", () => {
+    const { queryByText } = render(
+      <Harness
+        item={draft({ marketplaceConfirmed: true, marketplace: '101lab', categorySource: 'ai' })}
+        formMarketplace="101lab"
+      />,
+    );
+    expect(queryByText(/Category: not set/)).toBeNull();
+  });
+
+  // "Honest and QUIET" — a fuzzy pick the seller has already replaced must not
+  // keep nagging. Same fuzzy draft, but the form now holds a category.
+  it('stops mentioning a fuzzy category once the seller has picked one themselves', () => {
+    const { queryByText } = render(
+      <Harness
+        item={draft({ marketplaceConfirmed: true, marketplace: '101lab', categorySource: 'fuzzy' })}
+        formMarketplace="101lab"
+        categoryId="5375"
+      />,
+    );
+    expect(queryByText(/Category: not set/)).toBeNull();
+  });
 });
 
 describe('RoutingChip — ASK state (Stitch 4b)', () => {

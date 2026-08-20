@@ -259,7 +259,9 @@ export default function GroupedEditScreen() {
               })
             }
           />
-          <IdentityCard />
+          {/* FIX 1b — see detail.tsx: the unreadable nameplate is a brand/model
+              fact, not a marketplace question. */}
+          <IdentityCard needsClearerPhoto={item.needsClearerPhoto === true} />
           <DescriptionCard />
           <MarketplaceCard />
           <CategoryConditionCard />

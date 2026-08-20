@@ -32,12 +32,6 @@ describe('routingNeedsAsk — the ONE home for the trigger (blocker (d))', () =>
     expect(routingNeedsAsk({ signal: clean, supported: ALL })).toBe(false);
   });
 
-  it('asks on needs_clearer_photo (the primary live v1 trigger)', () => {
-    expect(
-      routingNeedsAsk({ signal: { ...clean, needsClearerPhoto: true }, supported: ALL }),
-    ).toBe(true);
-  });
-
   it('asks on an override or a low-confidence fallback source', () => {
     for (const src of ['regex_override', 'low_confidence_fallback'] as const) {
       expect(routingNeedsAsk({ signal: { ...clean, siteTypeSource: src }, supported: ALL })).toBe(
@@ -71,10 +65,15 @@ describe('routingNeedsAsk — the ONE home for the trigger (blocker (d))', () =>
 
   // Fail-closed: this is the V-8 / G15 path, and it must be reachable from the
   // pure function so it is testable without an emulator.
+  //
+  // The signal is one that DOES ask on a real list (a null suggestion), so the
+  // single-marketplace short-circuit is proved rather than assumed. Written with
+  // `needsClearerPhoto: true` before FIX 1 removed that trigger, which made the
+  // assertion vacuous on both halves.
   it('never asks when only one marketplace is supported (1.0.3 behaviour)', () => {
-    expect(
-      routingNeedsAsk({ signal: { ...clean, needsClearerPhoto: true }, supported: ['101lab'] }),
-    ).toBe(false);
+    const wouldAsk: RoutingSignal = { ...clean, suggestedMarketplace: null };
+    expect(routingNeedsAsk({ signal: wouldAsk, supported: ALL })).toBe(true);
+    expect(routingNeedsAsk({ signal: wouldAsk, supported: ['101lab'] })).toBe(false);
     expect(routingNeedsAsk({ signal: clean, supported: [] })).toBe(false);
   });
 
@@ -83,6 +82,119 @@ describe('routingNeedsAsk — the ONE home for the trigger (blocker (d))', () =>
     expect(routingNeedsAsk({ signal: { ...clean, siteTypeConfidence: 0.01 }, supported: ALL })).toBe(
       routingNeedsAsk({ signal: { ...clean, siteTypeConfidence: 0.99 }, supported: ALL }),
     );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX 1 (2026-08-20) — an unreadable photo is a statement about BRAND/MODEL,
+// not about the marketplace, so it must not force a marketplace question.
+//
+// MEASURED: 24 real equipment photos × 3 runs against the DEV backend.
+//   • marketplace routing was 92% accurate (22/24) — routing is NOT the problem;
+//   • `needs_clearer_photo` was true on 9/24 (37.5%) and, being the FIRST arm of
+//     `routingNeedsAsk`, it alone produced almost all of the asks;
+//   • on device (Galaxy S20 FE) a wide shot of wireless earbuds came back named
+//     "Wireless Earbuds", routed to 101IT, tagged BEST GUESS on the card — and
+//     the app asked anyway. It knew, and asked.
+//
+// So `needs_clearer_photo` is no longer sufficient on its own. The other two
+// arms are UNCHANGED: an off-list or absent suggestion still asks, and an
+// ASK_SOURCES `site_type_source` still asks.
+//
+// ⛔ NO CONFIDENCE THRESHOLD was added here, and none may be: plan §2.1 forbids
+// it, and every measured routing error came back at HIGH confidence, so a
+// threshold would have caught none of them while silently re-introducing the
+// asks this fix removes. `noThreshold` below pins that.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('routingNeedsAsk — FIX 1: an illegible nameplate is not a routing question', () => {
+  const blurry: RoutingSignal = { ...clean, needsClearerPhoto: true };
+
+  // ⛔ THE MEASURED DEVICE CASE. Restore `if (signal.needsClearerPhoto) return true;`
+  // as the first line of routingNeedsAsk and this goes RED.
+  it('does NOT ask when the photo was unreadable but the AI named a SUPPORTED marketplace', () => {
+    const earbuds: RoutingSignal = { ...blurry, suggestedMarketplace: '101it' };
+    expect(routingNeedsAsk({ signal: earbuds, supported: ALL })).toBe(false);
+  });
+
+  it('adopts the suggestion for every supported marketplace, not just 101it', () => {
+    for (const m of ALL) {
+      expect(
+        routingNeedsAsk({ signal: { ...blurry, suggestedMarketplace: m }, supported: ALL }),
+      ).toBe(false);
+    }
+  });
+
+  it('STILL asks when the photo was unreadable and the AI named nothing', () => {
+    expect(
+      routingNeedsAsk({ signal: { ...blurry, suggestedMarketplace: null }, supported: ALL }),
+    ).toBe(true);
+  });
+
+  it('STILL asks when the photo was unreadable and the suggestion is off-list', () => {
+    expect(
+      routingNeedsAsk({
+        signal: { ...blurry, suggestedMarketplace: '101recycle' },
+        supported: ['101lab', '101machine'],
+      }),
+    ).toBe(true);
+  });
+
+  it('STILL asks when the photo was unreadable and the source is in ASK_SOURCES', () => {
+    for (const siteTypeSource of ['regex_override', 'low_confidence_fallback'] as const) {
+      expect(
+        routingNeedsAsk({
+          signal: { ...blurry, suggestedMarketplace: '101it', siteTypeSource },
+          supported: ALL,
+        }),
+      ).toBe(true);
+    }
+  });
+
+  // All 71 measured observations carried `site_type_source: 'hint'`, so this is
+  // the arm the real traffic actually lands on.
+  it('does not ask on the hint/vision sources the measured traffic actually sends', () => {
+    for (const siteTypeSource of ['hint', 'vision'] as const) {
+      expect(
+        routingNeedsAsk({
+          signal: { ...blurry, suggestedMarketplace: '101it', siteTypeSource },
+          supported: ALL,
+        }),
+      ).toBe(false);
+    }
+  });
+
+  // The general statement, over every combination the wire can produce:
+  // needs_clearer_photo may not change the answer. This is the one that makes
+  // the fix undeletable in BOTH directions — re-adding the early return breaks
+  // it, and so would adding a weaker `needsClearerPhoto && …` clause anywhere.
+  it('needs_clearer_photo changes the answer for NO combination of the other fields', () => {
+    const sources = [null, 'hint', 'vision', 'regex_override', 'low_confidence_fallback'] as const;
+    const suggestions = [null, '101lab', '101it', '101recycle'] as const;
+    const lists: MarketplaceKey[][] = [['101lab'], ['101lab', '101machine'], ALL];
+    for (const siteTypeSource of sources) {
+      for (const suggestedMarketplace of suggestions) {
+        for (const supported of lists) {
+          const base: RoutingSignal = { ...clean, siteTypeSource, suggestedMarketplace };
+          expect(
+            routingNeedsAsk({ signal: { ...base, needsClearerPhoto: true }, supported }),
+          ).toBe(routingNeedsAsk({ signal: { ...base, needsClearerPhoto: false }, supported }));
+        }
+      }
+    }
+  });
+
+  // ⛔ plan §2.1 + FIX 1's own decision: confidence does NOT gate this. Every
+  // measured marketplace error arrived at high confidence, so a cut-off would
+  // have caught none of them.
+  it('noThreshold — confidence does not gate the unreadable-photo case either', () => {
+    for (const siteTypeConfidence of [0, 0.01, 0.4, 0.75, 0.99, 1]) {
+      expect(
+        routingNeedsAsk({
+          signal: { ...blurry, suggestedMarketplace: '101it', siteTypeConfidence },
+          supported: ALL,
+        }),
+      ).toBe(false);
+    }
   });
 });
 
@@ -109,12 +221,68 @@ describe('shouldPrefillCategory — §0.5 owner decision', () => {
     ).toBe(false);
   });
 
-  it('still pre-fills for the other two server values (C6 enum)', () => {
-    for (const src of ['ai', 'fuzzy'] as const) {
+  it("still pre-fills the server's own 'ai' pick (C6 enum)", () => {
+    expect(
+      shouldPrefillCategory({ marketplace: '101lab', signal: { ...clean, categorySource: 'ai' } }),
+    ).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX 2 (2026-08-20) — `category_source: 'fuzzy'` is the backend's DETERMINISTIC
+// KEYWORD SCORER, not the model. The server sends the field and the app already
+// carries it (`DraftItem.categorySource`), but the app then presented a fuzzy
+// pick with the same green "AI" badge as a real answer.
+//
+// MEASURED (24 photos × 3 runs, DEV backend): fuzzy supplied 20 of 71 category
+// picks — 28% — and ALL 7 of the fuzzy items that were checked against the tree
+// were WRONG. 0/7. A 0%-accuracy fill is worse than an empty required field,
+// because an empty field asks and a wrong fill lies.
+//
+// This reuses `shouldPrefillCategory` — the ONE home for "is this category
+// trustworthy" — rather than inventing a parallel badge rule, so all four call
+// sites (deriveRoutingState, draftFromSmartFields, routingPatchFromAi, the
+// chip's onConfirm) agree by construction. Nothing is filled, so nothing is
+// badged as an AI answer, and `routing.categoryNotSet` explains the blank.
+//
+// It is quiet by construction too: the explanation renders only while the field
+// is still empty (`!state.prefillCategory && !watch('categoryId')`), so a seller
+// who has picked a category never sees a warning about it.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('shouldPrefillCategory — FIX 2: a keyword-scorer guess is not an AI answer', () => {
+  // ⛔ Remove 'fuzzy' from the untrusted set and this goes RED.
+  it("never pre-fills a 'fuzzy' pick, on ANY marketplace", () => {
+    for (const m of ALL) {
       expect(
-        shouldPrefillCategory({ marketplace: '101lab', signal: { ...clean, categorySource: src } }),
-      ).toBe(true);
+        shouldPrefillCategory({ marketplace: m, signal: { ...clean, categorySource: 'fuzzy' } }),
+      ).toBe(false);
     }
+  });
+
+  it('treats fuzzy exactly as it treats unresolved — both are "we did not pick this"', () => {
+    for (const m of ALL) {
+      expect(
+        shouldPrefillCategory({ marketplace: m, signal: { ...clean, categorySource: 'fuzzy' } }),
+      ).toBe(
+        shouldPrefillCategory({
+          marketplace: m,
+          signal: { ...clean, categorySource: 'unresolved' },
+        }),
+      );
+    }
+  });
+
+  // The trusted paths must NOT be collateral damage: a real 'ai' pick and an
+  // ABSENT source (a persisted pre-S0-2 draft, or a backend that has not caught
+  // up) still pre-fill on a trusted tree. Widening the untrusted set to "anything
+  // that is not exactly 'ai'" would empty every legacy draft's category.
+  it('leaves a real AI pick and an ABSENT source alone', () => {
+    expect(
+      shouldPrefillCategory({ marketplace: '101lab', signal: { ...clean, categorySource: 'ai' } }),
+    ).toBe(true);
+    expect(
+      shouldPrefillCategory({ marketplace: '101lab', signal: { ...clean, categorySource: null } }),
+    ).toBe(true);
   });
 });
 
@@ -163,26 +331,52 @@ describe('deriveRoutingState', () => {
     expect(s.prefillCategory).toBe(true);
   });
 
-  it('asks when needs_clearer_photo is true (the v1 trigger)', () => {
+  // FIX 1 — the earbuds case, through the UI deriver. The photo was unreadable,
+  // but 101it is on the list, so the card STATES the destination instead of
+  // asking, and `needsClearerPhoto` is still carried so the card and the
+  // brand/model fields can say the true thing about the photo.
+  it('does NOT ask when the photo was unreadable but the AI named a supported marketplace', () => {
+    const s = deriveRoutingState({
+      current: '101it',
+      confirmed: false,
+      signal: { ...clean, needsClearerPhoto: true, suggestedMarketplace: '101it' },
+      supported: ALL,
+    });
+    expect(s.kind).toBe('confirmed');
+    expect(s.resolved).toBe(true);
+    expect(s.suggested).toBe('101it');
+    // Still TRUE on the state — the fact did not disappear, it moved fields.
+    expect(s.needsClearerPhoto).toBe(true);
+  });
+
+  it('asks when the photo was unreadable AND there is no usable suggestion', () => {
     const s = deriveRoutingState({
       current: '101lab',
       confirmed: false,
-      signal: { ...clean, needsClearerPhoto: true },
+      signal: { ...clean, needsClearerPhoto: true, suggestedMarketplace: null },
       supported: ALL,
     });
     expect(s.kind).toBe('ask');
     expect(s.resolved).toBe(false);
     expect(s.prefillCategory).toBe(false);
-    // The guess is surfaced but NOT adopted.
-    expect(s.suggested).toBe('101lab');
+    expect(s.suggested).toBeNull();
     expect(s.current).toBe('101lab');
   });
 
+  // The signal is one that really does ask (`low_confidence_fallback`), so this
+  // proves `confirmed` short-circuits it. It used to be written with
+  // `needsClearerPhoto: true`, which FIX 1 made vacuous.
   it('stops asking once the seller has confirmed', () => {
+    const asking: RoutingSignal = {
+      ...clean,
+      siteTypeSource: 'low_confidence_fallback',
+      suggestedMarketplace: '101lab',
+    };
+    expect(deriveRoutingState({ current: '101it', confirmed: false, signal: asking, supported: ALL }).kind).toBe('ask');
     const s = deriveRoutingState({
       current: '101it',
       confirmed: true,
-      signal: { ...clean, needsClearerPhoto: true, suggestedMarketplace: '101lab' },
+      signal: asking,
       supported: ALL,
     });
     expect(s.kind).toBe('confirmed');
@@ -212,6 +406,29 @@ describe('deriveRoutingState', () => {
     expect(s.prefillCategory).toBe(false);
   });
 
+  // FIX 2 — the keyword scorer's 0/7 pick renders as "not set", not as a
+  // confident AI fill. Confirmed state, trusted tree, everything else clean:
+  // `category_source` is the ONLY thing withholding the pre-fill here.
+  it('renders "not set" instead of a fuzzy keyword-scorer guess', () => {
+    const s = deriveRoutingState({
+      current: '101lab',
+      confirmed: false,
+      signal: { ...clean, categorySource: 'fuzzy' },
+      supported: ALL,
+    });
+    expect(s.kind).toBe('confirmed');
+    expect(s.prefillCategory).toBe(false);
+    // The contrast, so this cannot pass because prefill is off for everyone.
+    expect(
+      deriveRoutingState({
+        current: '101lab',
+        confirmed: false,
+        signal: { ...clean, categorySource: 'ai' },
+        supported: ALL,
+      }).prefillCategory,
+    ).toBe(true);
+  });
+
   it('asks when the source is an override or a low-confidence fallback', () => {
     for (const src of ['regex_override', 'low_confidence_fallback'] as const) {
       const s = deriveRoutingState({
@@ -224,11 +441,19 @@ describe('deriveRoutingState', () => {
     }
   });
 
+  // Uses a signal that DOES ask on a real list, so the short-circuit is proved
+  // rather than assumed (it was written with `needsClearerPhoto: true`, which
+  // FIX 1 made vacuous on both halves).
   it('never asks when only one marketplace is supported (1.0.3 behaviour)', () => {
+    const wouldAsk: RoutingSignal = { ...clean, suggestedMarketplace: null };
+    expect(
+      deriveRoutingState({ current: '101lab', confirmed: false, signal: wouldAsk, supported: ALL })
+        .kind,
+    ).toBe('ask');
     const s = deriveRoutingState({
       current: '101lab',
       confirmed: false,
-      signal: { ...clean, needsClearerPhoto: true },
+      signal: wouldAsk,
       supported: ['101lab'],
     });
     expect(s.kind).toBe('confirmed');
@@ -435,9 +660,21 @@ describe('routingPatchFromAi — the confirmed/ask answer', () => {
     expect(patchOf({ suggestedMarketplace: '101lab' }).marketplaceConfirmed).toBe(true);
   });
 
-  it('must ask when the nameplate could not be read', () => {
+  // FIX 1, through the analyze/grouped path — the same earbuds case. An
+  // unreadable nameplate no longer blocks a routing verdict this build can use.
+  it('is confirmed when the nameplate was illegible but the marketplace is supported', () => {
     expect(
-      patchOf({ suggestedMarketplace: '101lab', needsClearerPhoto: true }).marketplaceConfirmed,
+      patchOf({ suggestedMarketplace: '101it', needsClearerPhoto: true }).marketplaceConfirmed,
+    ).toBe(true);
+  });
+
+  it('must ask when the nameplate could not be read AND nothing usable was named', () => {
+    expect(
+      patchOf({ suggestedMarketplace: null, needsClearerPhoto: true }).marketplaceConfirmed,
+    ).toBe(false);
+    expect(
+      patchOf({ suggestedMarketplace: '101recycle', needsClearerPhoto: true }, ['101lab', '101it'])
+        .marketplaceConfirmed,
     ).toBe(false);
   });
 
@@ -513,6 +750,16 @@ describe('routingPatchFromAi — the §0.5 category clear (owner-approved)', () 
     expect(
       cleared(patchOf({ suggestedMarketplace: '101lab', categorySource: 'unresolved' })),
     ).toBe(true);
+  });
+
+  // FIX 2 through the analyze/grouped path — the most travelled branch in the
+  // feature. The keyword scorer's ids must be CLEARED in the write, not merely
+  // un-badged in the render: `CategoryConditionCard` only drops ids that are
+  // absent from the loaded tree, and a fuzzy pick is a REAL id from that very
+  // tree, so nothing downstream would ever remove it.
+  it('clears all FIVE fields when the ids came from the keyword scorer, not the model', () => {
+    expect(cleared(patchOf({ suggestedMarketplace: '101lab', categorySource: 'fuzzy' }))).toBe(true);
+    expect(cleared(patchOf({ suggestedMarketplace: '101it', categorySource: 'fuzzy' }))).toBe(true);
   });
 
   // ⛔ The subtle one, and the reason `marketplace` is recomputed before the

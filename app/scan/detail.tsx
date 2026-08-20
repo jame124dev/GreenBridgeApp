@@ -187,7 +187,10 @@ export default function DetailScreen() {
             }
           />
           <View onLayout={registerRow('title')}>
-            <IdentityCard />
+            {/* FIX 1b — `needs_clearer_photo` says the server could not read a
+                NAMEPLATE, so it is answered here (brand/model) rather than as a
+                marketplace question. See routingNeedsAsk. */}
+            <IdentityCard needsClearerPhoto={draft.needsClearerPhoto === true} />
           </View>
           <View onLayout={registerRow('description')}>
             <DescriptionCard />

@@ -89,11 +89,31 @@ describe('blocker (a) — the first scan on a cleared install', () => {
 
     // The SYNCHRONOUS read the store's lock 2 does is now the server's list.
     expect(supportedNow()).toEqual(['101lab', '101machine', '101it']);
+
+    // ADOPT: 101it is on the warmed list, so the verdict is usable and there is
+    // nothing to ask — even with an unreadable nameplate (FIX 1: a photo the
+    // server could not read says nothing about the marketplace).
     expect(
       routingNeedsAsk({
         signal: {
           suggestedMarketplace: '101it',
           needsClearerPhoto: true,
+          siteTypeConfidence: null,
+          siteTypeSource: null,
+          categorySource: null,
+        },
+        supported: supportedNow(),
+      }),
+    ).toBe(false);
+
+    // ASK: the warmed list now actually GATES the verdict — 101recycle is not on
+    // it, so the AI's answer is unusable and the seller is asked. Before the
+    // prefetch this same signal could not be distinguished from the cold case.
+    expect(
+      routingNeedsAsk({
+        signal: {
+          suggestedMarketplace: '101recycle',
+          needsClearerPhoto: false,
           siteTypeConfidence: null,
           siteTypeSource: null,
           categorySource: null,

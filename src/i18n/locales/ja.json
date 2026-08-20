@@ -3679,6 +3679,7 @@
       "addMore": "さらに追加",
       "addMorePhotos": "写真を追加",
       "brandPlaceholder": "例：Agilent",
+      "nameplateHint": "写真から銘板を読み取れませんでした — わかる範囲でご入力いただくか、より近づいて撮り直してください。",
       "co2Placeholder": "例：2.3",
       "colPhotos": "写真",
       "countrySearchPlaceholder": "検索…",

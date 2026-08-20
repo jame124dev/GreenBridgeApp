@@ -1,5 +1,5 @@
 import { Text, TextInput, View } from 'react-native';
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import type { DetailFormInput } from '@/features/scanner/schema';
@@ -26,11 +26,32 @@ const titleInputCls =
  *   exposes the description itself, so keeping the inputs would offer two ways
  *   to change one thing and silently discard one of them. Title and brand ARE
  *   contract fields and stay editable.
+ *
+ * `needsClearerPhoto` (⛔ FIX 1b, 2026-08-20) is the server's `needs_clearer_photo`
+ * off the draft. It means "I could not read a NAMEPLATE" — a statement about
+ * BRAND and MODEL, which is why FIX 1 stopped it forcing a MARKETPLACE question
+ * in `routingNeedsAsk`. The fact still had to land somewhere true and actionable,
+ * so it lands here, on the two fields it is about. Default `undefined` ⇒ every
+ * caller that does not pass it is byte-for-byte unchanged.
  */
-export function IdentityCard({ variant = 'draft' }: { variant?: 'draft' | 'edit' } = {}) {
+export function IdentityCard({
+  variant = 'draft',
+  needsClearerPhoto,
+}: { variant?: 'draft' | 'edit'; needsClearerPhoto?: boolean } = {}) {
   const isEdit = variant === 'edit';
   const { t } = useTranslation();
   const { control } = useFormContext<DetailFormInput>();
+
+  // Watched, not read once: the hint must vanish the moment the seller answers.
+  const brandValue = useWatch({ control, name: 'brand' });
+  const modelValue = useWatch({ control, name: 'model' });
+  const filled = (v: unknown) => typeof v === 'string' && v.trim().length > 0;
+  // MODEL is not rendered in the `edit` variant, so judging on it there would
+  // hold a hint open against a field the seller cannot see.
+  const identityIncomplete = isEdit
+    ? !filled(brandValue)
+    : !filled(brandValue) || !filled(modelValue);
+  const showNameplateHint = needsClearerPhoto === true && identityIncomplete;
 
   return (
     <View className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl gap-sm">
@@ -109,6 +130,22 @@ export function IdentityCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
         />
         )}
       </View>
+
+      {/* ⛔ FIX 1b — the illegible nameplate, said where it is ACTIONABLE.
+          ONE line for the PAIR, under the row: brand and model share a flex-row,
+          so each column is about half the card and the same sentence in both
+          would wrap to three lines twice to say one thing about one photo.
+          Muted, not destructive — nothing is wrong, something is just unknown.
+          Gated on the fields still being empty so a seller who has already typed
+          them never sees a warning about work they have done. */}
+      {showNameplateHint ? (
+        <Text className="font-sans text-md text-brand-text-muted" style={{ marginTop: 2 }}>
+          {t('mobile.detail.nameplateHint', {
+            defaultValue:
+              "We couldn't read the nameplate in your photos — add what you know, or retake a closer shot.",
+          })}
+        </Text>
+      ) : null}
 
       {isEdit ? null : (
       <Controller

@@ -301,6 +301,38 @@ describe('scanDraftStore Phase 0', () => {
         suggested_terms: {},
       }) as unknown as SmartDetectionResponse;
 
+    /**
+     * A single LAB item — the TRUSTED-tree fixture, so `category_source` is the
+     * only thing that can withhold its category pre-fill (unlike `machinesItem`,
+     * whose marketplace is in CATEGORY_UNTRUSTED and would clear regardless).
+     * `over` is spread into the product `data`, which is where
+     * `mapProductData` reads `category_source` from.
+     */
+    const labItem = (over: Record<string, unknown> = {}) =>
+      ({
+        success: true,
+        language: 'en',
+        detection: { suggested_mode: 'single', confidence: 0.9, summary: '1 item' },
+        merged_single: {
+          name: 'Hsiangtai CN-1050', equipment_description: 'centrifuge',
+          condition: 'used', price: '1200', site_type: 'LabGreenbidz',
+          product_cat: { id: '5375', name: 'Lab Infrastructure & Essentials' },
+          ...over,
+        },
+        products: [
+          {
+            id: 'p-0', image_indexes: [0], document_indexes: [],
+            data: {
+              name: 'Hsiangtai CN-1050', equipment_description: 'centrifuge',
+              condition: 'used', price: '1200', site_type: 'LabGreenbidz',
+              product_cat: { id: '5375', name: 'Lab Infrastructure & Essentials' },
+              ...over,
+            },
+          },
+        ],
+        suggested_terms: {},
+      }) as unknown as SmartDetectionResponse;
+
     const warm = (list: MarketplaceKey[]) => writeCachedSupported(list);
 
     // ⛔ THE TEST THIS PHASE EXISTS FOR. Revert lock 2 to
@@ -342,8 +374,36 @@ describe('scanDraftStore Phase 0', () => {
       expect(q[1].marketplaceConfirmed).toBe(true);  // lab item is fine
     });
 
-    it('asks when needs_clearer_photo is true, and persists that on the draft', async () => {
+    // ⛔ FIX 1 (2026-08-20) — this test used to assert the opposite
+    // (`marketplaceConfirmed === false`), because `needsClearerPhoto` was the
+    // first arm of `routingNeedsAsk`. It was the biggest source of unnecessary
+    // questions: `needs_clearer_photo` means "I could not read a NAMEPLATE",
+    // which is a statement about brand/model, not about the marketplace. It fired
+    // on 9/24 measured items (37.5%) — including a device case where the response
+    // named the item "Wireless Earbuds", routed it to 101IT, tagged 101IT as BEST
+    // GUESS, and asked anyway.
+    //
+    // The FACT is still persisted — that is the second assertion, and it is what
+    // `routingWhyLine`/`IdentityCard` now render on brand/model.
+    it('adopts the marketplace anyway when the nameplate was illegible, and still persists the fact', async () => {
       warm(['101lab', '101machine', '101it']);
+      const mapped = mapSmartDetection(
+        machinesItem({ needs_clearer_photo: true }),
+        'LabGreenbidz',
+      );
+      await useScanDraft.getState().applySmartDetection(mapped, [photo(0)], 'single');
+
+      const cur = useScanDraft.getState().current!;
+      expect(cur.needsClearerPhoto).toBe(true);   // NOT swallowed
+      expect(cur.marketplace).toBe('101machine'); // the AI verdict was usable
+      expect(cur.marketplaceConfirmed).toBe(true);
+    });
+
+    // The other half of the same rule: an unreadable photo with NO usable
+    // marketplace verdict still asks, because then there really is no answer.
+    // (101machine is withheld from the warm list, so the AI's verdict is dropped.)
+    it('still asks when the nameplate was illegible AND the verdict is off-list', async () => {
+      warm(['101lab', '101it']);
       const mapped = mapSmartDetection(
         machinesItem({ needs_clearer_photo: true }),
         'LabGreenbidz',
@@ -353,6 +413,44 @@ describe('scanDraftStore Phase 0', () => {
       const cur = useScanDraft.getState().current!;
       expect(cur.needsClearerPhoto).toBe(true);
       expect(cur.marketplaceConfirmed).toBe(false);
+    });
+
+    // ⛔ FIX 2 (2026-08-20) — `category_source: 'fuzzy'` is the backend's
+    // DETERMINISTIC KEYWORD SCORER, not the model. Measured: 20 of 71 category
+    // picks (28%) came from it and ALL 7 checked were WRONG (0/7), yet the app
+    // showed them under the same green "AI" badge as a real pick.
+    //
+    // The clear must happen HERE, in the write: a fuzzy pick is a REAL id from
+    // the loaded tree, so `CategoryConditionCard`'s stale-id effect (which only
+    // drops ids the tree does not contain) would keep it forever.
+    // 101lab is a TRUSTED tree, so `category_source` is the only thing
+    // withholding this pre-fill.
+    it('clears a keyword-scorer category on a trusted tree (FIX 2)', async () => {
+      warm(['101lab', '101machine', '101it']);
+      const mapped = mapSmartDetection(labItem({ category_source: 'fuzzy' }), 'LabGreenbidz');
+      expect(mapped.products[0].fields.categoryId).toBe('5375'); // the scorer DID send one
+      expect(mapped.products[0].fields.categorySource).toBe('fuzzy');
+
+      await useScanDraft.getState().applySmartDetection(mapped, [photo(0)], 'single');
+
+      const cur = useScanDraft.getState().current!;
+      expect(cur.marketplace).toBe('101lab');
+      expect(cur.categoryId ?? '').toBe('');
+      expect(cur.categoryName ?? '').toBe('');
+      expect(cur.parentCategoryId ?? '').toBe('');
+      expect(cur.customSubcategory ?? '').toBe('');
+    });
+
+    // The contrast that stops the test above passing for the wrong reason: the
+    // SAME lab item with the model's own pick keeps its category.
+    it("keeps the category when the model itself picked it (category_source 'ai')", async () => {
+      warm(['101lab', '101machine', '101it']);
+      const mapped = mapSmartDetection(labItem({ category_source: 'ai' }), 'LabGreenbidz');
+      await useScanDraft.getState().applySmartDetection(mapped, [photo(0)], 'single');
+
+      const cur = useScanDraft.getState().current!;
+      expect(cur.marketplace).toBe('101lab');
+      expect(cur.categoryId).toBe('5375');
     });
 
     // ⛔ §0.5 OWNER DECISION — APPROVED 2026-08-18. A machines-routed item must

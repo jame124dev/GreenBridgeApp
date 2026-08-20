@@ -3758,6 +3758,7 @@
       "addMore": "ADD MORE",
       "addMorePhotos": "Add more photos",
       "brandPlaceholder": "e.g. Agilent",
+      "nameplateHint": "We couldn't read the nameplate in your photos — add what you know, or retake a closer shot.",
       "co2Placeholder": "e.g. 2.3",
       "colPhotos": "Photos",
       "countrySearchPlaceholder": "Search…",

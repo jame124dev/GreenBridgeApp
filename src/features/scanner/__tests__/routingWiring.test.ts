@@ -59,7 +59,11 @@ describe('M-3 — the chip is mounted on BOTH editors', () => {
     it(`the chip sits above the identity fields on ${rel}`, () => {
       const src = read(rel);
       const chip = src.indexOf('<RoutingChip');
-      const identity = src.indexOf('<IdentityCard />');
+      // Prefix, not `'<IdentityCard />'`: FIX 1b gives the tag a prop on both
+      // editors, and an exact-tag match would have made this assertion silently
+      // unreachable (indexOf -1 < chip is false, so it would FAIL loudly here —
+      // but the same pattern below slices a block and would have gone vacuous).
+      const identity = src.indexOf('<IdentityCard');
       expect(chip).toBeGreaterThan(-1);
       expect(identity).toBeGreaterThan(-1);
       expect(chip).toBeLessThan(identity);
@@ -67,11 +71,59 @@ describe('M-3 — the chip is mounted on BOTH editors', () => {
   }
 });
 
+/**
+ * ⛔ FIX 1b (2026-08-20) — the nameplate hint's CALL SITES.
+ *
+ * `routingNeedsAsk` no longer asks a MARKETPLACE question just because the server
+ * could not read a nameplate (FIX 1: that flag is about BRAND and MODEL, and it
+ * fired on 9/24 measured items, including a device case that named the item
+ * "Wireless Earbuds", routed it to 101IT and asked anyway).
+ *
+ * The flag must not vanish along with the question. `IdentityCard` renders it —
+ * `IdentityCard.nameplateHint.test.tsx` proves the component — but the component
+ * defaults the prop to `undefined` and stays silent, so WITHOUT these two lines
+ * the whole of FIX 1b is dead code with a fully green suite. That is exactly how
+ * three earlier phases on this project shipped deletable behaviour, so the prop
+ * is pinned at both editors here.
+ */
+describe('FIX 1b — both scan editors hand IdentityCard the unreadable-photo flag', () => {
+  // detail.tsx calls the draft `draft`; grouped-edit.tsx calls it `item`.
+  const EXPECTED: Record<string, string> = {
+    [DETAIL]: '<IdentityCard needsClearerPhoto={draft.needsClearerPhoto === true} />',
+    [GEDIT]: '<IdentityCard needsClearerPhoto={item.needsClearerPhoto === true} />',
+  };
+
+  for (const rel of [DETAIL, GEDIT]) {
+    it(`${rel} passes needsClearerPhoto off the draft`, () => {
+      expect(read(rel)).toContain(EXPECTED[rel]);
+    });
+
+    // A bare `<IdentityCard />` on either editor means the hint can never render
+    // there, which is the deletion this block exists to catch.
+    it(`${rel} has no un-wired <IdentityCard /> left`, () => {
+      expect(read(rel)).not.toContain('<IdentityCard />');
+    });
+  }
+
+  // The published-listing editor is NOT a scan: it has no smart-detect response
+  // and no `needs_clearer_photo`, so it must stay on the default (silent) prop.
+  it('the published-listing editor is deliberately NOT wired', () => {
+    const src = read('app/(lab)/listing-edit.tsx');
+    expect(src).toContain('<IdentityCard variant="edit" />');
+    expect(src).not.toContain('needsClearerPhoto');
+  });
+});
+
 describe('blocker (c) — both onConfirm call sites clear the category in the SAME patch', () => {
   it('detail.tsx patches marketplace + confirmed + the cleared fields together', () => {
     const src = read(DETAIL);
     const at = src.indexOf('<RoutingChip');
-    const block = src.slice(at, src.indexOf('<IdentityCard />', at));
+    // Prefix match — see the note in the block above. An exact `'<IdentityCard />'`
+    // would return -1 after FIX 1b, and `slice(at, -1)` silently swallows the
+    // whole rest of the file, which would make every assertion below vacuous.
+    const end = src.indexOf('<IdentityCard', at);
+    expect(end).toBeGreaterThan(at);
+    const block = src.slice(at, end);
     expect(block).toContain('useScanDraft.getState().patch({');
     expect(block).toContain('marketplaceConfirmed: true,');
     expect(block).toContain('...CLEARED_CATEGORY_DRAFT_FIELDS,');
@@ -80,11 +132,13 @@ describe('blocker (c) — both onConfirm call sites clear the category in the SA
   it('grouped-edit.tsx does the same through patchQueuedItem', () => {
     const src = read(GEDIT);
     const at = src.indexOf('<RoutingChip');
-    // Sliced to <IdentityCard /> — the SAME boundary as detail.tsx above, now
+    // Sliced to <IdentityCard — the SAME boundary as detail.tsx above, now
     // that the chip sits above the identity fields on both editors. Slicing to
     // <DescriptionCard /> would keep passing but would silently tolerate the chip
     // drifting back down between the two cards.
-    const block = src.slice(at, src.indexOf('<IdentityCard />', at));
+    const end = src.indexOf('<IdentityCard', at);
+    expect(end).toBeGreaterThan(at);
+    const block = src.slice(at, end);
     expect(block).toContain('patchQueuedItem(index, {');
     expect(block).toContain('marketplaceConfirmed: true,');
     expect(block).toContain('...CLEARED_CATEGORY_DRAFT_FIELDS,');

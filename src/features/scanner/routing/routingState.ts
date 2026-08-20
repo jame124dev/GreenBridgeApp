@@ -44,11 +44,16 @@ export type RoutingState = {
   confidence: number | null;
   source: RoutingSource | null;
   /**
-   * WHY we are asking, when `kind === 'ask'`. True ⇒ the photo could not be read
-   * (no legible nameplate); false ⇒ the marketplace itself is genuinely ambiguous.
-   * The card must say which, or it contradicts itself — a wide shot of wireless
-   * earbuds produced "We're not sure where this belongs" next to "Our best guess
-   * is 101IT", when the honest message was "hard to tell from this photo".
+   * The server could not read a legible nameplate. Carried verbatim, in BOTH
+   * kinds — FIX 1 stopped it forcing `kind: 'ask'` (it is a BRAND/MODEL fact,
+   * not a routing one), so it now most often arrives on a CONFIRMED state.
+   *
+   * Two consumers, both about brand/model rather than the marketplace:
+   *   - `routingWhyLine` → `whyNoNameplate` on the confirmed card;
+   *   - `IdentityCard`'s per-field hint under BRAND / MODEL.
+   * In the ask state it still picks the honest wording — a wide shot of wireless
+   * earbuds must not read "We're not sure where this belongs" next to "our best
+   * guess is 101IT" when the real problem was the photo.
    */
   needsClearerPhoto: boolean;
 };
@@ -71,6 +76,27 @@ export type RoutingState = {
 const CATEGORY_UNTRUSTED: readonly MarketplaceKey[] = ['101machine', '101recycle'];
 
 /**
+ * ⛔ FIX 2 (2026-08-20) — `category_source` values that mean "the MODEL did not
+ * pick this", so the ids must not be presented as an AI answer.
+ *
+ *   - 'unresolved' — the server itself says it could not place the item (S0-3a).
+ *   - 'fuzzy'      — the backend's DETERMINISTIC KEYWORD SCORER supplied the ids
+ *                    after the model's pick was rejected or absent. MEASURED on
+ *                    24 real equipment photos × 3 runs against the DEV backend:
+ *                    fuzzy supplied 20 of 71 category picks (28%) and ALL 7 of
+ *                    the fuzzy items checked against the tree were WRONG — 0/7.
+ *                    A 0%-accuracy fill is worse than an empty required field:
+ *                    an empty field asks, a wrong fill lies, and the app was
+ *                    badging it with the same green "AI" chip as a real answer.
+ *
+ * 'ai' and an ABSENT source stay trusted. Do NOT widen this to "anything that is
+ * not exactly 'ai'": `categorySource` is null on every persisted pre-S0-2 draft
+ * and on any backend that has not caught up, and that would empty their
+ * categories too.
+ */
+const CATEGORY_SOURCE_UNTRUSTED: readonly CategorySource[] = ['unresolved', 'fuzzy'];
+
+/**
  * Sources that mean "the pipeline overwrote or invented the answer", so the
  * seller must be asked. Both are LIVE since S0-2.
  */
@@ -81,8 +107,13 @@ const ASK_SOURCES: readonly RoutingSource[] = ['regex_override', 'low_confidence
  *
  * Called by `deriveRoutingState` (UI), by `draftFromSmartFields` (the store's
  * persisted answer) and by `app/scan/processing.tsx` (the analyze path). There
- * is no second copy. If you are about to write `if (fields.needsClearerPhoto)`
+ * is no second copy. If you are about to decide "must the seller be asked?"
  * anywhere else, call this instead.
+ *
+ * ⚠️ NOT the place for `needsClearerPhoto` — FIX 1 removed it from this trigger
+ * on purpose (see inside). A caller that wants the unreadable-photo fact reads
+ * `signal.needsClearerPhoto` / `RoutingState.needsClearerPhoto` directly and
+ * says something about BRAND and MODEL with it, which is what it is about.
  *
  * Pure by construction: `supported` is an argument, so this module imports no
  * MMKV, no axios and no React — which is what lets `scanDraftStore.ts` import
@@ -104,7 +135,35 @@ export function routingNeedsAsk(args: {
   // returns one entry.
   if (supported.length <= 1) return false;
 
-  if (signal.needsClearerPhoto) return true;
+  // ⛔ FIX 1 (2026-08-20) — `needsClearerPhoto` DELIBERATELY DOES NOT APPEAR IN
+  // THIS FUNCTION. It used to be the first line, `if (signal.needsClearerPhoto)
+  // return true;`, and it was the single biggest source of unnecessary questions.
+  //
+  // WHY IT WAS WRONG. `needs_clearer_photo` is the SERVER saying "I could not
+  // read a nameplate". That is a statement about BRAND and MODEL, not about
+  // which marketplace an item belongs to. Measured on device (Galaxy S20 FE): a
+  // wide desk shot of wireless earbuds came back named "Wireless Earbuds",
+  // routed to 101IT, and the card even tagged 101IT as BEST GUESS — while asking
+  // the seller where it belonged. The app knew, and asked anyway.
+  //
+  // MEASURED (24 real equipment photos × 3 runs, DEV backend):
+  //   • marketplace routing was 92% accurate (22/24; 64/72 = 88.9% recorded) —
+  //     routing is not the weak link and needs no better model;
+  //   • `needs_clearer_photo` was true on 9/24 items (37.5%), and being the FIRST
+  //     arm it produced almost every ask;
+  //   • all 71 observations carried `site_type_source: 'hint'`, so the
+  //     ASK_SOURCES arm below never fired in real traffic.
+  //
+  // The fact is NOT swallowed. It is still carried on the draft and on
+  // `RoutingState.needsClearerPhoto`, and it is surfaced where it is actionable:
+  // `routingWhyLine` -> `whyNoNameplate` on the confirmed card (reachable for the
+  // first time now that such an item stops asking), and a per-field hint under
+  // BRAND / MODEL in `IdentityCard`.
+  //
+  // ⛔ NO CONFIDENCE THRESHOLD gates this, and none may be added: plan §2.1
+  // forbids it, and every measured routing error arrived at HIGH confidence, so
+  // a cut-off would have caught none of them. `noThreshold` in
+  // routingState.test.ts pins that.
   if (signal.siteTypeSource != null && ASK_SOURCES.includes(signal.siteTypeSource)) return true;
 
   // `suggested === null` is a DEFENSIVE trigger, not the primary one. Plan §2.2
@@ -136,7 +195,11 @@ export function shouldPrefillCategory(args: {
   signal: RoutingSignal;
 }): boolean {
   const { marketplace, signal } = args;
-  if (signal.categorySource === 'unresolved') return false;
+  // FIX 2 — 'unresolved' AND 'fuzzy'. See CATEGORY_SOURCE_UNTRUSTED for the
+  // measurement: the keyword scorer supplied 28% of picks at 0/7 accuracy.
+  if (signal.categorySource != null && CATEGORY_SOURCE_UNTRUSTED.includes(signal.categorySource)) {
+    return false;
+  }
   if (CATEGORY_UNTRUSTED.includes(marketplace)) return false;
   return true;
 }

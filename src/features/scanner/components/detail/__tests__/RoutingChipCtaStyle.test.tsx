@@ -102,9 +102,11 @@ const OPTION_LABELS = [
 ];
 
 /**
- * The real ask trigger, not a guessed prop: `routingNeedsAsk` fires on
- * `needsClearerPhoto`, on a `regex_override` / `low_confidence_fallback`
- * siteTypeSource, or on a suggestion this build does not support. `101recycle`
+ * The real ask trigger, not a guessed prop: `routingNeedsAsk` fires on a
+ * `regex_override` / `low_confidence_fallback` siteTypeSource, or on an absent
+ * suggestion / one this build does not support. (`needsClearerPhoto` was the
+ * first arm until FIX 1 removed it — an unreadable nameplate is a brand/model
+ * fact, not a marketplace question.) `101recycle`
  * is deliberately absent from the mocked supported list above, so this draft is
  * the device case from the screenshot (office chairs → AI said recycle).
  */
@@ -207,7 +209,12 @@ describe('RoutingChip ask options — the seller can actually SEE the choices', 
     expect(picked).toEqual(['101machine']);
   });
 
-  it('still styles the rows when the ask came from needsClearerPhoto', () => {
+  // Retitled by FIX 1 (2026-08-20). `needsClearerPhoto` is NO LONGER an ask
+  // trigger — the ask in this case has always come from `ai: null` (no
+  // suggestion at all), so the old name described a trigger the fixture never
+  // exercised. Kept, with the blurry flag still set, because it pins that an
+  // unreadable photo does not disturb the styling of the ask it does not cause.
+  it('still styles the rows when there is no suggestion at all, blurry photo included', () => {
     const { getByLabelText } = render(
       <Harness item={askDraft({ ai: null, needsClearerPhoto: true })} />,
     );
