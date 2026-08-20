@@ -54,14 +54,16 @@ export const registerCodeSchema = z.object({
 });
 export type RegisterCodeInput = z.infer<typeof registerCodeSchema>;
 
-export const registerProfileSchema = z.object({
-  firstName: z.string().trim().min(1, 'mobile.auth.register.firstNameRequired'),
-  lastName: z.string().trim().min(1, 'mobile.auth.register.lastNameRequired'),
-  phone: z.string().trim().optional(),
-  // ⚠️ Company MUST stay optional. A required company field turns this screen
-  // into business/organization registration, which is what App Review rejected
-  // build 14 for under Guideline 3.1.1.
-  company: z.string().trim().optional(),
-  country: z.string().trim().optional(),
-});
-export type RegisterProfileInput = z.infer<typeof registerProfileSchema>;
+// ⛔ `registerProfileSchema` (firstName/lastName/phone/**company**/country) was
+// DELETED 2026-08-20. It had no consumer anywhere in the app — signup validates
+// through `registerCredentialsSchema` above and never rendered these fields — so
+// the only thing it did was keep a `company` key in a schema named "register",
+// in a codebase whose iOS build has now been rejected TWICE under Guideline
+// 3.1.1 for "account registration for businesses and organizations". Dead code
+// that contradicts the compliance position is a liability, not a spare part.
+// A signup step that collects company details must not come back; see the note
+// at the top of `app/(lab)/sell/apply.tsx`.
+//
+// Editing `company` on an EXISTING profile is untouched and stays
+// (`src/features/settings/components/ProfileInfoCard.tsx`) — that is account
+// management for a customer who already has an account, not registration.

@@ -161,7 +161,12 @@ function CredentialsStep({ reg }: StepProps) {
             value={value}
             onChangeText={onChange}
             onBlur={onBlur}
-            placeholder="you@company.com"
+            /* `you@example.com`, not `you@company.com`. Cosmetic on its own, but
+               this screen is one of the two App Review screenshotted under
+               Guideline 3.1.1 ("account registration for businesses and
+               organizations"), and a work-email placeholder is one of the cues
+               that reads a personal signup as a business one. */
+            placeholder="you@example.com"
             placeholderTextColor="#9aa1ad"
             autoCapitalize="none"
             keyboardType="email-address"
@@ -358,9 +363,16 @@ function DoneStep({ reg }: StepProps) {
         {t('mobile.auth.register.doneTitle')}
       </RNText>
       <RNText style={[styles.subtitle, { textAlign: 'center' }]}>
+        {/* ⛔ The trailing sentence used to read "To list your own equipment,
+            apply to sell from the Sell tab." — deleted 2026-08-20. It was an
+            in-app call to action into the business-registration form that App
+            Review told us to remove under Guideline 3.1.1, and 3.1.3's preamble
+            forbids steering to an off-app commercial path. See the note at the
+            top of `app/(lab)/sell/apply.tsx` before writing anything like it
+            again. What is left describes what this account CAN do. */}
         {t('mobile.auth.register.doneSubtitleBuyer', {
           defaultValue:
-            'Your account is ready. Browse equipment, ask our AI assistant anything, and message sellers. To list your own equipment, apply to sell from the Sell tab.',
+            'Your account is ready. Browse equipment, ask our AI assistant anything, and message sellers.',
         })}
       </RNText>
       <Button

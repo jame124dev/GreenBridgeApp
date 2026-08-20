@@ -175,10 +175,39 @@ describe('outbound web links', () => {
     expect(urls).toEqual([]);
   });
 
-  it('registration keeps company optional (a required one is business signup)', () => {
+  // Was: "registration keeps company optional (a required one is business
+  // signup)" — it asserted the field EXISTED and carried `.optional()`. Optional
+  // was not enough. App Review rejected 1.0.3 (19) under Guideline 3.1.1 again on
+  // 2026-08-20, and the earlier mitigation had merely moved the company/tax fields
+  // from signup into the seller application — still in the binary. The invariant
+  // is now the stronger one: registration asks for NO company at all.
+  //
+  // Editing `company` on an existing profile is untouched and lives in
+  // `src/features/settings/components/ProfileInfoCard.tsx` — account management
+  // for someone who already has an account is not registration.
+  it('registration asks for no company field at all (Guideline 3.1.1)', () => {
     const schema = read('src/features/auth/schema.ts');
-    const m = schema.match(/company:\s*z\.string\(\)[^,\n]*/);
-    expect(m).not.toBeNull();
-    expect(m![0]).toContain('optional()');
+    // Comments explain WHY it is absent, so strip them before asserting absence —
+    // otherwise the explanation would fail the test it is explaining.
+    const code = schema.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    expect(code).not.toMatch(/company\s*:/);
+    expect(code).not.toMatch(/registerProfileSchema/);
+  });
+
+  it('the seller screen collects no business-registration details (Guideline 3.1.1)', () => {
+    // The screen App Review actually objected to. Field labels and form handles
+    // both, because either one returning means the form is back.
+    const screen = read('app/(lab)/sell/apply.tsx');
+    const code = screen.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    for (const needle of [
+      'companyName',
+      'taxId',
+      'businessType',
+      'DocumentPicker',
+      'sellerApplicationSchema',
+      'useSubmitSellerUpgrade',
+    ]) {
+      expect(code).not.toContain(needle);
+    }
   });
 });

@@ -1,29 +1,25 @@
 /**
- * Task 5 — the seller application screen.
+ * Seller status screen — four situations, and one compliance guard.
  *
- * The screen is one component answering four situations, so what is asserted
- * here is that each one is COMPLETE, not merely that it renders:
- *
- *   - no application → the form, with the CTA and a live completion count
- *   - pending        → status, no form (a second submission is a server 400)
- *   - rejected       → the reviewer's words AND a prefilled form to resend
+ *   - no application → "selling needs a verified business account", NO form
+ *   - pending        → status + a way back into the app
+ *   - rejected       → the reviewer's words, and what happens next
  *   - approved       → a door into the scan flow
  *
- * Plus the two error paths that used to be swallowed: a rejected local validation
- * (which must name what is missing, not silently do nothing) and a server
- * duplicate/approved message (which must be shown verbatim and must make the
- * screen re-read the real status).
+ * ⛔ The last describe block is the important one. This screen carried a business
+ * registration form (company name, tax / registration number, business type,
+ * business-registration certificate) and App Review rejected the app for it under
+ * Guideline 3.1.1 — TWICE, because it was reintroduced after the sign-in-only
+ * build was approved. `does not ask a business to register` is what makes putting
+ * it back a red test rather than a rejected submission six weeks later.
  */
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import React from 'react';
-import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), back: jest.fn(), push: jest.fn() },
-}));
-jest.mock('sonner-native', () => ({
-  toast: Object.assign(jest.fn(), { error: jest.fn(), success: jest.fn() }),
 }));
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
@@ -54,25 +50,14 @@ jest.mock('react-native-reanimated', () => {
     withTiming: (v: unknown) => v,
   };
 });
-jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
 // Mocked so the screen's approved-state CTA can be observed without dragging the
 // real gate (and its query client + scan draft store) into this test.
 jest.mock('@/features/lab/scan/launchSellerScan', () => ({ launchSellerScan: jest.fn() }));
 
-// Explicit generics: the default `jest.fn()` is typed `UnknownFunction`, which
-// neither accepts a two-parameter implementation nor a typed return value.
-type MutateVars = { values: Record<string, string>; files?: unknown };
-type MutateOpts = {
-  onSuccess?: () => void;
-  onError?: (err: { code: string; message: string }) => void;
-};
-
 const mockStatus = jest.fn<() => StatusResult>();
-const mockMutate = jest.fn<(vars: MutateVars, opts?: MutateOpts) => void>();
 jest.mock('@/features/seller/useSellerUpgrade', () => ({
   SELLER_UPGRADE_KEY: ['seller-upgrade', 'my-status'],
   useSellerUpgradeStatus: () => mockStatus(),
-  useSubmitSellerUpgrade: () => ({ mutate: mockMutate, isPending: false }),
 }));
 
 import '@/i18n'; // real resources, so assertions read the shipped copy
@@ -107,9 +92,6 @@ const row = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-// ONE client per test, built outside the wrapper component: a client constructed
-// in the component body is recreated on every render, and a settled mutation then
-// leaves a 5-minute GC timer behind — Jest reports "did not exit" for it.
 let qc: QueryClient;
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -120,7 +102,6 @@ const renderScreen = () => render(<SellerApplyScreen />, { wrapper });
 
 beforeEach(() => {
   mockStatus.mockReset();
-  mockMutate.mockReset();
   (launchSellerScan as unknown as jest.Mock).mockReset();
   qc = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false, gcTime: 0 } },
@@ -150,42 +131,22 @@ describe('while the status is unknown', () => {
   });
 });
 
-describe('no application yet', () => {
+describe('not a verified seller yet', () => {
   beforeEach(() => {
     mockStatus.mockReturnValue(result({ data: null }));
   });
 
-  it('shows the form with one dominant CTA and says why it is asking', () => {
-    const { getByText, getByTestId } = renderScreen();
-    expect(getByText('Apply to sell equipment')).toBeTruthy();
-    expect(getByTestId('apply-submit')).toBeTruthy();
-    expect(getByText('Submit application')).toBeTruthy();
-  });
-
-  it('tracks completion so the sticky footer says what is left', () => {
-    const { getByText, getByTestId } = renderScreen();
-    expect(getByText('0 of 6 details complete')).toBeTruthy();
-    fireEvent.changeText(getByTestId('apply-company'), 'Acme');
-    expect(getByText('1 of 6 details complete')).toBeTruthy();
-  });
-
-  it('marks the documents optional rather than implying they are needed', () => {
+  it('states the position without asking for anything', () => {
     const { getByText } = renderScreen();
-    expect(getByText('Documents · optional')).toBeTruthy();
-    expect(
-      getByText(
-        'Attaching these usually gets you approved faster, but you can submit without them and send them later.',
-      ),
-    ).toBeTruthy();
+    expect(getByText('Selling needs a verified business account')).toBeTruthy();
+    expect(getByText('Back to browsing')).toBeTruthy();
   });
 
-  it('names what is missing instead of failing silently', async () => {
-    const { getByTestId, queryByTestId } = renderScreen();
-    await act(async () => {
-      fireEvent.press(getByTestId('apply-submit'));
-    });
-    await waitFor(() => expect(queryByTestId('apply-missing')).toBeTruthy());
-    expect(mockMutate).not.toHaveBeenCalled();
+  it('is not a dead end — it names what the account can still do', () => {
+    const { getByText } = renderScreen();
+    // Browsing, messaging and SAVING drafts all still work; only publishing is
+    // gated (sellerSubmitGate.ts). A screen that omitted this would read as a wall.
+    expect(getByText(/browsing equipment, messaging sellers and saving drafts/)).toBeTruthy();
   });
 });
 
@@ -194,12 +155,9 @@ describe('an application under review', () => {
     mockStatus.mockReturnValue(result({ data: row({ status: 'pending' }) }));
   });
 
-  it('shows the status and does NOT offer the form again', () => {
-    const { getByText, queryByTestId } = renderScreen();
+  it('shows the status', () => {
+    const { getByText } = renderScreen();
     expect(getByText('Your application is with our team')).toBeTruthy();
-    // A second submission while one is pending is a 400 — no CTA may lead there.
-    expect(queryByTestId('apply-submit')).toBeNull();
-    expect(queryByTestId('apply-company')).toBeNull();
   });
 
   it('never implies the account is unusable', () => {
@@ -228,25 +186,17 @@ describe('a rejected application', () => {
     mockStatus.mockReturnValue(result({ data: rejected }));
   });
 
-  it('quotes the reviewer, so the user knows what to change', () => {
+  it('quotes the reviewer, so the user knows what the problem was', () => {
     const { getByTestId } = renderScreen();
     expect(getByTestId('seller-status-notes').props.children).toBe(
       'The tax ID does not match the certificate.',
     );
   });
 
-  it('is a way forward, not a dead end: the form is right there', () => {
-    const { getByTestId, getByText } = renderScreen();
-    expect(getByTestId('apply-company')).toBeTruthy();
-    expect(getByText('Resend application')).toBeTruthy();
-    expect(getByText('Update your application')).toBeTruthy();
-  });
-
-  it('prefills the company so a correction is an edit, not a retype', async () => {
-    const { getByTestId } = renderScreen();
-    await waitFor(() =>
-      expect(getByTestId('apply-company').props.value).toBe('Acme Recycling'),
-    );
+  it('says what happens next rather than re-opening a form', () => {
+    const { getByText } = renderScreen();
+    expect(getByText('Your seller account is not active')).toBeTruthy();
+    expect(getByText(/Our team will follow up with you/)).toBeTruthy();
   });
 });
 
@@ -263,75 +213,58 @@ describe('an approved seller', () => {
   });
 });
 
-describe('server rejections are surfaced, not swallowed', () => {
-  /** Fill every required field so `handleSubmit` reaches the mutation. */
-  async function fillForm(api: ReturnType<typeof renderScreen>) {
-    const { getByTestId, getByText } = api;
-    await act(async () => {
-      fireEvent.changeText(getByTestId('apply-company'), 'Acme Recycling');
-      fireEvent.changeText(getByTestId('apply-tax-id'), 'TIN-42');
-      fireEvent.changeText(getByTestId('apply-phone'), '+66 123');
-      fireEvent.changeText(getByTestId('apply-reason'), 'Used CNC machines');
-      fireEvent.press(getByText('Dealer'));
-      fireEvent.press(getByText('Thailand'));
-    });
-  }
+describe('does not ask a business to register (App Review Guideline 3.1.1)', () => {
+  // Every state, because the form used to be reachable from two of them (no
+  // application, and rejected) and a future edit could re-add it to either.
+  const STATES: [string, StatusResult][] = [
+    ['no application', result({ data: null })],
+    ['rejected', result({ data: row({ status: 'rejected', admin_notes: 'No' }) })],
+    ['pending', result({ data: row({ status: 'pending' }) })],
+    ['approved', result({ data: row({ status: 'approved' }) })],
+  ];
 
-  it('shows the duplicate-pending sentence verbatim and re-reads the status', async () => {
-    mockStatus.mockReturnValue(result({ data: null }));
-    const message = 'You already have a pending seller upgrade request.';
-    mockMutate.mockImplementation((_vars, opts) => {
-      opts?.onError?.({ code: 'DUPLICATE_PENDING', message });
-    });
-    const invalidate = jest.spyOn(qc, 'invalidateQueries');
+  it.each(STATES)('collects no business details in the "%s" state', (_name, state) => {
+    mockStatus.mockReturnValue(state);
+    const { queryByTestId, queryByText } = renderScreen();
 
-    const api = renderScreen();
-    await fillForm(api);
-    await act(async () => {
-      fireEvent.press(api.getByTestId('apply-submit'));
-    });
+    // The form's own handles.
+    for (const id of [
+      'apply-company',
+      'apply-tax-id',
+      'apply-phone',
+      'apply-reason',
+      'apply-submit',
+      'apply-missing',
+      'apply-server-error',
+    ]) {
+      expect(queryByTestId(id)).toBeNull();
+    }
 
-    await waitFor(() => expect(api.queryByTestId('apply-server-error')).toBeTruthy());
-    expect(api.getByText(message)).toBeTruthy();
-    // The cached status was stale — the screen must go and find out the truth.
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['seller-upgrade', 'my-status'] });
+    // ...and its labels, which is what a reviewer actually reads. `admin_notes`
+    // may legitimately mention a tax ID (the reviewer's own sentence), so this
+    // asserts on the FIELD LABELS, not on the word "tax".
+    for (const label of [
+      'Company name',
+      'Tax / registration number',
+      'Business type',
+      'Business registration certificate',
+      'Your business',
+      'Submit application',
+      'Resend application',
+      'Apply to sell equipment',
+      'Documents · optional',
+    ]) {
+      expect(queryByText(label)).toBeNull();
+    }
   });
 
-  it('shows the already-approved sentence verbatim', async () => {
+  it('offers no outbound link to register elsewhere', () => {
+    // Guideline 3.1.3's preamble forbids steering to an off-app purchase path,
+    // and this app's third rejection was caused by exactly such a link (to a web
+    // page with a Company field). Anything resembling one must not come back.
     mockStatus.mockReturnValue(result({ data: null }));
-    const message = 'Your seller upgrade has already been approved.';
-    mockMutate.mockImplementation((_vars, opts) => {
-      opts?.onError?.({ code: 'ALREADY_APPROVED', message });
-    });
-
-    const api = renderScreen();
-    await fillForm(api);
-    await act(async () => {
-      fireEvent.press(api.getByTestId('apply-submit'));
-    });
-
-    await waitFor(() => expect(api.getByText(message)).toBeTruthy());
-  });
-
-  it('posts snake-case-mapped values and the optional files only when picked', async () => {
-    mockStatus.mockReturnValue(result({ data: null }));
-    const api = renderScreen();
-    await fillForm(api);
-    await act(async () => {
-      fireEvent.press(api.getByTestId('apply-submit'));
-    });
-
-    await waitFor(() => expect(mockMutate).toHaveBeenCalled());
-    const [vars] = mockMutate.mock.calls[0];
-    expect(vars.values).toEqual({
-      companyName: 'Acme Recycling',
-      taxId: 'TIN-42',
-      businessType: 'Dealer',
-      phone: '+66 123',
-      country: 'Thailand',
-      reason: 'Used CNC machines',
-    });
-    // No document picked → the key is omitted entirely rather than sent empty.
-    expect(vars.files).toBeUndefined();
+    const { queryByText } = renderScreen();
+    expect(queryByText(/101lab\.co|greenbidz\.com|https?:/i)).toBeNull();
+    expect(queryByText(/sign up|register (at|on)|open (the )?website|apply online/i)).toBeNull();
   });
 });
