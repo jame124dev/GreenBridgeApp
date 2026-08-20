@@ -4046,7 +4046,7 @@
       "loginFailedBody": "Vui lòng thử lại",
       "invalidInputTitle": "Kiểm tra lại thông tin đã nhập",
       "invalidInputBody": "Vui lòng nhập email và mật khẩu hợp lệ.",
-      "emailPlaceholderCompany": "you@company.com",
+      "emailPlaceholderCompany": "you@example.com",
       "showPasswordA11y": "Hiện mật khẩu",
       "hidePasswordA11y": "Ẩn mật khẩu",
       "pending": {

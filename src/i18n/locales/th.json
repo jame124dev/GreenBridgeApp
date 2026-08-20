@@ -3945,7 +3945,7 @@
       "loginFailedBody": "กรุณาลองอีกครั้ง",
       "invalidInputTitle": "ตรวจสอบข้อมูลที่กรอก",
       "invalidInputBody": "กรุณาใส่อีเมลและรหัสผ่านที่ถูกต้อง",
-      "emailPlaceholderCompany": "you@company.com",
+      "emailPlaceholderCompany": "you@example.com",
       "showPasswordA11y": "แสดงรหัสผ่าน",
       "hidePasswordA11y": "ซ่อนรหัสผ่าน",
       "pending": {

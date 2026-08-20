@@ -3961,7 +3961,7 @@
       "loginFailedBody": "もう一度お試しください",
       "invalidInputTitle": "入力を確認してください",
       "invalidInputBody": "有効なメールアドレスとパスワードを入力してください。",
-      "emailPlaceholderCompany": "you@company.com",
+      "emailPlaceholderCompany": "you@example.com",
       "showPasswordA11y": "パスワードを表示",
       "hidePasswordA11y": "パスワードを非表示",
       "pending": {

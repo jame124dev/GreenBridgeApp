@@ -4027,7 +4027,7 @@
       "loginFailedBody": "請再試一次",
       "invalidInputTitle": "請檢查輸入",
       "invalidInputBody": "請輸入有效的電子郵件與密碼。",
-      "emailPlaceholderCompany": "you@company.com",
+      "emailPlaceholderCompany": "you@example.com",
       "showPasswordA11y": "顯示密碼",
       "hidePasswordA11y": "隱藏密碼",
       "pending": {

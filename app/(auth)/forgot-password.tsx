@@ -112,7 +112,7 @@ function EmailStep({ fp, errText }: StepProps) {
             value={value}
             onChangeText={onChange}
             onBlur={onBlur}
-            placeholder="you@company.com"
+            placeholder="you@example.com"
             placeholderTextColor="#9aa1ad"
             autoCapitalize="none"
             keyboardType="email-address"

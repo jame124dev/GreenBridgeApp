@@ -4047,7 +4047,7 @@
       "loginFailedBody": "Please try again",
       "invalidInputTitle": "Check your input",
       "invalidInputBody": "Enter a valid email and password.",
-      "emailPlaceholderCompany": "you@company.com",
+      "emailPlaceholderCompany": "you@example.com",
       "showPasswordA11y": "Show password",
       "hidePasswordA11y": "Hide password",
       "pending": {
