@@ -14,6 +14,7 @@ import { Text } from '@/components/ui';
 import { fonts, greenDarkest, lab, radius, spacing } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { ProductThumb } from '@/features/lab/components';
+import { usePressed } from '@/lib/pressState';
 
 export function ListingContextCard({
   batchId,
@@ -33,6 +34,7 @@ export function ListingContextCard({
   const metaParts = [hasTitle ? `Listing #${batchId}` : null, priceText || null].filter(Boolean);
   const meta = metaParts.join(' · ');
 
+  const [pressed, pressProps] = usePressed();
   return (
     <Pressable
       onPress={
@@ -45,7 +47,8 @@ export function ListingContextCard({
       }
       accessibilityRole={onView ? 'button' : undefined}
       accessibilityLabel={onView ? `View ${heading}` : undefined}
-      style={({ pressed }) => ({
+      {...pressProps}
+      style={{
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.md,
@@ -58,7 +61,7 @@ export function ListingContextCard({
         borderColor: lab.hairline,
         borderRadius: radius.lg,
         opacity: pressed ? 0.7 : 1,
-      })}
+      }}
     >
       <ProductThumb uri={image ?? undefined} size={40} radius={radius.md} kind="machine" />
 

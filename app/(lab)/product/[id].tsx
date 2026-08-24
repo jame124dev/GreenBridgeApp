@@ -20,8 +20,10 @@ import { brand, fonts, lab, radius, spacing } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { safeBack } from '@/lib/safeBack';
 import { MarketplaceWebView, marketplaceUri } from '@/features/lab/marketplace/MarketplaceWebView';
+import { usePressedKey } from '@/lib/pressState';
 
 export default function LabProductDetail() {
+  const [pressedKey, pressPropsFor] = usePressedKey();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -49,7 +51,8 @@ export default function LabProductDetail() {
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={t('mobile.labProduct.back')}
-          style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
+          {...pressPropsFor('back')}
+          style={[styles.iconBtn, { opacity: pressedKey === 'back' ? 0.6 : 1 }]}
         >
           <ChevronLeft size={24} color={lab.ink} strokeWidth={2.2} />
         </Pressable>
@@ -61,7 +64,8 @@ export default function LabProductDetail() {
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={t('mobile.labProduct.openInBrowser')}
-          style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
+          {...pressPropsFor('external')}
+          style={[styles.iconBtn, { opacity: pressedKey === 'external' ? 0.6 : 1 }]}
         >
           <ExternalLink size={18} color={lab.inkMeta} />
         </Pressable>

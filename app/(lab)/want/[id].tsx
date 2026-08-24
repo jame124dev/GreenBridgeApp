@@ -37,6 +37,7 @@ import {
 } from '@/features/lab/wants/data/wantsView';
 import { MatchListCard } from '@/features/lab/wants/components/MatchListCard';
 import { ManageWantSheet } from '@/features/lab/wants/components/ManageWantSheet';
+import { usePressedKey } from '@/lib/pressState';
 
 type SortMode = 'best' | 'newest' | 'price';
 // i18n keys resolved at render (module scope can't call the hook). `labelKey` →
@@ -55,6 +56,7 @@ function priceNum(p: WtbProductSnapshot['price']): number | null {
 }
 
 export default function LabWantMatches() {
+  const [pressedKey, pressPropsFor] = usePressedKey();
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -161,7 +163,8 @@ export default function LabWantMatches() {
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={t('mobile.labMatch.back')}
-          style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
+          {...pressPropsFor('back')}
+          style={[styles.iconBtn, { opacity: pressedKey === 'back' ? 0.6 : 1 }]}
         >
           <ChevronLeft size={24} color={lab.ink} strokeWidth={2.2} />
         </Pressable>
@@ -182,7 +185,8 @@ export default function LabWantMatches() {
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={t('mobile.labMatch.manageWant')}
-            style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
+            {...pressPropsFor('menu')}
+            style={[styles.iconBtn, { opacity: pressedKey === 'menu' ? 0.6 : 1 }]}
           >
             <MoreVertical size={18} color={lab.inkMeta} />
           </Pressable>

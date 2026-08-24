@@ -8,6 +8,7 @@ import { routes } from '@/lib/routes';
 import { safeBack } from '@/lib/safeBack';
 import { useScanDraft, type ListingMode } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
+import { usePressed } from '@/lib/pressState';
 
 /**
  * Listing-method picker — Single vs Grouped. The two method cards are a custom
@@ -29,10 +30,12 @@ function MethodCard({
   icon: React.ReactNode;
   onPress: () => void;
 }) {
+  const [pressed, pressProps] = usePressed();
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => (pressed ? { opacity: 0.9 } : null)}
+      {...pressProps}
+      style={pressed ? { opacity: 0.9 } : null}
       className="bg-brand-surface rounded-xl border border-brand-border p-xl"
       accessibilityRole="button"
       accessibilityLabel={title}

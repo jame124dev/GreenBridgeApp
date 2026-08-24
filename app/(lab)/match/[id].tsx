@@ -43,6 +43,7 @@ import {
   WhyMatchedCard,
   TrustChip,
 } from '@/features/lab/match/components';
+import { usePressed } from '@/lib/pressState';
 
 const GUTTER = 22; // prototype gutter; NOT on the 4px scale — declared explicitly.
 
@@ -73,6 +74,7 @@ const ctaShadow = {
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function LabMatch() {
+  const [pressed, pressProps] = usePressed();
   const router = useRouter();
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -168,7 +170,8 @@ export default function LabMatch() {
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel={t('mobile.labMatch.backA11y')}
-        style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
+        {...pressProps}
+        style={[styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
       >
         <ChevronLeft size={17} color={M.back} strokeWidth={2.2} />
         <Text style={styles.backLabel}>{t('mobile.labMatch.backLabel')}</Text>

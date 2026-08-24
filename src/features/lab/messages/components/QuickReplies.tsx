@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui';
 import { fonts, greenDarkest, greenLight, lab, radius, spacing } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
+import { usePressedKey } from '@/lib/pressState';
 
 // Quick-reply i18n keys — the displayed AND sent text is the localized string.
 const QUICK_REPLY_KEYS = ['stillAvailable', 'shipToBangkok', 'bestPrice'] as const;
@@ -22,6 +23,7 @@ export function QuickReplies({
   onSelect: (text: string) => void;
   disabled?: boolean;
 }) {
+  const [pressedKey, pressPropsFor] = usePressedKey();
   const { t } = useTranslation();
   if (disabled) return null;
 
@@ -50,7 +52,8 @@ export function QuickReplies({
           }}
           accessibilityRole="button"
           accessibilityLabel={t('mobile.labDeal.sendQuick', { text: r })}
-          style={({ pressed }) => ({
+          {...pressPropsFor(r)}
+          style={{
             justifyContent: 'center',
             minHeight: 40,
             borderWidth: 1,
@@ -59,8 +62,8 @@ export function QuickReplies({
             backgroundColor: lab.pillBg,
             paddingHorizontal: 14,
             paddingVertical: 8,
-            opacity: pressed ? 0.6 : 1,
-          })}
+            opacity: pressedKey === r ? 0.6 : 1,
+          }}
         >
           <Text style={{ fontFamily: fonts.semibold, fontSize: 11.5, lineHeight: 15, color: greenDarkest }}>{r}</Text>
         </Pressable>

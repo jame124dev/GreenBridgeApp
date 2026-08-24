@@ -2,6 +2,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import { AppImage, Text } from '@/components/ui';
 import type { Photo } from '@/stores/scanDraftStore';
+import { usePressed } from '@/lib/pressState';
 
 type Props = {
   selected: boolean;
@@ -38,10 +39,12 @@ export function DetectionGroupCard({
   description,
   groupThumbs,
 }: Props) {
+  const [pressed, pressProps] = usePressed();
   return (
     <Pressable
       onPress={onSelect}
-      style={({ pressed }) => (pressed ? { opacity: 0.95 } : null)}
+      {...pressProps}
+      style={pressed ? { opacity: 0.95 } : null}
       className={`rounded-xl border-2 p-md bg-brand-surface ${
         selected ? 'bg-brand-primary-surface border-brand-primary' : 'border-brand-border'
       }`}

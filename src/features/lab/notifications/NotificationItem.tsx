@@ -8,6 +8,7 @@ import { brand, radius, spacing } from '@/constants/theme';
 import { relTime } from '@/features/lab/chat/cardKit';
 import { ACCENT, notificationMeta } from './notificationMeta';
 import type { AppNotification } from './notificationTypes';
+import { usePressed } from '@/lib/pressState';
 
 export function NotificationItem({
   notification: n,
@@ -32,12 +33,14 @@ export function NotificationItem({
   const batchLabel = n.batch_id != null ? t('mobile.labNotif.batch', { id: n.batch_id }) : null;
   const meta2 = [batchLabel, time].filter(Boolean).join(' · ');
 
+  const [pressed, pressProps] = usePressed();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${label}. ${n.message ?? ''}`}
-      style={({ pressed }) => [
+      {...pressProps}
+      style={[
         {
           flexDirection: 'row',
           gap: spacing.sm,

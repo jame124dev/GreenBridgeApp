@@ -155,6 +155,11 @@ export default function LabProcessing() {
   const abortRef = useRef<AbortController | null>(null);
   // Re-run trigger for Retry (bumping re-invokes the stream effect).
   const [attempt, setAttempt] = useState(0);
+  // ⛔ Press feedback as STATE. A `style={({ pressed }) => ...}` callback is
+  // SPREAD to `{}` by NativeWind's interop and dropped at runtime, which deleted
+  // `backgroundColor: accent` on the retry button below while its white label
+  // survived -- an invisible button, and the only way out of an error screen.
+  const [retryPressed, setRetryPressed] = useState(false);
 
   // Open the stream turn. Reads the composer input + mode, mints/reads the
   // conversation id, starts the thread turn, and streams `/chat/stream`. Frames
@@ -324,13 +329,15 @@ export default function LabProcessing() {
               // Sole error-recovery affordance — clear the 48pt layout.minTouch
               // target with margin (paddingVertical 14 → ~48pt) + a hit-slop cushion.
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={({ pressed }) => ({
+              onPressIn={() => setRetryPressed(true)}
+              onPressOut={() => setRetryPressed(false)}
+              style={{
                 backgroundColor: accent,
                 paddingHorizontal: 28,
                 paddingVertical: 14,
                 borderRadius: 999,
-                opacity: pressed ? 0.85 : 1,
-              })}
+                opacity: retryPressed ? 0.85 : 1,
+              }}
             >
               <Text style={{ fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20, color: '#fff' }}>{t('mobile.labProcessing.retry')}</Text>
             </Pressable>

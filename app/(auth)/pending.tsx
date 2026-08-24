@@ -143,6 +143,22 @@ export default function PendingScreen() {
   const approval = useAuth((s) => s.approval);
   const setApproval = useAuth((s) => s.setApproval);
   const [notApprovedYet, setNotApprovedYet] = useState(false);
+  /**
+   * ⛔ Press feedback as STATE, never as `style={({ pressed }) => ...}`.
+   *
+   * NativeWind's interop SPREADS the style prop, so a FUNCTION style becomes
+   * `{}` and is silently dropped at runtime. Here that deleted
+   * `styles.btnPrimary` -- the FOREST background -- while `btnPrimaryText`
+   * (`color:'#fff'`, a plain style) survived: white text on a white card, i.e.
+   * an INVISIBLE primary button on the one screen where a blocked user has
+   * exactly one thing to do. Jest cannot catch it (the interop is skipped when
+   * NODE_ENV==='test'), which is how it shipped past a green suite.
+   */
+  const [pressedKey, setPressedKey] = useState<string | null>(null);
+  const pressProps = (key: string) => ({
+    onPressIn: () => setPressedKey(key),
+    onPressOut: () => setPressedKey(null),
+  });
   // The seller application, if there is one. `null` = never applied, in which
   // case this screen shows only the account checklist.
   const sellerStatus = useSellerUpgradeStatus();
@@ -312,7 +328,8 @@ export default function PendingScreen() {
                 wall: whatever the checklist says, the account is usable now. */}
             <Pressable
               onPress={() => router.replace(HOME_ROUTE)}
-              style={({ pressed }) => [styles.btn, styles.btnPrimary, pressed && styles.pressed]}
+              {...pressProps('primary')}
+              style={[styles.btn, styles.btnPrimary, pressedKey === 'primary' && styles.pressed]}
               accessibilityRole="button"
             >
               <Text style={styles.btnPrimaryText}>
@@ -326,7 +343,8 @@ export default function PendingScreen() {
             <Pressable
               onPress={check}
               disabled={checking}
-              style={({ pressed }) => [styles.btn, styles.btnSecondary, pressed && styles.pressed]}
+              {...pressProps('secondary')}
+              style={[styles.btn, styles.btnSecondary, pressedKey === 'secondary' && styles.pressed]}
               accessibilityRole="button"
             >
               <RefreshCw size={17} color={INK} strokeWidth={2.3} />
@@ -366,7 +384,8 @@ export default function PendingScreen() {
             <Pressable
               onPress={handleSignOut}
               disabled={logoutMut.isPending}
-              style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed]}
+              {...pressProps('ghost')}
+              style={[styles.btnGhost, pressedKey === 'ghost' && styles.pressed]}
               accessibilityRole="button"
             >
               <Text style={styles.btnGhostText}>

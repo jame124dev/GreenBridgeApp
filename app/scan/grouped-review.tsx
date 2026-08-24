@@ -38,6 +38,7 @@ import { routes } from '@/lib/routes';
 import { safeBack } from '@/lib/safeBack';
 import { useScanDraft, type DraftItem } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
+import { usePressed } from '@/lib/pressState';
 
 /**
  * Round 2 R1 — review LIST hub (replaces the Round-1 linear wizard).
@@ -574,6 +575,7 @@ function HubRow({
     });
   })();
 
+  const [pressed, pressProps] = usePressed();
   return (
     <Pressable
       onPress={onPress}
@@ -581,7 +583,8 @@ function HubRow({
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       accessibilityLabel={a11yLabel}
-      style={({ pressed }) => ({
+      {...pressProps}
+      style={{
         opacity: disabled ? 0.5 : pressed ? 0.92 : 1,
         backgroundColor: brand.surface,
         borderRadius: 12,
@@ -598,7 +601,7 @@ function HubRow({
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 2 },
         elevation: 2,
-      })}
+      }}
     >
       <View
         style={{
