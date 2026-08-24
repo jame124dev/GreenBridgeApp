@@ -93,10 +93,15 @@ function AuthGuard({ children }: { children: ReactNode }) {
     // chat, messaging and wants all work. Only the SELL path is gated, and that
     // gate lives in launchSellerScan() keyed off /seller-upgrade/my-status.
 
-    if (!profile && !inAuthGroup) {
-      router.replace('/(auth)/login');
-      return;
-    }
+    // ⛔ NO GUEST REDIRECT. This used to bounce every session-less user to
+    // /(auth)/login, so a fresh install landed on a sign-in wall and could not
+    // browse a single product. App Review rejected 1.0.3 (21) for it on
+    // 2026-08-24 -- Guideline 5.1.1(v), "registration can only be required for
+    // account-based features". Guests now stay in the app; the ones that truly
+    // need an identity ask for it at the point of use via `requireAuth()`.
+    //
+    // Do NOT re-add a redirect here, and do not "fix" a guest crash by putting
+    // one back -- fix the screen to tolerate a null profile instead.
 
     if (profile && inAuthGroup) {
       router.replace(HOME_ROUTE);
@@ -152,6 +157,16 @@ export default function RootLayout() {
   useEffect(() => {
     hydrate();
     setUnauthorizedHandler(() => {
+      // ⛔ A 401 FOR A GUEST IS NOT A SESSION EXPIRY. This handler is what
+      // actually defeated the first attempt at guest browsing: the door
+      // redirects were removed, a guest reached Home, some authenticated hook
+      // fired, the 401 came back, and THIS bounced them to login anyway -- the
+      // 5.1.1(v) wall rebuilt one layer down.
+      //
+      // With no profile there is no session to expire and nothing to recover:
+      // the request simply needed an account the caller does not have. The
+      // caller shows its own empty state or a `requireAuth` prompt.
+      if (!useAuth.getState().profile) return;
       reset();
       router.replace('/(auth)/login');
     });

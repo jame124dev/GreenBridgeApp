@@ -30,11 +30,13 @@ import { RefreshCw, WifiOff } from 'lucide-react-native';
 
 import { Text } from '@/components/ui';
 import { brand, fonts, greenDarkest, lab, radius, spacing } from '@/constants/theme';
+import { requireAuth, useIsGuest } from '@/features/auth/requireAuth';
 import { haptics } from '@/lib/haptics';
 import { registerMarketplaceAuthClear } from '@/lib/marketplaceWebView';
 import {
   buildAuthPayload,
   buildClearAuthCall,
+  buildGuestGuardJS,
   buildInjectedAuthJS,
   buildSetAuthCall,
 } from './webAuthBridge';
@@ -47,6 +49,10 @@ export { marketplaceUri };
 type WebEvent =
   | { type: 'message-seller'; batchId: number; sellerId: number | string; sellerName?: string }
   | { type: 'auth-expired' }
+  // Posted by the guest guard (webAuthBridge.buildGuestGuardJS) when a
+  // session-less visitor reaches for a gated control, INSTEAD of the site
+  // opening its own "Company Email" sign-in modal inside the app.
+  | { type: 'auth-required'; action?: 'message' | 'offer' | 'want' }
   | { type: 'ready' };
 
 export type MarketplaceWebViewHandle = { reload: () => void };
@@ -129,6 +135,9 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
 
     // Gate the WebView mount until the async auth read resolves, so the token is
     // present in localStorage at inject time.
+    // Injected only for guests: a signed-in session posts `message-seller` and
+    // never sees the site's own auth modal, so the guard would be dead weight.
+    const isGuest = useIsGuest();
     const [injectedJs, setInjectedJs] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [errored, setErrored] = useState(false);
@@ -214,6 +223,12 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
             const { batchId, sellerId, sellerName } = evt;
             if (batchId == null || sellerId == null) return;
             haptics.tap();
+            // Messaging is account-based; a guest is asked here rather than
+            // being pushed into a thread screen that cannot load.
+            if (isGuest) {
+              requireAuth('message', () => {});
+              return;
+            }
             router.push({
               pathname: '/(lab)/deal/[id]',
               params: {
@@ -224,7 +239,21 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
             });
             break;
           }
+          case 'auth-required': {
+            // The guest guard caught a gated control (or the site's own
+            // "Company Email" modal) and we answer NATIVELY instead. Never
+            // navigate here: a guest who taps Message Seller and gets thrown
+            // onto a login screen has lost their place in the marketplace.
+            const action = typeof evt.action === 'string' ? evt.action : 'message';
+            const reason =
+              action === 'offer' ? 'offer' : action === 'want' ? 'want' : 'message';
+            requireAuth(reason, () => {});
+            break;
+          }
           case 'auth-expired': {
+            // ⛔ A GUEST HAS NO SESSION TO EXPIRE. Bouncing them to login here
+            // is the 5.1.1(v) wall rebuilt inside the WebView, so it is skipped.
+            if (isGuest) return;
             authRetriesRef.current += 1;
             if (authRetriesRef.current > 2) {
               // Fresh token isn't fixing it — bounce to native login.
@@ -243,7 +272,7 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
           }
         }
       },
-      [router],
+      [router, isGuest],
     );
 
     const onNavigationStateChange = useCallback((nav: WebViewNavigation) => {
@@ -258,7 +287,14 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
             source={{ uri: marketplaceUri(path) }}
             applicationNameForUserAgent="GreenBridgeApp"
             injectedJavaScriptBeforeContentLoaded={injectedJs}
-            injectedJavaScript={hideSiteHeader ? buildHideHeaderJS() : undefined}
+            injectedJavaScript={[
+              hideSiteHeader ? buildHideHeaderJS() : '',
+              // AFTER the document loads, so document.body exists for the
+              // MutationObserver the guard installs.
+              isGuest ? buildGuestGuardJS() : '',
+            ]
+              .filter(Boolean)
+              .join(';') || undefined}
             domStorageEnabled
             thirdPartyCookiesEnabled
             sharedCookiesEnabled

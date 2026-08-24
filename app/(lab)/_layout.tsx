@@ -15,6 +15,7 @@ import { Stack } from 'expo-router';
 import { MarketplacePrewarm } from '@/features/lab/marketplace/MarketplacePrewarm';
 import { UpdateReadyBanner } from '@/features/lab/updates';
 import { SellerGatePrewarm } from '@/features/seller/SellerGatePrewarm';
+import { SignInPrompt } from '@/features/auth/SignInPrompt';
 
 export default function LabLayout() {
   return (
@@ -51,6 +52,11 @@ export default function LabLayout() {
       {/* Floats above every (lab) screen when a downloaded OTA update is waiting.
           Renders null the rest of the time. Mounted here rather than per-screen so
           a pending update is never invisible on whichever screen the user is on. */}
+      {/* The ONE place a guest is asked to sign in. Opened from anywhere by
+          `requireAuth(reason, action)`; renders null until then. Mounted here so
+          the prompt works from every (lab) screen without each one hosting a
+          modal of its own. */}
+      <SignInPrompt />
       <UpdateReadyBanner />
     </Fragment>
   );

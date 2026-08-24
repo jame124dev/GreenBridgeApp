@@ -12,6 +12,8 @@ import { Text } from '@/components/ui';
 import { lab, radius } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { routes } from '@/lib/routes';
+import { requireAuth, useIsGuest } from '@/features/auth/requireAuth';
+
 import { useLabNotifications } from './useLabNotifications';
 
 export function NotificationBell() {
@@ -19,19 +21,28 @@ export function NotificationBell() {
   const { t } = useTranslation();
   const { unreadCount, badgeLabel, fetchNotifications } = useLabNotifications();
 
+  // A guest has no notifications to count, and the endpoint is authenticated --
+  // polling it without a session is a guaranteed 401 on every focus. The bell
+  // still RENDERS (removing it would make the header jump around on sign-in);
+  // it just carries no badge until there is an account.
+  const isGuest = useIsGuest();
+
   // Refresh the badge each time the header's screen regains focus (e.g. on
   // return from the notifications page after marking items read).
   useFocusEffect(
     useCallback(() => {
+      if (isGuest) return;
       void fetchNotifications();
-    }, [fetchNotifications]),
+    }, [fetchNotifications, isGuest]),
   );
 
   return (
     <Pressable
       onPress={() => {
         haptics.tap();
-        router.push(routes.labNotifications);
+        // Notifications ARE account-based (matches, offers and messages for a
+        // specific person), so Guideline 5.1.1(v) allows asking here.
+        requireAuth('notifications', () => router.push(routes.labNotifications));
       }}
       style={styles.bell}
       hitSlop={8}

@@ -20,6 +20,7 @@ import {
   type SellerUpgradeError,
   type SellerUpgradeStatus,
 } from '@/services/seller/sellerUpgrade';
+import { useAuth } from '@/stores/authStore';
 
 /** The one cache key for `GET /seller-upgrade/my-status`. */
 export const SELLER_UPGRADE_KEY = ['seller-upgrade', 'my-status'] as const;
@@ -29,10 +30,21 @@ export function useSellerUpgradeStatus(): UseQueryResult<
   SellerUpgradeStatus | null,
   SellerUpgradeError
 > {
+  // SUBSCRIBED, not `getState()`: the query has to re-enable by itself the
+  // moment a guest signs in, or an approved seller who just logged in would keep
+  // hitting the fail-closed submit gate until something else forced a render.
+  const signedIn = useAuth((st) => !!st.profile);
   return useQuery<SellerUpgradeStatus | null, SellerUpgradeError>({
     queryKey: SELLER_UPGRADE_KEY,
     queryFn: getSellerUpgradeStatus,
     staleTime: 60_000,
+    // A guest has no seller status, and `/seller-upgrade/my-status` is
+    // authenticated. `SellerGatePrewarm` mounts this on every (lab) screen, so
+    // without this guard a guest fires a guaranteed 401 the moment the app
+    // opens -- which used to trip the global unauthorized handler and bounce
+    // them to login, rebuilding the 5.1.1(v) wall. `canSubmitListing()` already
+    // fails closed on `undefined`, so not fetching is the correct answer here.
+    enabled: signedIn,
   });
 }
 

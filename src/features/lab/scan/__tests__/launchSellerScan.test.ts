@@ -30,6 +30,21 @@ jest.mock('@/stores/scanDraftStore', () => {
   const reset = jest.fn();
   return { useScanDraft: { getState: () => ({ reset }) } };
 });
+// `launchSellerScan` now routes through `requireAuth('sell', ...)` so a GUEST is
+// prompted instead of being dropped into a flow that cannot submit (Guideline
+// 5.1.1(v): account-based features MAY be gated). Importing the real helper
+// pulls in authStore -> react-native-mmkv, a Nitro native module with no jest
+// binary, so it is mocked here. `mockSignedIn` is the switch the tests below
+// flip: signed in runs the action, guest records the prompt instead.
+let mockSignedIn = true;
+const mockOpenPrompt = jest.fn<(reason: string) => void>();
+jest.mock('@/features/auth/requireAuth', () => ({
+  requireAuth: (reason: string, action: () => void) => {
+    if (mockSignedIn) action();
+    else mockOpenPrompt(reason);
+  },
+  useIsGuest: () => !mockSignedIn,
+}));
 
 import { router } from 'expo-router';
 
@@ -128,5 +143,34 @@ describe('the entry point stays ungated', () => {
     ]) {
       expect(code).not.toContain(needle);
     }
+  });
+});
+
+describe('guests are prompted, not dropped into a flow they cannot finish', () => {
+  beforeEach(() => {
+    mockOpenPrompt.mockClear();
+    push.mockClear();
+  });
+  afterEach(() => {
+    mockSignedIn = true;
+  });
+
+  it('opens the sign-in prompt and navigates nowhere', () => {
+    mockSignedIn = false;
+    launchSellerScan();
+    expect(mockOpenPrompt).toHaveBeenCalledWith('sell');
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('does NOT wipe a draft the guest may still want after signing in', () => {
+    mockSignedIn = false;
+    launchSellerScan();
+    expect(draftReset()).not.toHaveBeenCalled();
+  });
+
+  it('still enters the flow once signed in', () => {
+    mockSignedIn = true;
+    launchSellerScan();
+    expect(push).toHaveBeenCalled();
   });
 });

@@ -19,6 +19,7 @@ import { router } from 'expo-router';
 
 import { SMART_DETECT_ENABLED } from '@/lib/flags';
 import { routes } from '@/lib/routes';
+import { requireAuth } from '@/features/auth/requireAuth';
 import { useScanDraft } from '@/stores/scanDraftStore';
 
 export function launchSellerScan(): void {
@@ -27,9 +28,15 @@ export function launchSellerScan(): void {
   // and the chat controller (`useChatController.handleUploadPress`, behind the
   // entry card's "Upload photos / documents").
   //
-  // FLUSH-ALWAYS: reset any half-finished scan draft so the flow starts clean
-  // (same contract as the seller Scan tab).
-  useScanDraft.getState().reset();
-  // push (not replace) so the OS/back gesture returns to the chat, not the tab.
-  router.push(SMART_DETECT_ENABLED ? routes.scanCamera : routes.scanListingMethod);
+  // Listing IS account-based (a listing belongs to a seller), so this is one of
+  // the actions a guest is allowed to be stopped on -- Guideline 5.1.1(v)
+  // permits gating account-based features. Asked HERE rather than at the app
+  // door, and only once the person has actually reached for it.
+  requireAuth('sell', () => {
+    // FLUSH-ALWAYS: reset any half-finished scan draft so the flow starts clean
+    // (same contract as the seller Scan tab).
+    useScanDraft.getState().reset();
+    // push (not replace) so the OS/back gesture returns to the chat, not the tab.
+    router.push(SMART_DETECT_ENABLED ? routes.scanCamera : routes.scanListingMethod);
+  });
 }

@@ -44,6 +44,8 @@ import { useConversations } from '@/features/lab/messages/useConversations';
 import { useSocketConnected } from '@/features/lab/messages/socket';
 import { ConversationRow } from '@/features/lab/messages/components/ConversationRow';
 import type { ConversationRow as ConversationRowData } from '@/features/lab/messages/chatApi';
+import { GuestTabState } from '@/features/auth/GuestTabState';
+import { useIsGuest } from '@/features/auth/requireAuth';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 /** Prototype screen gutter (NOT on the 4px scale) — mirrors matches/home. */
@@ -66,7 +68,7 @@ function Separator() {
   return <View style={styles.separator} />;
 }
 
-export default function LabMessages() {
+function LabMessagesAuthed() {
   const router = useRouter();
   const tabBarHeight = useTabBarHeight();
   const { t } = useTranslation();
@@ -461,3 +463,19 @@ const styles = StyleSheet.create({
   },
   emptyCtaText: { fontFamily: fonts.bold, fontSize: 13, color: '#fff' },
 });
+
+/**
+ * Guest fork. This tab IS account-based, so Guideline 5.1.1(v) allows gating it
+ * -- unlike browse and search, which must stay open (that is what 1.0.3 (21)
+ * was rejected for on 2026-08-24).
+ *
+ * A WRAPPER, not an early return inside LabMessagesAuthed: that component's
+ * hooks open sockets and fire authenticated queries. Returning early would
+ * change the hook count the moment a guest signs in (React throws), and leaving
+ * the hooks mounted would fire 401s for someone with no account.
+ */
+export default function LabMessages() {
+  const isGuest = useIsGuest();
+  if (isGuest) return <GuestTabState reason="message" />;
+  return <LabMessagesAuthed />;
+}

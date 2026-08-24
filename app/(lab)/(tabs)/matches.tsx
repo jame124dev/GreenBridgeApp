@@ -35,6 +35,8 @@ import { listWantMatches } from '@/features/lab/data/wtbApi';
 import { isActiveStatus, relevancePercent } from '@/features/lab/wants/data/wantsView';
 import { WantCard } from '@/features/lab/wants/components/WantCard';
 import { AddWantSheet } from '@/features/lab/wants/components/AddWantSheet';
+import { GuestTabState } from '@/features/auth/GuestTabState';
+import { useIsGuest } from '@/features/auth/requireAuth';
 
 // Screen ink comes from the shared lab palette rather than screen-local hex, so
 // this surface can never drift from the redesigned Messages/inbox screens.
@@ -49,7 +51,7 @@ const FILTER_KEYS: WantFilter[] = ['all', 'active', 'paused'];
 
 const isPausedStatus = (status?: string | null) => (status ?? '').toLowerCase() === 'paused';
 
-export default function LabMyWants() {
+function LabMyWantsAuthed() {
   const router = useRouter();
   // Live FrostedTabBar height (66 + bottom inset) instead of a hardcoded 96 +
   // inset: the magic number over-reserved ~30px of dead scroll space under the
@@ -450,3 +452,19 @@ const styles = StyleSheet.create({
   filterEmptyText: { fontFamily: fonts.regular, fontSize: 13, color: NEUTRALS.sub, textAlign: 'center' },
   list: { gap: 14 },
 });
+
+/**
+ * Guest fork. This tab IS account-based, so Guideline 5.1.1(v) allows gating it
+ * -- unlike browse and search, which must stay open (that is what 1.0.3 (21)
+ * was rejected for on 2026-08-24).
+ *
+ * A WRAPPER, not an early return inside LabMyWantsAuthed: that component's
+ * hooks open sockets and fire authenticated queries. Returning early would
+ * change the hook count the moment a guest signs in (React throws), and leaving
+ * the hooks mounted would fire 401s for someone with no account.
+ */
+export default function LabMyWants() {
+  const isGuest = useIsGuest();
+  if (isGuest) return <GuestTabState reason="want" />;
+  return <LabMyWantsAuthed />;
+}

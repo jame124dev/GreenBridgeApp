@@ -47,6 +47,7 @@ import {
   useSubmitSellerUpgrade,
 } from '@/features/seller/useSellerUpgrade';
 import { sellerApplicationSchema } from '@/features/seller/schema';
+import { useAuth } from '@/stores/authStore';
 
 // Explicit generic — the default `jest.Mock` (T = UnknownFunction, returning
 // `unknown`) makes `mockResolvedValue`'s parameter type `never`.
@@ -84,7 +85,18 @@ function wrapper({ children }: { children: React.ReactNode }) {
   return React.createElement(QueryClientProvider, { client: qc }, children);
 }
 
+/**
+ * `useSellerUpgradeStatus` is now `enabled: signedIn` -- a guest has no seller
+ * status and `/seller-upgrade/my-status` is authenticated, so firing it without
+ * a session is a guaranteed 401. That 401 used to trip the global unauthorized
+ * handler and bounce guests to login, which is what App Review rejected 1.0.3
+ * (21) for (Guideline 5.1.1(v)). These tests describe a SIGNED-IN user, so they
+ * have to say so; the guest case is asserted separately at the bottom.
+ */
+const SESSION = { id: 42, email: 'seller@example.com', status: 'approved' } as never;
+
 beforeEach(() => {
+  useAuth.setState({ profile: SESSION, hydrated: true });
   mockPost.mockReset();
   mockGet.mockReset();
   qc = new QueryClient({
@@ -100,6 +112,7 @@ beforeEach(() => {
 
 afterEach(() => {
   qc.clear();
+  useAuth.setState({ profile: null });
 });
 
 describe('getSellerUpgradeStatus', () => {
@@ -380,5 +393,31 @@ describe('sellerApplicationSchema', () => {
     const parsed = sellerApplicationSchema.safeParse({ ...VALUES, companyName: '  Acme  ' });
     expect(parsed.success).toBe(true);
     expect(parsed.data?.companyName).toBe('Acme');
+  });
+});
+
+describe('guests do not fetch a seller status they cannot have', () => {
+  it('never calls the authenticated endpoint with no session', async () => {
+    useAuth.setState({ profile: null });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: qc }, children);
+    const { result } = renderHook(() => useSellerUpgradeStatus(), { wrapper });
+    // Give React Query a tick to do the wrong thing if the guard regressed.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(mockGet).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('leaves the submit gate closed rather than open', async () => {
+    useAuth.setState({ profile: null });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: qc }, children);
+    const { result } = renderHook(() => useCanSell(), { wrapper });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(result.current).toBe(false);
   });
 });

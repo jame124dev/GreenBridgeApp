@@ -35,6 +35,8 @@ import { haptics } from '@/lib/haptics';
 import { draftsEnabled } from '@/lib/flags';
 import { useAuth } from '@/stores/authStore';
 import { brand, spacing } from '@/constants/theme';
+import { GuestTabState } from '@/features/auth/GuestTabState';
+import { useIsGuest } from '@/features/auth/requireAuth';
 
 // Small-caps group label between section cards. Mirrors the seller Settings
 // screen's local helper (the global `SectionLabel` primitive is scanner-form
@@ -51,7 +53,7 @@ function SectionHeader({ label }: { label: string }) {
   );
 }
 
-export default function LabAccount() {
+function LabAccountAuthed() {
   const { t }        = useTranslation();
   const profile      = useAuth((s) => s.profile);
   const profileQuery = useUserProfile();
@@ -167,4 +169,20 @@ export default function LabAccount() {
       </Screen>
     </BottomSheetModalProvider>
   );
+}
+
+/**
+ * Guest fork. This tab IS account-based, so Guideline 5.1.1(v) allows gating it
+ * -- unlike browse and search, which must stay open (that is what 1.0.3 (21)
+ * was rejected for on 2026-08-24).
+ *
+ * A WRAPPER, not an early return inside LabAccountAuthed: that component's
+ * hooks open sockets and fire authenticated queries. Returning early would
+ * change the hook count the moment a guest signs in (React throws), and leaving
+ * the hooks mounted would fire 401s for someone with no account.
+ */
+export default function LabAccount() {
+  const isGuest = useIsGuest();
+  if (isGuest) return <GuestTabState reason="account" />;
+  return <LabAccountAuthed />;
 }
