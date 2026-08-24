@@ -174,10 +174,10 @@ export function buildGuestGuardJS(): string {
     // Controls that need an identity. Matched on the visible TEXT of the nearest
     // BUTTON/LINK -- product copy changes far less often than class names.
     var GATED = [
-      { re: /message\s*seller/i,                          action: 'message' },
-      { re: /make\s*offer/i,                              action: 'offer'   },
-      { re: /buy\s*now/i,                                 action: 'offer'   },
-      { re: /place\s*bid|^bid$/i,                         action: 'offer'   },
+      { re: /message\\s*seller/i,                          action: 'message' },
+      { re: /make\\s*offer/i,                              action: 'offer'   },
+      { re: /buy\\s*now/i,                                 action: 'offer'   },
+      { re: /place\\s*bid|^bid$/i,                         action: 'offer'   },
       { re: /add to favourites|add to favorites|^watch$/i, action: 'want'    }
     ];
 
@@ -197,7 +197,7 @@ export function buildGuestGuardJS(): string {
           ? ev.target.closest('button, a, [role="button"], input[type="submit"]')
           : null;
         if (!el) return;
-        var txt = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+        var txt = (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim();
         if (!txt) txt = (el.getAttribute('aria-label') || '').trim();
         if (!txt) return;
         for (var g = 0; g < GATED.length; g++) {
