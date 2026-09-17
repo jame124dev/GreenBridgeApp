@@ -92,3 +92,12 @@ store/
 
 # Local Android release signing (keystore + passwords) — NEVER commit
 credentials/
+
+# Device-verification scratch, not code.
+# `adb shell uiautomator dump` writes a hierarchy XML per screen measured; these
+# accumulate at the repo root with whatever name the session gave them (C1, D4,
+# ac…) and are meaningless a day later. `app_debug/` is ~11 MB of screenshots
+# from the same passes — the workspace CLAUDE.md already lists it as
+# non-canonical.
+/*.xml
+app_debug/
