@@ -78,9 +78,46 @@ export const DETECT_STREAM_ENABLED = process.env.EXPO_PUBLIC_DETECT_STREAM === '
 export const MARKETPLACE_PREWARM_ENABLED = process.env.EXPO_PUBLIC_MARKETPLACE_PREWARM !== '0';
 
 // --- AI-scan drafts + background recognition (opt-in, default OFF) ---
+/**
+ * Offer a CHOICE of marketplace, or list only to this build's own.
+ *
+ * OFF by default, because this deployment is 101lab (`SITE_TYPE=LabGreenbidz`)
+ * and the product is focused there. With it off the scan flow never asks "which
+ * marketplace?" — it lists to the one this build is for, and the settled row
+ * has no "Change".
+ *
+ * ⚠️ The dev API DOES advertise three (`/mobile-config` →
+ * `["101lab","101machine","101it"]`), so this is not a no-op: without the flag
+ * the picker appears. The multi-marketplace routing work is untouched and
+ * intact behind it — `deriveRoutingState` / `routingNeedsAsk` already collapse
+ * to "no question" whenever only one marketplace is on offer, which is exactly
+ * what this produces. Set `EXPO_PUBLIC_MARKETPLACE_PICKER=1` to get it back.
+ */
+export const MARKETPLACE_PICKER_ENABLED = process.env.EXPO_PUBLIC_MARKETPLACE_PICKER === '1';
+
 export const DRAFTS_ENABLED = process.env.EXPO_PUBLIC_DRAFTS === '1';
 export const BACKGROUND_RECOGNITION_ENABLED =
   process.env.EXPO_PUBLIC_BACKGROUND_RECOGNITION === '1';
+
+/**
+ * The v2 UI (`app/v2/`) — fifteen rebuilt screens that, until this flag existed,
+ * nothing in the app navigated to. Every one of them had to be opened with an
+ * `adb` deep link, which means v2 was unreviewable by anyone without a cable.
+ *
+ * ON shows ONE extra row at the bottom of the old Account screen
+ * (`app/(lab)/(tabs)/account.tsx`) that pushes `/v2`. It does not move the
+ * launch route, replace a tab, or change a single existing screen — the old UI
+ * is still exactly what the app opens into, and the door is a row you have to
+ * go and find. That deliberate smallness is why this option was taken over
+ * flipping `app/index.tsx` (todo/V2_ENTRY_POINT_TASK.md, options A vs B).
+ *
+ * **Opt-in, default OFF**, so v2 ships to nobody until someone sets
+ * `EXPO_PUBLIC_V2_UI=1`. Leave it off in any build that reaches a real user:
+ * v2 is in progress and still has open ship blockers (Docs/v2/SHIP-BLOCKERS.md).
+ * Like every `EXPO_PUBLIC_*` flag here it is inlined at bundle time, so changing
+ * it needs a **Metro restart** — a hot-reload will keep showing the old value.
+ */
+export const V2_UI_ENABLED = process.env.EXPO_PUBLIC_V2_UI === '1';
 
 /** Function indirection so these can later be remote-config driven. */
 export function draftsEnabled(): boolean {

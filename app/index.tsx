@@ -2,6 +2,7 @@ import { Redirect } from 'expo-router';
 
 import { useAuth } from '@/stores/authStore';
 import { IS_CUSTOMER } from '@/lib/flags';
+import { homeRoute } from '@/features/v2/routing/postAuthLanding';
 
 export default function Index() {
   const profile = useAuth((s) => s.profile);
@@ -20,5 +21,11 @@ export default function Index() {
   // identity at the point of use instead -- see `requireAuth()`.
   // Single destination: the seller `(tabs)` fork was deleted, so every signed-in
   // user lands in the (lab) app.
-  return <Redirect href="/(lab)/(tabs)/home" />;
+  //
+  // ⚠️ THE FRONT DOOR. This used to hardcode `/(lab)/(tabs)/home`, which is why
+  // the app still opened on the OLD UI after the post-auth return was fixed —
+  // the return worked, but nothing had changed where LAUNCH goes. `homeRoute()`
+  // is now the single answer for the whole app, keyed on `EXPO_PUBLIC_V2_UI`.
+  // With the flag unset this is byte-identical to what shipped.
+  return <Redirect href={homeRoute()} />;
 }

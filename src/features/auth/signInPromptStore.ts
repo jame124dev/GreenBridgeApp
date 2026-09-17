@@ -16,7 +16,27 @@ export type GateReason =
 
 type State = {
   reason: GateReason | null;
+  /**
+   * Where to send the person BACK to once they have signed in.
+   *
+   * ⚠️ WHY THIS EXISTS. `app/(auth)/login.tsx` ends with
+   * `router.replace(HOME_ROUTE)`, and `HOME_ROUTE` is the hardcoded OLD home
+   * `/(lab)/(tabs)/home`. So a guest who was in v2, tapped an account-based
+   * control, and signed in was deposited in the OLD UI — v2 gone, and the thing
+   * they were trying to do gone with it. Reported from the device repeatedly as
+   * "it goes back to the previous version while using".
+   *
+   * It is a plain path rather than the pending action, deliberately: replaying
+   * an arbitrary closure across a navigation and a remount is how you get a
+   * write fired twice. Returning someone to the SCREEN they were on is honest
+   * and cheap; they press the control again, now signed in, and it works.
+   *
+   * Only ever honoured for `/v2` paths — see the note in `login.tsx`.
+   */
+  returnTo: string | null;
   open: (reason: GateReason) => void;
+  /** Remember the screen to come back to. Called just before leaving for auth. */
+  setReturnTo: (path: string | null) => void;
   close: () => void;
 };
 
@@ -38,6 +58,11 @@ type State = {
  */
 export const useSignInPromptStore = create<State>((set) => ({
   reason: null,
+  returnTo: null,
   open: (reason) => set({ reason }),
+  setReturnTo: (path) => set({ returnTo: path }),
+  // `returnTo` deliberately SURVIVES close(). The sheet unmounts the moment we
+  // navigate to the auth stack, and the whole point is that the path outlives
+  // it — login reads it after the sheet is long gone, and clears it itself.
   close: () => set({ reason: null }),
 }));

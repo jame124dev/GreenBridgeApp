@@ -32,6 +32,48 @@ export const routes = {
     }) as unknown as Href,
   scanCamera: '/scan/camera' as Href,
   scanDetection: '/scan/detection' as Href,
+  /**
+   * 6a — v2's own Home. **Every "go home" / "start over" inside v2 must use
+   * this, never `scanHome`.**
+   *
+   * All four review steps used to send their empty state to
+   * `scanHome` (`/(lab)/(tabs)/home`) with `router.replace` — so cold-opening a
+   * review step dropped you on the OLD home with v2 gone from the back stack
+   * and no way back. Reported by the user as "it goes into the previous
+   * version while using it". The constant did not exist, which is why four
+   * separate screens reached for the shipped one.
+   */
+  v2Home: '/v2' as Href,
+  /** 7b — the first v2 review step. The scan flow's destination once a
+   *  detection has been applied to the draft store. */
+  v2ReviewPhotos: '/v2/scan/review/photos' as Href,
+  /** 3b — v2's own camera. Every scan entry point INSIDE v2 must use this and
+   *  not `scanCamera`: the shipped camera is a different screen in old tokens,
+   *  and sending someone there mid-flow drops them out of v2 entirely. */
+  v2Camera: '/v2/scan/camera' as Href,
+  /** 3b in APPEND mode — shoot and add to the draft already under review,
+   *  instead of starting a new scan. 7b's ADD tile is the only caller; see
+   *  the `append` branch in `app/v2/scan/camera.tsx`. */
+  v2CameraAppend: () =>
+    ({ pathname: '/v2/scan/camera', params: { mode: 'append' } }) as unknown as Href,
+  /**
+   * The two "See all" surfaces behind 6a Home, and a listing's detail.
+   *
+   * ⚠️ These MUST be used instead of `scanDrafts` / `labListings` /
+   * `listingDetail` from anywhere inside v2. Those three are OLD-UI screens —
+   * `labListings` in particular lives in the `(lab)` tab group, so reaching it
+   * from v2 swaps the whole tab bar (measured 2026-09-17: it reads "Chat" with
+   * `99+` badges). The old routes stay for the old UI, which still uses them.
+   */
+  v2Drafts: '/v2/drafts' as Href,
+  v2Listings: '/v2/listings' as Href,
+  v2ListingDetail: (batchPk: number) => `/v2/listing/${batchPk}` as Href,
+  // 3a `v2Voice: '/v2/voice'` was REMOVED 2026-09-17 with `app/v2/voice.tsx`.
+  // The screen was a static mock with four controls that only fired a haptic,
+  // and nothing navigated to it. The constant went too rather than being left
+  // pointing at a route that no longer exists — a dangling Href compiles under
+  // typed routes until someone regenerates types, then fails somewhere else.
+  // Voice is `/v2/chat` with a different composer when it is rebuilt for real.
   scanReorderPhotos: '/scan/reorder-photos' as Href,
   scanReorderPhotosEdit: () =>
     ({ pathname: '/scan/reorder-photos', params: { mode: 'edit' } }) as unknown as Href,

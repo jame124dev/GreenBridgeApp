@@ -3,6 +3,8 @@ import '@/i18n';
 
 import { useEffect, type ReactNode } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
+
+import { hasPendingV2Return, homeRoute } from '@/features/v2/routing/postAuthLanding';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -26,6 +28,15 @@ import {
   IBMPlexSans_500Medium,
   IBMPlexSans_600SemiBold,
 } from '@expo-google-fonts/ibm-plex-sans';
+// Poppins — the v2 redesign (app/v2/). Exactly three weights: that is all the
+// design canvas uses across 238 styled text nodes. An unloaded face does not
+// throw, it silently falls back to the system font, so this list and
+// `fonts` in src/theme/v2/scale.ts must stay in step.
+import {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+} from '@expo-google-fonts/poppins';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Toaster } from 'sonner-native';
 
@@ -103,8 +114,22 @@ function AuthGuard({ children }: { children: ReactNode }) {
     // Do NOT re-add a redirect here, and do not "fix" a guest crash by putting
     // one back -- fix the screen to tolerate a null profile instead.
 
-    if (profile && inAuthGroup) {
-      router.replace(HOME_ROUTE);
+    // ⚠️ THE RACE THAT ATE THE v2 RETURN — do not simplify this condition.
+    //
+    // This effect fires the moment `profile` becomes truthy while the route is
+    // still inside `(auth)`, which is the SAME instant `login.tsx` issues its
+    // own replace. Two redirects race, and the hardcoded one won often enough
+    // to make "signing in throws me back to the old UI" look intermittent.
+    // Patching the auth screens alone does not fix it; this is the third and
+    // most easily missed ejection point.
+    //
+    // When a v2 landing is owed, stand down and let the auth screen place the
+    // person — `postAuthLanding()` is the single decision point.
+    if (profile && inAuthGroup && !hasPendingV2Return()) {
+      // `homeRoute()`, not the local HOME_ROUTE constant — with the v2 flag on,
+      // "home" is `/v2`, and bouncing to the legacy home here would undo the
+      // front-door fix for anyone who signed in.
+      router.replace(homeRoute());
     }
   }, [profile, segments, hydrated, router]);
 
@@ -149,6 +174,9 @@ export default function RootLayout() {
     HankenGrotesk_800ExtraBold,
     IBMPlexSans_500Medium,
     IBMPlexSans_600SemiBold,
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
     ...MaterialIcons.font,
   });
 

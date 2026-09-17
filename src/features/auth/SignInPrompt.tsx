@@ -1,5 +1,5 @@
 import { Modal, Pressable, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { brand, spacing } from '@/constants/theme';
 
-import { useSignInPromptStore, type GateReason } from './signInPromptStore';
+import { GATE_COPY } from './gateCopy';
+import { useSignInPromptStore } from './signInPromptStore';
 
 /**
  * The one place a guest is asked for an account.
@@ -21,45 +22,30 @@ import { useSignInPromptStore, type GateReason } from './signInPromptStore';
  * account-based, and gating them is what App Review rejected 1.0.3 (21) for
  * under Guideline 5.1.1(v). See `signInPromptStore.ts`.
  */
-const COPY: Record<GateReason, { title: string; body: string }> = {
-  message: {
-    title: 'Sign in to message sellers',
-    body: 'Conversations are tied to your account, so you can pick them up again on any device.',
-  },
-  want: {
-    title: 'Sign in to save what you need',
-    body: "We'll match it against equipment as it arrives and let you know.",
-  },
-  sell: {
-    title: 'Sign in to list equipment',
-    body: 'Listings belong to a seller account, so we know who to send buyers to.',
-  },
-  notifications: {
-    title: 'Sign in to see your alerts',
-    body: 'Matches, offers and messages all arrive here once you have an account.',
-  },
-  account: {
-    title: 'Sign in to your account',
-    body: 'Your listings, saved searches and messages live here.',
-  },
-  draft: {
-    title: 'Sign in to save this draft',
-    body: 'Drafts are kept against your account so you can finish them later.',
-  },
-  offer: {
-    title: 'Sign in to make an offer',
-    body: 'Offers are tied to your account so the seller can reply to you.',
-  },
-};
 
 export function SignInPrompt() {
   const { t } = useTranslation();
   const reason = useSignInPromptStore((s) => s.reason);
   const close = useSignInPromptStore((s) => s.close);
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
 
   if (!reason) return null;
-  const copy = COPY[reason];
+  /*
+    ⚠️ STAND DOWN ON v2 ROUTES.
+
+    `app/v2/_layout.tsx` mounts `features/v2/auth/SignInSheet`, which reads this
+    same store. Both layouts can be mounted at once — expo-router keeps the
+    previous group alive when you navigate into another — so one tap opened TWO
+    sheets, this one stacked behind the v2 one. Seen on Account in dark: a band
+    of the LIGHT backdrop (#76827E) peeking above the dark sheet's top edge,
+    because this prompt is taller.
+
+    Deleted along with the old UI; until then the route decides which gate
+    renders, and it can only ever be one.
+  */
+  if (pathname.startsWith('/v2')) return null;
+  const copy = GATE_COPY[reason];
 
   const go = (path: '/(auth)/login' | '/(auth)/register') => {
     close();

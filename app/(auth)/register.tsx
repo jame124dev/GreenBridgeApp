@@ -32,6 +32,7 @@ import { toast } from 'sonner-native';
 import { Button } from '@/components/ui/Button';
 import { OtpInput } from '@/components/ui/OtpInput';
 import { useRegistration } from '@/features/auth/useRegistration';
+import { postAuthLanding } from '@/features/v2/routing/postAuthLanding';
 import { useLogin } from '@/features/auth/useLogin';
 import {
   registerCodeSchema,
@@ -340,12 +341,14 @@ function DoneStep({ reg }: StepProps) {
     mut.mutate(
       { email: reg.state.email, password: reg.state.password },
       {
-        onSuccess: () => router.replace(HOME_ROUTE),
+        // Not HOME_ROUTE — the v2 sheet's "Create account" lands here, so the
+        // signup half needs the same gatekeeper as login. See `postAuthLanding`.
+        onSuccess: () => router.replace(postAuthLanding()),
         onError: (err) => {
           // Pending is the EXPECTED outcome for a fresh signup and is a usable
           // buyer session (login() has already persisted profile + tokens).
           if (err instanceof LoginError && err.code === 'ACCOUNT_PENDING') {
-            return router.replace(HOME_ROUTE);
+            return router.replace(postAuthLanding());
           }
           // Anything else (e.g. the app was backgrounded long enough for the
           // password to be dropped from memory) — recover at sign-in rather

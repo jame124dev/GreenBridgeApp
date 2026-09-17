@@ -13,6 +13,7 @@ import { Button, Card, Input, LanguageSheet, Screen, Text } from '@/components/u
 import { spacing } from '@/constants/theme';
 import { loginSchema, type LoginInput } from '@/features/auth/schema';
 import { useLogin } from '@/features/auth/useLogin';
+import { postAuthLanding } from '@/features/v2/routing/postAuthLanding';
 import { LoginError, type ApprovalStateExtra } from '@/services/auth/login';
 import { toast } from 'sonner-native';
 import { useAuth } from '@/stores/authStore';
@@ -77,7 +78,9 @@ export default function LoginScreen() {
 
   const onSubmit = (values: LoginInput) =>
     mut.mutate(values, {
-      onSuccess: () => router.replace(HOME_ROUTE),
+      // Not HOME_ROUTE — see `postAuthLanding`. Signing in from a v2 screen
+      // used to land you in the OLD UI with no way back.
+      onSuccess: () => router.replace(postAuthLanding()),
       onError: (err) => {
         if (err instanceof LoginError) {
           if (err.code === 'EMAIL_NOT_VERIFIED') {
@@ -92,7 +95,7 @@ export default function LoginScreen() {
             // routing here to /(auth)/pending is what made it a dead end.
             setPending(true);
             setApproval((err.extra as ApprovalStateExtra | undefined)?.approval ?? null);
-            return router.replace(HOME_ROUTE);
+            return router.replace(postAuthLanding());
           }
           if (err.code === 'BUYER_NOT_ALLOWED') {
             toast.error(err.message);

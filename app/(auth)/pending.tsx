@@ -67,6 +67,7 @@ import { useSellerUpgradeStatus } from '@/features/seller/useSellerUpgrade';
 import { LoginError, type ApprovalStateExtra } from '@/services/auth/login';
 import { useAuth } from '@/stores/authStore';
 import { haptics } from '@/lib/haptics';
+import { homeRoute } from '@/features/v2/routing/postAuthLanding';
 
 // Post-auth landing route for this bundle — mirrors HOME_ROUTE in _layout.tsx /
 // login.tsx so "Continue" lands in the right app.
@@ -327,7 +328,9 @@ export default function PendingScreen() {
             {/* THE dominant action, and the reason this screen is no longer a
                 wall: whatever the checklist says, the account is usable now. */}
             <Pressable
-              onPress={() => router.replace(HOME_ROUTE)}
+              // `homeRoute()` — this is a post-auth exit, so with the v2 flag on
+              // it must land in v2 like every other one. Identical when off.
+              onPress={() => router.replace(homeRoute())}
               {...pressProps('primary')}
               style={[styles.btn, styles.btnPrimary, pressedKey === 'primary' && styles.pressed]}
               accessibilityRole="button"
