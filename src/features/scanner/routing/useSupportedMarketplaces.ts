@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 
 import type { MarketplaceKey } from '@/stores/scanDraftStore';
 
+import { MARKETPLACE_PICKER_ENABLED } from '@/lib/flags';
+
 import { fallbackMarketplaces, readCachedSupported } from './supportedMarketplacesCache';
 import { fetchSupportedMarketplaces, SUPPORTED_QUERY_KEY } from './supportedMarketplaces';
 
@@ -24,7 +26,23 @@ import { fetchSupportedMarketplaces, SUPPORTED_QUERY_KEY } from './supportedMark
  * `__tests__/useSupportedMarketplaces.test.tsx`.
  */
 export function useSupportedMarketplaces(): MarketplaceKey[] {
+  /*
+   * ⚠️ GATED WITH `enabled`, AND THE HOOK ALWAYS RUNS.
+   *
+   * The first version of this returned early, before `useQuery`, on the
+   * reasoning that a BUILD-TIME constant cannot change between renders. That
+   * reasoning was wrong and the device said so immediately: "Should have a
+   * queue. You are likely calling Hooks conditionally." Fast Refresh re-renders
+   * the same component across a module swap, so the hook count DID change — and
+   * the unit tests never saw it, because each suite mocks the flag one way for
+   * its whole run.
+   *
+   * `enabled` is the correct lever: the hook order is fixed, and with the
+   * picker off `queryFn` never runs, so this build still never asks the server
+   * about marketplaces it cannot list to.
+   */
   const q = useQuery({
+    enabled: MARKETPLACE_PICKER_ENABLED,
     queryKey: SUPPORTED_QUERY_KEY,
     queryFn: fetchSupportedMarketplaces,
     staleTime: 30 * 60_000,
@@ -32,5 +50,9 @@ export function useSupportedMarketplaces(): MarketplaceKey[] {
     retry: 1,
     placeholderData: () => readCachedSupported() ?? fallbackMarketplaces(),
   });
+  // Picker off ⇒ this deployment's own marketplace, full stop. Every consumer
+  // — v2's 7b, the shipped `RoutingChip`, `MarketplaceSheet` — collapses with
+  // it, so no screen is left holding a stale three-option list.
+  if (!MARKETPLACE_PICKER_ENABLED) return fallbackMarketplaces();
   return q.data?.length ? q.data : fallbackMarketplaces();
 }

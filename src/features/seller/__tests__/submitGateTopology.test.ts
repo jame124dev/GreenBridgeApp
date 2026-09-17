@@ -35,6 +35,17 @@ const GATED_CONSUMERS: Record<string, string> = {
   'app/scan/grouped-review.tsx': 'app/scan/grouped-review.tsx',
   'src/features/scanner/components/detail/useDetailController.ts':
     'src/features/scanner/components/detail/useDetailController.ts',
+  /**
+   * v2's review flow, added 2026-09-17 when publishing stopped being inert.
+   *
+   * ONE entry for BOTH endpoints, unlike the two rows above. v2 has a single
+   * review flow serving both draft shapes (`useReviewItem` reads `queuedItems`
+   * OR `current`), so the queue/single fork happens inside this hook — which
+   * means the gate can be applied once instead of twice, and cannot be
+   * half-applied the way this file's header warns about.
+   */
+  'src/features/v2/scan/review/usePublishDraft.ts':
+    'src/features/v2/scan/review/usePublishDraft.ts',
 };
 
 /** Files allowed to name a submit hook without gating: the hooks' own modules. */

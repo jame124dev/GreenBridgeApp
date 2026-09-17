@@ -71,6 +71,16 @@ type Props = {
    * (product detail) pass nothing.
    */
   bottomInset?: number;
+  /**
+   * Reserve the OS bottom inset. Default `true` — the shipped Browse tab and
+   * every pushed screen rely on it.
+   *
+   * Pass `false` ONLY where an ancestor already occupies that space. v2's
+   * `Screen` renders its tab bar as a flex SIBLING below the content rather
+   * than as an overlay, so the content box already stops above the gesture
+   * bar; reserving it again leaves a dead strip under the page.
+   */
+  reserveBottomInset?: boolean;
   /** Register the auth-clear callback (only the persistent Browse tab should). */
   registerAuthClear?: boolean;
   /**
@@ -113,7 +123,13 @@ true;`;
  */
 export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
   function MarketplaceWebView(
-    { path, bottomInset = 0, registerAuthClear = false, hideSiteHeader = false },
+    {
+      path,
+      bottomInset = 0,
+      registerAuthClear = false,
+      hideSiteHeader = false,
+      reserveBottomInset = true,
+    },
     ref,
   ) {
     const router = useRouter();
@@ -127,7 +143,11 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
     // caller passes one (its height already includes insets.bottom); otherwise we
     // fall back to the OS inset so a pushed screen that passes nothing is still
     // safe by construction.
-    const reservedBottom = bottomInset > 0 ? bottomInset : insets.bottom;
+    const reservedBottom = bottomInset > 0
+      ? bottomInset
+      : reserveBottomInset
+        ? insets.bottom
+        : 0;
 
     const webRef = useRef<WebView>(null);
     const canGoBackRef = useRef(false);

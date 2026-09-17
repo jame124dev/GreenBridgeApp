@@ -4,6 +4,26 @@ const { colors, spacing, radius, brand } = require('./src/constants/theme');
 module.exports = {
   content: ['./app/**/*.{ts,tsx}', './src/**/*.{ts,tsx}'],
   presets: [require('nativewind/preset')],
+  /**
+   * `'class'`, not the default `'media'` — required to run this app on WEB.
+   *
+   * With `'media'`, NativeWind's web runtime throws on boot: *"Cannot manually
+   * set color scheme, as dark mode is type 'media'. Please use
+   * StyleSheet.setFlag('darkMode', 'class')"*. It is an uncaught error, so the
+   * app mounts (the DOM has every element) and then an Expo red-box covers the
+   * whole page, which makes web useless as a development surface.
+   *
+   * ⚠️ Verified safe before changing: this repo uses **zero** `dark:` variants —
+   * 0 of 322 `className` occurrences across `app/` and `src/` (counted
+   * 2026-09-17). Nothing renders differently because of this key. v2 does not
+   * use Tailwind for colour at all; it reads roles from `useV2Colors()`
+   * (`src/theme/v2/palette.ts`), and the v2 scheme is plain React state in
+   * `theme/v2/ThemeProvider.tsx`.
+   *
+   * If `dark:` classes are ever introduced, they will follow an explicitly-set
+   * colour scheme rather than the OS setting — decide that deliberately then.
+   */
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {

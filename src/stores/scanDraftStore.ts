@@ -241,6 +241,18 @@ function marketplaceFromSiteType(siteType: string): MarketplaceKey {
   return strictMarketplaceFromSiteType(siteType) ?? '101lab';
 }
 
+/**
+ * A `DraftItem` with this deployment's defaults, optionally patched.
+ *
+ * Exported so a draft MAPPER (see `services/drafts/valuationDraft.ts`) can
+ * build items without restating twenty defaults. Three apps already write
+ * `gb_listing_drafts.payload` in three shapes; duplicating the defaults per
+ * reader is precisely how those drifted apart, so there is one factory.
+ */
+export function draftItemFrom(photos: Photo[], patch: Partial<DraftItem> = {}): DraftItem {
+  return { ...emptyDraft(photos), ...patch };
+}
+
 function emptyDraft(photos: Photo[]): DraftItem {
   const siteType = getSiteType();
   return {

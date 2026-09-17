@@ -7,7 +7,7 @@
 // (bottom:0 overlay ≈ 57px + safe-area) that the customer nav uses.
 import { Pressable, View } from 'react-native';
 import { router, type Href } from 'expo-router';
-import { ChevronRight, FileText, LogOut } from 'lucide-react-native';
+import { ChevronRight, FileText, FlaskConical, LogOut } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
@@ -32,7 +32,7 @@ import {
   VerificationCard,
 } from '@/features/settings';
 import { haptics } from '@/lib/haptics';
-import { draftsEnabled } from '@/lib/flags';
+import { V2_UI_ENABLED, draftsEnabled } from '@/lib/flags';
 import { useAuth } from '@/stores/authStore';
 import { brand, spacing } from '@/constants/theme';
 import { GuestTabState } from '@/features/auth/GuestTabState';
@@ -136,6 +136,50 @@ function LabAccountAuthed() {
                         description={t('mobile.drafts.yourDraftsDesc', {
                           defaultValue: 'Resume a saved listing or request',
                         })}
+                        right={<ChevronRight color={brand.textMuted} size={18} />}
+                      />
+                    </Card>
+                  </Pressable>
+                </View>
+              </>
+            )}
+
+            {/* Development — the ONLY way into the v2 UI (`app/v2/`) from
+                inside the app. Until this row existed every v2 screen had to
+                be opened with an `adb` deep link, so nobody without a cable
+                could look at it. Gated on `V2_UI_ENABLED`, which is opt-in and
+                **default OFF** (`EXPO_PUBLIC_V2_UI=1` + a Metro restart), so a
+                normal build is byte-for-byte the screen it was before this row
+                was added. It deliberately does NOT touch `app/index.tsx`: the
+                app still launches into this UI, and v2 is somewhere you go,
+                not somewhere you land — see todo/V2_ENTRY_POINT_TASK.md
+                (option A) and Docs/v2/DECISIONS.md item 1.
+
+                Its own section, labelled for what it is, so nobody mistakes an
+                unfinished UI for a shipped feature. The copy is intentionally
+                NOT run through `t()` — a developer affordance behind an
+                off-by-default flag should not put five locales into debt for
+                strings no user is meant to read. */}
+            {V2_UI_ENABLED && (
+              <>
+                <SectionHeader label="Development" />
+                <View className="gap-6">
+                  <Pressable
+                    onPress={() => {
+                      haptics.tap();
+                      // `as unknown as Href` for the same reason line 126 does
+                      // it: typed routes don't know this path.
+                      router.push('/v2' as unknown as Href);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open the new UI (in progress)"
+                  >
+                    <Card>
+                      <Card.Header
+                        icon={<FlaskConical color={brand.primary} size={18} />}
+                        iconBg={brand.primarySurface}
+                        title="New UI (in progress)"
+                        description="The redesign we're building. Not finished — parts of it don't work yet."
                         right={<ChevronRight color={brand.textMuted} size={18} />}
                       />
                     </Card>

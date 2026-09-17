@@ -8,6 +8,7 @@ import { Button, Card, Screen, Stack, Text } from '@/components/ui';
 import { CONDITION_LABELS, type ConditionKey } from '@/features/scanner/constants';
 import { invalidateRecentSubmissions } from '@/features/scanner/invalidateRecentSubmissions';
 import { routes } from '@/lib/routes';
+import { homeRoute } from '@/features/v2/routing/postAuthLanding';
 import { IS_CUSTOMER } from '@/lib/flags';
 import { useScanDraft } from '@/stores/scanDraftStore';
 import { brand, colors } from '@/constants/theme';
@@ -204,7 +205,8 @@ export default function SuccessScreen() {
               // Lab customers reach this flow via the chat upload hand-off
               // (launchSellerScan); send them back to the lab home, not the
               // seller tab group that scanHome (/(tabs)) points at.
-              router.replace(IS_CUSTOMER ? '/(lab)/(tabs)/home' : routes.scanHome)
+              // See processing-v2.tsx — flag decides where home is.
+              router.replace(IS_CUSTOMER ? homeRoute() : routes.scanHome)
             }
             fullWidth
           />

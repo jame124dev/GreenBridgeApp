@@ -190,7 +190,18 @@ export function ChatCards({ cards }: { cards?: Card[] }) {
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: space['5xl'] },
+  /**
+   * `width: '100%'` on BOTH, and it is the whole reason the rows render.
+   *
+   * The thread's `rowLeft` is `{ alignItems: 'flex-start', width: '100%' }`, so
+   * a child is SHRINK-WRAPPED to its intrinsic width unless it says otherwise —
+   * which is why `prose` carries `width: '100%'` too. Without it here, `Row`'s
+   * flex text column collapsed to about 100px and every result rendered as a
+   * thumbnail, one character ("H…"), and a chevron. The accessibility label held
+   * the full title the whole time, so a dump looked correct while the screen did
+   * not: read the pixels, not the tree.
+   */
+  stack: { gap: space['5xl'], width: '100%' },
   /**
    * NO horizontal margin, and that is load-bearing.
    *
@@ -205,7 +216,7 @@ const styles = StyleSheet.create({
    * sliced by the screen edge and the rows rendered as image + chevron with no
    * words at all. A negative margin is only ever correct against a known padding.
    */
-  block: {},
+  block: { width: '100%' },
   /** The overflow chip is not a `Row`, so it needs the thread's own gutter. */
   overflow: { paddingHorizontal: GUTTER },
 });

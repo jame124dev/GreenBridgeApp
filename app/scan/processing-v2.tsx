@@ -28,6 +28,7 @@ import { useSmartDetect } from '@/features/scanner/useSmartDetect';
 import { backgroundRecognitionEnabled, IS_CUSTOMER } from '@/lib/flags';
 import { haptics } from '@/lib/haptics';
 import { routes } from '@/lib/routes';
+import { homeRoute } from '@/features/v2/routing/postAuthLanding';
 import { useScanDraft, type Photo } from '@/stores/scanDraftStore';
 import { useAuth } from '@/stores/authStore';
 import { clearStoredJobId, storeJobId } from '@/stores/recognitionJobStore';
@@ -580,7 +581,10 @@ export default function ProcessingV2Screen() {
     // Launched from the lab chat (launchSellerScan) in the customer fork, so
     // return to the lab home — the seller tab group scanHome (/(tabs)) points
     // at is disabled there. Mirrors app/scan/success.tsx.
-    router.replace(IS_CUSTOMER ? '/(lab)/(tabs)/home' : routes.scanHome);
+    // `homeRoute()` — v2's "Scan it" pushes into THIS old scan flow, so a
+    // hardcoded legacy home here ejects a v2 seller the moment their scan
+    // finishes. Identical to before when the v2 flag is off.
+    router.replace(IS_CUSTOMER ? homeRoute() : routes.scanHome);
   }, [t]);
 
   // Resolve a product's thumbnail: the first local photo it references, else

@@ -16,6 +16,18 @@ jest.mock('@/lib/mmkv', () => {
   };
 });
 
+/*
+ * The picker is OFF in this build (`MARKETPLACE_PICKER_ENABLED`), which makes
+ * the hook return the deployment's own marketplace and never fetch. These
+ * tests exist to protect the FETCH path — specifically the `placeholderData`
+ * vs `initialData` trap that would silently kill the server-driven list — so
+ * they run with it ON. The gated path has its own test at the bottom.
+ */
+jest.mock('@/lib/flags', () => ({
+  ...(jest.requireActual('@/lib/flags') as Record<string, unknown>),
+  MARKETPLACE_PICKER_ENABLED: true,
+}));
+
 // Mock the TRANSPORT module, not axios: that keeps this suite off the
 // greenbidzClient -> interceptors -> logout -> socket graph entirely.
 const mockFetchSpy = jest.fn(async () => ['101lab', '101machine', '101it']);

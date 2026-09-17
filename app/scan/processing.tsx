@@ -20,6 +20,7 @@ import { routingPatchFromAi } from '@/features/scanner/routing/routingState';
 // rule as the store: the latter drags axios + the auth/socket graph in.
 import { supportedNow } from '@/features/scanner/routing/supportedMarketplacesCache';
 import { routes } from '@/lib/routes';
+import { homeRoute } from '@/features/v2/routing/postAuthLanding';
 import { SMART_DETECT_ENABLED, backgroundRecognitionEnabled, IS_CUSTOMER } from '@/lib/flags';
 import { useAnalyzeImages } from '@/features/scanner/useAnalyzeImages';
 import { useSmartDetect } from '@/features/scanner/useSmartDetect';
@@ -612,7 +613,9 @@ export default function ProcessingScreen() {
     // Launched from the lab chat (launchSellerScan) in the customer fork, so
     // return to the lab home — the seller tab group scanHome (/(tabs)) points
     // at is disabled there. Mirrors app/scan/success.tsx.
-    router.replace(IS_CUSTOMER ? '/(lab)/(tabs)/home' : routes.scanHome);
+    // See processing-v2.tsx — v2's Scan it lands in this flow, so "home" must
+    // be the flag's answer, not a hardcoded legacy route.
+    router.replace(IS_CUSTOMER ? homeRoute() : routes.scanHome);
 
     void (async () => {
       try {

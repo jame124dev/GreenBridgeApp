@@ -156,7 +156,24 @@ export default (): ExpoConfig => ({
   },
   web: {
     bundler: 'metro',
-    output: 'static',
+    /**
+     * `'single'` (SPA), not `'static'`.
+     *
+     * `'static'` server-renders each route in Node, and this app cannot survive
+     * that: `react-native-mmkv` is native storage, so the auth store and the
+     * draft store both throw *"Tried to access storage on the server. Did you
+     * forget to call this in useEffect?"* during SSR, and every route 500s
+     * before it reaches the browser.
+     *
+     * Web is a DEVELOPMENT SURFACE here — a way to work on screens without
+     * competing for the one physical phone. It is not shipped, so there is no
+     * SEO or first-paint argument for static rendering. `'single'` emits one
+     * HTML shell and lets the app boot client-side, where the native modules
+     * have their web shims.
+     *
+     * Native builds are unaffected: this key is only read for web output.
+     */
+    output: 'single',
     favicon: './assets/images/favicon.png',
   },
   plugins: [
