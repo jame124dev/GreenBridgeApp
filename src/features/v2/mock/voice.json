@@ -1,0 +1,29 @@
+{
+  "__mock": "Static fixture for 3a, the voice turn. NOT a chat/stream response — see mock/index.ts.",
+  "status": "Listening",
+  "speakerOn": true,
+  "turns": [
+    {
+      "id": "t1",
+      "from": "assistant",
+      "kind": "say",
+      "text": "What are you selling today? You can show me instead of telling me."
+    },
+    {
+      "id": "t2",
+      "from": "user",
+      "kind": "say",
+      "text": "It's a Waters HPLC, powers on, missing the detector.",
+      "photo": { "caption": "Scanned" }
+    },
+    {
+      "id": "t3",
+      "from": "assistant",
+      "kind": "priced",
+      "text": "Read the label as a Waters Alliance e2695. Comparable stacks without a detector sold for $3,800 to $5,200 in the last 90 days.",
+      "emphasis": "Waters Alliance e2695",
+      "suggestedAsk": 4600
+    }
+  ],
+  "replies": ["Why that price?", "Add more photos"]
+}

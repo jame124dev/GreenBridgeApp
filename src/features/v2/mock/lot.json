@@ -1,0 +1,33 @@
+{
+  "__mock": "Static fixture for the v2 buyer screens (2a listing detail, 2b place a bid). NOT an API response — see mock/index.ts.",
+  "id": 5402,
+  "lotNumber": "#5402",
+  "title": "Thermo Dionex UltiMate 3000 stack",
+  "category": "Chromatography",
+  "country": "Germany",
+  "city": "Hamburg",
+  "photoCount": 9,
+  "photoIndex": 1,
+  "currency": "USD",
+  "currentBid": 8200,
+  "minimumBid": 8400,
+  "bidderCount": 4,
+  "youAreLeading": false,
+  "closesInDays": 3,
+  "buyerFeePct": 5,
+  "collection": "Arranged by you",
+  "specs": {
+    "year": "2014",
+    "condition": "Working",
+    "quantity": "1 stack",
+    "location": "Hamburg"
+  },
+  "description": "Complete UltiMate 3000 stack — pump, autosampler, column compartment and diode-array detector. Powered on and passed a pressure test in June. Sold as one lot; the trolley in the photographs is not included. Collection from Hamburg, loading assistance available on weekdays.",
+  "seller": {
+    "initials": "TA",
+    "name": "Treehouz Asia Sdn Bhd",
+    "verified": true,
+    "lotsSold": 31
+  },
+  "quickBids": [8400, 8600, 9000]
+}
