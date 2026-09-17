@@ -5,7 +5,10 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import { NotificationToast } from '@/features/lab/notifications/NotificationToast';
 import { resumeDraftById } from '@/features/scanner/useResumeDraft';
+import { openMultiItemDraft } from '@/features/v2/scan/openMultiItemDraft';
+import { v2ResumeRoute } from '@/features/v2/scan/v2ResumeRoute';
 import { draftKeys } from '@/services/drafts/draftHooks';
+import { V2_UI_ENABLED } from '@/lib/flags';
 import { routes } from '@/lib/routes';
 
 /**
@@ -90,6 +93,22 @@ export function surfaceDraftReady(
   // background scan is a pending-ai draft, so `resumeDraftById` maps it and
   // pushes the item-review page). Only fall back to the drafts list when we
   // somehow have no draft id to open.
+  //
+  // ⚠️ THE TOAST IS A DRAFT SURFACE TOO, and it was the one left behind.
+  // `SellingPane` and `app/v2/drafts.tsx` both pass a v2 route resolver and
+  // `openMultiItemDraft`; this call passed neither, so on a v2 build tapping
+  // "View" either dropped the seller into OLD chrome (single item) or failed
+  // outright with "Could not open this draft" (multi-item — no `persistedScan`,
+  // see the FOURTH SHAPE note in `useResumeDraft`). The document/extract lane
+  // makes multi-item the common case: a 9 MB spreadsheet produced an 18-item
+  // draft on 2026-09-17, and this toast is exactly how a seller who backgrounded
+  // that upload gets back to it.
+  //
+  // Flag-gated, not unconditional. This function is shared with the SHIPPED UI,
+  // and handing it v2 destinations on an old-UI build would walk that seller
+  // into v2 mid-journey — the ejection defect in reverse, as
+  // `openMultiItemDraft` already records. With the flag off both arguments are
+  // `undefined` and the call is byte-identical to what shipped.
   const toastId = `recognition:${key}`;
   const draftId = ready.draftId != null ? String(ready.draftId) : null;
   toast.custom(
@@ -101,7 +120,14 @@ export function surfaceDraftReady(
       })}
       type="recognition"
       onView={() =>
-        draftId ? void resumeDraftById(draftId, deps.t) : router.push(routes.scanDrafts)
+        draftId
+          ? void resumeDraftById(
+              draftId,
+              deps.t,
+              V2_UI_ENABLED ? v2ResumeRoute : undefined,
+              V2_UI_ENABLED ? openMultiItemDraft : undefined,
+            )
+          : router.push(V2_UI_ENABLED ? routes.v2Drafts : routes.scanDrafts)
       }
     />,
     { id: toastId, duration: 8000 },

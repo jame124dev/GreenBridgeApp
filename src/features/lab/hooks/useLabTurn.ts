@@ -35,6 +35,18 @@ import { labStream, type LabStreamEndpoint } from '@/features/lab/streaming/labS
 import { useComposer } from '@/features/lab/stores/composerStore';
 import { useSession } from '@/features/lab/stores/sessionStore';
 import { useThread } from '@/features/lab/stores/threadStore';
+import { hasOfficeExtractFile } from '@/features/lab/chat/officeExtract';
+import { runExtractLane } from '@/services/scanner/extractLane';
+
+/**
+ * What to say for each job phase. Only the phases a person waits through get a
+ * line; `uploading` is covered by the "Reading …" line already emitted, and an
+ * unknown status deliberately prints nothing rather than leaking a raw enum.
+ */
+const EXTRACT_PHASE: Record<string, string> = {
+  splitting: 'Splitting the document into items…',
+  extracting: 'Reading the details of each item…',
+};
 
 /** Fixed per this build — the 101LAB customer flow is site 2 (01 §7). */
 const SITE_TYPE = 'labgreenbidz';
@@ -94,7 +106,34 @@ export function useLabTurn(): UseLabTurn {
     // buyer image tools (search / WTB), matching the web. Routing buyer images to
     // /detect/stream was the bug: it returned a seller listing draft in buy mode.
     const hasAttachments = attachments.length > 0;
-    const useDetect = hasAttachments && DETECT_STREAM_ENABLED && mode === 'sell';
+
+    /**
+     * ⚑ OFFICE DOCUMENTS DO NOT GO TO `/detect/stream`.
+     *
+     * `/detect/stream` is the vision/photo lane. The web never sends it a
+     * spreadsheet: `nextjs-port` classifies DOCX/PPTX/XLS(X)/CSV first and runs
+     * them through a separate DURABLE EXTRACT job
+     * (`POST /gcs/resumable/create` + a `clientDedupKey`, keyed on
+     * `UNIQUE(seller_id, client_dedup_key)`), and only photos and PDFs reach
+     * detect. Mobile has no extract lane, so until it does, the least wrong
+     * thing is to keep documents away from the engine that cannot read them.
+     *
+     * Tested 2026-09-17 with a real 9 MB seller spreadsheet
+     * (`SOTW04060設備清單對照表0705.xlsx`): the GCS upload succeeded and the
+     * turn then went to detect, which is the wrong lane for that file.
+     *
+     * Falling through to `/chat/stream` is deliberate and is NOT a fix — it is
+     * the honest degradation. That endpoint already accepts `document_urls`
+     * and honours `mode` (see the note below), so the assistant at least SEES
+     * the file instead of the photo engine choking on it. Extracting N drafts
+     * from a spreadsheet still needs the durable lane ported.
+     *
+     * The predicate is a port of the web's, kept byte-comparable on purpose —
+     * `features/lab/chat/officeExtract.ts`.
+     */
+    const hasOfficeDoc = hasOfficeExtractFile(attachments);
+    const useDetect =
+      hasAttachments && !hasOfficeDoc && DETECT_STREAM_ENABLED && mode === 'sell';
 
     try {
       let endpoint: LabStreamEndpoint;
@@ -134,6 +173,56 @@ export function useLabTurn(): UseLabTurn {
           });
           documentUrls = r.files.map((f) => gcsUrlForAnalyze(f));
         }
+      }
+
+      /**
+       * ── OFFICE DOCUMENT → THE DURABLE EXTRACT LANE ───────────────────────
+       *
+       * Not a stream at all: `create` → PUT → `finalize` → poll a job. So it
+       * returns here rather than falling through to `labStream`, and reports
+       * progress by emitting the same frames the stream would, which is why
+       * the existing chat UI renders it with no changes.
+       *
+       * Proven against the backend 2026-09-17 with a 9 MB seller spreadsheet:
+       * draft 246, 18 items. See `services/scanner/extractLane.ts` for the
+       * contract — in particular that `finalize` MUST echo back `jobId`.
+       */
+      if (hasOfficeDoc) {
+        const sellerId = useAuth.getState().profile?.id;
+        if (!sellerId) throw new Error('Sign in to upload a document');
+
+        const doc = attachments.find((a) => !a.isImage) ?? attachments[0];
+
+        applyFrame({ type: 'token', delta: `Reading ${doc.name}…\n` });
+
+        const seen = new Set<string>();
+        const result = await runExtractLane(
+          sellerId,
+          { uri: doc.uri, name: doc.name },
+          {
+            signal: ctrl.signal,
+            onStatus: (s) => {
+              // One line per phase, not per poll — `splitting` and
+              // `extracting` take minutes on a real spreadsheet and a silent
+              // spinner reads as a hang.
+              if (seen.has(s.status)) return;
+              seen.add(s.status);
+              const label = EXTRACT_PHASE[s.status];
+              if (label) applyFrame({ type: 'token', delta: `${label}\n` });
+            },
+          },
+        );
+
+        if (result.status !== 'draft_ready' || !result.draftId) {
+          throw new Error(result.error ?? 'The document could not be read.');
+        }
+
+        applyFrame({
+          type: 'token',
+          delta: `Done — draft #${result.draftId} is ready to review.`,
+        });
+        applyFrame({ type: 'done', data: {} as never });
+        return;
       }
 
       if (useDetect) {

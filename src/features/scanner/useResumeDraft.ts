@@ -10,17 +10,21 @@
 // caller — e.g. the background-draft-ready toast's "View"); `useResumeDraft`
 // wraps it with the list-row spinner state.
 import { useCallback, useState } from 'react';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner-native';
 
 import { getDraft, type FormBlobPayload } from '@/services/drafts/draftApi';
+import {
+  isValuationDraftPayload,
+  persistedScanFromValuation,
+} from '@/services/drafts/valuationDraft';
 import { hydrateScanDraftFromPayload } from '@/services/drafts/draftPayload';
 import { mapPendingAiDraft } from '@/services/drafts/pendingAiResume';
 import { getSiteType } from '@/services/scanner/buildFormData';
 import { shouldSkipDetectionChoice } from '@/features/scanner/smartDetectionRouting';
 import { useScanDraft } from '@/stores/scanDraftStore';
-import { getScanResumeRoute } from '@/lib/scanResume';
+import { getScanResumeRoute, type ScanResumeState } from '@/lib/scanResume';
 import { routes } from '@/lib/routes';
 import { haptics } from '@/lib/haptics';
 import { isLabDraft, labResumeRoute } from '@/features/lab/labResumeRoute';
@@ -39,10 +43,47 @@ type ResumeT = (key: string, opts?: { defaultValue?: string }) => string;
  * spinner state lives in the hook wrapper below. Swallows errors with a toast
  * (never throws) so callers don't each need a catch.
  */
-export async function resumeDraftById(id: string, t: ResumeT): Promise<void> {
+/**
+ * Where a resumed SELLER-SCAN draft should land.
+ *
+ * Defaults to `getScanResumeRoute`, i.e. the shipped screens. v2's Home passes
+ * its own so a draft opened from v2 stays in v2 — see `v2SingleResumeRoute`.
+ */
+export type ResumeRouteResolver = (state: ScanResumeState) => Href;
+
+export async function resumeDraftById(
+  id: string,
+  t: ResumeT,
+  routeFor: ResumeRouteResolver = getScanResumeRoute,
+  onMultiItem?: MultiItemHandler,
+): Promise<void> {
   haptics.tap();
   try {
     const detail = await getDraft(id);
+
+    /**
+     * FOURTH SHAPE: a MULTI-ITEM draft — from the document/extract lane or the
+     * web. It has no `persistedScan` and no `labDraft`, so every branch below
+     * would reject it and the seller got "Could not open this draft". On a real
+     * account that is now the common case: one 9 MB spreadsheet produced a
+     * draft with 18 items (2026-09-17).
+     *
+     * It cannot be hydrated into the scan-draft store at all: that store, and
+     * the whole review flow behind it, hold exactly ONE item
+     * (`features/v2/scan/review/wizardState.ts` → `useReviewItem`). A multi-item
+     * draft needs its own screen, which is `app/v2/scan/items.tsx`.
+     *
+     * ⚠️ OPT-IN, and that is the point. This hook is shared with the SHIPPED
+     * UI — it is called from the old drafts list too — so pushing a `/v2` route
+     * from in here would walk an old-UI seller into v2 mid-journey. That is the
+     * same defect class as the sign-in ejection fixed on 2026-09-16, in
+     * reverse. The caller supplies the destination or there is none: with no
+     * handler this branch does not fire and behaviour is byte-identical.
+     */
+    if (onMultiItem && isMultiItemDraft(detail)) {
+      onMultiItem(id, itemCountOf(detail));
+      return;
+    }
 
     if (isLabDraft(detail)) {
       // (lab) draft — branch to the lab draft screen instead of the seller
@@ -105,17 +146,67 @@ export async function resumeDraftById(id: string, t: ResumeT): Promise<void> {
       return;
     }
 
+    // THIRD SHAPE: a draft written by greenbidz.com/valuation. It has neither
+    // `labDraft` (so `isLabDraft` above rejected it) nor `persistedScan` (so
+    // the form-blob hydrate below would throw). Before this branch existed,
+    // every valuation-sourced draft failed with "Could not open this draft" —
+    // which on a real seller account was ALL of them.
+    if (isValuationDraftPayload(detail.payload)) {
+      await useScanDraft.getState().hydrateFromServer(persistedScanFromValuation(detail.payload));
+      router.push(routeFor(useScanDraft.getState()));
+      return;
+    }
+
     const blob = hydrateScanDraftFromPayload(detail.payload as FormBlobPayload);
     await useScanDraft.getState().hydrateFromServer(blob);
-    const route = getScanResumeRoute(useScanDraft.getState());
-    router.push(route);
-  } catch {
+    router.push(routeFor(useScanDraft.getState()));
+  } catch (err) {
+    // The toast is right for the USER — it says what happened and loses
+    // nothing. But swallowing the error entirely made this undiagnosable: on a
+    // real account every draft row failed here and there was no way to see why
+    // without editing this file. A dev-only log costs nothing in production and
+    // turns "could not open this draft" into an actual lead.
+    // The toast is right for the USER — it says what happened and loses
+    // nothing. But swallowing the error entirely made this undiagnosable.
+    //
+    // ⚠️ KNOWN FAILURE, found 2026-09-15 on a real seller account: every draft
+    // failed here with `draft payload missing persistedScan`. The payload was
+    // `{source, created_at, scanv2, ready_to_list, ready_to_list_at}` — a
+    // ScanV2 (web seller flow) draft. That is a THIRD shape this function does
+    // not handle: `isLabDraft()` rejects it (no `mode`/`labDraft`) and the scan
+    // branch below cannot hydrate it (no `persistedScan`). Mobile currently has
+    // no path for a draft created on the web. See `Docs/V2_CHECKLIST.md`.
+    if (__DEV__) console.warn('[resumeDraft] failed', err);
     haptics.error();
     toast.error(t('mobile.drafts.resumeFailed', { defaultValue: 'Could not open this draft' }));
   }
 }
 
-export function useResumeDraft() {
+/**
+ * Called instead of hydrating when the draft holds more than one item.
+ * See the FOURTH SHAPE note in `resumeDraftById`.
+ */
+export type MultiItemHandler = (draftId: string, itemCount: number) => void;
+
+/** How many items the draft holds. Absent or unparseable counts as one. */
+function itemCountOf(detail: { product_count?: unknown }): number {
+  const n = Number(detail?.product_count);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
+
+/**
+ * More than one item ⇒ no single-item screen can show it.
+ *
+ * Keyed on the COUNT rather than on a payload marker (`scanv2`, `source`,
+ * …) because the count is what actually decides whether the review flow can
+ * hold the draft, and it is reported the same way by every producer — the
+ * extract lane, the web, and the camera.
+ */
+function isMultiItemDraft(detail: { product_count?: unknown }): boolean {
+  return itemCountOf(detail) > 1;
+}
+
+export function useResumeDraft(routeFor?: ResumeRouteResolver, onMultiItem?: MultiItemHandler) {
   const { t } = useTranslation();
   const [resumingId, setResumingId] = useState<string | null>(null);
 
@@ -123,12 +214,12 @@ export function useResumeDraft() {
     async (id: string) => {
       setResumingId(id);
       try {
-        await resumeDraftById(id, t);
+        await resumeDraftById(id, t, routeFor, onMultiItem);
       } finally {
         setResumingId(null);
       }
     },
-    [t],
+    [t, routeFor, onMultiItem],
   );
 
   return { resume, resumingId };
