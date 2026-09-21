@@ -23,8 +23,27 @@ that redirected a fresh install to login was rejected by App Review on
 | 6f Account | inline — "Browsing as a guest" | ✅ correct |
 | `/v2/chat` | none — open to all, **including sending** | ✅ deliberate |
 | 7b–7e Review | none until publish (`requireAuth('publish')` on 7e) | ✅ correct — a local draft must stay editable |
-| **2a Listing detail** | **none** | ⚠️ see below |
-| **2b Place a bid** | **none** | ⚠️ see below |
+| ~~2a Listing detail~~ | — | 🗑️ screen DELETED 2026-09-17 |
+| ~~2b Place a bid~~ | — | 🗑️ screen DELETED 2026-09-17 |
+
+**Re-verified on device 2026-09-21** (RMX2151), signed OUT — which is the state
+a fresh install lands in, and the one Guideline 5.1.1(v) is about. Pressed, not
+inferred:
+
+- **6a "Scan it"** → the sign-in sheet, *"Sign in to list equipment"*, with
+  Create account / I already have an account / **Keep browsing**. The way out is
+  present and labelled, which is the half the 2026-08-24 rejection was about.
+- **6f Account** → *"Browsing as a guest — Sign in to sell, save and message"*,
+  then a plain explanation that "your listings, drafts, offers and messages live
+  behind an account. Browsing and search stay open either way." Rows stay
+  visible and gate on press rather than disappearing.
+- **6d Matches** and **6e Messages** → their guest forks render.
+
+The two ⚠️ rows above are gone rather than fixed: `lot.tsx` and `bid.tsx` were
+DELETED on 2026-09-17. Both rendered `MOCK_LOT`, nothing navigated to either,
+and bidding already works for a buyer inside the Browse WebView — so the
+open question they carried ("should a guest be able to reach a bid form?")
+stopped existing rather than being answered.
 
 ## Three things to decide
 
@@ -56,19 +75,24 @@ the state a brand-new install actually lands in. The guest Home may deserve MORE
 design attention than the signed-in one, not less: it is the first screen a new
 person ever sees, and right now it is mostly empty below the fold.
 
-**3 · 2a and 2b have no guest handling at all.**
+**3 · ~~2a and 2b have no guest handling at all~~ — MOOT 2026-09-17.**
 
-Viewing a lot should be open — that part is right. But:
+Both screens were deleted, so the question dissolved rather than being answered.
+Kept because the reasoning still applies to whatever replaces them.
 
-- **2a's "Save this lot"** is local `useState` only. It persists nothing, for
-  ANYONE. A guest taps the heart, it fills, and the intent is lost; a signed-in
-  user gets exactly the same nothing. It is decorative in both states, which is
-  worse than it being gated.
-- **2b is a full bid form a guest can walk into.** Nothing writes today, so no
-  harm yet — but bidding is unambiguously account-based, and when the write
-  lands the gate has to exist. Better to decide now whether a guest is asked at
-  the lot (before the form) or at the bid (after filling it in). Asking after
-  someone has typed a number is the pattern that annoys people.
+- **2a's "Save this lot"** was local `useState` only. It persisted nothing, for
+  ANYONE — a guest tapped the heart, it filled, the intent was lost, and a
+  signed-in user got exactly the same nothing. Decorative in both states, which
+  is worse than being gated. **If a save/watch affordance returns, it must write
+  or not exist.**
+- **2b was a full bid form a guest could walk into.** Nothing wrote, so no harm
+  landed — but bidding is unambiguously account-based. **When a bid surface
+  returns, decide the gate's position first:** ask at the lot (before the form)
+  or at the bid (after a number has been typed). Asking after someone has typed
+  a number is the pattern that annoys people.
+
+Bidding today happens for a buyer inside the Browse WebView, which carries the
+web's own auth — so mobile has no ungated bid path at present.
 
 ## What is NOT a gap
 
