@@ -83,7 +83,7 @@
  * dead button (UX_DESIGN_RULES, "Does every action provide feedback?").
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -107,7 +107,6 @@ import {
   GUTTER,
   MIN_TOUCH,
   SECTION_GAP,
-  control,
   icon,
   radius,
   scaleW,
@@ -364,9 +363,6 @@ export default function V2ReviewPhotos() {
   const [active, setActive] = useState(0);
   /** `Change` on a settled marketplace reveals the three options. */
   const [picking, setPicking] = useState(false);
-  /** The one line this screen uses to answer an action it cannot yet perform. */
-  const [notice, setNotice] = useState<string | null>(null);
-
   const stepIndex = reviewStepIndex(STEP);
 
   /* Memoised: `stepNeeds` runs the whole `detailSchema` parse, and selecting a
@@ -416,20 +412,25 @@ export default function V2ReviewPhotos() {
   // ── Actions ───────────────────────────────────────────────────────────────
 
   /**
-   * An action whose server or store half is not wired yet. It answers in words
-   * rather than doing nothing — a silent tap is indistinguishable from a bug.
+   * THE DEFER HELPER LIVED HERE AND IS GONE — 2026-09-21.
    *
-   * ⚠️ EVERY `defer` CALL MUST GO before v2 ships. `app/v2/` is not reachable
-   * from the shipped UI, so these lines exist for review, not for users — but
-   * App Review treats a visible control that only explains itself as an
-   * unfinished app (Guideline 2.1, App Completeness), and that is exactly what
-   * the shipped `PhotosCard` comments about "omit to HIDE the control". Wire
-   * the write or drop the affordance; do not ship the sentence.
+   * It answered a control whose write was not wired by printing a sentence,
+   * which beat a silent tap but was never shippable: App Review treats a
+   * visible control that only explains itself as an unfinished app (Guideline
+   * 2.1, App Completeness). Its instruction to itself was "wire the write or
+   * drop the affordance; do not ship the sentence."
+   *
+   * Every one is now wired. This screen's last was Rearrange; the count across
+   * all of `app/v2/` is zero, which `v2Inventory` asserts so it cannot creep
+   * back in. The notice state went with it — nothing could set it any more, and
+   * dead scaffolding reads like a feature someone forgot to finish.
+   *
+   * ⚠️ Every line of this block starts with `*` on purpose. `v2Inventory`
+   * counts the sites by scanning LINES for the helper's name and skips only
+   * those beginning with `*` or `//` — so a plain `/* … *\/` block that merely
+   * MENTIONS it counts as a live call, and the first draft of this note failed
+   * that suite by describing its own removal.
    */
-  const defer = (message: string) => {
-    haptics.tap();
-    setNotice(message);
-  };
 
   const onBack = () => {
     haptics.tap();
@@ -438,7 +439,6 @@ export default function V2ReviewPhotos() {
 
   const onPickMarketplace = (m: MarketplaceKey) => {
     haptics.tap();
-    setNotice(null);
     /*
       Stay open, do NOT collapse to the statement row.
 
@@ -467,10 +467,31 @@ export default function V2ReviewPhotos() {
     if (COMMIT_FIELD_EDITS) patch(next);
   };
 
-  const onRearrange = () =>
-    defer(
-      'Reordering photos is not wired up in this build. The first photo is the one buyers see, and right now that is the order you scanned in.',
-    );
+  /**
+   * WIRED 2026-09-21 — the last control in v2 that explained itself instead of
+   * working. It used to say "reordering photos is not wired up in this build".
+   *
+   * It is a REUSE, not a rebuild. `app/scan/reorder-photos.tsx` already does
+   * exactly this and has shipped for months: `mode=edit` reads `draft.photos`,
+   * drives `react-native-reorderable-list` (already a dependency, built on the
+   * Reanimated + RNGH this app already has), then calls `updatePhotos` and goes
+   * back — which lands on this screen. Nothing about it is old-UI-specific
+   * except its chrome, and drag-reorder is precisely the interaction the
+   * workspace rule says to borrow rather than re-derive.
+   *
+   * ⚠️ Its one old-UI exit is unreachable from here. That screen bounces to
+   * `routes.scanDetail` when the draft has NO photos — but the button above is
+   * already hidden below two, so a seller cannot arrive with none. The guard
+   * that existed for a cosmetic reason turns out to be the one that keeps this
+   * from ejecting anyone into the old UI.
+   *
+   * TODO(v2-design): the screen itself still wears old-UI tokens, same as the
+   * country and category pickers this flow mounts.
+   */
+  const onRearrange = () => {
+    haptics.tap();
+    router.push(routes.scanReorderPhotosEdit());
+  };
 
   /**
    * WIRED (not deferred). The camera in `mode=append` shoots into this draft
@@ -482,7 +503,6 @@ export default function V2ReviewPhotos() {
    */
   const onAddPhoto = () => {
     haptics.tap();
-    setNotice(null);
     router.push(routes.v2CameraAppend());
   };
 
@@ -583,16 +603,6 @@ export default function V2ReviewPhotos() {
       testID="v2-review-photos"
       footer={
         <>
-          {notice ? (
-            <Text
-              variant="caption"
-              color="inkSubtle"
-              style={styles.notice}
-              accessibilityLiveRegion="polite"
-            >
-              {notice}
-            </Text>
-          ) : null}
           <View style={styles.footerRow}>
             {/*
               A text-only secondary, not the canvas's outlined pill. Two pills
@@ -851,7 +861,6 @@ const styles = StyleSheet.create({
   emptyBody: { marginTop: space.lg, marginBottom: space['3xl'] },
 
   // ── footer ──
-  notice: { marginBottom: space['2xl'] },
   footerRow: { flexDirection: 'row', alignItems: 'center', gap: space.xl },
   footerQuiet: { flexShrink: 0 },
   footerPrimary: { flex: 1 },

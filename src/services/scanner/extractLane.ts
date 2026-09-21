@@ -123,15 +123,35 @@ export async function runExtractLane(
   const size = blob.size;
 
   // ── 1. create ────────────────────────────────────────────────────────────
-  const created = await greenbidz.post(
-    '/gcs/resumable/create',
-    {
-      sellerId,
-      clientDedupKey: extractDedupKey([file]),
-      files: [{ originalName: file.name, size, mimeType: file.mimeType ?? blob.type }],
-    },
-    { signal, timeout: 60_000 },
-  );
+  //
+  // THE LANE CAN BE ABSENT IN TWO WAYS, and only one of them used to be said
+  // out loud. `SCANV2_DURABLE_EXTRACT` off server-side returns a 2xx with a
+  // null `jobId`, which the check below already reports in plain words. A
+  // backend that simply does not HAVE these routes 404s right here, and that
+  // surfaced to the seller as axios' "Request failed with status code 404" —
+  // a sentence about HTTP, in the middle of uploading a spreadsheet.
+  //
+  // Caught at the call rather than behind a pre-flight `isExtractLaneAvailable()`
+  // probe: a probe is an extra round trip on EVERY document upload to improve
+  // the wording of a case that is already failing, and it can disagree with the
+  // real request anyway (deploys land between the two).
+  let created;
+  try {
+    created = await greenbidz.post(
+      '/gcs/resumable/create',
+      {
+        sellerId,
+        clientDedupKey: extractDedupKey([file]),
+        files: [{ originalName: file.name, size, mimeType: file.mimeType ?? blob.type }],
+      },
+      { signal, timeout: 60_000 },
+    );
+  } catch (err) {
+    if ((err as { response?: { status?: number } })?.response?.status === 404) {
+      throw new Error('The document lane is not enabled on this server.');
+    }
+    throw err;
+  }
 
   const data = created.data?.data;
   const jobId: string | undefined = data?.jobId;
@@ -198,19 +218,23 @@ export async function runExtractLane(
   throw new Error('The document is taking longer than expected. It will finish in the background.');
 }
 
-/**
- * Is the lane deployed on the server this build talks to?
+/*
+ * `isExtractLaneAvailable()` LIVED HERE AND IS GONE — 2026-09-21.
  *
- * `testapi` 404s today (see the header). A caller can check once and fall back
- * rather than uploading megabytes into a route that does not exist.
+ * It POSTed an empty body to `/gcs/resumable/create` and read the status to
+ * decide whether the lane was deployed, so a caller could "check once and fall
+ * back rather than uploading megabytes into a route that does not exist".
+ *
+ * It never had a caller, and wiring one would have been the wrong fix:
+ *
+ *  - It bought nothing for the megabytes. `runExtractLane` does not upload at
+ *    `create` — the bytes go up at step 2, AFTER the server has answered. A
+ *    404 costs one small request either way.
+ *  - It doubled the requests on the happy path — a probe plus the real call —
+ *    to improve the wording of a case that is already an error.
+ *  - Two calls can disagree. A deploy landing between probe and request makes
+ *    the answer stale, and the request is the only authority.
+ *
+ * `runExtractLane` now maps that 404 to the same sentence the flag-off branch
+ * already used, at the call that actually happens.
  */
-export async function isExtractLaneAvailable(): Promise<boolean> {
-  try {
-    await greenbidz.post('/gcs/resumable/create', {}, { timeout: 15_000 });
-    return true; // a 2xx on an empty body would be surprising, but it exists
-  } catch (e) {
-    const status = (e as { response?: { status?: number } })?.response?.status;
-    // 400 = route exists and validated the empty body. 404 = not deployed.
-    return status !== undefined && status !== 404;
-  }
-}

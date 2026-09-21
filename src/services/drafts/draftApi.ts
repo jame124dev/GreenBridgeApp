@@ -61,11 +61,56 @@ export async function createDraft(req: CreateDraftReq): Promise<DraftDetail> {
 export async function listDrafts(
   cursor?: string,
 ): Promise<{ drafts: DraftSummary[]; next_cursor: string | null }> {
-  const res = await greenbidz.get('/drafts', { params: { cursor } });
-  const body = res.data ?? {};
-  const drafts = Array.isArray(body.data) ? (body.data as DraftSummary[]) : [];
-  const next_cursor = body.next_cursor == null ? null : String(body.next_cursor);
-  return { drafts, next_cursor };
+  try {
+    const res = await greenbidz.get('/drafts', { params: { cursor } });
+    const body = res.data ?? {};
+    const drafts = Array.isArray(body.data) ? (body.data as DraftSummary[]) : [];
+    const next_cursor = body.next_cursor == null ? null : String(body.next_cursor);
+    return { drafts, next_cursor };
+  } catch (err) {
+    /**
+     * A dev-only breadcrumb, costing nothing in production.
+     *
+     * Home renders "Your drafts did not load" for ANY failure here, which is
+     * the right thing to say to a seller and useless to whoever has to fix it.
+     * On 2026-09-21 that banner appeared on a real device while the SAME
+     * session loaded live listings and held a chat socket open — so it was not
+     * auth and not the network, and there was no way to tell what it was
+     * without editing this file, which is precisely the state
+     * `resumeDraftById` already carries a comment about having been in.
+     *
+     * Status and body, not the axios error: `err.message` for a 4xx is the
+     * useless "Request failed with status code 404".
+     */
+    if (__DEV__) {
+      const e = err as {
+        response?: { status?: number; data?: unknown };
+        config?: { headers?: Record<string, unknown> };
+        message?: string;
+      };
+      /**
+       * PRESENCE, NEVER THE VALUE. A 403 from the drafts guard has two very
+       * different causes that need opposite fixes — a token that was SENT and
+       * rejected (expired: sign in again) versus no token at all (the profile
+       * outlived the stored credentials: the session state is inconsistent).
+       * The request headers are the only thing on the client that distinguishes
+       * them, and logging a bearer token to a dev console is how one ends up in
+       * a pasted log.
+       */
+      const h = e.config?.headers ?? {};
+      const sent = {
+        authorization: typeof h.Authorization === 'string' ? 'present' : 'ABSENT',
+        refresh: h['x-refresh-token'] ? 'present' : 'ABSENT',
+      };
+      console.warn(
+        '[listDrafts] failed',
+        e.response?.status ?? '(no response — transport/CORS/DNS)',
+        JSON.stringify(e.response?.data ?? e.message ?? err),
+        JSON.stringify(sent),
+      );
+    }
+    throw err;
+  }
 }
 
 export async function getDraft(id: string): Promise<DraftDetail> {

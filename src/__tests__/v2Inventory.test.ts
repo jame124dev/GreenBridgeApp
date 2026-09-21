@@ -206,16 +206,16 @@ describe('v2 controls that explain themselves instead of working', () => {
    * review flow where the person is actually editing something.
    */
   /**
-   * ONE LEFT, 2026-09-17: `details.tsx`'s Category → Choose was wired to the
-   * shipped `CategoryPickerSheet`, so it acts now instead of explaining itself.
+   * ZERO, as of 2026-09-21. The list is empty and the assertion below is now
+   * "nowhere in v2", which is the state this suite existed to reach.
    *
-   * That one was not cosmetic. `detailSchema` requires a category, so a draft
-   * the scan could not place was UNPUBLISHABLE from v2 with no control able to
-   * fix it — and both single-item drafts on the test account were in exactly
-   * that state. Wiring publish while this still printed a sentence would have
-   * shipped a Submit button no real draft could reach.
+   * `SITES` is kept as an empty tuple rather than deleted: the second test
+   * sweeps every v2 screen and subtracts this list, so it is the exemption
+   * register. An empty register means no exemptions — and a future screen that
+   * adds a self-explaining control fails immediately instead of quietly
+   * appending itself to a list nobody reads.
    */
-  const SITES = ['app/v2/scan/review/photos.tsx'] as const;
+  const SITES = [] as readonly string[];
 
   /**
    * A call that SHOWS the notice. Three things are deliberately not counted:
@@ -235,29 +235,28 @@ describe('v2 controls that explain themselves instead of working', () => {
       .filter((line) => CALL.test(line) && !NOT_A_CONTROL.test(line)).length;
   }
 
-  it('is one, on one screen', () => {
+  it('is zero — the register of exemptions is empty', () => {
     const perFile = Object.fromEntries(SITES.map((f) => [f, sitesIn(f)]));
 
-    // 7b Rearrange — the last one.
-    //
-    // The count over time, each drop a real wiring rather than a deletion of
-    // the notice:
-    //   7 → 5  (2026-09-16) 7c + 7b "Save as draft" stopped explaining and
-    //                       started committing device-locally.
+    // The count over time. Every drop is a control that was WIRED, not a
+    // sentence that was deleted — which is the distinction that makes this
+    // number mean anything:
+    //   7 → 5  (2026-09-16) 7c + 7b "Save as draft" started committing
+    //                       device-locally instead of explaining.
     //   5 → 2  (2026-09-17) 2a `lot.tsx` and 2b `bid.tsx` were REMOVED; both
     //                       rendered `MOCK_LOT`, nothing navigated to either,
     //                       and bidding already works inside the Browse WebView.
-    //   2 → 1  (2026-09-17) 7c Category → Choose now opens the shipped
-    //                       `CategoryPickerSheet`.
+    //   2 → 1  (2026-09-17) 7c Category → Choose opens the shipped
+    //                       `CategoryPickerSheet`. That one was a hard block on
+    //                       publishing, not a cosmetic gap.
+    //   1 → 0  (2026-09-21) 7b Rearrange opens the shipped reorder screen.
     //
-    // "Save as draft" also stopped being device-only on 2026-09-17 — all four
-    // steps now POST through `useSaveDraft`, and 7e publishes through
+    // "Save as draft" and "Submit" also stopped being inert on 2026-09-17 — all
+    // four steps POST through `useSaveDraft`, and 7e publishes through
     // `usePublishDraft`. Neither was ever counted here (they buzzed and
-    // returned rather than printing), but the `TODO(v2-writes)` note that used
-    // to sit in this comment is gone with them.
-    expect(perFile).toEqual({
-      'app/v2/scan/review/photos.tsx': 1,
-    });
+    // returned rather than printing a sentence), but no `TODO(v2-writes)`
+    // remains on a control a seller can press.
+    expect(perFile).toEqual({});
   });
 
   it('exists nowhere else in v2', () => {
