@@ -35,7 +35,13 @@ used, and "DONE" is reserved for something seen working, not something written.
 | 9 | No success screen | 🔴 BLOCKED |
 | 10 | Remaining deferred writes | 🟡 OPEN |
 | 11 | Extract lane degrades cleanly | ✅ DONE 2026-09-21 |
-| 12 | Wishlist IDOR (unscheduled) | 🟡 OPEN |
+| 12 | Browse lots show no photographs | 🟡 OPEN — cause not established |
+| 13 | Wishlist IDOR (unscheduled) | 🟡 OPEN |
+
+**Guest surfaces swept on device 2026-09-21** (RMX2151, signed out). Eight
+controls pressed, each photographed: the bell and "or type the details" both
+gate; the Buying pane, Browse, the assistant, Matches, Messages and the language
+sheet all render. Nothing dead, nothing trapping a guest.
 
 ⚠️ **Six of eleven are blocked on a person, not on work** — five of those on one
 thing: the dev checkout has no `draftItemsController.js` and no
@@ -265,7 +271,40 @@ sends them to the wrong person) and that exactly one request is made.
 ⚠️ Still unproven against a backend that genuinely lacks the routes; the tests
 mock the 404. Cheap to confirm once §1's server question is answered.
 
-## 12 · Unscheduled
+## 12 · Browse shows lots without photographs — observed, cause NOT established
+
+**Status:** 🟡 OPEN, and deliberately undiagnosed.
+
+Pressed on the handset 2026-09-21, signed out. Browse loads the real
+marketplace — *"3670 results open for bidding"*, lots #7430 and #7427, LIVE
+badges, Filters, View — but every visible lot card renders the grey placeholder
+instead of a photograph, through two screens of scrolling.
+
+What IS established:
+
+- The web app serves images. The same page, signed out, loaded 10/10 images on
+  desktop and again at phone width with a phone user-agent — **0 broken, 0
+  failed responses** — including real lot photos from `storage.googleapis.com`
+  and `ttinstruments.com`.
+- It is not DNS. The handset pings `storage.googleapis.com` (20ms),
+  `www.ttinstruments.com`, `101lab.co` and `testapi.greenbidz.com` successfully.
+- It is not our WebView config. `MarketplaceWebView` sets no image-related
+  props — no `blockNetworkImage`, no `loadsImagesAutomatically={false}`.
+
+What is NOT established, and must not be guessed at: whether those particular
+lots simply have no photograph. The phone and the desktop were showing
+DIFFERENT lots, which alone could explain everything.
+
+⚠️ I tried to settle it with a per-card DOM probe pairing each lot id to its
+image, and the probe was unreliable — it attributed four images to one lot
+because the parent climb lands on a shared container, and 4 of 10 images had
+not finished decoding when it measured, which is not the same as broken.
+Reporting a cause from that would have been inventing one.
+
+**The next step is one query, not more probing:** ask the database whether lots
+7430 and 7427 have images. If they do not, this row closes as data.
+
+## 13 · Unscheduled
 
 - [SECURITY-WISHLIST.md](SECURITY-WISHLIST.md) — a live unauthenticated API this
   UI must not call. Still open.
