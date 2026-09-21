@@ -45,7 +45,11 @@ and bidding already works for a buyer inside the Browse WebView — so the
 open question they carried ("should a guest be able to reach a bid form?")
 stopped existing rather than being answered.
 
-## Three things to decide
+## Three things to decide — all three now closed
+
+Kept as a record of WHY, not as a to-do. One was implemented (#1), one dissolved
+when its screens were deleted (#3), and one turned out to have been fixed by an
+unrelated change (#2). Nothing here is waiting on anyone.
 
 **1 · ~~The banner is the same for both~~ — RESOLVED 2026-09-16.**
 
@@ -67,13 +71,26 @@ their own state ("2 listings in review" — we already hold that data); or keep 
 but move it BELOW their content. **Recommendation: drop it.** Nothing on that
 screen should outrank a seller's own drafts.
 
-**2 · A guest's Home is very thin.**
+**2 · ~~A guest's Home is very thin~~ — NO LONGER TRUE, checked 2026-09-21.**
 
-Hero, assistant row, banner — then nothing, because both data sections are
-hidden. That is the dead-space case the `v2-screen` skill warns about, and it is
-the state a brand-new install actually lands in. The guest Home may deserve MORE
-design attention than the signed-in one, not less: it is the first screen a new
-person ever sees, and right now it is mostly empty below the fold.
+The claim was: hero, assistant row, banner, then nothing, "mostly empty below
+the fold". Looked at on the device today, signed out, it is not. The hero card
+takes the top half, the assistant row follows, and the banner is full-bleed with
+its photograph — content runs to within roughly 40dp of the tab bar.
+
+What changed is not the layout but the **banner image**. It had been rendering
+without its photograph; once that landed the section became a substantial block
+instead of a thin strip, and the dead space went with it.
+
+⚠️ **Recorded as closed rather than actioned, deliberately.** The obvious move
+was to design something into that space, and there was nothing honest to put
+there: every candidate a guest could see — their drafts, their wants, their
+matches — is account-shaped by definition, and the alternative was inventing a
+section. The space had already been filled by a fix nobody connected to this
+decision.
+
+If it is reopened, the bar is real capability a signed-out person actually has:
+browse, the assistant, and a lot's detail. Not a placeholder.
 
 **3 · ~~2a and 2b have no guest handling at all~~ — MOOT 2026-09-17.**
 
