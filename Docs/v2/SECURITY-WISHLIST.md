@@ -1,7 +1,51 @@
 # Wishlist API — unauthenticated, live on prod
 
+## ⚠️ 2026-09-21 — it is not just the wishlist. It is a CLASS.
+
+This file's own Precedent section said "worth checking whether other `jos_*`-backed
+routes follow the same `:userId`-in-path pattern — this is unlikely to be the
+only one." Checked. It is not the only one.
+
+**Enumerated by predicate** — every route in `routes/*.js` (75 files) whose path
+carries an identity parameter (`:userId`, `:sellerId`, `:buyerId`, `:memberId`,
+`:ownerId`): **24 routes. 21 carry no guard** — no inline `protect`, no
+router-level `.use(protect)`, and no middleware at the `app.use` mount. The only
+three guarded are `adminRbacRoute.js:36-38`.
+
+**Confirmed by request, not by reading.** Five called against `testapi` with
+**no Authorization header, no cookie, no system key** — all 200, all returning
+real rows. Run against the test seller's OWN id (574) on the DEV backend, so no
+third party's data was touched:
+
+| route | result |
+|---|---|
+| `GET /notifications/574` | 200 — notification rows incl. `user_id`, titles |
+| `GET /wishlist/574` | 200 — **58 KB** of wishlist |
+| `GET /user-roles/574` | 200 — roles and company assignment |
+| `GET /checkouts/buyer/574` | 200 — **18.6 KB**: `checkout_id`, `batch_id`, `product_id`, `seller_id` |
+| `GET /batch/seller/574` | 200 — the seller's batches |
+
+**`/checkouts/buyer/:buyerId` is the worst of these.** The wishlist leaks buying
+intent; checkouts leak completed transactions — who bought what, from whom.
+
+**Prod is affected too.** `origin/main` — the branch prod deploys — contains zero
+occurrences of `protect`, `authGuard` or `verifyToken` in `checkoutRoutes.js`,
+`notificationRoutes.js`, `wishlistRoutes.js` or `userRoleRoutes.js`. That is code
+evidence, deliberately not a live probe: testing prod would mean reading real
+users' records, which is the thing being reported.
+
+⚠️ **Scope caveat.** The 24 is every route matching those five parameter names.
+Routes that take an identity as a query string, in a body, or under a different
+name are not counted and are not cleared — the number is a floor.
+
+This changes the scheduling calculus in the write-up below: the migration is no
+longer "the wishlist plus 12 web call sites", it is a route class. That is more
+work, and also more reason to start.
+
+---
+
 **Status:** reported, NOT fixed. No code changed. Found 2026-09-16 while deciding
-whether to wire 2a's save heart.
+whether to wire 2a's save heart; widened 2026-09-21.
 
 **Severity:** IDOR (Insecure Direct Object Reference). Any caller can read,
 add to, or delete from **any** user's wishlist by changing a number in a URL.
