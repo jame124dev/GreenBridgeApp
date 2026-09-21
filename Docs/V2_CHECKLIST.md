@@ -2362,6 +2362,60 @@ any value that is empty or equals its own label. That guards the symptom only �
   `useRecentSubmissions` exposes no cursor. A seller with more than 50 sees the
   most recent 50. `TODO(v2-paging)`.
 
+## 6e Chat — results cards now render. 2026-09-17
+
+**Chat itself was already working.** `app/v2/chat.tsx` mounts the shipped
+`useChatController`, `useStreamReveal` and `streamSanitizer` exactly as
+`app/(lab)/chat.tsx` does, so send / stream / history were fine. Verified on
+device, guest: *"What is my Waters HPLC worth"* → a real streamed reply, both
+bubbles, composer clears.
+
+**What was missing was the CARDS.** `turn.cards` was reduced to a boolean and
+rendered as one line of prose:
+
+> "This answer came with a card the redesign has not drawn yet."
+
+So a buyer asking *"show me used centrifuges"* was told results existed and
+shown none. The backend had returned **50**.
+
+New `src/features/v2/chat/ChatCards.tsx`:
+
+| | |
+|---|---|
+| Reused from the shipped impl | `toProductRow` (normalises the several producty payload shapes, repairs WP mojibake in titles) and `condLabel` (enum → translated label) |
+| NOT reused | the presentation — `cards.tsx` renders through the OLD tokens, which would put two design systems in one thread. Rows are v2 `Row` / `RowThumb` / `RowTrailing` |
+| CHATBOT_RULES | inline cap **6** (same as the shipped `INLINE_RESULTS_MAX`) + one "View all N results" |
+| Unknown card types | **named**, not swallowed — the shipped registry has 22 types and v2 draws 2, so the next gap reports itself |
+
+Verified on device: RESULTS · 50, six rows with photos, titles and
+"Used (Functional) · UK", the overflow chip, and a row press opening the product.
+
+### Three bugs found by looking at the pixels, not the tree
+
+1. **`marginHorizontal: -GUTTER`** — copied from Home's full-bleed sections,
+   where the parent pads. The thread's `rowLeft` does NOT pad (each child does),
+   so it pulled the rows 24dp off the left edge. A negative margin is only ever
+   correct against a known padding.
+2. **Missing `width: '100%'`** — `rowLeft` is `alignItems: 'flex-start'`, so a
+   child is shrink-wrapped unless it says otherwise (which is why `prose` sets
+   it). Without it `Row`'s text column collapsed to ~100px and every result
+   rendered as thumbnail + **"H…"** + chevron. ⚠️ **The accessibility label held
+   the full title throughout, so the `uiautomator` dump looked perfect while the
+   screen was unreadable.** A dump is not a screenshot.
+3. **Raw enum leaked** — subtitles read `usedFunctional · UK`, which
+   CHATBOT_RULES forbids. `condLabel` gives "Used (Functional)".
+
+### Declared exit, and what is not built
+
+- A result row opens the shipped `/(lab)/product/[id]`: v2 has **no buyer
+  product-detail screen** (`/v2/listing/[id]` is the SELLER's batch detail, a
+  different thing). Same compromise Browse makes by being a WebView; a card that
+  navigated nowhere would be worse.
+- "View all N" opens `/v2/browse`, not a pager — the shipped `ProductPagerSheet`
+  is built on the old tokens and v2 has no sheet drawn.
+- The no-match branch points at the composer rather than offering to save a want:
+  that offer is a WRITE, and v2 defers writes. `TODO(v2-writes)`.
+
 ## ⚠️ The canvas folder had what three files said was missing. 2026-09-17
 
 `Greenbidz mobile app redesign/` (workspace root, beside `GreenBridgeApp/`) is the
