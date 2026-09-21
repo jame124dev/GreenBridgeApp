@@ -12,8 +12,8 @@ not here. What follows is what a grep cannot know.
 
 ## Progress
 
-Worked top-down. Each item carries a **Status** line; only these four values are
-used, and "DONE" is reserved for something seen working, not something written.
+Worked top-down. Each item carries a **Status** line, and "DONE" is reserved for
+something seen working, not something written.
 
 | | meaning |
 |---|---|
@@ -21,6 +21,7 @@ used, and "DONE" is reserved for something seen working, not something written.
 | 🟡 **OPEN** | actionable, not started |
 | 🔵 **BUILT** | code written and tested, **not yet proven on a real surface** |
 | ✅ **DONE** | observed working, with where and when |
+| 🟢 **ANSWERED** | investigated and found to need no code — says what the answer was |
 
 | # | item | status |
 |---|---|---|
@@ -35,7 +36,7 @@ used, and "DONE" is reserved for something seen working, not something written.
 | 9 | No success screen | 🔴 BLOCKED |
 | 10 | Remaining deferred writes | 🟡 OPEN |
 | 11 | Extract lane degrades cleanly | ✅ DONE 2026-09-21 |
-| 12 | Browse lots show no photographs | 🟡 OPEN — cause not established |
+| 12 | Browse lots show no photographs | 🟢 ANSWERED — data, not a bug |
 | 13 | Wishlist IDOR (unscheduled) | 🟡 OPEN |
 
 **Guest surfaces swept on device 2026-09-21** (RMX2151, signed out). Eight
@@ -43,8 +44,8 @@ controls pressed, each photographed: the bell and "or type the details" both
 gate; the Buying pane, Browse, the assistant, Matches, Messages and the language
 sheet all render. Nothing dead, nothing trapping a guest.
 
-⚠️ **Six of eleven are blocked on a person, not on work** — five of those on one
-thing: the dev checkout has no `draftItemsController.js` and no
+⚠️ **Six of thirteen are blocked on a person, not on work** — five of those on
+one thing: the dev checkout has no `draftItemsController.js` and no
 `SCANV2_REVIEW_SCALE`. Unblocking that single server clears §1, §5, §6, and most
 of §2.
 
@@ -301,8 +302,33 @@ because the parent climb lands on a shared container, and 4 of 10 images had
 not finished decoding when it measured, which is not the same as broken.
 Reporting a cause from that would have been inventing one.
 
-**The next step is one query, not more probing:** ask the database whether lots
-7430 and 7427 have images. If they do not, this row closes as data.
+### Answered 2026-09-21 — almost certainly DATA, not a rendering fault
+
+No database needed: the marketplace's own public endpoint says it.
+`GET /api/v1/batch/fetch?page=1&limit=12&lang=en&type=LabGreenbidz` returns each
+lot's photos under `firstProductImages`, and for the twelve newest live lots:
+
+| lots | photos |
+|---|---|
+| #6990 – #6994 (the five newest) | **key absent entirely** |
+| #6901 – #6958 | 1, 2, 3, 18, 4, 7, 17 |
+
+So **5 of the 12 newest live lots have no photograph at all**, and the API omits
+the field rather than sending an empty list. A grey placeholder is the correct
+thing to draw for those — the app is behaving properly, and the web app
+demonstrably renders photos whenever they exist (10/10 on desktop, 0 failed
+responses).
+
+⚠️ **Not fully closed, and here is the residue.** I could not isolate the two
+lots actually seen on the handset: `search=7430` returns nothing and
+`batch_number=7430` is ignored (it returns the unfiltered list). So "those
+specific lots have no photo" is inference from a strong pattern, not a
+measurement of them. Calling it CONFIRMED would be the same overreach as the
+DOM probe above.
+
+**Worth raising with the marketplace side either way:** new lots going live with
+no photograph is a listing-quality question, not a mobile one. Browse is the
+first thing a buyer sees.
 
 ## 13 · Unscheduled
 
