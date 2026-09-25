@@ -9,6 +9,24 @@ Eleven screens, built at different times, that must look like one app. This
 file is the contract. Follow it exactly; if it is wrong or missing something,
 change **this file** rather than deviating in a screen.
 
+## ⚠️ If the screen has a field someone types into, read this first
+
+`../../../../FORM_INPUT_RULES.md` (workspace root, alongside `UX_DESIGN_RULES.md`)
+is mandatory **before** you build the screen, not at review time. It is the
+form/input/auth counterpart to this file and it cites the v2 kit directly:
+`Field.tsx`'s resting border and label contrast, `Screen.tsx`'s measured
+`footerH`, `OtpField.tsx`'s autofill handling, `RevealToggle`.
+
+The three that cost the most here:
+
+- **`autoComplete="password"` is Android-only** in RN's list. Use
+  `current-password` / `new-password` / `one-time-code` — all cross-platform.
+- **Never hardcode the keyboard offset that clears the sticky footer.** Measure
+  the footer with `onLayout` (`Screen.tsx:180`). A hardcoded number covered the
+  last field of the v2 signup, and every control on it still "worked".
+- **An input needs a visible RESTING border** at ≥ 3:1 — `hairlineStrong`, not
+  `hairline`.
+
 ## Where the design lives
 
 `docs/v2-design/screens/<id>.html` — the screen as drawn, extracted from

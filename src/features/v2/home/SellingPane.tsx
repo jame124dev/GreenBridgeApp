@@ -15,12 +15,23 @@
  *      (  Ask the assistant                              › )     tinted row
  *      [ photo · scrim · FOR SELLERS · Turn idle plant… ]        banner
  *      DRAFTS                                        See all 7
- *      [] Waters Alliance e2695                            2d
- *      ────────────────────────────────────────────────────────
- *      [] HPG-3400RS Solvent Rack                          5d
+ *      ┌──────────────────────────────────────────────────────┐
+ *      │ [ thumb ]  Waters Alliance e2695              2d      │  card
+ *      └──────────────────────────────────────────────────────┘
+ *      ┌──────────────────────────────────────────────────────┐
+ *      │ [ thumb ]  HPG-3400RS Solvent Rack            5d      │  card
+ *      └──────────────────────────────────────────────────────┘
  *      LIVE LISTINGS                                   See all
- *      [] Agilent 1200 HPLC system                          ›
+ *      ┌──────────────────────────────────────────────────────┐
+ *      │ [ thumb ]  Agilent 1200 HPLC system      [Live]       │  card
+ *      └──────────────────────────────────────────────────────┘
  *
+ * ⚠️ DRAFTS/LISTINGS ARE NO LONGER `6a.html`'S "plain rows on white" — moved
+ * onto the dashboard's `ListCard` (`@/features/v2/ui/ListCard.tsx`) 2026-09-24
+ * on request, to match the seller dashboard's bordered-card look. See that
+ * file's docblock for the exact provenance (`seller-bids/seller-bid-card.tsx`'s
+ * shape, generalised). This is a deliberate departure from the canvas, not a
+ * missed spec line — reopen via `Docs/v2/DECISION-LOG.md` if it needs revisiting.
  * DATA — read real, write later. Drafts come from `useListDrafts`, live
  * listings from `useRecentSubmissions`, the bell from `useLabNotifications`.
  * Nothing here writes: the only mutation-adjacent action is resuming a draft,
@@ -28,10 +39,14 @@
  * characters, so every row title truncates (the `Row` primitive owns that).
  *
  * GUEST MODE stays live. A guest sees the header, the assistant row and the
- * banner; the two account-scoped sections are simply absent, and Scan it /
- * type the details / the bell ask for an account through `requireAuth` at the
- * moment they are reached for — never at the door. The sign-in sheet itself is
- * mounted once in `app/v2/_layout.tsx`, not here.
+ * banner; the two account-scoped sections are simply absent. The bell asks for
+ * an account through `requireAuth` at the moment it is reached for.
+ *
+ * Scan it and type the details do NOT — they are open to a guest, matching
+ * `nextjs-port`'s gate-at-publish (see the long note on `onScan`). The account
+ * is asked for at publish (`usePublishDraft`) and at save-as-draft
+ * (`useSaveDraft`), both of which already gated themselves. The sign-in sheet
+ * itself is mounted once in `app/v2/_layout.tsx`, not here.
  *
  * EVERYTHING VISUAL COMES FROM THE KIT. The brand bar, the mode tabs, the
  * tinted row, the banner, the chips and the notes were all local copies in the
@@ -40,18 +55,16 @@
  */
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
-import { Camera, ImageIcon, Sparkles } from 'lucide-react-native';
+import { Camera, Sparkles } from 'lucide-react-native';
 
 import {
   Chip,
-  Hairline,
+  ListCard,
   PrimaryAction,
   PromoBanner,
   QuietAction,
-  Row,
-  RowThumb,
-  RowTrailing,
   SectionHeader,
   SectionNote,
   Text,
@@ -71,10 +84,11 @@ import {
   compactAgo,
   draftSubtitle,
   draftTitle,
-  listingSubtitle,
+  listingMeta,
+  listingStatusLabel,
   listingTitle,
+  listingTone,
   photoUri,
-  seeAll,
 } from '@/features/v2/listings/presentation';
 import type { DraftSummary } from '@/services/drafts/draftApi';
 import { draftsEnabled } from '@/lib/flags';
@@ -82,7 +96,7 @@ import { routes } from '@/lib/routes';
 import { useComposer } from '@/features/lab/stores/composerStore';
 import { haptics } from '@/lib/haptics';
 
-/** The canvas shows two rows per section — "Drafts and listings are plain rows on white, two each." */
+/** Two per section, per the canvas — the shape (card, not plain row) changed; the count didn't. */
 const PREVIEW_ROWS = 2;
 /** How many listings to ask for. More than the preview so "See all" can be honest about there being more. */
 const LISTINGS_FETCH = 10;
@@ -116,7 +130,24 @@ const BANNER_PHOTO = require('../../../../assets/images/v2/banner-surplus-into-c
 
 function SellingPaneInner() {
   const c = useV2Colors();
+  const { t } = useTranslation();
   const isGuest = useIsGuest();
+
+  /**
+   * "See all" / "See all 7" — translated at the call site.
+   *
+   * This replaced `seeAll()` from `features/v2/listings/presentation.ts`, which
+   * built the English inline and had no way to reach a translator. That helper
+   * had exactly these two callers, so it was removed rather than left behind as
+   * dead code returning a string nothing renders.
+   *
+   * `hasMore` means the count on screen is not the whole set, so naming a
+   * number would be a claim we cannot support — hence the bare "See all".
+   */
+  const seeAllLabel = (loaded: number, hasMore: boolean): string =>
+    hasMore
+      ? t('mobile.scanv2.home.seeAll')
+      : t('mobile.scanv2.home.seeAllCount', { count: loaded });
 
 
 
@@ -149,14 +180,10 @@ function SellingPaneInner() {
      * unreachable from Home. Found by pressing Scan it on the web build,
      * 2026-09-17, and landing on `/scan/camera`.
      *
-     * The two things `launchSellerScan` does are kept, deliberately:
-     *
-     *  1. `requireAuth('sell', …)` — listing IS account-based, so this is one
-     *     of the few actions a guest may be stopped on (Guideline 5.1.1(v)),
-     *     and it asks here, at the point of use, not at the door.
-     *  2. FLUSH-ALWAYS — reset any half-finished scan draft so the flow starts
-     *     clean. Same contract as the seller Scan tab; skipping it resumes
-     *     someone else's abandoned draft into a fresh scan.
+     * FLUSH-ALWAYS is kept from `launchSellerScan`: reset any half-finished
+     * scan draft so the flow starts clean. Same contract as the seller Scan
+     * tab; skipping it resumes someone else's abandoned draft into a fresh
+     * scan.
      *
      * `launchSellerScan` itself is NOT changed: it is called from five places
      * in the shipped UI (lab home ×2, lab chat ×2, the chat controller), and
@@ -164,18 +191,90 @@ function SellingPaneInner() {
      * belong to.
      *
      * `push`, not `replace`, so Back returns to Home.
+     *
+     * ── ⚑ NO `requireAuth` HERE — GATE AT PUBLISH ─────────────────────────
+     *
+     * This used to be wrapped in `requireAuth('sell', …)`, so a guest tapping
+     * the app's primary action got a sign-in sheet before seeing anything.
+     * `nextjs-port` answers the same question the opposite way and that is the
+     * answer we now match: `/sell` is "now a public chooser", `/sell/ai` is
+     * `PublicSmartUploadFlow`, and `/valuation` is the Scan V2 flow "running
+     * for a guest". Its docblock states the rule — "The visitor is only asked
+     * to log in / create an account at the final Publish step
+     * (gate-at-publish)". There is no `middleware.ts` in that repo; none of it
+     * is protected.
+     *
+     * The ask has not been removed, it has been MOVED to the two controls that
+     * genuinely need an account, both of which already carried their own gate
+     * before this change:
+     *
+     *   · publish  → `usePublishDraft.ts` `requireAuth('sell', …)`
+     *   · save as draft → `useSaveDraft.ts` `requireAuth('draft', …)`
+     *
+     * A guest's draft still lives in `useScanDraft` (Zustand + MMKV) and is
+     * still resumable on that device — the mobile counterpart of the web's
+     * `guestDraftStore`.
+     *
+     * ⚠️ The detection engine ALREADY supported this and was simply
+     * unreachable: `useSmartDetect.ts:63-71` falls back to the legacy
+     * multipart `smartDetect()` when there is no `sellerId`, which is the SAME
+     * v1 path the web's public flow uses ("no login, no GCS needed"). Its own
+     * comment called a guest "shouldn't happen on a guarded screen, but
+     * defensive". Documents remain signed-in-only there, and the web's public
+     * lane is images too, so the two surfaces still agree.
+     *
+     * Guideline 5.1.1(v) gets BETTER, not worse: listing still asks for an
+     * account, but browsing-and-valuing no longer does.
      */
-    requireAuth('sell', () => {
-      useScanDraft.getState().reset();
-      router.push(routes.v2Camera);
-    });
+    useScanDraft.getState().reset();
+    /*
+      ⚑ INTAKE, not the camera (changed 2026-09-22).
+
+      "Scan it" used to open the viewfinder directly, which made a lens the
+      only way into the flow. The web's equivalent step is an INTAKE that takes
+      photos, PDFs and whole inventory spreadsheets through one door — driven
+      live at 390px, the same two files that dead-ended on the phone produced a
+      priced listing there. A seller holding an XLSX cannot photograph their
+      way out of it.
+
+      The camera is one press from the intake and keeps its own route, so 7b's
+      ADD tile and `v2CameraAppend` are unaffected.
+    */
+    /*
+      ⚑ THE OLD SCAN FLOW, ON PURPOSE (2026-09-23).
+
+      v2 is the UI everywhere else — Home, drafts, listings, the dashboard — but
+      the SCAN is the previous one while the new endpoint is sorted out. Owner:
+      *"we use all v2 screens, only the scan flow previous."*
+
+      So this pushes the shipped camera rather than `routes.v2Intake`. The v2
+      intake/items/valuation/submit screens still exist and still work; nothing
+      routes into them from here until the new endpoint lands.
+    */
+    router.push(routes.scanCamera);
   };
 
   const onTypeDetails = () => {
     haptics.tap();
-    // TODO(v2-nav): the v2 manual-entry screen is not drawn; this hands off to
-    // the shipped listing-method picker.
-    requireAuth('sell', () => router.push(routes.scanListingMethod));
+    /*
+      ⚑ INTO THE ASSISTANT, SELL MODE (2026-09-25) — mirrors `BuyingPane`'s
+      `onType` exactly (owner: *"buying mode type goes in ai chat with buy
+      mode"*; this is the sell-mode half of that same pair, 6a to 6b's 6b).
+
+      Used to seed a draft and push the shipped `app/scan/detail.tsx` form
+      directly (2026-09-23's fix for a chooser-then-camera detour) — a real
+      improvement over the detour, but still a hard exit out of v2 chrome
+      into the old form, same as `onScan` was until it moved to the v2
+      intake. `onScan` stays on the old flow for now because its target
+      (`routes.v2Intake` → review → submit) has a REAL, currently-unwired
+      blocker: publish/save is `TODO(v2-writes)` past that point (see
+      `app/v2/scan/review/details.tsx`'s own docblock). The assistant has no
+      such gap — `/v2/chat` already answers "what am I selling" in words
+      today — so there is no reason for this control to leave v2 chrome
+      while `onScan` still has to.
+    */
+    useComposer.getState().setMode('sell');
+    router.push('/v2/chat');
   };
 
   const onAssistant = () => {
@@ -222,20 +321,26 @@ function SellingPaneInner() {
   const sheet = (
     <>
       
-          <Text variant="display">{'What are you\nselling today?'}</Text>
+          {/*
+            The line break is DELIBERATE and lives in the string, so each
+            language chooses its own break point rather than inheriting
+            English's. Asserted in `scanv2Keys.test.ts` so a translator cannot
+            quietly drop it and reflow the headline.
+          */}
+          <Text variant="display">{t('mobile.scanv2.home.heading')}</Text>
           <Text variant="body" color="inkMuted" style={styles.subline}>
-            Point the camera at the nameplate and the listing writes itself.
+            {t('mobile.scanv2.home.subline')}
           </Text>
 
           <PrimaryAction
-            label="Scan it"
+            label={t('mobile.scanv2.home.scanIt')}
             onPress={onScan}
             icon={<Camera size={icon.xl} color={c.onAccent} strokeWidth={1.8} />}
             testID="v2-home-scan"
           />
 
           <QuietAction
-            label="or type the details"
+            label={t('mobile.scanv2.common.typeDetails')}
             onPress={onTypeDetails}
             variant="captionMedium"
             style={styles.typeDetails}
@@ -249,8 +354,8 @@ function SellingPaneInner() {
       
           <View style={styles.blockGap} />
           <TintedRow
-            title="Ask the assistant"
-            subtitle={'"What is my Waters HPLC worth?"'}
+            title={t('mobile.scanv2.home.askAssistant')}
+            subtitle={t('mobile.scanv2.home.askAssistantExample')}
             onPress={onAssistant}
             glyph={<Sparkles size={icon.lg} color={c.onAccent} strokeWidth={1.8} />}
           />
@@ -276,9 +381,9 @@ function SellingPaneInner() {
             <>
               <View style={styles.blockGap} />
               <PromoBanner
-                eyebrow="For sellers"
-                headline="Turn idle plant into capital"
-                actionLabel="See what sells"
+                eyebrow={t('mobile.scanv2.home.bannerEyebrow')}
+                headline={t('mobile.scanv2.home.bannerHeadline')}
+                actionLabel={t('mobile.scanv2.home.bannerAction')}
                 onPress={onBanner}
                 // A bundled asset, so it is the module itself — NOT `{ uri }`,
                 // which is for a remote URL and renders nothing for a require().
@@ -291,12 +396,12 @@ function SellingPaneInner() {
             <>
               <View style={styles.sectionGap} />
               <SectionHeader
-                title="Drafts"
+                title={t('mobile.scanv2.home.draftsTitle')}
                 actionLabel={
                   drafts.isError
-                    ? 'Try again'
+                    ? t('mobile.scanv2.common.tryAgain')
                     : draftItems.length > PREVIEW_ROWS
-                      ? seeAll(draftItems.length, Boolean(drafts.data?.next_cursor))
+                      ? seeAllLabel(draftItems.length, Boolean(drafts.data?.next_cursor))
                       : undefined
                 }
                 onAction={
@@ -307,45 +412,47 @@ function SellingPaneInner() {
                       : undefined
                 }
               />
+              {/*
+                `SectionHeader` itself only carries `space.sm` (6pt) below the
+                eyebrow — enough for the header's own action link, not enough
+                to read as MORE space than the gap between two cards below it
+                (`ListCard`'s own `space.xl`, 12pt). Without this, eyebrow →
+                first card was TIGHTER than card → card, an inverted rhythm a
+                fresh-eyes review caught. `space.md` here brings the total to
+                14pt, just over the 12pt between cards.
+              */}
+              <View style={styles.cardListGap} />
 
               {drafts.isLoading ? (
-                <SectionNote>Looking for scans you have not finished…</SectionNote>
+                <SectionNote>{t('mobile.scanv2.drafts.loading')}</SectionNote>
               ) : drafts.isError ? (
-                <SectionNote>
-                  Your drafts did not load. Tap Try again — nothing has been lost.
-                </SectionNote>
+                <SectionNote>{t('mobile.scanv2.home.draftsError')}</SectionNote>
               ) : draftItems.length === 0 ? (
-                <SectionNote>Nothing unfinished. A scan you stop part-way is saved here.</SectionNote>
+                <SectionNote>{t('mobile.scanv2.home.draftsEmpty')}</SectionNote>
               ) : (
-                draftItems.slice(0, PREVIEW_ROWS).map((d, i) => {
+                draftItems.slice(0, PREVIEW_ROWS).map((d) => {
                   const ago = compactAgo(d.updated_at);
                   const title = draftTitle(d);
                   const subtitle = draftSubtitle(d);
                   return (
-                    <React.Fragment key={d.id}>
-                      {i > 0 ? <Hairline /> : null}
-                      <Row
-                        title={title}
-                        subtitle={subtitle}
-                        leading={
-                          <RowThumb uri={photoUri(d.thumbnail_object)}>
-                            <ImageIcon size={icon.md} color={c.inkDisabled} strokeWidth={1.6} />
-                          </RowThumb>
-                        }
-                        trailing={
-                          resumingId === d.id ? (
-                            <ActivityIndicator size="small" color={c.accent} />
-                          ) : ago ? (
-                            <Chip label={ago} tone="accent" />
-                          ) : null
-                        }
-                        // The age chip is inside the row, so it is never
-                        // announced on its own — it has to be in the label.
-                        accessibilityLabel={ago ? `${title}. ${subtitle}. ${ago}` : undefined}
-                        onPress={() => onDraft(d)}
-                        testID={`v2-draft-${d.id}`}
-                      />
-                    </React.Fragment>
+                    <ListCard
+                      key={d.id}
+                      uri={photoUri(d.thumbnail_object)}
+                      title={title}
+                      subtitle={subtitle}
+                      trailing={
+                        resumingId === d.id ? (
+                          <ActivityIndicator size="small" color={c.accent} />
+                        ) : ago ? (
+                          <Chip label={ago} tone="accent" />
+                        ) : null
+                      }
+                      // The age chip is inside the card, so it is never
+                      // announced on its own — it has to be in the label.
+                      accessibilityLabel={ago ? `${title}. ${subtitle}. ${ago}` : undefined}
+                      onPress={() => onDraft(d)}
+                      testID={`v2-draft-${d.id}`}
+                    />
                   );
                 })
               )}
@@ -356,12 +463,12 @@ function SellingPaneInner() {
             <>
               <View style={styles.sectionGap} />
               <SectionHeader
-                title="Live listings"
+                title={t('mobile.scanv2.home.listingsTitle')}
                 actionLabel={
                   listings.isError
-                    ? 'Try again'
+                    ? t('mobile.scanv2.common.tryAgain')
                     : listingItems.length > PREVIEW_ROWS
-                      ? seeAll(listingItems.length, listingItems.length >= LISTINGS_FETCH)
+                      ? seeAllLabel(listingItems.length, listingItems.length >= LISTINGS_FETCH)
                       : undefined
                 }
                 onAction={
@@ -372,32 +479,34 @@ function SellingPaneInner() {
                       : undefined
                 }
               />
+              {/* Same eyebrow-to-card rhythm fix as Drafts, above. */}
+              <View style={styles.cardListGap} />
 
               {listings.isLoading ? (
-                <SectionNote>Fetching what you already have live…</SectionNote>
+                <SectionNote>{t('mobile.scanv2.listings.loading')}</SectionNote>
               ) : listings.isError ? (
-                <SectionNote>Your listings did not load. Tap Try again.</SectionNote>
+                <SectionNote>{t('mobile.scanv2.home.listingsError')}</SectionNote>
               ) : listingItems.length === 0 ? (
                 <SectionNote>
                   Nothing live yet. Anything you publish shows up here with its offers.
                 </SectionNote>
               ) : (
-                listingItems.slice(0, PREVIEW_ROWS).map((b, i) => (
-                  <React.Fragment key={b.batchPk}>
-                    {i > 0 ? <Hairline /> : null}
-                    <Row
-                      title={listingTitle(b)}
-                      subtitle={listingSubtitle(b)}
-                      leading={
-                        <RowThumb uri={photoUri(b.thumbnailUrl)}>
-                          <ImageIcon size={icon.md} color={c.inkDisabled} strokeWidth={1.6} />
-                        </RowThumb>
-                      }
-                      trailing={<RowTrailing />}
-                      onPress={() => router.push(routes.v2ListingDetail(b.batchPk))}
-                      testID={`v2-listing-${b.batchPk}`}
-                    />
-                  </React.Fragment>
+                listingItems.slice(0, PREVIEW_ROWS).map((b) => (
+                  <ListCard
+                    key={b.batchPk}
+                    uri={photoUri(b.thumbnailUrl)}
+                    title={listingTitle(b)}
+                    subtitle={listingMeta(b)}
+                    trailing={<Chip label={listingStatusLabel(b)} tone={listingTone(b)} />}
+                    // The status chip is inside the card, so it is never
+                    // announced on its own — same rule as the draft card's
+                    // age chip above.
+                    accessibilityLabel={[listingTitle(b), listingStatusLabel(b), listingMeta(b)]
+                      .filter(Boolean)
+                      .join('. ')}
+                    onPress={() => router.push(routes.v2ListingDetail(b.batchPk))}
+                    testID={`v2-listing-${b.batchPk}`}
+                  />
                 ))
               )}
             </>
@@ -419,6 +528,7 @@ const styles = StyleSheet.create({
   blockGap: { height: GUTTER },
   /** The whitespace that makes a section read as a section, with no box. */
   sectionGap: { height: SECTION_GAP },
+  cardListGap: { height: space.md },
 });
 
 /**

@@ -57,17 +57,16 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
   RefreshControl,
   StyleSheet,
   View,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { RTVFlatList } from 'reanimated-tab-view';
 // `router` (the global) as well as the hook: `WantsHeader` is a plain
 // component outside the authed tree, so it has no `useRouter()` of its own.
-import { router, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router, useRouter, Redirect } from 'expo-router';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { ImageIcon, Plus } from 'lucide-react-native';
 
@@ -96,6 +95,7 @@ import {
   Text,
   type TabItem,
   MaterialFill,
+  useTabBarReserve,
 } from '@/features/v2/ui';
 import { WTB_ENABLED } from '@/lib/flags';
 import { haptics } from '@/lib/haptics';
@@ -240,10 +240,18 @@ function pausedSubtitle(want: WtbListItem, matchCount: number | null): string {
 
 /* ── Screen ──────────────────────────────────────────────────────────────── */
 
+/**
+ * The real screen, now mounted as ONE PANE of `RootTabsPager` (2026-09-25).
+ * `FlatList` swapped for `RTVFlatList`: the pager wraps every pane in a
+ * `GestureDetector` carrying a horizontal pan, and a plain RN `FlatList`
+ * inside that never receives a vertical drag — the same trap `PaneShell`
+ * already documents for Home's Selling/Buying sub-pager. `hideOwnTabBar`:
+ * see the note in `browse.tsx`.
+ */
 function MatchesAuthed() {
   const c = useV2Colors();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const reserve = useTabBarReserve();
   const qc = useQueryClient();
 
   const [filter, setFilter] = useState<WantFilter>('all');
@@ -300,7 +308,27 @@ function MatchesAuthed() {
     if (showActive) {
       const active = wants.filter((w) => isActiveStatus(w.status));
       active.forEach((want, i) => {
-        if (i > 0) out.push({ kind: 'gap', key: `gap-${want.id}` });
+        /*
+          ⚠️ A RULE, NOT JUST SPACE.
+
+          This pushed `gap` alone — SECTION_GAP of blank background between one
+          want's last row and the next want's title. With every want's body
+          being left-aligned text at the same gutter, nothing said where one
+          group ended and the next began, so a ten-want list read as one
+          undifferentiated column. Reported from a device screenshot: "no
+          divider, all items of list looks weird".
+
+          The paused section twelve lines below has always pushed `divider`
+          between its rows, which is why PAUSED looked like a tidy list on the
+          same screen while the active wants above it did not. This makes the
+          two halves agree, and matches the hairline-separated lists used on
+          Messages and the scan review screens.
+
+          `divider` renders the kit's `Hairline`; the breathing room that used
+          to come from `gap` now comes from `wantHeader`'s own `paddingTop`, so
+          the rule sits in space rather than flush against the next title.
+        */
+        if (i > 0) out.push({ kind: 'divider', key: `div-want-${want.id}` });
         out.push({ kind: 'wantHeader', key: `want-${want.id}`, want });
 
         const entry = byWant.get(want.id);
@@ -497,10 +525,20 @@ function MatchesAuthed() {
   const listStyle = useMemo(
     () => ({
       paddingTop: space['6xl'],
-      // The tab bar plus the gesture bar. Never a hardcoded number.
-      paddingBottom: control.tabBar + insets.bottom + space['6xl'],
+      /**
+       * `Screen` owns the tab-bar reserve, and for a tab screen it is ZERO —
+       * the bar is a real flex sibling below the scroll area
+       * (`Screen.tsx:136-146`). The old line added the tab-bar token (78) under
+       * a comment reading "never a hardcoded number", which was self-refuting:
+       * that token IS the reserve. It padded 78pt of nothing beneath a bar
+       * already occupying exactly that.
+       *
+       * The trailing `space['6xl']` stays — that is this list's own breathing
+       * room at the end, which is a different thing from clearing the bar.
+       */
+      paddingBottom: reserve + space['6xl'],
     }),
-    [insets.bottom],
+    [reserve],
   );
 
   const hasWants = wants.length > 0;
@@ -554,7 +592,7 @@ function MatchesAuthed() {
         <View style={styles.tabsWrap}>
           <Tabs items={filterTabs} value={filter} onChange={selectFilter} rule gutter />
         </View>
-        <FlatList
+        <RTVFlatList
           data={items}
           keyExtractor={(it) => it.key}
           renderItem={renderItem}
@@ -564,7 +602,7 @@ function MatchesAuthed() {
           style={styles.fill}
           contentContainerStyle={listStyle}
           showsVerticalScrollIndicator={false}
-          scrollIndicatorInsets={{ bottom: control.tabBar + insets.bottom }}
+          scrollIndicatorInsets={{ bottom: reserve }}
           ListEmptyComponent={
             <SectionNote>
               {filter === 'paused'
@@ -589,6 +627,7 @@ function MatchesAuthed() {
     <Screen
       scroll={false}
       contentStyle={styles.fill}
+      hideOwnTabBar
       header={<WantsHeader dot={anyMatch} onAdd={showAdd ? onAdd : undefined} />}
       testID="v2-matches"
     >
@@ -626,6 +665,7 @@ function MatchesGuest() {
     <Screen
       scroll={false}
       contentStyle={styles.fill}
+      hideOwnTabBar
       header={<WantsHeader dot={false} />}
       testID="v2-matches-guest"
     >
@@ -641,9 +681,15 @@ function MatchesGuest() {
   );
 }
 
-export default function V2Matches() {
+export function MatchesScreen() {
   const isGuest = useIsGuest();
   return isGuest ? <MatchesGuest /> : <MatchesAuthed />;
+}
+
+/** The route. `RootTabsPager` (mounted at `/v2`) hosts the real screen; this
+ *  keeps `/v2/matches` deep links and the tab bar's old `href` alive. */
+export default function V2MatchesRedirect() {
+  return <Redirect href="/v2?tab=matches" />;
 }
 
 const styles = StyleSheet.create({
@@ -674,7 +720,17 @@ const styles = StyleSheet.create({
   tabsWrap: { paddingTop: space['5xl'] },
 
   // List
-  wantHeader: { paddingHorizontal: GUTTER, paddingBottom: space['4xl'] },
+  /*
+    `paddingTop` replaces the `gap` item that used to separate want groups —
+    see the note in the items builder. It applies to the FIRST header too,
+    which is wanted: it puts air between the filter tabs and the first title
+    instead of butting the two together.
+  */
+  wantHeader: {
+    paddingHorizontal: GUTTER,
+    paddingTop: SECTION_GAP,
+    paddingBottom: space['4xl'],
+  },
   wantSub: { marginTop: space.sm },
   groupGap: { height: SECTION_GAP },
 

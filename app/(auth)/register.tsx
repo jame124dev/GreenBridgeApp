@@ -1,5 +1,6 @@
 /**
- * Native 2-step registration (email + password + name → 6-digit code → in).
+ * Native 2-step registration (email + password + name → 6-digit code → in),
+ * on the "Wash Hero" frame, 2026-09-23.
  *
  * ⚠️ NATIVE ON PURPOSE — DO NOT REPLACE WITH A WEB HAND-OFF.
  * The login screen used to link out to `greenbidz.com/contact-us/` to "request
@@ -15,42 +16,59 @@
  * Guideline 3.1.1 finding. They belong to the seller-upgrade application, which
  * is only reached by someone who tries to list something.
  *
- * Presentational only: the flow lives in useRegistration, so the recovery paths
- * are unit-tested without rendering. Styling mirrors forgot-password.tsx so the
- * two flows feel identical.
+ * Presentational only: the flow lives in `useRegistration`, so the recovery
+ * paths are unit-tested without rendering. None of that changed here.
+ *
+ * ── WHAT THE WASH-HERO PASS CHANGED ────────────────────────────────────────
+ *
+ * • **The frame is `AuthShell`**, shared with sign in: wash panel, curved
+ *   sheet, and the Sign in / Create account segment.
+ *
+ * • **"Already have an account? Sign in" is gone.** That is the segment's job
+ *   now, and it sits above the fields rather than below four of them.
+ *
+ * • **The chrome follows the step.** The segment is visible while you are
+ *   filling the form and HIDDEN on the code step — you are mid-flow there,
+ *   and offering "Sign in" beside a code we just emailed invites you to
+ *   abandon an account that already half-exists. The outcome step drops the
+ *   title block entirely, so the confirmation has the screen to itself.
+ *   Chrome belonging to a state must not render outside that state.
+ *
+ * • **The back chevron is on the code step, where it was missing.** Step one
+ *   does not have one: the segment is the way out, and hardware back still
+ *   leaves the group.
  */
-import { useEffect, useState } from 'react';
-import { BackHandler, Linking, Pressable, ScrollView, StyleSheet, Text as RNText, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useRef, useState } from 'react';
+import { BackHandler, Linking, StyleSheet, View, type TextInput } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronLeft, CheckCircle2 } from 'lucide-react-native';
 import { toast } from 'sonner-native';
 
-import { Button } from '@/components/ui/Button';
-import { OtpInput } from '@/components/ui/OtpInput';
+import {
+  Field,
+  GlyphButton,
+  OtpField,
+  PrimaryAction,
+  QuietAction,
+  RevealToggle,
+  SectionNote,
+  Text,
+} from '@/features/v2/ui';
+import { AuthShell } from '@/features/v2/auth/AuthShell';
+import { AuthStepRail } from '@/features/v2/auth/AuthStepRail';
 import { useRegistration } from '@/features/auth/useRegistration';
-import { postAuthLanding } from '@/features/v2/routing/postAuthLanding';
+import { homeRoute, postAuthLanding } from '@/features/v2/routing/postAuthLanding';
 import { useLogin } from '@/features/auth/useLogin';
 import {
   registerCodeSchema,
   registerCredentialsSchema,
   type RegisterCredentialsInput,
 } from '@/features/auth/schema';
-import { spacing } from '@/constants/theme';
 import { LoginError } from '@/services/auth/login';
-
-const FOREST = '#14452f';
-const ECO_TEAL = '#00B289';
-const TEXT_PRIMARY = '#1A1C1F';
-const TEXT_SECONDARY = '#43474F';
-const HAIRLINE = '#E1E5EC';
-
-// Post-auth landing route — mirrors HOME_ROUTE in login.tsx / _layout.tsx so a
-// brand-new account lands in the right app for this bundle.
-const HOME_ROUTE = '/(lab)/(tabs)/home';
+import { GUTTER, icon, radius, space, useV2Colors } from '@/theme/v2';
 
 const STEP_ORDER = ['credentials', 'code'] as const;
 
@@ -63,7 +81,6 @@ function maskEmail(email: string): string {
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const reg = useRegistration();
   const { step } = reg.state;
 
@@ -86,238 +103,357 @@ export default function RegisterScreen() {
     if (reg.state.restarted) toast.error(t('mobile.auth.register.sessionLost'));
   }, [reg.state.restarted, t]);
 
-  const goBack = () => {
-    if (step === 'credentials' || step === 'done') router.back();
-    else reg.back();
-  };
-
-  const stepIndex = STEP_ORDER.indexOf(step as (typeof STEP_ORDER)[number]);
-
-  return (
-    <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
-      <Pressable onPress={goBack} hitSlop={12} accessibilityRole="button" style={styles.backBtn}>
-        <ChevronLeft size={24} color={TEXT_PRIMARY} />
-      </Pressable>
-
-      {/* "Where am I?" — the progress rail is the answer, and it is the only
-          chrome on the screen so the single CTA below stays dominant. */}
-      {stepIndex >= 0 ? (
-        <View style={styles.rail} accessibilityRole="progressbar"
-          accessibilityLabel={t('mobile.auth.register.stepOf', {
-            defaultValue: `Step ${stepIndex + 1} of ${STEP_ORDER.length}`,
-            current: stepIndex + 1,
-            total: STEP_ORDER.length,
-          })}
-        >
-          {STEP_ORDER.map((s, i) => (
-            <View key={s} style={[styles.railSeg, i <= stepIndex && styles.railSegOn]} />
-          ))}
-        </View>
-      ) : null}
-
-      <ScrollView
-        // The root is a bare View that insets only the top, so this scroll owns
-        // the bottom inset. At a flat 40 (< the 48dp Android 3-button nav bar)
-        // the trailing "Already have an account? / Sign in" row and the Terms /
-        // Privacy links were half-buried, with taps landing on the system
-        // buttons — the last controls of the screen must stay reachable.
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing['2xl'] }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {step === 'credentials' && <CredentialsStep reg={reg} />}
-        {step === 'code' && <CodeStep reg={reg} />}
-        {step === 'done' && <DoneStep reg={reg} />}
-      </ScrollView>
-    </View>
-  );
+  if (step === 'code') return <CodeStep reg={reg} />;
+  if (step === 'done') return <DoneStep reg={reg} />;
+  return <CredentialsStep reg={reg} />;
 }
 
 type StepProps = { reg: ReturnType<typeof useRegistration> };
 
+/** The rail, inside the sheet above the fields. Shared with the reset wizard. */
+function StepRail({ index }: { index: number }) {
+  return <AuthStepRail index={index} total={STEP_ORDER.length} />;
+}
+
 function CredentialsStep({ reg }: StepProps) {
   const { t } = useTranslation();
+  // Prefilled when the switch came from sign in with an address already typed.
+  const params = useLocalSearchParams<{ email?: string }>();
   const { control, handleSubmit, formState: { errors } } = useForm<RegisterCredentialsInput>({
     resolver: zodResolver(registerCredentialsSchema),
-    defaultValues: { email: '', name: '', password: '', confirmPassword: '' },
+    defaultValues: {
+      email: typeof params.email === 'string' ? params.email : '',
+      name: '',
+      password: '',
+      confirmPassword: '',
+    },
   });
+  const email = useWatch({ control, name: 'email' });
 
-  const onSubmit = handleSubmit(async ({ email, password, name }) => {
-    const ok = await reg.submitCredentials(email.trim(), password, name.trim());
+  /**
+   * The focus chain. Four fields with no `returnKeyType` is four dead ends:
+   * the keyboard's action key closes the keyboard, and the person taps the next
+   * box, four times, on the screen where we are asking them to sign up.
+   */
+  const nameRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmRef = useRef<TextInput>(null);
+
+  /**
+   * One toggle for BOTH password fields.
+   *
+   * Two independent eyes would let someone reveal one and not the other, which
+   * is the one configuration where "do these match?" cannot be answered by
+   * looking — and checking that is the entire purpose of a confirm field.
+   */
+  const [reveal, setReveal] = useState(false);
+
+  const onSubmit = handleSubmit(async ({ email: address, password, name }) => {
+    const ok = await reg.submitCredentials(address.trim(), password, name.trim());
     if (ok) toast(t('mobile.auth.register.codeSent'));
   });
 
+  const revealToggle = (
+    <RevealToggle
+      on={reveal}
+      onToggle={() => setReveal((v) => !v)}
+      labels={{ show: t('mobile.auth.showPasswordA11y'), hide: t('mobile.auth.hidePasswordA11y') }}
+    />
+  );
+
+  const footer = (
+    <PrimaryAction
+      label={t('mobile.auth.register.sendCode')}
+      onPress={onSubmit}
+      loading={reg.state.busy}
+      testID="v2-auth-register-submit"
+    />
+  );
+
+  // Hidden while the keyboard is up — see `AuthShell`'s `footerQuiet`. This is
+  // the four-field form, so the ~126px that row costs is the difference
+  // between the first field keeping its label and losing it.
+  const footerQuiet = (
+    <QuietAction
+      label={t('mobile.auth.doLater', { defaultValue: 'Do later' })}
+      onPress={() => router.replace(homeRoute())}
+      tone="accent"
+      variant="captionMedium"
+      testID="v2-auth-register-skip"
+    />
+  );
+
   return (
-    <View style={styles.body}>
-      <RNText style={styles.title}>{t('mobile.auth.register.credentialsTitle')}</RNText>
-      <RNText style={styles.subtitle}>{t('mobile.auth.register.credentialsSubtitle')}</RNText>
+    <AuthShell
+      mode="signup"
+      eyebrow={t('mobile.auth.sustainabilityFirst')}
+      title={t('mobile.auth.register.credentialsTitle')}
+      subtitle={t('mobile.auth.register.credentialsSubtitle')}
+      email={email}
+      footer={footer}
+      footerQuiet={footerQuiet}
+      testID="v2-auth-register"
+    >
+      <StepRail index={0} />
 
-      <RNText style={styles.label}>{t('mobile.auth.register.emailLabel')}</RNText>
-      <Controller
-        control={control}
-        name="email"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput
-            style={styles.input}
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            /* `you@example.com`, not `you@company.com`. Cosmetic on its own, but
-               this screen is one of the two App Review screenshotted under
-               Guideline 3.1.1 ("account registration for businesses and
-               organizations"), and a work-email placeholder is one of the cues
-               that reads a personal signup as a business one. */
-            placeholder="you@example.com"
-            placeholderTextColor="#9aa1ad"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-          />
-        )}
-      />
-      {errors.email?.message ? <RNText style={styles.err}>{t(errors.email.message)}</RNText> : null}
+      <View style={styles.fields}>
+        <Controller
+          control={control}
+          name="email"
+          render={({ field: { onChange, value, onBlur } }) => (
+            <Field
+              label={t('mobile.auth.register.emailLabel')}
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              /* `you@example.com`, not `you@company.com`. Cosmetic on its own,
+                 but this screen is one of the two App Review screenshotted
+                 under Guideline 3.1.1 ("account registration for businesses
+                 and organizations"), and a work-email placeholder is one of
+                 the cues that reads a personal signup as a business one. */
+              placeholder="you@example.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="username"
+              returnKeyType="next"
+              onSubmitEditing={() => nameRef.current?.focus()}
+              invalid={Boolean(errors.email)}
+              help={errors.email?.message ? t(errors.email.message) : undefined}
+              testID="v2-auth-register-email"
+            />
+          )}
+        />
 
-      {/* One free-text name, split into first/last for the API. Without it the
-          server falls back to the email prefix, which shows up as e.g. "abhay"
-          in a seller's chat thread. */}
-      <RNText style={styles.label}>
-        {t('mobile.auth.register.nameLabel', { defaultValue: 'Your name' })}
-      </RNText>
-      <Controller
-        control={control}
-        name="name"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput
-            style={styles.input}
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            placeholder={t('mobile.auth.register.namePlaceholder', { defaultValue: 'Ada Lovelace' })}
-            placeholderTextColor="#9aa1ad"
-            autoCapitalize="words"
-            autoComplete="name"
-          />
-        )}
-      />
-      {errors.name?.message ? (
-        <RNText style={styles.err}>
-          {t(errors.name.message, { defaultValue: 'Please enter your name' })}
-        </RNText>
+        {/* One free-text name, split into first/last for the API. Without it
+            the server falls back to the email prefix, which shows up as e.g.
+            "abhay" in a seller's chat thread. */}
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, value, onBlur } }) => (
+            <Field
+              label={t('mobile.auth.register.nameLabel', { defaultValue: 'Your name' })}
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              placeholder={t('mobile.auth.register.namePlaceholder', {
+                defaultValue: 'Ada Lovelace',
+              })}
+              ref={nameRef}
+              autoCapitalize="words"
+              autoComplete="name"
+              textContentType="name"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              invalid={Boolean(errors.name)}
+              help={
+                errors.name?.message
+                  ? t(errors.name.message, { defaultValue: 'Please enter your name' })
+                  : undefined
+              }
+              testID="v2-auth-register-name"
+            />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="password"
+          render={({ field: { onChange, value, onBlur } }) => (
+            <Field
+              label={t('mobile.auth.register.passwordLabel')}
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              ref={passwordRef}
+              secureTextEntry={!reveal}
+              autoCapitalize="none"
+              autoComplete="new-password"
+              // Without this iOS never offers Strong Password on a signup form.
+              textContentType="newPassword"
+              returnKeyType="next"
+              onSubmitEditing={() => confirmRef.current?.focus()}
+              invalid={Boolean(errors.password)}
+              // ⚠️ THE RULE IS SHOWN BEFORE IT IS BROKEN. The 8-character
+              // minimum (`schema.ts`) used to appear only after a failed
+              // submit, so the first a person heard of it was being told off.
+              help={
+                errors.password?.message
+                  ? t(errors.password.message)
+                  : t('mobile.auth.register.passwordTooShort')
+              }
+              trailing={revealToggle}
+              testID="v2-auth-register-password"
+            />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="confirmPassword"
+          render={({ field: { onChange, value, onBlur } }) => (
+            <Field
+              label={t('mobile.auth.register.confirmPasswordLabel')}
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              ref={confirmRef}
+              secureTextEntry={!reveal}
+              autoCapitalize="none"
+              autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="go"
+              onSubmitEditing={onSubmit}
+              trailing={revealToggle}
+              invalid={Boolean(errors.confirmPassword)}
+              help={
+                errors.confirmPassword?.message
+                  ? t(errors.confirmPassword.message)
+                  : undefined
+              }
+              testID="v2-auth-register-confirm"
+            />
+          )}
+        />
+      </View>
+
+      {/* A flow-level failure (the server refused the whole submission) is not
+          any one field's, so it stays a note of its own. `styles.note` cancels
+          `SectionNote`'s own gutter: it carries one because list screens drop
+          it straight into an unpadded scroll, and the sheet already has one —
+          the two stacked would put the note at a third horizontal position,
+          which `spacing-and-layout.md` R4 forbids. */}
+      {reg.state.error ? (
+        <View style={styles.note}>
+          <SectionNote tone="danger" variant="body">
+            {reg.state.error}
+          </SectionNote>
+        </View>
       ) : null}
 
-      <RNText style={styles.label}>{t('mobile.auth.register.passwordLabel')}</RNText>
-      <Controller
-        control={control}
-        name="password"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput
-            style={styles.input}
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="new-password"
-          />
-        )}
-      />
-      {errors.password?.message ? <RNText style={styles.err}>{t(errors.password.message)}</RNText> : null}
-
-      <RNText style={styles.label}>{t('mobile.auth.register.confirmPasswordLabel')}</RNText>
-      <Controller
-        control={control}
-        name="confirmPassword"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput
-            style={styles.input}
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="new-password"
-          />
-        )}
-      />
-      {errors.confirmPassword?.message ? (
-        <RNText style={styles.err}>{t(errors.confirmPassword.message)}</RNText>
-      ) : null}
-
-      {reg.state.error ? <RNText style={styles.err}>{reg.state.error}</RNText> : null}
-
-      <Button
-        label={t('mobile.auth.register.sendCode')}
-        onPress={onSubmit}
-        loading={reg.state.busy}
-        fullWidth
-      />
-
-      {/* The ONLY external links permitted on an auth screen — legal notices, not a
-          registration or purchase mechanism (see Global Constraint 1). */}
-      <RNText style={styles.legal}>
-        {t('mobile.auth.register.legalPrefix', { defaultValue: 'By continuing you agree to our' })}{' '}
-        <RNText style={styles.legalLink} onPress={() => Linking.openURL('https://101lab.co/terms-of-service')}>
+      {/* The ONLY external links permitted on an auth screen — legal notices,
+          not a registration or purchase mechanism. */}
+      <Text variant="caption" color="inkSubtle" style={styles.legal}>
+        {t('mobile.auth.register.legalPrefix', {
+          defaultValue: 'By continuing you agree to our',
+        })}{' '}
+        <Text
+          variant="captionMedium"
+          color="accentInk"
+          onPress={() => Linking.openURL('https://101lab.co/terms-of-service')}
+        >
           {t('mobile.auth.register.terms', { defaultValue: 'Terms of Service' })}
-        </RNText>
-        {' '}{t('mobile.auth.register.legalAnd', { defaultValue: 'and' })}{' '}
-        <RNText style={styles.legalLink} onPress={() => Linking.openURL('https://101lab.co/privacy-policy')}>
+        </Text>
+        {' '}
+        {t('mobile.auth.register.legalAnd', { defaultValue: 'and' })}{' '}
+        <Text
+          variant="captionMedium"
+          color="accentInk"
+          onPress={() => Linking.openURL('https://101lab.co/privacy-policy')}
+        >
           {t('mobile.auth.register.privacy', { defaultValue: 'Privacy Policy' })}
-        </RNText>
-      </RNText>
-
-      {/* An "email already registered" dead end is the most likely failure on
-          this step, so the recovery sits right under the CTA. */}
-      <Pressable onPress={() => router.replace('/(auth)/login')} style={styles.linkRow} hitSlop={8}>
-        <RNText style={styles.link}>{t('mobile.auth.register.haveAccount')}</RNText>
-      </Pressable>
-    </View>
+        </Text>
+      </Text>
+    </AuthShell>
   );
 }
 
 function CodeStep({ reg }: StepProps) {
   const { t } = useTranslation();
+  const c = useV2Colors();
   const [code, setCode] = useState('');
 
-  // A rejected code clears the field so the next attempt starts clean.
-  useEffect(() => {
-    if (reg.state.error) setCode('');
-  }, [reg.state.error]);
-
+  /**
+   * A rejected code clears the field, so the next attempt starts clean.
+   *
+   * From `submitCode`'s result, in the handler — not from an effect watching
+   * `error`. The effect version was a `setState` inside an effect (cascading
+   * renders; eslint `react-hooks/set-state-in-effect`), and because it fired on
+   * the error CHANGING, the same wrong code entered twice left the digits in
+   * place.
+   */
   const submit = (value: string) => {
     const parsed = registerCodeSchema.safeParse({ code: value });
     if (!parsed.success) {
       toast.error(t('mobile.auth.register.codeInvalid'));
       return;
     }
-    void reg.submitCode(parsed.data.code);
+    void reg.submitCode(parsed.data.code).then((ok) => {
+      if (!ok) setCode('');
+    });
   };
 
+  const footer = (
+    <PrimaryAction
+      label={t('mobile.auth.register.verify')}
+      onPress={() => submit(code)}
+      loading={reg.state.busy}
+      testID="v2-auth-register-verify"
+    />
+  );
+
   return (
-    <View style={styles.body}>
-      <RNText style={styles.title}>{t('mobile.auth.register.codeTitle')}</RNText>
-      <RNText style={styles.subtitle}>
-        {t('mobile.auth.register.codeSubtitle', { email: maskEmail(reg.state.email) })}
-      </RNText>
+    <AuthShell
+      mode="signup"
+      segmented={false}
+      title={t('mobile.auth.register.codeTitle')}
+      subtitle={t('mobile.auth.register.codeSubtitle', { email: maskEmail(reg.state.email) })}
+      leading={
+        <View style={styles.backRow}>
+          <GlyphButton
+            accessibilityLabel={t('mobile.auth.register.backToSignIn')}
+            onPress={() => reg.back()}
+          >
+            <ChevronLeft size={icon.hero} color={c.ink} strokeWidth={1.75} />
+          </GlyphButton>
+        </View>
+      }
+      footer={footer}
+      testID="v2-auth-register-code"
+    >
+      <StepRail index={1} />
 
-      <OtpInput value={code} onChange={setCode} onComplete={submit} />
+      <View style={styles.otp}>
+        <OtpField
+          value={code}
+          onChange={setCode}
+          onComplete={submit}
+          invalid={Boolean(reg.state.error)}
+        />
+      </View>
 
-      {reg.state.error ? <RNText style={styles.err}>{reg.state.error}</RNText> : null}
+      {reg.state.error ? (
+        <View style={styles.note}>
+          <SectionNote tone="danger" variant="body">
+            {reg.state.error}
+          </SectionNote>
+        </View>
+      ) : null}
 
-      <Button
-        label={t('mobile.auth.register.verify')}
-        onPress={() => submit(code)}
-        loading={reg.state.busy}
-        fullWidth
+      {/*
+        Rate-limited, like the reset flow's identical-looking link. Signup had
+        no cooldown at all, so this was tap-spammable while the screen it is a
+        twin of was not. The label carries the remaining seconds — a disabled
+        control with unchanged copy reads as broken.
+      */}
+      <QuietAction
+        label={
+          reg.resendCooldown > 0
+            ? t('mobile.auth.reset.resendIn', { seconds: reg.resendCooldown })
+            : t('mobile.auth.register.resend')
+        }
+        onPress={() =>
+          reg.resend().then((ok) => {
+            if (ok) toast(t('mobile.auth.register.newCodeSent'));
+          })
+        }
+        disabled={reg.resendCooldown > 0}
+        tone="accent"
+        style={styles.recovery}
+        testID="v2-auth-register-resend"
       />
-
-      <Pressable
-        onPress={() => reg.resend().then((ok) => { if (ok) toast(t('mobile.auth.register.newCodeSent')); })}
-        style={styles.linkRow}
-        hitSlop={8}
-      >
-        <RNText style={styles.link}>{t('mobile.auth.register.resend')}</RNText>
-      </Pressable>
-    </View>
+    </AuthShell>
   );
 }
 
@@ -328,21 +464,22 @@ function CodeStep({ reg }: StepProps) {
  * ⚠️ The signup endpoints do NOT return a session: `POST /user/complete-signup`
  * creates the row and returns `{ user_id, email, name }`, nothing else. So this
  * button signs in with the credentials just entered rather than pretending a
- * session exists — without that, replacing to HOME_ROUTE with a null profile is
- * bounced straight back to /(auth)/login by the AuthGuard. The account is
- * `pw_user_status = "pending"`, so `login()` answers ACCOUNT_PENDING; since Task
- * 1 that is a working buyer session, not a failure.
+ * session exists — without that, replacing to the home route with a null
+ * profile is bounced straight back to /(auth)/login by the AuthGuard. The
+ * account is `pw_user_status = "pending"`, so `login()` answers ACCOUNT_PENDING;
+ * since Task 1 that is a working buyer session, not a failure.
  */
 function DoneStep({ reg }: StepProps) {
   const { t } = useTranslation();
+  const c = useV2Colors();
   const mut = useLogin();
 
   const enter = () =>
     mut.mutate(
       { email: reg.state.email, password: reg.state.password },
       {
-        // Not HOME_ROUTE — the v2 sheet's "Create account" lands here, so the
-        // signup half needs the same gatekeeper as login. See `postAuthLanding`.
+        // The v2 sheet's "Create account" lands here, so the signup half needs
+        // the same gatekeeper as login. See `postAuthLanding`.
         onSuccess: () => router.replace(postAuthLanding()),
         onError: (err) => {
           // Pending is the EXPECTED outcome for a fresh signup and is a usable
@@ -360,52 +497,61 @@ function DoneStep({ reg }: StepProps) {
     );
 
   return (
-    <View style={[styles.body, { alignItems: 'center', marginTop: 40 }]}>
-      <CheckCircle2 size={56} color={ECO_TEAL} />
-      <RNText style={[styles.title, { textAlign: 'center', marginTop: 12 }]}>
-        {t('mobile.auth.register.doneTitle')}
-      </RNText>
-      <RNText style={[styles.subtitle, { textAlign: 'center' }]}>
-        {/* ⛔ The trailing sentence used to read "To list your own equipment,
-            apply to sell from the Sell tab." — deleted 2026-08-20. It was an
-            in-app call to action into the business-registration form that App
-            Review told us to remove under Guideline 3.1.1, and 3.1.3's preamble
-            forbids steering to an off-app commercial path. See the note at the
-            top of `app/(lab)/sell/apply.tsx` before writing anything like it
-            again. What is left describes what this account CAN do. */}
-        {t('mobile.auth.register.doneSubtitleBuyer', {
-          defaultValue:
-            'Your account is ready. Browse equipment, ask our AI assistant anything, and message sellers.',
-        })}
-      </RNText>
-      <Button
-        label={t('mobile.auth.register.startBrowsing', { defaultValue: 'Start browsing' })}
-        onPress={enter}
-        loading={mut.isPending}
-        fullWidth
-      />
-    </View>
+    <AuthShell
+      mode="signup"
+      segmented={false}
+      footer={
+        <PrimaryAction
+          label={t('mobile.auth.register.startBrowsing', { defaultValue: 'Start browsing' })}
+          onPress={enter}
+          loading={mut.isPending}
+          testID="v2-auth-register-enter"
+        />
+      }
+      testID="v2-auth-register-done"
+    >
+      <View style={styles.done}>
+        <View style={[styles.doneMark, { backgroundColor: c.accentWash }]}>
+          <CheckCircle2 size={icon.hero} color={c.accent} strokeWidth={1.75} />
+        </View>
+        <Text variant="display" style={styles.centered}>
+          {t('mobile.auth.register.doneTitle')}
+        </Text>
+        <Text variant="lead" color="inkMuted" style={styles.centered}>
+          {/* ⛔ The trailing sentence used to read "To list your own equipment,
+              apply to sell from the Sell tab." — deleted 2026-08-20. It was an
+              in-app call to action into the business-registration form that App
+              Review told us to remove under Guideline 3.1.1, and 3.1.3's
+              preamble forbids steering to an off-app commercial path. See the
+              note at the top of `app/(lab)/sell/apply.tsx` before writing
+              anything like it again. What is left describes what this account
+              CAN do. */}
+          {t('mobile.auth.register.doneSubtitleBuyer', {
+            defaultValue:
+              'Your account is ready. Browse equipment, ask our AI assistant anything, and message sellers.',
+          })}
+        </Text>
+      </View>
+    </AuthShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#ffffff', paddingHorizontal: 24 },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  rail: { flexDirection: 'row', gap: 6, marginTop: 4, marginBottom: 4 },
-  railSeg: { flex: 1, height: 3, borderRadius: 2, backgroundColor: HAIRLINE },
-  railSegOn: { backgroundColor: FOREST },
-  scroll: { paddingBottom: 40 },
-  body: { marginTop: 16, gap: 12 },
-  title: { fontFamily: 'HankenGrotesk_700Bold', fontSize: 26, color: TEXT_PRIMARY },
-  subtitle: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 20, color: TEXT_SECONDARY, marginBottom: 8 },
-  label: { fontFamily: 'JetBrainsMono_400Regular', fontSize: 12, letterSpacing: 0.6, color: TEXT_SECONDARY, textTransform: 'uppercase', marginTop: 4 },
-  input: {
-    minHeight: 52, borderRadius: 12, borderWidth: 1.5, borderColor: HAIRLINE,
-    paddingHorizontal: 16, fontFamily: 'Inter_400Regular', fontSize: 15, color: TEXT_PRIMARY, backgroundColor: '#ffffff',
+  backRow: { flexDirection: 'row', alignItems: 'center', marginTop: space.md },
+  /** One step between fields; the eyebrow label supplies the rest. */
+  fields: { gap: space['5xl'] },
+  otp: { marginTop: space['3xl'] },
+  legal: { textAlign: 'center', marginTop: space['6xl'] },
+  recovery: { marginTop: space['5xl'] },
+  /** Cancels `SectionNote`'s own gutter — see the call site. */
+  note: { marginHorizontal: -GUTTER, marginTop: space['3xl'] },
+  done: { alignItems: 'center', gap: space['3xl'], marginTop: space['8xl'] },
+  doneMark: {
+    width: space['8xl'] * 2,
+    height: space['8xl'] * 2,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  err: { fontFamily: 'Inter_400Regular', fontSize: 12.5, color: '#b42318' },
-  legal: { fontFamily: 'Inter_400Regular', fontSize: 11.5, lineHeight: 16, color: TEXT_SECONDARY, textAlign: 'center', marginTop: 12 },
-  legalLink: { color: FOREST, fontWeight: '600' },
-  linkRow: { marginTop: 14, alignItems: 'center' },
-  link: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: FOREST },
+  centered: { textAlign: 'center' },
 });

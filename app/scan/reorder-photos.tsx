@@ -50,7 +50,12 @@ export default function ReorderPhotosScreen() {
 
   useEffect(() => {
     if (!source?.length) {
-      router.replace(isEdit ? routes.scanDetail : routes.scanCamera);
+      // if/else, not a ternary — see the TS2590 note in `detection.tsx`.
+      if (isEdit) {
+        router.replace(routes.scanDetail);
+      } else {
+        router.replace(routes.scanCamera);
+      }
     }
   }, [source, isEdit]);
 

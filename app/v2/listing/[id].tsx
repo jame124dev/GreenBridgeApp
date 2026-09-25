@@ -25,8 +25,10 @@
  *     1 item · Lab equipment
  *
  *     ITEMS 1
- *     [img]  Keysight EDUX1002G oscilloscope               ›
- *            Keysight · EDUX1002G
+ *     ┌──────────────────────────────────────────────────────┐
+ *     │ [ img ]  Keysight EDUX1002G oscilloscope              │  card
+ *     │          Keysight · EDUX1002G                         │
+ *     └──────────────────────────────────────────────────────┘
  *
  *     BIDDING
  *     Offers                                               0
@@ -35,6 +37,13 @@
  *
  *     ( View on greenbidz.com )
  *
+ * ITEMS moved from a plain `Row` to the kit's `ListCard`
+ * (`@/features/v2/ui/ListCard.tsx`) 2026-09-24, matching the card treatment
+ * Home's Drafts/Live Listings picked up the same day — see that file's
+ * docblock for the shape's provenance. `Bidding`'s fact rows stay plain
+ * `Row`s: those are label/value pairs, not a list of tappable records, and
+ * were never part of that change.
+ *
  * DATA — `useBatchDetail`, the same hook and endpoint the old screen uses. Read
  * only: nothing here writes, and the actions that WOULD write (edit, pause,
  * relist) are not built — `TODO(v2-writes)`.
@@ -42,21 +51,19 @@
 import React from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ImageIcon } from 'lucide-react-native';
 
 import {
   BrandBar,
   Chip,
-  Hairline,
+  ListCard,
   QuietAction,
   Row,
-  RowThumb,
   Screen,
   SectionHeader,
   SectionNote,
   Text,
 } from '@/features/v2/ui';
-import { GUTTER, SECTION_GAP, icon, space, useV2Colors } from '@/theme/v2';
+import { GUTTER, SECTION_GAP, space } from '@/theme/v2';
 import { requireAuth } from '@/features/auth/requireAuth';
 import { useBatchDetail } from '@/features/scanner/useBatchDetail';
 import { useLabNotifications } from '@/features/lab/notifications/useLabNotifications';
@@ -103,7 +110,6 @@ function FactRow({ label, value }: { label: string; value?: string }) {
 }
 
 export default function V2ListingDetail() {
-  const c = useV2Colors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { unreadCount } = useLabNotifications();
 
@@ -191,18 +197,12 @@ export default function V2ListingDetail() {
         <SectionNote>No items are attached to this batch.</SectionNote>
       ) : (
         items.map((p, i) => (
-          <React.Fragment key={p.productId}>
-            {i > 0 ? <Hairline /> : null}
-            <Row
-              title={p.title || `Item ${i + 1}`}
-              subtitle={[p.brand, p.model].filter(Boolean).join(' · ') || p.category}
-              leading={
-                <RowThumb uri={p.images?.[0]}>
-                  <ImageIcon size={icon.md} color={c.inkDisabled} strokeWidth={1.6} />
-                </RowThumb>
-              }
-            />
-          </React.Fragment>
+          <ListCard
+            key={p.productId}
+            uri={p.images?.[0]}
+            title={p.title || `Item ${i + 1}`}
+            subtitle={[p.brand, p.model].filter(Boolean).join(' · ') || p.category}
+          />
         ))
       )}
 

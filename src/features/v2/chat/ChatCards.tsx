@@ -31,17 +31,23 @@
  * is 6, matching the shipped `INLINE_RESULTS_MAX`, so the two surfaces cap
  * identically. A thread is a conversation, not a catalogue.
  *
- * ── Only `product_list` / `product` are drawn ──
+ * ── Three of 22 types are drawn, and the gap has a second edge ──
  *
- * The shipped registry has 22 card types. Rather than silently dropping the
- * other 20, the fallback NAMES the type it cannot draw — so the next gap
- * reports itself instead of looking like an empty reply.
+ * `product_list`, `product`, `wtb_draft`. The fallback used to NAME the type it
+ * could not draw, in the thread, for the reader — removed 2026-09-21 under
+ * CHATBOT_RULES §8 (never expose internal names); it warns in `__DEV__` now.
+ *
+ * ⚠️ The dangerous half is not the missing card, it is `streamSanitizer`:
+ * it DELETES a reply's field dump whenever a card is present, on the contract
+ * that the card shows those facts. Ten of the types it strips for are types v2
+ * does not draw, so the prose was being deleted for a card that then rendered
+ * nothing. See `./drawnCards`, which is the guard, and its test.
  */
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 
-import { QuietAction, Row, RowThumb, RowTrailing, SectionHeader, SectionNote } from '@/features/v2/ui';
+import { QuietAction, Row, RowThumb, RowTrailing, SectionHeader } from '@/features/v2/ui';
 import { GUTTER, icon, space, useV2Colors } from '@/theme/v2';
 import { ImageIcon } from 'lucide-react-native';
 import { toProductRow, type ProductRow } from '@/features/lab/chat/cards';
@@ -58,6 +64,7 @@ import { toProductRow, type ProductRow } from '@/features/lab/chat/cards';
 */
 import { condLabel } from '@/features/lab/chat/cardKit';
 import { haptics } from '@/lib/haptics';
+import { NoMatchOffer, WantDraftCard } from './WantDraftCard';
 // ⚠️ `.../chat/types/card`, not `.../chat/types` — a FILE `chat/types.ts` sits
 // beside the DIRECTORY `chat/types/`, and the file wins resolution while
 // exporting no `Card`. The directory's `index.ts` does re-export it, but nothing
@@ -112,15 +119,12 @@ function ProductList({ data }: { data: unknown }) {
   const rows = asArr(o.results ?? o.items ?? (Array.isArray(data) ? data : [])).map(toProductRow);
 
   if (rows.length === 0) {
-    // CHATBOT_RULES: a no-match leads with the save-a-want offer rather than a
-    // dead end. The offer itself is a WRITE, so it is not wired here — the copy
-    // points at the composer, which is the one control that always works.
-    // TODO(v2-writes): replace with a real "save this as a want" action.
-    return (
-      <SectionNote>
-        Nothing matched that yet. Describe it in the box below and we can watch the market for it.
-      </SectionNote>
-    );
+    // The real save-a-want offer is `WantDraftCard`, dispatched on the assistant's
+    // own `wtb_draft` frame. This is the fallback for an empty result set that
+    // arrives WITHOUT one — it points at the composer rather than inventing a
+    // want from the query, which is the shape the WTB data-quality review found
+    // unusable. See `WantDraftCard`'s header.
+    return <NoMatchOffer />;
   }
 
   const inline = rows.slice(0, INLINE_MAX);
@@ -166,15 +170,47 @@ function ProductList({ data }: { data: unknown }) {
   );
 }
 
-/** One card. Unknown types NAME themselves rather than vanishing. */
+/**
+ * The drawn-type set and its filter live in `./drawnCards` — a JSX-free module,
+ * so the sanitizer contract can be tested against the REAL sanitizer without
+ * importing the v2 UI barrel (which reaches an unlinkable native module in
+ * Jest). Re-exported here because this switch is what defines the set.
+ */
+export { V2_DRAWN_CARD_TYPES, drawnCards } from './drawnCards';
+
+/**
+ * One card. An undrawn type is INVISIBLE to the reader and loud to us.
+ *
+ * ⚠️ This used to render *"This answer included a 'catalog_summary' card, which
+ * v2 does not draw yet."* — into the conversation, for the buyer to read. The
+ * intent was good (a vague "a card" tells nobody what to build next) but the
+ * audience was wrong, and `CHATBOT_RULES` §8 is explicit: never expose internal
+ * IDs or tool names. `catalog_summary` is a wire format. Seen on device
+ * 2026-09-21 in a real answer.
+ *
+ * Losing it costs the reader nothing here: the assistant's prose already
+ * carries the substance and the card is supplementary — in the observed case
+ * the text said "1000 products, top categories …, mostly UK and US" and the
+ * card would only have repeated it. If a type ever arrives whose card IS the
+ * answer, draw that type; do not go back to narrating the gap.
+ *
+ * The signal moves to the console, where the person who can act on it is.
+ */
 function ChatCard({ card }: { card: Card }) {
   switch (card.type) {
     case 'product_list':
     case 'product':
       return <ProductList data={card.data} />;
+    // CHATBOT_RULES §2: a no-match LEADS with the save-a-want offer. Until this
+    // case existed the offer fell to `default` and the buyer read a sentence
+    // written for a developer.
+    case 'wtb_draft':
+      return <WantDraftCard data={card.data} />;
     default:
-      // Deliberately specific: "a card" tells nobody what to build next.
-      return <SectionNote>{`This answer included a “${card.type}” card, which v2 does not draw yet.`}</SectionNote>;
+      if (__DEV__) {
+        console.warn(`[v2 chat] no card renderer for type "${card.type}" — falling through silently`);
+      }
+      return null;
   }
 }
 

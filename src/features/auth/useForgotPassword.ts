@@ -21,7 +21,8 @@ export interface UseForgotPasswordResult {
   secondsLeft: number;
   resendCooldown: number;
   submitEmail: (email: string) => Promise<boolean>;
-  submitOtp: (otp: string) => Promise<void>;
+  /** Resolves true when the code was accepted — see the implementation. */
+  submitOtp: (otp: string) => Promise<boolean>;
   submitNewPassword: (newPassword: string) => Promise<void>;
   resend: () => Promise<boolean>;
   back: () => void;
@@ -73,8 +74,21 @@ export function useForgotPassword(): UseForgotPasswordResult {
     }
   }, []);
 
+  /**
+   * Returns whether the code was accepted.
+   *
+   * Additive — it used to return nothing, and the screen learned about a
+   * rejection by watching `error` in an effect and clearing its own input from
+   * there. That is a `setState` inside an effect (cascading renders, and an
+   * eslint error), and it is also fragile: it fires on the error CHANGING, so
+   * the same wrong code entered twice does not clear the field. A returned
+   * boolean lets the caller clear the input in the handler where it belongs.
+   *
+   * `undefined` — falsy, so it reads as "not accepted" — when a verification is
+   * already in flight and this call is dropped.
+   */
   const submitOtp = useCallback(async (code: string) => {
-    if (inFlightOtpRef.current) return;
+    if (inFlightOtpRef.current) return false;
     inFlightOtpRef.current = true;
     setIsPending(true);
     setError(null);
@@ -82,8 +96,10 @@ export function useForgotPassword(): UseForgotPasswordResult {
       await verifyResetOtp(email, code);
       setOtp(code);
       setStep('password');
+      return true;
     } catch (e) {
       setError(codeOf(e));
+      return false;
     } finally {
       setIsPending(false);
       inFlightOtpRef.current = false;

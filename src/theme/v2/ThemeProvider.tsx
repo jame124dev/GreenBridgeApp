@@ -110,3 +110,42 @@ export function useV2Colors(): PaletteRoles {
 export function useV2Theme(): V2ThemeContextValue {
   return useV2ThemeContext();
 }
+
+/**
+ * Carry the CURRENT theme across a React portal.
+ *
+ * ── THE PROBLEM THIS SOLVES ──
+ *
+ * `@gorhom/bottom-sheet` renders a sheet's children into `BottomSheetModalProvider`,
+ * which is mounted in `app/_layout.tsx` — ABOVE the v2 route group and therefore
+ * above `V2ThemeProvider`. The sheet's own element sits inside the provider and
+ * reads context fine; its children do not, and the first v2 component they touch
+ * throws "useV2Theme must be used inside <V2ThemeProvider>". Found on device
+ * 2026-09-21 by opening the composer's attach sheet.
+ *
+ * ⚠️ DO NOT fix this by nesting another `V2ThemeProvider`. That one owns its own
+ * `preference` state, so the sheet would stop following the scheme — the exact
+ * fork `app/v2/scan/review/_layout.tsx` warns about ("a second provider would
+ * fork the scheme so the dev toggle stopped reaching these screens").
+ *
+ * This re-provides the SAME value object the parent is already using, so a
+ * scheme change re-renders the parent, passes a new value down, and the portal
+ * follows. Read it with `useV2Theme()` on the outside, hand it in here:
+ *
+ *     const theme = useV2Theme();            // outside the portal
+ *     <BottomSheetModal>
+ *       <V2ThemeBridge value={theme}>…</V2ThemeBridge>
+ *     </BottomSheetModal>
+ *
+ * `backdropComponent` and `backgroundComponent` render inside the portal too —
+ * they each need wrapping, not just the body.
+ */
+export function V2ThemeBridge({
+  value,
+  children,
+}: {
+  value: V2ThemeContextValue;
+  children: ReactNode;
+}) {
+  return <V2ThemeContext.Provider value={value}>{children}</V2ThemeContext.Provider>;
+}

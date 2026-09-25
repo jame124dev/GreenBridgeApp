@@ -1,8 +1,21 @@
 import { z } from 'zod';
 
+/**
+ * ⚠️ These are i18n KEYS, like every other schema in this file — they used to
+ * be raw English (`'Enter a valid email'`, `'Password is required'`) and were
+ * rendered verbatim, so the one screen every non-English user meets FIRST
+ * validated at them in English. The screens run these through `t()`.
+ *
+ * `emailRequired` is separate from `emailInvalid` on purpose: zod's `.email()`
+ * rejects `''` too, so a single message told someone who had typed nothing that
+ * their address was malformed.
+ */
 export const loginSchema = z.object({
-  email: z.string().email('Enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
+  email: z
+    .string()
+    .min(1, 'mobile.auth.emailRequired')
+    .email('mobile.auth.emailInvalid'),
+  password: z.string().min(1, 'mobile.auth.passwordRequired'),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -37,7 +50,13 @@ export const registerCredentialsSchema = z
     // Matches the reset flow's floor; the API itself imposes no minimum, so
     // this is the only place a weak password is caught.
     password: z.string().min(8, 'mobile.auth.register.passwordTooShort'),
-    confirmPassword: z.string(),
+    // ⚠️ `.min(1)` IS LOad-BEARING. Without it this was `z.string()`, and the
+    // `.refine` below compares two values — so on an EMPTY form `'' === ''`
+    // passed and Confirm password was the only one of four fields with no error
+    // under it. Seen on device 2026-09-22: three red fields and a fourth that
+    // looked fine and was not. A rule that validates a relationship still needs
+    // each side to exist.
+    confirmPassword: z.string().min(1, 'mobile.auth.register.confirmRequired'),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: 'mobile.auth.register.passwordMismatch',

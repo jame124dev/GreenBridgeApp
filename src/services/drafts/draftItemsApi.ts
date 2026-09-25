@@ -60,8 +60,32 @@
  * Checked against `helper/draftItemsQuery.js:980-1053` (the list DTO). The
  * response is `{ success, data: [...] }` — items are in `data` directly, NOT
  * `data.items`.
+ *
+ * ── ⚑ TWO SOURCES BEHIND ONE SET OF FUNCTIONS (Phase 1, 2026-09-23) ────────
+ *
+ * A **local** draft id (`local-1`) is answered by `./localDraftSource`; a
+ * **server** id goes to the network. Nothing above this file knows which — that
+ * is the whole point, copied from the web's `guestDraftStore`: *"Their
+ * components are not modified — not one line — because the substitution happens
+ * underneath them, at the base query."*
+ *
+ * It has to live here rather than in the screen because FOUR callers read these
+ * functions with the same id — `app/v2/scan/items.tsx`, `valuation.tsx`,
+ * `submit.tsx` and `features/v2/scan/openDetectedItem.ts` — and a fork in one of
+ * them is a fork the other three do not have.
+ *
+ * The reason there is a local source at all: **no client-callable route creates
+ * a `gb_listing_draft_items` row.** The only writer in the backend is
+ * `services/recognitionExtractWorker.js`, reached solely from the durable
+ * extract trigger (`controller/gcsResumableController.js:653`). Measured
+ * 2026-09-23 — see `Docs/v2/v2scanflow/phases/phase-1-one-spine/README.md`.
  */
 import { greenbidz } from '@/api/greenbidzClient';
+import { gcsUrlForAnalyze } from '@/services/scanner/gcsUrl';
+
+import * as localDraftSource from './localDraftSource';
+
+export { isLocalDraftId, LOCAL_DRAFT_PREFIX } from './localDraftSource';
 
 /**
  * Where an item stands in review.
@@ -78,6 +102,45 @@ export type DraftItemFilter = DraftItemStatus | 'high_value' | 'scrap' | 'all';
 
 /** The status-changing bulk operations. The catalogue has more; these are ours. */
 export type DraftItemBulkOp = 'accept' | 'discard';
+
+/**
+ * Every bulk op this app sends, status ones included.
+ *
+ * ⚠️ ALL FIVE ARE UNFLAGGED ON THE SERVER. `VALID_BULK_OPS`
+ * (`helper/draftItemsQuery.js:1087`) lists fourteen; four of them —
+ * `split_lot`, `set_route`, `reset_price`, `set_category` — are behind flags
+ * that are OFF on dev, and an op the flag has switched off is rejected as a
+ * plain `BAD_OP` 400, indistinguishable from a typo. None of those four is
+ * here, which is why this union is five and not fourteen.
+ *
+ * The consequence for the UI: **`merge_to_lot` is one-way on dev**, because
+ * `split_lot` is the op that would undo it. Do not offer an undo.
+ */
+export type DraftItemBulkOpName =
+  | DraftItemBulkOp
+  | 'merge_to_lot'
+  | 'set_location'
+  | 'set_condition';
+
+/**
+ * The sorts this app offers, out of the server's fifteen.
+ *
+ * `VALID_SORTS` is `confidence_asc`, `seq`, `price_desc` plus `_asc`/`_desc`
+ * for six columns (`helper/draftItemsQuery.js:86-91`). Fifteen entries is a
+ * desktop grid's column headers, not a phone control, so four are surfaced —
+ * but every one of them is a literal from that list, checked against it rather
+ * than invented.
+ *
+ * ⚠️ AN UNKNOWN VALUE DOES NOT ERROR. `normalizeSort` falls back to the
+ * default (`confidence_asc`) in silence, so a typo here ships as a control
+ * that reorders nothing and looks merely unhelpful. The acceptance test for
+ * anything added to this union is "the returned ORDER changed", never "the
+ * control responded" — `MISTAKES.md` 2026-09-22 is one of these that shipped.
+ */
+export type DraftItemSort = 'seq' | 'price_desc' | 'confidence_asc' | 'title_asc';
+
+/** The server's cap on `q` (`draftItemsQuery.js:33`). Longer is truncated there. */
+export const MAX_Q_LEN = 100;
 
 /**
  * One row of a multi-item draft.
@@ -148,6 +211,27 @@ export interface DraftItem {
    * explicit 1 from an absent value (`draftItemsQuery.js:1027-1030`).
    */
   qty: number | null;
+  /**
+   * The AI's description paragraph — the web's grid prints it under the title.
+   *
+   * ⚠️ OPTIONAL, AND THAT IS A STATEMENT ABOUT THE SERVER, NOT A CONVENIENCE.
+   * The list endpoint is a lean projection and it does **not** carry a
+   * description: `LIST_JSON_PROJECTIONS` in
+   * `101recycle-greenbidz-backend/helper/draftItemsQuery.js` declares 16
+   * aliases (`grep -n 'alias: "' helper/draftItemsQuery.js`) and none of them
+   * is `description` / `equipment_description`. The text lives in
+   * `form_json.data.equipment_description`, which that projection "NEVER
+   * includes".
+   *
+   * So: the LOCAL lane fills this (`localDraftSource.rowFrom`) and the SERVER
+   * lane leaves it `undefined` until the backend adds the alias. It is typed
+   * optional rather than `string | null` precisely so nobody reads an absent
+   * paragraph as an empty one — same distinction `missingRequiredFields`
+   * already draws with `hasFormData()`, and the same trap recorded in
+   * `MISTAKES.md` 2026-09-23 ("nearly ported a gate its own data source cannot
+   * answer").
+   */
+  description?: string | null;
 
   // ── Market metrics (range/scalar strings, as extracted) ──────────────────
   /** `market_metrics.demand_score`. */
@@ -169,6 +253,48 @@ export interface DraftItem {
    * 409s against every row the extract worker has touched.
    */
   row_version: number | null;
+}
+
+/**
+ * ONE item, opened — everything `DraftItem` has plus what the server loads only
+ * when a row is actually opened (`toItemFull`, `helper/draftItemsQuery.js`).
+ *
+ * ⚠️ `image_objects_json` is the reason this type exists. The LIST row carries
+ * only `thumbnail_object`, a single key, and the review flow requires photos to
+ * publish at all (`requiredStatus.ts` — `allComplete = rows.photos && …`). So
+ * mapping a list row into a local draft produces an item the seller can walk to
+ * the end and never submit. The server's own comment on this field: *"The full
+ * ordered media list (photos + any video the seller added), so the detail panel
+ * renders the whole gallery — not just the first `thumbnail_object`."*
+ *
+ * Shapes are left as `unknown` on purpose: these three columns are stored JSON
+ * and the extractor has been observed writing the same logical field as a
+ * string on one row and a number on another. The mapper narrows them; typing a
+ * guess here would make the narrowing look unnecessary.
+ */
+export interface DraftItemFull extends DraftItem {
+  draft_id: number | null;
+  form_json: unknown;
+  image_indexes_json: unknown;
+  image_objects_json: unknown;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Open one item. `GET /drafts/:draftId/items/:id`.
+ *
+ * Mounted behind `requireScanV2ReviewScale` like the rest of the items routes
+ * (`routes/draftRoutes.js:144`), so it 404s wherever `SCANV2_REVIEW_SCALE` is
+ * unset — which is not an error to report as "item not found".
+ */
+export async function getDraftItem(
+  draftId: number | string,
+  itemId: number | string,
+): Promise<DraftItemFull> {
+  if (localDraftSource.isLocalDraftId(draftId)) return localDraftSource.getItem(itemId);
+  const res = await greenbidz.get(`/drafts/${draftId}/items/${itemId}`);
+  return res.data.data as DraftItemFull;
 }
 
 /** The counts strip above the grid. */
@@ -203,17 +329,36 @@ export async function listDraftItems(
     filter?: DraftItemFilter;
     pageSize?: number;
     cursor?: string | null;
-    sort?: string;
+    sort?: DraftItemSort;
     q?: string;
   } = {},
 ): Promise<DraftItemPage> {
+  /*
+    TRIMMED AND CAPPED ON THE WAY OUT, on both lanes.
+
+    The server does exactly this (`buildQCondition`: `String(q).trim().slice(0,
+    MAX_Q_LEN)`), so doing it here is not defensive duplication — it is what
+    keeps the two lanes answering the same question. A 140-character paste
+    would otherwise match nothing locally and match its first 100 characters on
+    the server, which is a divergence nobody would think to look for.
+  */
+  const q = (opts.q ?? '').trim().slice(0, MAX_Q_LEN);
+
+  if (localDraftSource.isLocalDraftId(draftId)) {
+    return localDraftSource.listItems({
+      ...opts,
+      q,
+      filter: opts.filter ?? 'all',
+      pageSize: Math.min(opts.pageSize ?? MAX_PAGE_SIZE, MAX_PAGE_SIZE),
+    });
+  }
   const res = await greenbidz.get(`/drafts/${draftId}/items`, {
     params: {
       filter: opts.filter ?? 'all',
       pageSize: Math.min(opts.pageSize ?? MAX_PAGE_SIZE, MAX_PAGE_SIZE),
       ...(opts.cursor ? { cursor: opts.cursor } : {}),
       ...(opts.sort ? { sort: opts.sort } : {}),
-      ...(opts.q ? { q: opts.q } : {}),
+      ...(q ? { q } : {}),
     },
   });
   const data = res.data?.data;
@@ -232,7 +377,20 @@ export async function listDraftItems(
  */
 export async function listAllDraftItems(
   draftId: number | string,
-  opts: { filter?: DraftItemFilter; maxPages?: number } = {},
+  opts: {
+    filter?: DraftItemFilter;
+    maxPages?: number;
+    /**
+     * ⚠️ THESE TWO WERE ACCEPTED BY `listDraftItems` AND DROPPED HERE until
+     * 2026-09-23. Every screen goes through this function, so a Sort or Search
+     * control wired to it changed the query key, refetched, and got the
+     * identical list back — the exact defect shape of `MISTAKES.md`
+     * 2026-09-22, and doubly invisible because `normalizeSort` /
+     * `normalizeFilter` fail silently to their defaults rather than 400ing.
+     */
+    sort?: DraftItemSort;
+    q?: string;
+  } = {},
 ): Promise<DraftItem[]> {
   const maxPages = opts.maxPages ?? 20;
   const out: DraftItem[] = [];
@@ -241,6 +399,8 @@ export async function listAllDraftItems(
   for (let i = 0; i < maxPages; i += 1) {
     const page: DraftItemPage = await listDraftItems(draftId, {
       filter: opts.filter,
+      sort: opts.sort,
+      q: opts.q,
       cursor,
     });
     out.push(...page.items);
@@ -252,6 +412,7 @@ export async function listAllDraftItems(
 
 /** The counts strip. Cheap enough to refetch after every mutation. */
 export async function getDraftItemCounts(draftId: number | string): Promise<DraftItemCounts> {
+  if (localDraftSource.isLocalDraftId(draftId)) return localDraftSource.itemCounts();
   const res = await greenbidz.get(`/drafts/${draftId}/items/counts`);
   const d = res.data?.data ?? {};
   return {
@@ -283,11 +444,176 @@ export async function setDraftItemsStatus(
   itemIds: readonly number[],
   op: DraftItemBulkOp,
 ): Promise<number | null> {
+  return (await bulkDraftItems(draftId, itemIds, op)).updated;
+}
+
+/** What `POST …/items:bulk` hands back. */
+export interface DraftItemBulkResult {
+  /** Rows changed, or `null` when the server took the work off-thread (202). */
+  updated: number | null;
+  /** Only `merge_to_lot` returns one. A uuid on the server, a number locally. */
+  lot_group_id?: string | number | null;
+}
+
+/**
+ * Any bulk op, one call — the general form `setDraftItemsStatus` is now a
+ * shorthand for.
+ *
+ * ── ⚠️ A STALE PLAN NOTE SAID "APPLY TO SELECTED HAS TO FAN OUT N PATCHes" ──
+ *
+ * It does not, and building it that way would have been N round-trips, N
+ * `expected_row_version` reads and N chances of a 409 for something the server
+ * does in ONE indexed UPDATE. `set_location` and `set_condition` are bulk ops
+ * in `VALID_BULK_OPS` (`helper/draftItemsQuery.js:1087`), unflagged, taking
+ * `patch.location` / `patch.condition` (`SET_OP_MAP`, `:1244-1251`). The note
+ * was read off mobile's own TS union — which said `'accept' | 'discard'` —
+ * rather than off the server. A union is the frontend's opinion; the
+ * controller is the contract.
+ *
+ * ── THE ONE REFUSAL A CALLER MUST HANDLE ───────────────────────────────────
+ *
+ * `merge_to_lot` over a mixed-marketplace selection is a **400** carrying
+ * `{ code: 'MIXED_MARKETPLACE', marketplaces: [...] }`, raised BEFORE anything
+ * is stamped (`controller/draftItemsController.js:433-441`) — so a refused
+ * merge has changed nothing at all. Read it with `mixedMarketplaceRefusal`.
+ *
+ * ⚠️ `res.data.data.updated`, NOT `res.data.updated`. The body is
+ * `{ success, data: { updated, lot_group_id } }` (`:517-521`); the old reader
+ * took `undefined`, failed `Number.isFinite`, and returned `null` — the
+ * sentinel this function uses for "202, not applied yet". So every successful
+ * synchronous accept on the SERVER lane reported itself as maybe-not-applied.
+ * Nothing read the value, so nothing broke; it would have the moment anything
+ * did.
+ */
+export async function bulkDraftItems(
+  draftId: number | string,
+  itemIds: readonly number[],
+  op: DraftItemBulkOpName,
+  patch?: Record<string, unknown>,
+): Promise<DraftItemBulkResult> {
+  const select = { item_ids: [...itemIds] };
+
+  if (localDraftSource.isLocalDraftId(draftId)) {
+    const res = localDraftSource.bulk({ op, select, patch });
+    return { updated: res.updated, lot_group_id: res.lot_group_id ?? null };
+  }
+
   const res = await greenbidz.post(`/drafts/${draftId}/items:bulk`, {
     op,
-    select: { item_ids: [...itemIds] },
+    select,
+    ...(patch ? { patch } : {}),
   });
-  if (res.status === 202) return null;
-  const updated = Number(res.data?.updated);
-  return Number.isFinite(updated) ? updated : null;
+  if (res.status === 202) return { updated: null };
+
+  const body = res.data?.data ?? {};
+  const updated = Number(body.updated);
+  return {
+    updated: Number.isFinite(updated) ? updated : null,
+    lot_group_id: body.lot_group_id ?? null,
+  };
+}
+
+/**
+ * Was this failure "a lot cannot span marketplaces"? Returns the offending
+ * codes so the screen can name them, or `null` for anything else.
+ *
+ * Both lanes answer the same shape on purpose: `localDraftSource` raises the
+ * backend's own status, code and `marketplaces` key rather than an
+ * approximation of them, so this one reader serves both.
+ */
+export function mixedMarketplaceRefusal(err: unknown): string[] | null {
+  const data = (err as { response?: { data?: { code?: string; marketplaces?: unknown } } })
+    ?.response?.data;
+  if (data?.code !== 'MIXED_MARKETPLACE') return null;
+  const values = Array.isArray(data.marketplaces) ? data.marketplaces : [];
+  return values.filter((v): v is string => typeof v === 'string' && v.length > 0);
+}
+
+/**
+ * Edit ONE item's fields. `PATCH /drafts/:draftId/items/:id`.
+ *
+ * ── THE FOUR THINGS THIS ROUTE INSISTS ON ─────────────────────────────────
+ *
+ * Read off `routes/draftRoutes.js:174-179` and
+ * `controller/draftItemsController.js:690-800` rather than inferred:
+ *
+ *  1. **`expected_row_version` is REQUIRED.** Omitting it is a 400
+ *     (`BAD_ROW_VERSION`), not a silent overwrite — this is a field autosave
+ *     with optimistic concurrency, which is exactly why accept/discard goes
+ *     through the BULK route instead (see `setDraftItemsStatus`).
+ *  2. **A stale version is a 409** carrying `{ code: 'STALE',
+ *     current_row_version }`. The caller reseeds from the fresh row rather
+ *     than retrying blind — an auto-retry would overwrite whatever the other
+ *     writer just stored.
+ *  3. **`form_json_patch` is DEEP-MERGED** (`mergeFormJson`), so a patch of
+ *     `{ data: { title } }` keeps its twenty siblings. Send only what changed.
+ *  4. **There is no field whitelist**, but there IS write validation behind
+ *     `SCANV2_ITEM_VALIDATION` (`draftItemsController.js:743`) judged on the
+ *     MERGED document — price/year/condition/operation_status/site_type/
+ *     subcategory. A rejection is a 400 with a message, not a partial write.
+ *
+ * ⚠️ `image_objects` goes at the ENVELOPE level, not under `data`. The server
+ * re-derives the projected `image_objects_json` column from
+ * `form_json.image_objects` (`helper/draftItemsQuery.js:2191-2193`); a patch
+ * under `data` would store the array where nothing reads it, and the row's
+ * photos would never change.
+ *
+ * Returns the FRESH full row, which carries the bumped `row_version` — hold on
+ * to it, or the next patch 409s against the version you just superseded.
+ */
+export async function patchDraftItem(
+  draftId: number | string,
+  itemId: number | string,
+  body: {
+    form_json_patch: Record<string, unknown>;
+    expected_row_version: number;
+  },
+): Promise<DraftItemFull> {
+  if (localDraftSource.isLocalDraftId(draftId)) {
+    return localDraftSource.patchItem({ itemId, ...body });
+  }
+  const res = await greenbidz.patch(`/drafts/${draftId}/items/${itemId}`, body);
+  return res.data.data as DraftItemFull;
+}
+
+/**
+ * Is this the server saying "someone else changed this row"?
+ *
+ * A 409 is the one failure a detail editor can RECOVER from by itself — reload
+ * the row and let the seller re-apply. Every other status is a real failure and
+ * has to be reported. `localDraftSource.LocalDraftError` is shaped to match, so
+ * this reads the same on both lanes.
+ */
+export function isStaleItemWrite(err: unknown): boolean {
+  return (err as { response?: { status?: number } })?.response?.status === 409;
+}
+
+/**
+ * The row's photo, as something an `<Image>` can actually load.
+ *
+ * ⚠️ `thumbnail_object` does NOT mean the same thing on both sources, and the
+ * difference is invisible until a tile renders broken:
+ *
+ *   · a SERVER row carries a GCS object NAME (`drafts/247/1/thumb.jpg`), which
+ *     has to go through `/gcs/serve` — the unproxied route the web's `DraftCard`
+ *     uses, not behind auth (`gcsRoute.js:84`);
+ *   · a LOCAL row carries the device URI of the photo the seller just took
+ *     (`file://…`). Handing that to `gcsUrlForAnalyze` builds
+ *     `/gcs/serve?path=file%3A%2F%2F…` and asks the server for a path on the
+ *     phone — a 404 and a permanently broken tile.
+ *
+ * So the scheme decides. The web guards the same hazard from the other side
+ * (`guestDraftStore.withThumb`: a full https URL passes through untouched,
+ * "anything else must stay null, or the grid fires a request at a guessed path").
+ *
+ * Lives here, beside the substitution, because it is part of the same contract —
+ * a screen should not have to know which source its row came from.
+ */
+export function draftItemThumbUri(item: Pick<DraftItem, 'thumbnail_object'>): string | undefined {
+  const value = item.thumbnail_object;
+  if (!value) return undefined;
+  // Already addressable by the image loader: a local file, an in-memory asset,
+  // an inline data URI, or a URL the backend already resolved for us.
+  if (/^(?:https?|file|content|data|asset|ph):/i.test(value)) return value;
+  return gcsUrlForAnalyze({ objectName: value });
 }

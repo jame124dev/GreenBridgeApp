@@ -9,7 +9,7 @@
 // (scroll bookkeeping stays a view concern; the data orchestration lives here).
 // Messages remain component-local `useState` here until PR-7 moves them into
 // `conversationStore`; the reducer/effches split lands in PR-5.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner-native';
 
 import i18n from '@/i18n';
@@ -60,7 +60,30 @@ export function useChatController({
   // truth), keyed by the persisted conversationId. Seed once per mount (the old
   // per-mount `useState` init) so re-entry starts fresh — in-memory, no resume.
   const conversationId = useMemo(() => useSession.getState().getConversationId(), []);
-  useState(() => {
+
+  // ⚠️ Seed once per mount, but NEVER during render.
+  //
+  // This was a `useState(() => …)` lazy initialiser, which runs in the render
+  // phase — and `useConversation` is subscribed on the next line. Writing to a
+  // subscribed store mid-render made React log, on EVERY chat open:
+  //
+  //   Cannot update a component (`ChatScreen`) while rendering a different
+  //   component (`ChatScreen`).
+  //
+  // Found on device 2026-09-21 during QA pass A. It is not cosmetic: the
+  // LogBox banner it raises sits over the tab bar, and a store notification
+  // during render is the shape that turns into a render loop once anything
+  // else subscribes.
+  //
+  // A LAYOUT effect, not `useEffect`: it runs after render but BEFORE paint, so
+  // a thread opened with an `initialQuery` still has its seed in the first
+  // painted frame and never flashes empty. The ref keeps it to once per mount,
+  // which is what the old initialiser guaranteed — re-entry starts fresh,
+  // in-memory, no resume.
+  const seededRef = useRef(false);
+  useLayoutEffect(() => {
+    if (seededRef.current) return;
+    seededRef.current = true;
     useConversation
       .getState()
       // Seed from the text AND from what the turn actually sent. Keying this on
@@ -70,8 +93,8 @@ export function useChatController({
         conversationId,
         buildSeedMessages(initialQuery, useComposer.getState().lastSentAttachments),
       );
-    return null;
-  });
+  }, [conversationId, initialQuery]);
+
   const messages = useConversation(selectMessages(conversationId));
   const appendMessages = useCallback(
     (msgs: Message[]) => useConversation.getState().append(conversationId, msgs),

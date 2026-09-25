@@ -65,6 +65,15 @@ function keyOf(ready: RecognitionReady): string {
   return String(ready.jobId ?? ready.draftId ?? '');
 }
 
+/** The drafts list for whichever UI this build is — see the TS2590 note below. */
+function pushDraftsList(): void {
+  if (V2_UI_ENABLED) {
+    router.push(routes.v2Drafts);
+  } else {
+    router.push(routes.scanDrafts);
+  }
+}
+
 /** True if `ready` has already been surfaced this session (does not record it). */
 export function alreadySurfaced(ready: RecognitionReady): boolean {
   const key = keyOf(ready);
@@ -127,7 +136,12 @@ export function surfaceDraftReady(
               V2_UI_ENABLED ? v2ResumeRoute : undefined,
               V2_UI_ENABLED ? openMultiItemDraft : undefined,
             )
-          : router.push(V2_UI_ENABLED ? routes.v2Drafts : routes.scanDrafts)
+          : // if/else, not a nested ternary — behaviour identical. Two `Href`s
+            // in one expression makes TypeScript resolve expo-router's generated
+            // route union across both branches, which is past the limit now that
+            // `app/v2/scan/` carries more screens than when this file was
+            // committed (`TS2590`, `typedRoutes: true`).
+            pushDraftsList()
       }
     />,
     { id: toastId, duration: 8000 },

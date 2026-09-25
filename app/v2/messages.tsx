@@ -80,12 +80,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   RefreshControl,
   StyleSheet,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { RTVFlatList } from 'reanimated-tab-view';
+import { Redirect, useRouter } from 'expo-router';
 
 import {
   GUTTER,
@@ -317,6 +317,11 @@ type ListItem =
 
 /* ── Screen ──────────────────────────────────────────────────────────────── */
 
+/**
+ * The real screen, now mounted as ONE PANE of `RootTabsPager` (2026-09-25).
+ * `FlatList` swapped for `RTVFlatList` and `hideOwnTabBar` added — see the
+ * matching notes in `browse.tsx` and `matches.tsx`.
+ */
 function MessagesAuthed() {
   const c = useV2Colors();
   const router = useRouter();
@@ -549,7 +554,7 @@ function MessagesAuthed() {
         <View style={styles.tabsWrap}>
           <Tabs items={tabs} value={filter} onChange={selectFilter} rule gutter />
         </View>
-        <FlatList
+        <RTVFlatList
           data={items}
           keyExtractor={(it) => it.key}
           renderItem={renderItem}
@@ -586,6 +591,7 @@ function MessagesAuthed() {
     <Screen
       scroll={false}
       contentStyle={styles.fill}
+      hideOwnTabBar
       header={<MessagesHeader bellUnread={bellUnread} subline={subline} />}
       testID="v2-messages"
     >
@@ -622,6 +628,7 @@ function MessagesGuest() {
     <Screen
       scroll={false}
       contentStyle={styles.fill}
+      hideOwnTabBar
       header={
         <MessagesHeader bellUnread={0} subline="Sign in to pick up a conversation with a seller." />
       }
@@ -639,9 +646,15 @@ function MessagesGuest() {
   );
 }
 
-export default function V2Messages() {
+export function MessagesScreen() {
   const isGuest = useIsGuest();
   return isGuest ? <MessagesGuest /> : <MessagesAuthed />;
+}
+
+/** The route. `RootTabsPager` (mounted at `/v2`) hosts the real screen; this
+ *  keeps `/v2/messages` deep links and the tab bar's old `href` alive. */
+export default function V2MessagesRedirect() {
+  return <Redirect href="/v2?tab=messages" />;
 }
 
 const styles = StyleSheet.create({

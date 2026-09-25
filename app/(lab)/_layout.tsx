@@ -9,9 +9,23 @@
 //     here at the stack level, OUTSIDE `(tabs)`, so the bar is structurally
 //     absent when they're pushed. This is the show/hide mechanism from spec 08
 //     §4.2 — no per-screen bar toggling.
+//
+// ⚠️ `V2ThemeProvider` IS LOAD-BEARING, NOT DECORATION. `useV2Theme` THROWS
+// when no provider is mounted ("must be used inside <V2ThemeProvider>"), so the
+// first component in this group to use a v2 primitive takes the whole screen
+// down at runtime — a white error screen, not a styling glitch. The provider is
+// PER ROUTE GROUP: `app/v2/_layout.tsx` having one does nothing for `(lab)`.
+// This bit once already, on `app/scan/`, where tsc, lint and 60 green gates all
+// passed on a screen that could not render.
+//
+// Mounting it here is inert for every screen that does not use the kit —
+// context costs nothing until something reads it — and it is what lets screens
+// in this group be ported one at a time. `GuestTabState` (Account, Messages,
+// Wants and Sell) is the first.
 import { Fragment } from 'react';
 import { Stack } from 'expo-router';
 
+import { V2ThemeProvider } from '@/theme/v2';
 import { MarketplacePrewarm } from '@/features/lab/marketplace/MarketplacePrewarm';
 import { UpdateReadyBanner } from '@/features/lab/updates';
 import { SellerGatePrewarm } from '@/features/seller/SellerGatePrewarm';
@@ -19,8 +33,9 @@ import { SignInPrompt } from '@/features/auth/SignInPrompt';
 
 export default function LabLayout() {
   return (
-    <Fragment>
-      <Stack screenOptions={{ headerShown: false }}>
+    <V2ThemeProvider initialPreference="light">
+      <Fragment>
+        <Stack screenOptions={{ headerShown: false }}>
         {/* Tab-bearing shell — renders the FrostedTabBar */}
         <Stack.Screen name="(tabs)" />
         {/* Flow screens — pushed, no tab bar */}
@@ -56,8 +71,9 @@ export default function LabLayout() {
           `requireAuth(reason, action)`; renders null until then. Mounted here so
           the prompt works from every (lab) screen without each one hosting a
           modal of its own. */}
-      <SignInPrompt />
-      <UpdateReadyBanner />
-    </Fragment>
+        <SignInPrompt />
+        <UpdateReadyBanner />
+      </Fragment>
+    </V2ThemeProvider>
   );
 }

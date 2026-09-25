@@ -53,6 +53,7 @@ import {
   StatusChip,
   useStatusTints,
 } from './cardKit';
+import { WTB_CONDITION_CODES, budgetQuickChips, fmtBudget } from './wantBudget';
 import type { GroupChoiceData, QueueData, QueueItem } from './types/cardPayloads';
 import type { PublishBatchResult, SkippedItem } from '@/features/lab/data/batchProductApi';
 
@@ -1222,33 +1223,11 @@ function LabGateCard({ data }: CardProps) {
 
 /* ── Want-To-Buy cards ────────────────────────────────────────────────────── */
 
-/* Condition option codes (order mirrors the web `CONDITION_OPTIONS`); labels are
- * resolved from the shared `condLabel` map so we don't fork the i18n vocabulary. */
-const WTB_CONDITION_CODES = ['new', 'refurbished', 'working'] as const;
-
-/** Round up to a "nice" magnitude (100→100, 4200→5000) — mirrors web `nice()`. */
-function niceRound(v: number): number {
-  if (v <= 0) return 0;
-  const p = Math.pow(10, Math.floor(Math.log10(v)));
-  return Math.ceil(v / p) * p;
-}
-
-/** Three quick-budget tiers: adaptive around the priced preview matches, else the
- *  static [1k, 5k, 25k] fallback (ported from web `budgetQuickChips`). */
-function budgetQuickChips(prices: number[]): number[] {
-  const priced = prices.filter((n) => Number.isFinite(n) && n > 0);
-  if (priced.length === 0) return [1000, 5000, 25000];
-  const top = niceRound(Math.max(...priced) * 1.2);
-  const tiers = [niceRound(top * 0.25), niceRound(top * 0.5), top];
-  return [...new Set(tiers)].filter((n) => n > 0);
-}
-
-/** Compact money label for a budget chip: 25000→"25k", 1500000→"1.5m". */
-function fmtBudget(v: number): string {
-  if (v >= 1_000_000) return `${+(v / 1_000_000).toFixed(2)}m`;
-  if (v >= 1000) return `${+(v / 1000).toFixed(2)}k`;
-  return String(v);
-}
+/* The condition codes, the budget tiers and their labels now live in
+ * `./wantBudget` — v2's want card needs the same numbers, and two copies of a
+ * rule the buyer reads as money is exactly the kind of thing that drifts.
+ * Labels still resolve through the shared `condLabel` map, so the i18n
+ * vocabulary is not forked either. */
 
 /** A toggle pill for a condition / budget option. Emerald when selected. */
 function TogglePill({

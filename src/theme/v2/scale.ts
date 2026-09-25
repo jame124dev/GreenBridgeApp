@@ -168,6 +168,22 @@ export const type = {
     fontSize: size.lg,
     lineHeight: leading(size.lg, 1.5),
   },
+  /**
+   * 15/500 — emphasis INSIDE a long-form paragraph. `lead`'s partner.
+   *
+   * ⚠️ The `lineHeight` must stay identical to `lead`'s. RN applies a nested
+   * span's line height per fragment on Android, so a **bold** run in a
+   * different line box shifts the baseline of the line it sits in. That trap is
+   * why the assistant's answers were set in `body` (13pt) — `body`/`bodyMedium`
+   * were the only pair sharing a box, and the prose dropped two steps to get
+   * one. This token removes the reason: the longest continuous prose in the app
+   * can now use the size the scale designates for long-form.
+   */
+  leadMedium: {
+    fontFamily: fonts.medium,
+    fontSize: size.lg,
+    lineHeight: leading(size.lg, 1.5),
+  },
   /** 14/500 — the list-row title. The most-used title style in the app. */
   rowTitle: {
     fontFamily: fonts.medium,

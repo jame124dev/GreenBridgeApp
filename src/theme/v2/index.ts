@@ -9,7 +9,7 @@
  *
  * Provenance and the collapse log live in `palette.ts` and `scale.ts`.
  */
-export { V2ThemeProvider, useV2Colors, useV2Theme } from './ThemeProvider';
+export { V2ThemeProvider, V2ThemeBridge, useV2Colors, useV2Theme } from './ThemeProvider';
 export type { PaletteRoles, SchemeName } from './palette';
 export { palettes, lightPalette, darkPalette } from './palette';
 

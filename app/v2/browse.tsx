@@ -38,6 +38,7 @@
  */
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { Redirect } from 'expo-router';
 
 import { BrandBar, Screen } from '@/features/v2/ui';
 import { MarketplaceWebView } from '@/features/lab/marketplace/MarketplaceWebView';
@@ -47,7 +48,14 @@ import { haptics } from '@/lib/haptics';
 import { router } from 'expo-router';
 import { routes } from '@/lib/routes';
 
-export default function V2Browse() {
+/**
+ * The real screen, now mounted as ONE PANE of `RootTabsPager` (2026-09-25)
+ * rather than as its own stack route — see that file's header for why all
+ * five root tabs became one swiping pager. `hideOwnTabBar`: the pager renders
+ * one shared bar below all five panes, driven by its own index; this screen
+ * rendering its own bar underneath would stack a second, dead one behind it.
+ */
+export function BrowseScreen() {
   const { unreadCount } = useLabNotifications();
 
   const onBell = () => {
@@ -77,6 +85,7 @@ export default function V2Browse() {
       // Flush makes it a thin strip that butts straight onto the web content.
       headerFlush
       scroll={false}
+      hideOwnTabBar
       testID="v2-browse"
     >
       <View style={styles.fill}>
@@ -102,3 +111,9 @@ export default function V2Browse() {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
 });
+
+/** The route. `RootTabsPager` (mounted at `/v2`) hosts the real screen; this
+ *  keeps `/v2/browse` deep links and the tab bar's old `href` alive. */
+export default function V2BrowseRedirect() {
+  return <Redirect href="/v2?tab=browse" />;
+}

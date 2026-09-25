@@ -11,7 +11,7 @@
  * ring is what makes a 7pt dot read as a separate mark instead of a smudge on
  * the bell glyph.
  */
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 // `Pressable` from GESTURE HANDLER, not react-native. RN's Pressable uses the
 // JS responder system, which RNGH intercepts natively — inside Home's pager it
@@ -42,9 +42,44 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function BrandBar({
   language = 'EN',
   unread = false,
+  notifications = true,
   onNotifications,
   onLanguage,
+  trailing,
+  flush = false,
 }: {
+  /**
+   * Draw the bell. `false` for a screen where notifications do not exist.
+   *
+   * The auth screens are the case: nobody is signed in, so there is nothing to
+   * notify and nowhere for the bell to go — its only possible destination is
+   * the OLD UI's notifications screen, which would also make signing in an
+   * exit out of v2. A control that cannot lead anywhere is worse than no
+   * control, and `onNotifications` alone could not express it because the bell
+   * renders regardless of whether a handler was passed.
+   *
+   * Defaults to `true`, so every tab screen is untouched.
+   */
+  notifications?: boolean;
+  /**
+   * A screen-specific action at the END of the right cluster, after the bell.
+   *
+   * Added for chat, whose header collapses to just this bar once a conversation
+   * exists and still needs somewhere to keep "New chat". Rightmost is where
+   * ChatGPT puts the same control. Omit it and the bar is exactly what it was.
+   */
+  trailing?: ReactNode;
+  /**
+   * Drop the bar's bottom margin, for a header where the bar is the LAST thing
+   * in the sheet.
+   *
+   * The margin (`space['7xl']`, 30) is the gap to whatever follows — a display
+   * title, usually. With nothing following it, it stacks on `Screen`'s own
+   * `paddingBottom` (34) and leaves 64dp of empty wash under a 44pt bar.
+   * Measured on chat before this existed. Defaults to `false`, so every screen
+   * that has a title under the bar is untouched.
+   */
+  flush?: boolean;
   /** Display label only — the real switch lives on Account › Language. */
   language?: string;
   /**
@@ -66,7 +101,7 @@ export function BrandBar({
   const hasUnread = unread === true || count > 0;
 
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, flush && styles.barFlush]}>
       <View style={styles.left}>
         {/*
           The REAL brand lockup, from `theme/branding.ts` — the same asset the
@@ -130,6 +165,7 @@ export function BrandBar({
           </Text>
         )}
 
+        {notifications ? (
         <AnimatedPressable
           onPress={onNotifications}
           onPressIn={bell.onPressIn}
@@ -154,6 +190,9 @@ export function BrandBar({
             />
           ) : null}
         </AnimatedPressable>
+        ) : null}
+
+        {trailing}
       </View>
     </View>
   );
@@ -168,6 +207,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: space['7xl'],
+  },
+  /** See the `flush` prop — the bar is the last thing in the sheet. */
+  barFlush: {
+    marginBottom: 0,
   },
   left: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
   /**

@@ -55,6 +55,14 @@ export const useSession = create<SessionState>((set, get) => ({
   // Hydrate synchronously from MMKV so the id survives an app restart.
   conversationId: mmkv.getString(CONV_KEY) ?? null,
 
+  // ⚠️ This getter WRITES (`set`), and `useChatController` calls it from a
+  // `useMemo` — i.e. during render. That is only safe today because nothing
+  // subscribes to this store reactively: every one of its call sites goes
+  // through `useSession.getState()`. The moment someone writes
+  // `useSession((s) => …)` in a component, this becomes the same render-phase
+  // store write that made chat log "Cannot update a component while rendering
+  // a different component" (fixed in useChatController on 2026-09-21). If you
+  // need a reactive read here, defer the `set` out of the render phase first.
   getConversationId: () => {
     const existing = get().conversationId ?? mmkv.getString(CONV_KEY);
     if (existing) {

@@ -1,0 +1,26 @@
+diff --git a/node_modules/reanimated-tab-view/src/components/TabView.tsx b/node_modules/reanimated-tab-view/src/components/TabView.tsx
+index bbc8a3b..8579c4a 100644
+--- a/node_modules/reanimated-tab-view/src/components/TabView.tsx
++++ b/node_modules/reanimated-tab-view/src/components/TabView.tsx
+@@ -97,7 +97,20 @@ export const TabViewWithoutProviders = React.memo(() => {
+           style={[styles.container, containerLayoutStyle]}
+           onLayout={onTabViewLayout}
+         >
+-          <View style={styles.absoluteHeaderContainer}>
++          <View
++            style={styles.absoluteHeaderContainer}
++            // PATCHED (2026-09-25, GreenBridgeApp): this container is
++            // `position:absolute` with `bottom:0`, so on Android it spans the
++            // FULL tab-view height (not just the header's own, usually zero,
++            // height) — and the Pan gesture below activates on ANY vertical
++            // drag anywhere in that region, ahead of a scrollable pane's own
++            // native scroll gesture. Every one of our panes renders no
++            // `renderHeader` (header height is always 0) and needs real
++            // vertical scrolling, so this patch removes the whole subtree
++            // from touch dispatch. Safe as long as nothing in this app ever
++            // passes `renderHeader` to `TabView` — grep confirms it does not.
++            pointerEvents="none"
++          >
+             <GestureDetector gesture={scrollLikePanGesture}>
+               <Animated.View style={animatedTranslateYStyle}>
+                 <TabViewHeader />

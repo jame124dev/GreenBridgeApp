@@ -55,7 +55,9 @@ import { Camera, RefreshCw } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
+import { GuestTabState } from '@/features/auth/GuestTabState';
 import { launchSellerScan } from '@/features/lab/scan/launchSellerScan';
+import { useAuth } from '@/stores/authStore';
 import { SellerStatusCard } from '@/features/seller/SellerStatusCard';
 import { useSellerUpgradeStatus } from '@/features/seller/useSellerUpgrade';
 import { brand, spacing } from '@/constants/theme';
@@ -63,8 +65,57 @@ import { brand, spacing } from '@/constants/theme';
 export default function SellerApplyScreen() {
   const { t } = useTranslation();
   const statusQ = useSellerUpgradeStatus();
+  const signedIn = useAuth((st) => !!st.profile);
 
   const status = statusQ.data ?? null;
+
+  /*
+    ── State 0: A GUEST ──────────────────────────────────────────────────────
+
+    This branch is new, and it is the one a signed-out person actually hits.
+    `useSellerUpgradeStatus` is `enabled: signedIn`, so for a guest the query
+    never runs: `isLoading` is false, `isError` is false, and `data` is
+    `undefined`. Every branch below therefore fell through to State 5, which
+    told a person who has no account at all that "selling needs a verified
+    business account" and offered them one button — "Back to browsing". A true
+    sentence, answering a question they had not asked, and a dead end.
+
+    What they need is an account — and this app already has one component for
+    saying so. `GuestTabState` is what a guest sees on Account, Messages and
+    Wants, and `'sell'` was ALREADY a valid `GateReason`; it simply had no copy
+    entry, so it fell through the map's default and showed the Account text.
+    Reusing it is what keeps the four gates a guest can hit in one session
+    looking like one app.
+
+    Its shape matches the web app's own guest gate —
+    `nextjs-port/src/shared/components/ai/aiChatShared.tsx:1484` (`GateCard` →
+    `GateLink`): short title, ONE supporting line, one CTA ("Create a free
+    account to continue" / "Sign in or sign up to list items and manage your
+    bids." / "Create account").
+
+    ⚠️ WHY THIS DOES NOT REOPEN THE GUIDELINE 3.1.1 PROBLEM described at the
+    top of this file. Read before changing the destination.
+
+      • It routes to `app/(auth)/register.tsx`, the app's own PERSONAL account
+        signup — email, name, password, confirm. That screen's docblock records
+        that company, tax id and business type were deliberately removed from
+        it for this exact reason, and `grep -niE "company|tax|business"` over it
+        returns only those comments. It is not a business-registration form.
+      • It is an IN-APP route, not an outbound link. Rejection #3 was caused by
+        an in-app link to a WEB page carrying a Company field; 3.1.3's preamble
+        is about steering to an off-app commercial path. `router.push` to a
+        bundled screen is neither.
+      • The direction is the opposite of the sentence deleted from
+        `register.tsx:521`. That one pushed a NEW USER toward the business
+        application ("apply to sell from the Sell tab"). This one offers a
+        person with no account the ordinary way to get one.
+
+    If the destination ever changes, or signup regains a company/tax field,
+    this branch has to be re-reviewed against that note — not just edited.
+  */
+  if (!signedIn) {
+    return <GuestTabState reason="sell" />;
+  }
 
   // ── State 1: checking. An explaining line, never a bare spinner. ──────────
   if (statusQ.isLoading) {

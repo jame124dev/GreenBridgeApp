@@ -37,6 +37,18 @@ export function launchSellerScan(): void {
     // (same contract as the seller Scan tab).
     useScanDraft.getState().reset();
     // push (not replace) so the OS/back gesture returns to the chat, not the tab.
-    router.push(SMART_DETECT_ENABLED ? routes.scanCamera : routes.scanListingMethod);
+    //
+    // ⚠️ if/else, not the ternary this used to be — behaviour is identical.
+    // Combining two `Href`s in one expression makes TypeScript resolve
+    // expo-router's generated route union across both branches, and that union
+    // is now past the limit because `app/v2/scan/` added screens since this file
+    // was last committed (`TS2590: Expression produces a union type that is too
+    // complex to represent`, `typedRoutes: true` in `app.config.ts`). Returning
+    // each branch on its own types each against `Href` separately.
+    if (SMART_DETECT_ENABLED) {
+      router.push(routes.scanCamera);
+    } else {
+      router.push(routes.scanListingMethod);
+    }
   });
 }

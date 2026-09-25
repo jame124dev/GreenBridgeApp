@@ -45,6 +45,54 @@ describe('useStreamReveal', () => {
     expect(result.current).toBe('Hello there friend');
   });
 
+  /**
+   * ⚠️ WORD CADENCE MUST NOT SWALLOW UNSPACED SCRIPTS.
+   *
+   * `byWord` splits on whitespace. Chinese, Japanese and Thai do not use it, so
+   * the whole unrevealed tail matches as ONE token and a naive implementation
+   * advances the entire answer in a single frame — the reply appears at once
+   * with no streaming. Four of this app's six locales are affected.
+   *
+   * The hook therefore chooses per frame: words when the tail has whitespace,
+   * characters when it does not.
+   */
+  it('falls back to char cadence for text with no whitespace (zh / ja / th)', () => {
+    // 15 unspaced CJK characters. One frame must NOT reveal all of them.
+    const zh = '這台水性分析儀狀況良好適合轉售';
+    const { result, rerender } = renderHook(
+      (props: { s: string }) => useStreamReveal(props.s, false, true),
+      { initialProps: { s: '' } },
+    );
+    rerender({ s: zh });
+    flush(1);
+    expect(result.current.length).toBeGreaterThan(0);
+    expect(result.current.length).toBeLessThan(zh.length);
+
+    flush(40);
+    expect(result.current).toBe(zh);
+  });
+
+  it('still advances by whole words when the text is spaced', () => {
+    const en = 'The Waters Alliance 2695 is a good unit';
+    const { result, rerender } = renderHook(
+      (props: { s: string }) => useStreamReveal(props.s, false, true),
+      { initialProps: { s: '' } },
+    );
+    rerender({ s: en });
+    flush(1);
+    // A word step lands on a boundary: what is shown is a prefix ending at a
+    // space, never mid-word.
+    const shown = result.current;
+    expect(shown.length).toBeGreaterThan(0);
+    expect(en.startsWith(shown)).toBe(true);
+    expect(/\S$/.test(shown) && en[shown.length] !== undefined && /\S/.test(en[shown.length])).toBe(
+      false,
+    );
+
+    flush(40);
+    expect(result.current).toBe(en);
+  });
+
   it('clears the buffer when a new turn resets the source to empty (no stale reply)', () => {
     const { result, rerender } = renderHook(
       (props: { s: string }) => useStreamReveal(props.s, false),

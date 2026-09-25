@@ -7,9 +7,20 @@ import type { DraftItem, ListingMode } from '@/stores/scanDraftStore';
 
 // Fresh-scan entry: smart-detection opens the camera directly (the AI picks
 // single vs multiple); the legacy flow opens the listing-method picker.
-const freshScanRoute: Href = SMART_DETECT_ENABLED
-  ? routes.scanCamera
-  : routes.scanListingMethod;
+/**
+ * ⚠️ if/return, not a ternary — behaviour is identical.
+ *
+ * Combining two `Href`s in one expression makes TypeScript resolve
+ * expo-router's generated route union across both branches, and that union is
+ * past the limit now that `app/v2/scan/` has more screens than when this file
+ * was committed (`TS2590`, `typedRoutes: true` in `app.config.ts`). Returning
+ * each branch separately types it against `Href` on its own.
+ */
+function pickFreshScanRoute(): Href {
+  if (SMART_DETECT_ENABLED) return routes.scanCamera;
+  return routes.scanListingMethod;
+}
+const freshScanRoute = pickFreshScanRoute();
 
 function resumeRouteForItem(draft: DraftItem): Href {
   if (!draft.photos?.length) return routes.scanCamera;

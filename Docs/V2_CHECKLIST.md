@@ -449,7 +449,7 @@ account's content, not a fixture. *L+D* = seen in both colour schemes.
 
   **Lead for whoever finishes it:** Metro's log holds
   `ReferenceError: Property 'GUTTER' doesn't exist` with the stack
-  `<global> (app2oice.tsx)` — a module-scope failure, which is exactly the
+  `<global> (app/v2/voice.tsx)` — a module-scope failure, which is exactly the
   shape that produces this symptom. `GUTTER` is used at module scope in this
   file's `StyleSheet.create` (lines 436 and 454) and is a plain `const` export
   from `theme/v2/scale.ts`, so a temporal-dead-zone hit through a circular
@@ -2555,3 +2555,1475 @@ reversed asset from design** — there is none in `assets/` or the canvas
 old UI. Repointed at `routes.v2Listings` / `routes.v2Drafts`. That was a second
 leak on the same path as Home's "See all", found only because the Account screen
 was open for an unrelated reason.
+
+## 6e Chat verified on the Samsung, against tunnelled backends. 2026-09-22
+
+Device `RZCR908Z02Z` (SM-G781B, 411dp) — a handset with **no network of its own**
+(`Active default network: none`), driven entirely over USB with
+`adb reverse` on 8081 / 4000 / 8000.
+
+### What is proven, by pressing it
+
+| Behaviour | Evidence |
+|---|---|
+| Suggestion chip fills the composer (does not auto-send) | `M2` — text in field, keyboard up |
+| Send works; **keyboard auto-dismisses** | `M3`/`M4` — keyboard gone, bubble committed |
+| Assistant banner **collapses** after the first message | header is the brand bar alone from `M4` on |
+| Question **pins to the top**, answer grows beneath | `M4` |
+| A real streamed answer renders | `POST /chat/stream → 200`, prose on screen |
+| Failed turn → error note + **Try again**, and Try again **re-sends** | injected 500, then 5 → 7 POSTs on the press |
+
+### The markdown fixes from 2026-09-21, now seen rather than reasoned about
+
+A canned SSE fixture carried the three shapes the renderer was changed for. This
+is not a mock standing in for real data — the renderer's entire input IS the
+string, so feeding the adversarial string is the test:
+
+| Input | Rendered |
+|---|---|
+| `\| Spec \| Value \|` + `\| --- \| --- \|` header rows | dropped; rows read **Capacity** › value |
+| `> 5 tonnes capacity` | `> 5 tonnes capacity` — not eaten as a blockquote |
+| `PART_NO_4` | `PART_NO_4` — underscores intact, no intra-word emphasis |
+
+### Two traps this run cost time to, both about instruments
+
+**`.env` is read once, when Metro starts.** `app.config.ts` does
+`import 'dotenv/config'`, so editing `.env` after `expo start` changes nothing:
+the served manifest kept `GREENBIDZ_API_URL=https://testapi.greenbidz.com/api/v1`
+for 40 minutes while the file on disk said `localhost`. On a phone with no
+network that means *every* request fails, and the app's word for it is
+"Connection lost" — the same words a 500 produces. After changing `.env`, restart
+Metro and **read the manifest** before touching the device:
+
+```
+curl -s -H 'expo-platform: android' -H 'accept: application/expo+json,application/json' \
+  http://127.0.0.1:8081/ | python -c "import json,sys; print(json.load(sys.stdin)['extra'])"
+```
+
+**A negative network observation is only evidence if the probe could have seen a
+positive.** "Try again" was written up as dead because no request reached the
+local proxy — while the app was posting to `ai.greenbidz.com`, which that proxy
+cannot see. It was never broken. Pressing an unrelated control (the Buying tab)
+proved touch input works, which is a different claim, and reading it as
+confirmation is how the false finding survived.
+
+## The auth screens are v2. 2026-09-22
+
+`login`, `register` and `forgot-password` were the last screens a user could
+reach that still drew themselves: three private palettes of hardcoded hex
+(`ECO_TEAL #00B289`, `FOREST #14452f`, a run of greys), none of it in any token
+file, and **no dark variant of anything** — on a dark phone they were white
+sheets with black text.
+
+### Converted IN PLACE, not forked — and that is a deliberate break with `SignInSheet`
+
+`SignInSheet` sits beside the shipped `SignInPrompt` rather than replacing it,
+and the same instinct would fork these. It is wrong here for a reason that does
+not apply to a sheet: there is exactly ONE auth group and everything routes to
+it globally. `AuthGuard` sends any unauthenticated user to `/(auth)/login`
+whichever UI they came from, and it already carries a delicate fix for a
+redirect RACE against these very screens (`postAuthLanding`). A second login
+would mean a second copy of that race, and a deep link into v2 while signed out
+would still land on the old one.
+
+**The consequence, stated plainly: sign-in now looks different in the app people
+are using today, not only in v2.** That is unavoidable while one auth group
+serves both.
+
+`app/(auth)/_layout.tsx` gained the `V2ThemeProvider` — it is the second place
+in the app that mounts one, a sibling of `app/v2/_layout.tsx`, never nested.
+
+### What changed on each screen
+
+| | Before | After |
+|---|---|---|
+| Sign in | CTA last inside a scrolling card | sticky `PrimaryAction` in `Screen`'s footer |
+| Sign in | bordered card + 4pt teal stripe | hairline structure, no card (t6's device) |
+| Sign in | "Forgot?" beside the PASSWORD eyebrow | "Forgot password?" under the field |
+| Sign in | teal "Sustainability first" pill | removed — a pill is a control shape here |
+| Register | bare `View` + hand-rolled insets | `Screen` |
+| Register | two flex `View`s as a step rail | `ProgressLine` |
+| Register | password pair had **no labels at all** | `Field` eyebrows on all four |
+| Register | errors as loose red paragraphs | the field's own `help` line |
+| Reset | inline button, white page | sticky CTA, wash header, 3-step rail |
+| Reset | countdown as a 13pt caption | `h3`, and `danger` at zero |
+
+Two kit additions rather than screen-local code: `BrandBar` took a
+`notifications` prop (auth has no bell destination — its only one is the old
+UI's notifications screen, which would make signing in an exit out of v2), and
+`OtpField` vendored `components/ui/OtpInput`'s behaviour into v2 tokens. The
+shipped OTP input is untouched; the old UI still mounts it.
+
+### Enforced, not just done
+
+`v2Adherence.test.ts` now scans these three files by name (`ALSO_SCANNED`).
+Converted-and-unenforced is the worst state: the next edit reaches for a hex
+because nothing stops it. `pending.tsx` is deliberately NOT in the list — it is
+still on the old kit, and adding the whole directory would fail on a file nobody
+has converted, whose natural fix is to delete the rule.
+
+The rules were checked against a planted violation, in memory, rather than by
+editing a file a live device was reloading from: `#ff0000` and `padding: 7`
+appended to each source were caught as `hex,space`, and the files themselves are
+clean.
+
+### Pressed on the device (Samsung `RZCR908Z02Z`)
+
+Every control on all three converted steps, derived from a fresh dump each time:
+
+- **Sign in, 7/7** — EN (sheet opens, dismissed without changing the language),
+  email, password, show/hide (masked → `hunter2`, a11y label flips), Forgot
+  password? (→ reset), Create account (→ register), Sign in (validation fires,
+  both fields go `danger` with their own help lines).
+- **Reset, email step 3/3** — back (→ sign in), field, Send code (validation).
+- **Register, credentials step 9/9** — back (→ sign in), four fields, Terms and
+  Privacy (both foreground Chrome), "Already have an account? Sign in"
+  (→ sign in), Send verification code (validation on email, name, password).
+
+⚠️ **NOT pressed, and not claimable:** the register `code` and `done` steps and
+the reset `otp` / `password` steps. Reaching any of them needs a real account or
+a real emailed code, which means writing real data and mailing a real address.
+They are code-verified only.
+
+One thing was found and left alone rather than diagnosed: re-set as a plain
+`eyebrow`, "Sustainability first" wrapped onto two centred lines — measured at
+135dp wide inside 347dp of available width, so not a width problem. The element
+was removed for its own reasons; the cause is unexplained and is not written
+down as though it were known.
+
+### Three green suites went red, and the fix was not in the screens
+
+`app/(auth)/__tests__/` renders these screens, so the moment they imported the
+v2 UI barrel all three failed to LOAD:
+`react-native-keyboard-controller`'s `bindings.native.ts` builds a
+`NativeEventEmitter` over a TurboModule that does not exist under Jest and
+throws at IMPORT time. The stack points at `Screen.tsx`, which reads like a
+broken test rather than a missing mock.
+
+- `jest.config.js` maps the module to the mock the library ships. It does **not**
+  register itself — `jest/index.js` ends in `module.exports = mock`, so pointing
+  `setupFilesAfterEnv` at it evaluates an object and changes nothing.
+- ⚠️ `setupFiles` must NOT be declared in `jest.config.js`: jest-expo fills it
+  with two entries and declaring the key replaces the array rather than
+  appending, removing the RN environment from every test.
+- `src/test-utils/reanimatedMock.ts` — each suite had its OWN partial Reanimated
+  mock covering only what the old `Button` touched, so all three died on
+  `useReducedMotion is not a function`. `Row.layout.test.tsx` had left a note to
+  lift its version here "when a second v2 component needs it"; that is now.
+  It also needs `useEvent`/`useHandler` for **gesture-handler**, whose probe
+  succeeds against a partial mock and then fails inside RNGH with an error that
+  points nowhere near the cause.
+
+158 suites / 1588 tests green, `tsc --noEmit` clean.
+
+## Two fresh-eyes reviews of the auth forms, and what came of them. 2026-09-22
+
+Two agents were given the five screenshots and the source, with no knowledge of
+who wrote them: one asked to react as a person, one to run
+`UX_DESIGN_RULES.md`'s checklist and the form/a11y mechanics a screenshot cannot
+show. They led with the same finding independently, which is the strongest
+signal either of them produced.
+
+Every claim below was re-verified here before acting on it. Two were wrong in
+their numbers and are corrected inline.
+
+### Fixed
+
+| What | Evidence it was real | What changed |
+|---|---|---|
+| **The input boxes were invisible.** `surface #F5F9F7` on `base #FFFFFF` = **1.06:1** (computed). Only the red *invalid* border made a field look like a field | one reviewer: "two labels floating over nothing" | `Field` now draws a resting `hairlineStrong` border — **but see "not closed" below** |
+| **Empty Confirm password passed validation.** `confirmPassword: z.string()` with no `.min(1)`; the `.refine` compares, and `'' === ''` | on device: three red fields and a fourth that looked fine | `.min(1)` + `mobile.auth.register.confirmRequired`. All four now error |
+| **iOS never offered the saved password.** `autoComplete="password"` is in RN's **Android-only** list (`TextInput.d.ts`); `current-password` is the cross-platform one | read the type definitions | `autoComplete="current-password"` + `textContentType` |
+| **Login's validation was raw English**, never through `t()`, unlike every other schema — the first screen a non-English user meets | `schema.ts` held the literals | i18n keys, and `emailRequired` split from `emailInvalid` (zod's `.email()` rejects `''` too, so an empty field was told its address was malformed) |
+| **Field labels at 2.94:1** — `palette.ts` allows `inkSubtle` for *metadata*, but this is the input's accessible name | computed | `inkMuted`: **5.65:1** light, **8.98:1** dark |
+| **The eye toggle was 42pt** — `icon.lg` 18 + `space.xl` 12 ×2 — under the `MIN_TOUCH` 44 that `Field.tsx` itself asserts, and hitSlop is invisible to a layout dump | arithmetic | a real 44pt box, as `BrandBar` already concluded for its own controls |
+| **The same error printed twice** on the commonest failure — field `help` *and* a toast over it | `login.tsx` | toast dropped for `INVALID_CREDENTIALS` only; the branches with no field keep theirs |
+| **Four fields, four dead ends.** No `returnKeyType`/`onSubmitEditing` on register, and `Field` was not `forwardRef`, so a chain was impossible and react-hook-form's `shouldFocusError` silently no-opped | source | `Field` is `forwardRef<TextInput>`; email → name → password → confirm → submit |
+| **`••••••••` as the password placeholder** — dots are what a FILLED secure field looks like | screenshot | removed |
+| **`SectionNote` double-guttered to 48pt** inside a body that already has one — a third horizontal position, which `spacing-and-layout.md` R4 forbids. *Mine, introduced with the screens* | source | cancelled at the call sites |
+| **The way back to sign-in vanished exactly when needed.** Each error line adds ~50dp; with four showing, the body outgrows the viewport and anything after the fields falls below the fold | device: `bounds=(63,2062)(1017,2046)` — an inverted rect | moved into `Screen`'s **footer**, a flex sibling nothing can push. Re-measured with all four errors: `(63,2117)(1017,2186)` VISIBLE |
+| Error lines were silent on Android — `accessibilityRole="alert"` alone does not announce | — | `accessibilityLiveRegion="assertive"` when invalid |
+
+⚠️ **Moving the link above the legal line was tried first and did NOT work** — the
+body was still too tall. Recorded because the obvious fix was the wrong one.
+
+### NOT closed — a palette decision, not a screen fix
+
+**The field boundary still fails WCAG 1.4.11.** Measured off the device after the
+change: **1.27:1** against the page (was 1.04:1). Better, and the box is now
+perceivable, but 3:1 is the bar. No token in the palette can reach it —
+`hairline` 1.10, `hairlineStrong` 1.27, `inkDisabled` 1.88, `inkSubtle` 2.94, all
+on white. A compliant boundary needs a NEW token, and that changes the look of
+every v2 form (four review steps, the chat composer, three auth screens). That is
+the user's call, not a checklist item to tick.
+
+Same class, also open: placeholder `inkDisabled` at **1.77:1**.
+
+### Round two — the rest of the list, done 2026-09-22
+
+| What | Why it was wrong | Verified |
+|---|---|---|
+| **The sticky footer covered the field being typed into** — `Screen`'s `bottomOffset` was a flat `space['8xl']`, which is the gap above the KEYBOARD and knows nothing about a footer standing on it. Input at y1219–1320 with footer rows at y1073–1215 and y1252–1367 | reported by the user; got worse when register's footer grew to two rows | `Screen` measures the footer (`onLayout`) and reserves its real height. Re-measured: 260px clear on register **and** on login |
+| Reset step 1 had **no labelled way back** — one 30pt chevron, while the later steps of the same flow offer one | someone who taps "Forgot password?" by mistake is stuck | "Back to sign in" in the footer; pressed, lands on sign-in |
+| No focus chain on reset's two password fields; no `textContentType` | every field a dead end | new → confirm → submit |
+| No visible step count on either wizard | `ProgressLine`'s header says the count "lives in the heading above"; it did not | `STEP 1 OF 2` / `STEP 1 OF 3` eyebrow, on glass |
+| No reveal toggle on the four create-password fields | login had one; these did not | `RevealToggle` in the kit, used by all five fields. **One toggle drives BOTH boxes of a pair** — revealing only one leaves "do they match?" unanswerable, which is the entire purpose of a confirm field. Pressed: `alpha111` / `beta2222` both revealed, both labels flipped |
+| The 8-character rule appeared only AFTER a failed submit | the first a person heard of it was being told off | shown as the field's resting `help` |
+| Register's resend was **tap-spammable**; the reset flow has always been rate-limited | two identical-looking links, one guarded and one not | `useRegistration` gained a 30s cooldown, armed when a code is sent (not only on a manual resend) and guarded in the hook, not just the UI |
+| `SectionNote` double gutter on the reset screen too | a third horizontal position (`spacing-and-layout.md` R4) | cancelled at all three sites |
+| **A `setState` inside an effect** cleared the OTP field on both screens — eslint `react-hooks/set-state-in-effect`, and it fired on the error CHANGING, so the same wrong code twice left the digits sitting there | pre-existing, carried over verbatim in the v2 port | both now clear from the submit result in the handler. `useForgotPassword.submitOtp` returns a boolean (additive) |
+
+⚠️ **Deliberately NOT done:** a TTL countdown on register's code step. The reset
+flow has one because its code is short-lived and the screen is a race; signup's
+server window is 10 minutes and there is no distinct "expired" outcome to act
+on, so a 10:00 clock would add pressure without offering an action. The
+spam problem the reviewer actually named is fixed by the cooldown.
+
+### Still open
+
+1. All five `SectionNote` error sites omit `actionLabel`/`onAction`, which the
+   component offers — a `NETWORK` error is still a dead end.
+2. Reset step 1 still has a large blank area under its single field. The
+   reviewer's fix (un-stick the CTA) is rejected; the footer back-link fills
+   part of it and the rest is honest empty space on a one-field screen.
+3. `pending.tsx` — the last auth screen still on the old kit.
+
+### Reviewer claims that did not survive checking
+
+- "Field fill 1.03:1" — sampled off a screenshot through the `MaterialFill`
+  gradient. Computed from the tokens it is **1.06:1**. Same conclusion.
+- "C1 has a 1088px hole … move Send code out of the sticky footer and inline it"
+  — the hole is real, but inlining the CTA contradicts `UX_DESIGN_RULES.md`'s
+  sticky-primary rule. Rejected; the missing back-link on that step is the part
+  worth fixing.
+
+## Still blocked
+
+The **local** Python assistant cannot serve chat: `app/api/chat.py:340,630` pass
+`target_seller_id=` to `ChatContext`, whose dataclass
+(`app/agent/assistant.py:38`) has no such field, so `/chat` and `/chat/stream`
+both 500. Both files are **uncommitted** on `feat/sourcing-assistant` and neither
+mentions the kwarg at HEAD — an in-flight change owned by another session, so it
+is not ours to finish. Chat therefore runs through a streaming pass-through
+proxy on `:8000` to the live assistant. The local one also has no Meilisearch, so
+product search would be empty regardless.
+
+## Auth redesign — 5 Stitch explorations (2026-09-23)
+
+Sent the CURRENT sign-in + sign-up to Stitch and asked for five interactive
+directions to choose between. Stitch project **"GreenBidz Mobile — Sign in &
+Sign up (5 versions)"**, id `15796976069828452227`.
+
+The design system it generated against (`assets/11155386899213551307`, version 3)
+carries the REAL tokens read out of `src/theme/v2/palette.ts` and `scale.ts` —
+both schemes, the radius/height scale, and the ten non-negotiable UX rules
+(one sticky primary, label above the field, error as the field's help line,
+password rule shown before it is broken, no social sign-in, no business fields).
+Font is **Plus Jakarta Sans**, not Poppins: Stitch's font enum has no Poppins,
+and `OUTFIT` — the closest geometric match — is rejected by the API with
+`invalid argument`, which is also what silently dropped the fonts on the first
+`create_design_system` call.
+
+| # | Screen title | Direction |
+|---|---|---|
+| V1 | Classic Hairline | Today's layout, cleaned. One bordered card, hairline structure, links (not tabs) between the two forms. |
+| V2 | Wash Hero | `#EDF6F1` header panel, white sheet overlapping upward, 2-up segmented control switching Sign in / Create account. |
+| V3 | One Question | One field per step, 4-segment progress rail, auto-focus, Enter = primary. Sign in is 2 steps, signup 4 + code. |
+| V4 | Guest Sheet | Auth as a bottom sheet over a dimmed marketplace, with scrim-dismiss and a floating "Sign in" pill so a guest is never trapped. |
+| V5 | Dark First | The dark scheme as the default, with a sun/moon toggle that flips the whole prototype to light so both can be judged together. |
+
+Every version is one page holding four views — sign in, signup step 1, the
+6-digit code step, and done — switched by real JS. Copy is verbatim from
+`en.json` (`mobile.auth.*`). Demo password is `password123`; OTP `000000` fails,
+any other six digits pass.
+
+**Verified, not assumed** (Playwright at 390×844, `scratchpad/auth/probe.mjs`):
+all six pages render the sign-in copy, the reveal toggle flips the input type,
+"Create account" reaches the signup view, and no page throws a JS error. A first
+pass reported "no inline error" on V2/V4a/V4b — that was my CTA selector, not the
+pages; a second probe filling `not-an-email` and pressing the real button shows
+"Enter a valid email" attached under the field on all three.
+
+Two caveats worth knowing before picking:
+- **There are 6 screens, not 5.** V4 exists twice ("V4 Guest Sheet" and "V4 Guest
+  Sheet Interactive") because a timed-out call landed anyway and I re-fired it —
+  see `../MISTAKES.md` 2026-09-23. Either can be deleted; nothing depends on them.
+- V5's primary pill renders lighter than `#2E7D5B`; Stitch's own primary token
+  (`#096444`/`primary-container`) is competing with the override. Cosmetic in a
+  mockup, but do not sample colours off these prototypes — take them from
+  `palette.ts`.
+
+### Built: V2 Wash Hero auth (2026-09-23)
+
+Chosen from the five explorations above and built on the v2 kit. Three screens
+now share one frame — `src/features/v2/auth/AuthShell.tsx`:
+
+- wash panel bleeding to the top (brand bar, eyebrow, title, subtitle),
+- a `base` sheet whose curved top edge cuts into it, carrying the Sign in /
+  Create account segment,
+- one sticky primary action in `Screen`'s keyboard-aware footer.
+
+| File | What changed |
+|---|---|
+| `src/features/v2/ui/SegmentedControl.tsx` | **KIT GAP, filled.** The kit only had `Tabs` (underline). Auth needs a track with a raised thumb. Thumb ramps with `MaterialFill`, track stays flat (a recess, like `ProgressLine`). Thumb role forks by scheme: `base` in light, `fillStrong` in dark — `base` in dark is the darkest colour in the palette and would paint a hole. |
+| `src/features/v2/auth/AuthShell.tsx` | The frame. |
+| `src/features/v2/auth/AuthStepRail.tsx` | Step eyebrow + `ProgressLine`, shared by the sign-up and reset wizards, which each had a drifted copy. |
+| `app/(auth)/login.tsx` | Wash hero. Card removed; "Don't have an account? Create account" removed (the segment is that route now); CTA moved into the sticky footer; tagline deleted. |
+| `app/(auth)/register.tsx` | Same frame. "Already have an account? Sign in" removed. Segment hidden on the code step, whole title block dropped on the outcome step. Email prefills from the segment switch. |
+| `app/(auth)/forgot-password.tsx` | Same frame, `segmented={false}`. Converted for the same reason as last time: it is one tap from sign-in, so an unconverted destination is a visible seam. |
+| `app/(auth)/__tests__/authShell.segment.test.tsx` | 5 new tests on the segment's navigation — see below for why it is tested and not tapped. |
+| `src/__tests__/externalLinks.test.ts` | The Guideline 3.1.1 assertion moved with the route: it asserted the literal `router.push('/(auth)/register')` inside `login.tsx`, and the entry point now lives in the shell. Same guarantee, asserted on both files. |
+
+**Two decisions worth knowing.** The curve is drawn at the BOTTOM of the fixed
+header, bled out with `marginHorizontal: -GUTTER`, not as a negative margin on
+the scroll body — Android's `ScrollView` clips children to its bounds, so the
+overlap that makes the effect is exactly what would be cut, on one platform,
+silently. And the tagline was deleted on the device pass: it repeated the hero
+eyebrow, and on a two-field form it floated in ~280pt of gap rather than
+closing the page.
+
+**Verified on device** (RMX2151, 423dp, Metro 8082), one input per command:
+- Light and dark, all three screens. Curve, segment, fields, footer correct in both.
+- Reveal toggle flips (`Show password` → `Hide password` in the tree).
+- Sign in on an empty form attaches "Enter your email address" / "Enter your password" to the fields.
+- **The keyboard case:** focused CONFIRM PASSWORD (the last field of the longest form) measured at y912–968 with the footer starting at y1210 — clear by 242px. This is the trap that shipped once before.
+- Forgot password? navigates (the signed-in session is then bounced by `AuthGuard`, which is correct).
+
+**NOT verified on device, and why:** the segment's navigation. `AuthGuard`
+redirects a signed-in user away from `/(auth)/*`, and the device holds a real
+session whose password we do not have, so signing out is not reversible. The
+screens were reached through a temporary `app/v2/authpreview` route (deleted;
+`v2Inventory.test.ts` fails if it is left behind). The navigation is pinned by
+the 5 tests instead, and those were mutation-checked — 3 of them fail when
+`switchTo` is made a no-op. **A dev/staging test login would close this gap.**
+
+Gates: `tsc --noEmit` clean · `jest` 1704/1704 · eslint 0 errors.
+
+#### Keyboard-state audit of the auth screens (2026-09-23) — 6 open issues
+
+Prompted by a screenshot from the user: sign-up with the keyboard open is
+close to unusable. Audited every reachable state on device (RMX2151, 423dp),
+one input per command, screenshots in `Docs/AuthScreenImg/`.
+
+**The root cause of 1–4 is one thing: the wash hero is fixed and does not
+collapse when the keyboard opens.** Measured on login: the scroll window is
+1006px with the keyboard closed and the visible slot drops to ~284px (~111dp)
+with it open, while the fixed header keeps ~625px (~245dp) for the brand bar,
+eyebrow, title, subtitle and segment. A field row is ~93px plus its label.
+
+| # | Issue | Evidence |
+|---|---|---|
+| 1 | Hero doesn't collapse with the keyboard; the form gets ~111dp of a 2400px screen. | `audit-login-kb-email.png`, `audit-signup-kb-email.png` |
+| 2 | **The focused field's own label scrolls out of view.** The keyboard-aware scroll aligns the input's TOP with the top of the window, so the eyebrow above it goes. On sign-up that strips the labels off PASSWORD and CONFIRM PASSWORD — two identical boxes whose only difference is the label. | login: email rect collapses 93px→56px at the window edge, `EMAIL ADDRESS` absent from the tree while focused |
+| 3 | The next field down is sliced by the sticky footer with no scroll affordance — reads as broken, not scrollable. | the user's `login-light-20260923-124217.png`; `audit-login-kb-email.png` (password box cut through its eye icon) |
+| 4 | **Fields below the keyboard cannot be tapped.** A tap aimed at CONFIRM PASSWORD landed on the keyboard and focus stayed on email. The only way down a 4-field form is the keyboard's Next key. | `audit-signup-kb-confirm.png` — cursor still in the email field after the tap |
+| 5 | The segment's thumb is not a shape: **1.14:1** against its track in light, **1.10:1** in dark, vs the 3:1 non-text minimum. Selection is carried only by label weight/colour. The Stitch original separated it with a drop shadow, which this design language forbids — so it needs a hairline or an `accentWash` fill. | computed from `palette.ts`: `#FFFFFF` on `#EDF1EE`, `#243830` on `#1D3129` |
+| 6 | "Forgot password?" sits between the password field and the footer, i.e. inside the strip the keyboard covers — unreachable exactly when you are failing to sign in. | `audit-login-kb-email.png` |
+
+Minor, not in the table: reset has two controls with the identical
+accessibility label "Back to sign in" (the chevron steps back one step, the
+footer link leaves the flow), and sign-up's segment discards a typed name and
+password if pressed mid-form — only the email is carried.
+
+**Checked and NOT a defect** (recorded so it is not re-investigated): inline
+validation does fire with the keyboard up — submitting `not-an-email` renders
+"That email address does not look right" and "Enter your password" at y1358,
+above the keyboard. An earlier grep for `Enter|valid` missed the first string
+and nearly went in this table as a seventh finding.
+
+**Not verified:** the sign-up code and outcome steps, and the reset OTP and
+new-password steps, with the keyboard. Reaching them needs a real signup or
+reset round trip — a dev/staging test login and a mailbox.
+
+#### Fixes for the keyboard audit (2026-09-23) — 5 of 6 closed
+
+| # | Issue | Fix | Verified |
+|---|---|---|---|
+| 1 | Hero never collapsed | `AuthShell` watches `useKeyboardState` and drops the eyebrow + subtitle while typing; title goes `numberOfLines={1}`; the sheet cap's padding shrinks with it. No animation — the keyboard is already animating and a second curve reads as a lurch. | ✅ tree shows eyebrow/subtitle gone; slot on sign-up **111dp → 275dp** |
+| 3 | Next field sliced by the footer | Same collapse, plus `footerQuiet`: the secondary row ("Do later", "Back to sign in") is dropped while the keyboard is up. It cost ~126px of the strip you are typing in. | ✅ all four sign-up fields above the footer; "Do later" absent from the tree while typing |
+| 4 | Fields below the keyboard untappable | Mitigated by 1 and 3 — three of four sign-up fields are now above the fold. Not eliminated: on a long form the last field is still below and must be scrolled to, which is ordinary scrolling behaviour. | ◐ partial, by design |
+| 5 | Segment thumb 1.14:1 / 1.10:1 vs its track | 1pt `accentInk` border on the selected segment — **6.32:1** against the track in light, **7.13:1** in dark. `accent` was the first instinct and fails dark at 2.76:1. Unselected segments carry the same border in `transparent` so the row cannot resize. | ✅ visible in both schemes, `final-login-dark.png` |
+| 6 | "Forgot password?" unreachable while typing | Falls out of 1 and 3. | ✅ present in the tree with the keyboard up |
+| 2 | **Focused field's label scrolls out of view** | **NOT FIXED.** `KeyboardAwareScrollView` aligns the focused input's top with the top of the scroller whenever the content is scrollable, and with `mode: "insets"` the keyboard's height is added to the scrollable range, so it always is. Two attempts: `bottomOffset` is not the cause (zeroing it changed the layout by nothing), and re-running `assureFocusedInputVisible()` after the layout settles helps on some runs and not others — **the behaviour is not deterministic between identical runs**, so no claim either way. | ❌ open |
+
+Residual harm from 2 is much smaller than it was: the field is full height rather
+than clipped, and the labels of the fields you are NOT focused on all stay — so
+the case that mattered (two identical password boxes) no longer occurs. A
+`Screen`-level fix would need the scroll target to be the `Field` wrapper rather
+than the `TextInput`, which the library does not expose.
+
+**Instrument correction, recorded because the wrong number is still in earlier
+notes.** The `ScrollView`'s rect is NOT the visible slot: a sticky footer is an
+overlay to the view tree, so the rect runs on underneath it and behind the
+keyboard. It reported 1410px (553dp) for a strip that is really 702px (275dp),
+and called a field "fully visible" that is drawn under the footer. The slot is
+`scrollView.top → min(footer.top, keyboard.top)`. `FORM_INPUT_RULES.md` § 4 and
+`Docs/v2/TRAPS.md` have both been corrected.
+
+Gates after the fixes: `tsc --noEmit` clean · `jest` 1704/1704 · eslint 0 errors.
+
+---
+
+## `/v2/dashboard/bids` — My bids (**PHASE 2 — live API**, 2026-09-24)
+
+> **The "blocker" was never real.** This screen sat on a fixture for three
+> sessions because I told the user phase 2 needed a dev/staging test login. It
+> does not. `GET /buyer/bid/buyer/{id}` returns **200 with real rows and no
+> credentials** — it is in the unauthenticated route class in
+> `Docs/v2/SECURITY-WISHLIST.md`. Logged in `../MISTAKES.md`, 2026-09-24.
+
+**Verified on real data** — `localhost:8000` web harness against
+`testapi.greenbidz.com` (dev), buyer 574: **11 bids, real titles, real
+photographs, real amounts.** Screenshot `Docs/AuthScreenImg/bids-real-api.png`.
+
+| Piece | State |
+|---|---|
+| query | `src/features/v2/bids/useBuyerBids.ts` — React Query + `greenbidz`, `staleTime: 30s` |
+| buyer id | `useAuth((s) => s.profile).id`, falling back to `DEV_BUYER_ID = 574` **only under `__DEV__`** — a release build with no session queries nothing rather than someone else's bids |
+| loading | "Loading your bids…" — explanatory, not a spinner; the empty state is suppressed while pending so it cannot flash a lie |
+| error | `SectionNote tone="danger"` + a working **Try again** — seen live while the local backend was down |
+| refresh | pull-to-refresh wired to `refetch` |
+
+### Three things real data showed that fixtures could not
+
+1. **Duplicate-looking rows are REAL.** "N9952A Handheld Spectrum Analyzers"
+   appears twice, same batch, same amount. Checked before reporting it as a
+   bug: 11 rows, **11 unique `buyer_bid_id`** — two genuine bids on one batch.
+   The keyExtractor is on `buyer_bid_id`, so they are distinct rows correctly.
+2. **`top_bid` is null on all 11 rows**, so the "Outbid" chip can never fire.
+   The derivation is right; the *input* is missing — the list endpoint does not
+   carry it and the web fetches it per batch (`bidApiSlice.ts:472`). Outstanding.
+3. **`batch_step` comes back as 2, 3 and 5** — the stage table only covers
+   **5–9** (Bidding/Payment/Pickup/Completed/Closed), so most rows show no
+   stage. ⚠️ Not a transcription error: `MyBids.tsx:97-103` has the same 5–9
+   table, so **the web cannot label steps 2–4 either**. Whatever 2 and 3 mean,
+   neither surface says. Needs the backend's own enum, not a guess.
+
+### The web harness needs a CORS-allowed port — and :8083 is not one
+
+Wasted a cycle on this. The backend's allowlist (`101recycle-greenbidz-backend/app.js:184`)
+already carries the Expo web harness, commented as such — but at **:8090**,
+which is currently held by an unrelated Windows process. Free and allowed:
+**8000**, 8002, 5173, 3000. On an arbitrary port every request dies with
+`No 'Access-Control-Allow-Origin'`, which looks exactly like a broken query.
+
+Two related traps, both of which cost a probe:
+- `curl … && echo alive` reports **alive on an empty response**. Check the
+  status code, not the exit code.
+- The page loads `entry.bundle` with `&hot=false&lazy=true&transform.engine=hermes…`.
+  Probing the bundle *without* those params reads a **different cache entry** —
+  it showed the new API URL while the page still had the old one. Probe the
+  exact URL from the served HTML, and `--clear` when config changed.
+
+### All three buyer pages are now on the real API (2026-09-24)
+
+| Page | State | Evidence |
+|---|---|---|
+| My bids | ✅ **11 live bids** | `bids-real-api.png` |
+| Watchlist | ✅ **6 live saved lots**, real photographs | `watchlist-real-api.png` |
+| Inspections | ⚠️ wired, `200`, correct params — **0 rows for the only buyer we may query** | `inspections-real-api-empty.png` |
+
+Shared: `src/features/v2/dashboard/useBuyerId.ts` — signed-in `profile.id`, or
+`DEV_BUYER_ID = 574` **under `__DEV__` only**. In a release build an
+unauthenticated user queries nothing rather than a stranger's data; given these
+routes do not check who is asking, that guard is a security control, not a
+convenience.
+
+Each page: explanatory loading copy, `SectionNote` + working **Try again**,
+pull-to-refresh, and the empty state suppressed while pending so it cannot
+flash a lie.
+
+**Three sibling endpoints, three different envelopes** — read each from the
+server, never generalise:
+
+| Endpoint | Rows at |
+|---|---|
+| `/buyer/bid/buyer/{id}` | `data.data` |
+| `/inspection/buyer/{id}` | `data.data` (+ `data.pagination`) |
+| `/wishlist/{id}` | **`data.wishlist`** |
+
+### Inspections is NOT verified on real rows, and will not be by guessing
+
+Buyer 574 has zero inspections. Finding one that does would mean incrementing
+buyer ids against an endpoint with no auth — which is the exact abuse
+`Docs/v2/SECURITY-WISHLIST.md` documents, so it was not done. Outstanding:
+
+- the card layout against real rows
+- **the `status` param**, which the server has not been shown honouring. Phase 1
+  filtered client-side; this now sends `status=Attended` to the server, and per
+  `CLAUDE.md` a query param is unsupported until the server is shown changing
+  its answer. With 0 rows, "with" and "without" both return 0 — the test is
+  vacuous. Needs a buyer with inspections, supplied rather than discovered.
+
+### The CORS trap has a second half: `localhost` ≠ `127.0.0.1`
+
+The backend allowlist (`101recycle-greenbidz-backend/app.js:184`) lists both
+spellings for some ports and only one for others — `http://localhost:8000` is
+there, `http://localhost:8002` is **not**, but `http://127.0.0.1:8002` is. They
+are different origins to the browser. Loading the harness at the wrong spelling
+fails every request with `No 'Access-Control-Allow-Origin'`, which reads
+exactly like a broken query.
+
+**Also: "is the harness up?" is not "is something on that port?".** Twice a
+`curl … && echo up` passed against a *different* process — once a leftover
+Expo, once an unrelated `python3.13` that had taken :8000. Wait for
+`Waiting on http://localhost:<port>` **in the harness's own log** before
+trusting the port.
+
+---
+
+## `/v2/dashboard/bids` — My bids (phase 1 record, superseded above)
+
+Built by the clone-then-copy method the user asked for, from **two** MIT repos
+vendored under `ui_git_repo/`. Nothing on this screen was designed from scratch.
+
+| Part | Copied from | File | What was adjusted |
+|---|---|---|---|
+| List | `obytes-template/src/features/feed/feed-screen.tsx` | `src/features/v2/bids/bids-screen.tsx` | `usePosts()` → fixture; keyExtractor by id not index; `EmptyList` → our `EmptyState`; NativeWind classes → `StyleSheet` |
+| Card | the same template's `post-card.tsx` | `src/features/v2/bids/bid-card.tsx` | added the money line, the status chip and an `onError` cover fallback; cover 224 → 102dp |
+| Tab bar | `collapsible-tabs/src/MaterialTabBar/{TabBar,TabItem,Indicator}.tsx` | `src/features/v2/bids/material-tab-bar.tsx` | three files merged into one; `indexDecimal` driven from the controlled `value` instead of a pager; function-form `style` → `usePressFeedback`; RN `Pressable` → RNGH; `#2196f3`/`rgba(0,0,0,1)`/`#DDDDDD` → `c.accent`/`c.ink`/`c.inkSubtle`; `TABBAR_HEIGHT 48` → `MIN_TOUCH`; their `isRTL` helper → `I18nManager.isRTL` |
+| Header | **nothing — deleted, not ported** | `app/v2/dashboard/bids.tsx` | Obytes has no header component; `collapsible-tabs`' example header is 8 lines wrapping a title in a fixed box. The title moved into `DashboardBar`, the 27pt display title and the subtitle went. ~500px of chrome → ~330px |
+
+**Why the tab bar was worth copying and our `ui/Tabs.tsx` was not enough.** Ours
+gives each tab its own 2pt `<View>` and switches its colour, so the indicator
+JUMPS. Theirs is one view interpolating `translateX` and `width` across the
+measured item layouts, so it slides and resizes. That interpolation is kept
+verbatim. `ui/Tabs.tsx` is unchanged and still used by Home, Matches, Chat,
+Messages and `SegmentedControl` — this is a second bar for a filter row, not a
+replacement, and if it earns its place on a second screen it should be
+reconciled into the kit rather than copied again.
+
+The tab bar's width is **measured with `onLayout`**, not `windowWidth - 2*GUTTER`.
+It lays its items out against that number, so the arithmetic version would
+silently stop being right the first time the container's padding changed.
+
+### Device pass — 4 of 4 tabs pressed, RMX2151, Metro :8082
+
+Bundle freshness confirmed before testing (`entry.bundle` HTTP 200,
+`keepActiveTabCentered` × 10, control string `Sample data` × 3).
+
+| Tab | Rows | Evidence |
+|---|---|---|
+| All | 4 | `Docs/AuthScreenImg/tabs-copied-1.png` |
+| Won | 2 | `tabs-copied-2-won.png` — indicator slid, label went `ink` + semibold |
+| Lost | 1 | `tabs-copied-3-lost.png` + view-tree dump |
+| Pending | 1 | view-tree dump |
+
+The acceptance test was "the results changed", not "the control changed" — each
+tap produced a different row set, so the filter is real and not a dead control.
+
+### Two defects the device found that the gates could not
+
+1. **Blank grey box where a photo should be.** The fixture URL
+   `https://example.invalid/1.jpg` fails to load and `<Image>` renders an empty
+   box with no error. Fixed with `onError` → the same "No photo" placeholder a
+   genuinely missing image gets. This matters beyond fixtures: dead image URLs
+   are common in real listing data.
+2. **A title repeated one line below itself.** A product with no title falls
+   back to `Batch #1029`, and the meta line then began with the same string —
+   two identical lines stacked, which reads as a rendering fault rather than as
+   data. The batch reference is now dropped from the meta line when the title
+   already is it. Seen on the Won tab, re-verified after the fix: title
+   `Batch #1029`, meta `Closed · 4 Sept`.
+
+### Still open on this screen
+
+- **Phase 2 (real API) is blocked on a dev/staging test login.** The same
+  blocker stops all 8 dashboard pages at the same step.
+- Cards do not navigate. `/v2/listing/{id}` is not valid for a batch id and no
+  batch-detail screen exists, so `onPress` was removed rather than left wired to
+  a wrong destination.
+- Collapse-on-scroll (the tab bar sticking while the list scrolls under it) is
+  the one thing in `collapsible-tabs` that needs the *library*, not a file.
+  Not taken; would be a new dependency.
+
+Gates: `tsc --noEmit` clean for these files · `v2Adherence` + `v2Contrast`
+60/60 green. `v2MaterialCoverage` has one failure in `app/v2/scan/item.tsx`,
+which belongs to a concurrent session, not to this work.
+
+---
+
+## `/v2/dashboard/watchlist` — Watchlist (PHASE 1, fixtures only)
+
+Second page built with `Docs/Dashboard/PAGE_PLAYBOOK.md`, and the first test of
+whether the playbook actually works unattended. It did — the flow held, and the
+two places it told me to *check rather than trust* both paid off.
+
+| Part | Copied from | Our file |
+|---|---|---|
+| grid | `obytes-template/src/features/feed/feed-screen.tsx` (MIT) | `src/features/v2/watchlist/watchlist-screen.tsx` |
+| tile | `obytes-template/src/features/feed/components/post-card.tsx` (MIT) | `src/features/v2/watchlist/watch-tile.tsx` |
+| contract | `nextjs-port/src/features/buyer/pages/buyer/BuyerWatchlist.tsx` | `src/features/v2/watchlist/types.ts` |
+| fixtures | — | `src/features/v2/watchlist/__fixtures__/watchlist.ts` |
+| route | — | `app/v2/dashboard/watchlist.tsx` |
+
+Same two template files as the bids page, taken again from source rather than
+forked from our copies: a bid row is full-width and money-led, a watch tile is
+half-width and image-led, and two diffs against one origin read better than a
+fork of a fork.
+
+### The plan was wrong in two places, and the playbook's audit step caught both
+
+`Docs/Dashboard/PAGE_PLAYBOOK.md` § step 0 says plan docs are not evidence and
+to output `Claim | file:line | VERIFIED / WRONG / UNVERIFIED` first. Result:
+
+| Claim | Evidence | Verdict |
+|---|---|---|
+| Route is `/v2/buying/watchlist` | every dashboard page is under `/v2/dashboard/`, per `nav.ts` | **WRONG** — predates the drawer. Built at `/v2/dashboard/watchlist`; README corrected |
+| "Build with `Row` + `RowThumb`" | the web is a 4:3 image-card grid, `BuyerWatchlist.tsx:95-110` | **WRONG** — a watchlist is answered by looking; rows would demote the photograph to a thumbnail. Built 2-up; `phase-1-ui.md` corrected |
+| `GET /wishlist/{buyerId}` at `:38`, items at `res.data.data.wishlist` | `BuyerWatchlist.tsx:38-39` | VERIFIED |
+| `window.addEventListener('wishlist-changed')` at `:44` | `:44` | VERIFIED |
+| No RTK slice — raw axios | `axiosInstance` at `:6` | VERIFIED |
+| Client-side pagination | `PAGE_SIZE = 12` at `:15` | VERIFIED — and deliberately **not** ported; see below |
+| Web source is 187 lines | 186 | trivially off |
+
+### Three decisions worth recording
+
+1. **No numbered pagination.** The web slices 12 per page with prev/next
+   chevrons because the endpoint returns everything and a desktop grid needs
+   pages. A phone scrolls. Porting the chevrons would port the constraint, not
+   the behaviour. The payload size stays a real phase-2 question — the security
+   note measured one live wishlist at **58 KB** — and is recorded as
+   `WEB_PAGE_SIZE` in `types.ts` rather than dropped.
+2. **The ramp is on the text body, not the card.** `MaterialFill` is
+   absolutely filled, so wrapping the tile would run a gradient over the
+   photograph — the case `Row.tsx:248` already calls out. The body is the only
+   palette ground on the tile, so it is the only thing that ramps.
+3. **`router.push` instead of the template's `<Link asChild>`.** Ported
+   literally it does not compile: `TS2590: Expression produces a union type
+   that is too complex to represent`. Expo-router's `Href` is a union over every
+   route, and this app has outgrown tsc distributing it through a conditional
+   (the same error reached `src/lib/scanResume.ts` the same day from an
+   unrelated direction). Annotating `Href | null` only moves the error into the
+   JSX; `router.push` never builds the union. Noted because the next page that
+   copies a `<Link>` will hit it.
+
+### The destination is wired but UNVERIFIED
+
+The tile opens `/v2/listing/[id]`, which fetches `/batch/:batchPk/products`,
+and passes `batch_id` from the wishlist row. Two independent sources say those
+are the same identifier — the web's `listingUrl.ts` header (":id = batchId →
+still drives the data fetch") and our own fetcher taking a batch pk against the
+same backend — but **neither is the server agreeing**, and proving it needs the
+test login. Wired anyway because the destination degrades properly: an
+unparseable or unknown id renders a `SectionNote`, not a white screen
+(`app/v2/listing/[id].tsx:132-151`). A non-numeric id gets no `onPress` at all.
+
+### Fixtures — eight rows, seven of which are awkward on purpose
+
+Raw `WishlistRow`s, not mapped cards, so `toWishCards()` is exercised too: a
+104-character title, `image1`-only (no `attachments`), no image *and* no
+category, `&amp;` in a category term, a dead URL, `product_id` with no
+`batch_id`, and a row whose `product` join is empty (a deleted lot — it must
+not render, which is why the on-screen count is 7, not 8).
+
+### Gates
+
+`tsc --noEmit` clean for these files · `v2Adherence`, `v2Contrast`,
+`v2MaterialCoverage`, `v2Inventory` — the only failures are
+`app/v2/scan/item.tsx`, a concurrent session's file, in the material and
+inventory sweeps.
+
+### Device pass — RMX2151 @ 423dp, Metro :8082
+
+The bundler was down for ~2 minutes first (`TransformError` in
+`app/v2/scan/items.tsx:624`, two `const view` — the concurrent scan session's
+file, mtime 17s old, left alone). It recovered on its own; nothing of theirs
+was touched.
+
+Bundle freshness confirmed before testing: `entry.bundle` HTTP 200,
+`WatchTile` ×6, `Nothing saved yet` ×3, control `Sample data` ×5.
+
+| Checked | Result |
+|---|---|
+| 2-up grid renders, 7 tiles | ✅ the 8th (no `product`) correctly dropped — count reads "7 saved items" |
+| 104-character title | ✅ truncates at 2 lines, column intact |
+| `&amp;` unescape | ✅ "Test & Measurement" on screen (the dump shows `&amp;` — that is uiautomator's own XML escaping, **not** a bug; checked before reporting one) |
+| no-image and no-category rows | ✅ "No photo" placeholder, category line simply absent |
+| drawer registration | ✅ Watchlist is the only enabled buyer row besides My bids; the other six still "· Soon" |
+| **tile press → listing detail** | ✅ reached `/v2/listing/5091` |
+| dark scheme | ✅ `watchlist-6-dark.png` |
+
+Screens: `Docs/AuthScreenImg/watchlist-{2,4-image,5-radius,6-dark,drawer}.png`.
+
+### The destination is now VERIFIED, not assumed
+
+The tile passes the wishlist's `batch_id`; the detail route fetches
+`/batch/:batchPk/products`. Pressing it returned a **real batch from the dev
+backend**, so the server honoured the id — `fetchBatchDetail.ts:177` reads
+`batchPk` back out of the response's own `batch_id`, which closes the loop.
+
+The rendered title differs from the tile's ("Hamilton LabElite DeCapper",
+display number 4670) only because **my fixture invented batch 5091's title**.
+Worth stating plainly: that mismatch looks exactly like a broken id mapping and
+is not one. Note also that the URL param and the displayed "Batch #" are
+different fields — `batchPk` vs `batch_number`.
+
+### Two defects the device found, both fixed and re-measured
+
+1. **Every tile showed "No photo".** My own fixture's fault: I wrote seven
+   plausible-looking URLs (`https://images.greenbidz.com/lots/5091-1.jpg`) that
+   resolve to nothing, so the *working-image* path — the 4:3 cover crop, the
+   image-to-body transition — was never exercised at all. A fixture that fails
+   uniformly only proves the fallback. Row 1 now carries an 8×6 `data:` URI
+   that always loads; row 6 keeps a dead URL so `onError` stays covered.
+   Re-checked: placeholder count 7 → **6**.
+2. **The image's top corners were not clipped.** The card has
+   `borderRadius: radius.lg` + `overflow: 'hidden'`, which is enough on iOS and
+   **not** on Android — a parent's clip does not apply to a child `<Image>`.
+   Caught by sampling the corner, not by looking: the first image pixel sat
+   **3px** along the diagonal where a 22dp radius predicts ~16px
+   (`0.293 × 22 × 1080/423`). Fixed with an explicit top radius on the cover
+   itself; re-measured **+20px**, with the antialiased pixel at 16 and the top
+   edge still image, so the picture did not shrink. At phone scale the eye
+   cannot call this — measure it.
+
+### ⚠️ One thing left undone
+
+`adb` went unresponsive (`adb devices` itself hangs) right after the dark-scheme
+check, while cycling the dev scheme pill back. **The app's colour-scheme
+preference may be left on DARK**, which persists. It is a dev-only toggle and
+harmless, but it is a state I changed and did not restore — cycle
+`DARK → DARK` back to `SYS →` on the next device session.
+
+---
+
+## `/v2/dashboard/inspections` — Inspections (PHASE 1, fixtures only)
+
+Third page on `Docs/Dashboard/PAGE_PLAYBOOK.md`, and the first verified mostly
+in the **browser** rather than on the phone.
+
+| Part | Copied from | Our file |
+|---|---|---|
+| list | `obytes-template/src/features/feed/feed-screen.tsx` (MIT) | `src/features/v2/inspections/inspections-screen.tsx` |
+| card | `obytes-template/src/features/feed/components/post-card.tsx` (MIT) | `src/features/v2/inspections/inspection-card.tsx` |
+| tab row | **reused** `bids/material-tab-bar.tsx` — not copied again | — |
+| contract | `nextjs-port/src/services/api/slices/buyerApiSlice.ts:59-85, 332` | `src/features/v2/inspections/types.ts` |
+| fixtures | — | `src/features/v2/inspections/__fixtures__/inspections.ts` |
+| route | — | `app/v2/dashboard/inspections.tsx` |
+
+First copy from this template where the LAYOUT genuinely differs: the bids and
+watchlist cards put the image above the text, this one puts it beside, because
+the web card is a `flex` row with a `w-28 h-28` thumbnail
+(`MyInspections.tsx:220-235`). An inspection is read as a diary entry — the
+dates matter more than the photograph.
+
+### Plan audit (playbook step 0)
+
+| Claim | Evidence | Verdict |
+|---|---|---|
+| Route `/v2/buying/inspections` | every dashboard page is under `/v2/dashboard/` | **WRONG** — same stale row the watchlist had |
+| `GET /inspection/buyer/{buyerId}` at `buyerApiSlice.ts:332` | URL at `:352` | VERIFIED |
+| `useGetBuyerInspectionsQuery` | `MyInspections.tsx:21` | VERIFIED |
+| Web source 343 lines | 342 | trivially off |
+
+### Three things taken from the web that are easy to get wrong
+
+1. **The rows are at `data.data.data`** — the envelope nests `data` twice, and
+   the web reads it defensively rather than trusting its own type. Getting the
+   depth wrong yields an empty list and no error.
+2. **`status` is SERVER-side**, unlike the bids screen's client filter. The
+   phase-1 screen filters locally as a stand-in; phase 2 must send the param,
+   or the pagination totals will describe a different set than the list shows.
+3. **There are only TWO filter tabs — All and Completed — and that looks like a
+   bug.** `STATUS_CONFIG` knows `attended` and `scheduled`, yet there is no way
+   to filter to Scheduled. Copied as-is rather than "fixed": a third tab means
+   sending `status=Scheduled`, and nobody has shown the server accepts that
+   value. Raise it in phase 2 with a curl.
+
+### Dropped from the web, deliberately
+
+- the `border-l-4` status stripe — a desktop table idiom; the chip already
+  carries status
+- the nested "Items in this batch" grid — a second list inside every row is a
+  disclosure on a phone, not a default. The count goes on the meta line.
+- the "View Batch" button — a button inside a tappable row is a duplicate
+  control. The whole card navigates.
+
+### Verified — web (`localhost:8083`, Chrome DevTools MCP)
+
+| Checked | Result |
+|---|---|
+| all 7 rows render | ✅ |
+| 104-character title | ✅ truncates at 2 lines, chip stays on the card |
+| `images: []` → placeholder | ✅ |
+| dead URL → `onError` → placeholder | ✅ |
+| `products: []` | ✅ title "—", no item count, placeholder thumb |
+| unparseable date | ✅ "Site visit —", not "Invalid Date" |
+| drawer registration | ✅ Inspections enabled; the four unbuilt seller rows still "· Soon" |
+| console | ✅ zero errors or warnings |
+| light + dark | ✅ `inspections-web-{light,dark}.png` |
+
+### Verified — device, before the surface switch
+
+The **Completed tab changes the results**: 7 inspections → **3**, zero
+`Scheduled` remaining, batches 5091 / 4870 / 4402 — exactly the three
+`attended` rows. The acceptance test is "the results changed", and they did.
+
+### ⚠️ NOT verified, and why
+
+- **A card press reaching the listing detail.** The card is an
+  `Animated.createAnimatedComponent(RNGH Pressable)`, which is **inert in the
+  browser** (see below), and the device is out of scope now. The identical call
+  is device-verified on the watchlist tile, so the pattern is proven — this
+  specific card is not.
+- **The thumbnail's left corner radius on Android.** The explicit
+  `borderTopLeftRadius`/`borderBottomLeftRadius` exists because a parent's
+  `overflow: 'hidden'` does not clip a child `<Image>` on Android. The browser
+  clips correctly either way, so web cannot prove that fix.
+
+### 🔑 The finding worth keeping: web cannot press most v2 controls
+
+Moving verification to the browser exposed a hard limit, now written up in
+`Docs/v2/TRAPS.md`:
+
+| Control | Web |
+|---|---|
+| plain RNGH `<Pressable>` (`ui/SchemeToggleDev.tsx:65`) | ✅ responds |
+| `Animated.createAnimatedComponent(RNGH Pressable)` (`ui/Tabs.tsx:55`, `material-tab-bar.tsx:79`, every card) | ❌ inert |
+
+**Everything built with `usePressFeedback` is in the second row.** It is
+pre-existing and app-wide — Home's Selling/Buying tab, untouched code that
+works on the device, is dead in the browser too.
+
+Two hypotheses were wrong first, and each cost a probe: "RNGH is inert on web"
+(falsified by the scheme pill, which is RNGH and works) and "the drawer scrim is
+intercepting" (the full-viewport `Close drawer` element is real but computes
+`pointer-events: none` and does not contain the hit).
+
+**KIT GAP for a decision:** making the Animated wrapper forward presses on web
+would make the browser a complete verification surface and remove the 2–3 minute
+device restart cycle that dominates this work. It is a change to
+`usePressFeedback` and the primitives around it — one hand, one decision.
+
+### Gates
+
+`tsc --noEmit` clean for these files · `v2Adherence`, `v2Contrast`,
+`v2MaterialCoverage` green · `v2Inventory` route list updated. The one red is
+`v2 guest gates › lets a guest into the scan flow` in `v2Inventory.test.ts`,
+which asserts `router.push(routes.v2Intake)` in the scan flow — the concurrent
+session's area, not this work.
+
+---
+
+## `/v2/dashboard/requests` — Orders & requests (PHASE 1, fixtures only)
+
+Fourth buyer page on `Docs/Dashboard/PAGE_PLAYBOOK.md`. Built as **UI only** —
+not wired to the API, unlike bids/watchlist/inspections. That was a deliberate
+scope decision this time (see `../MISTAKES.md`, 2026-09-24: three screens were
+wired to live data on the previous session's own initiative, not asked for).
+
+| Part | Source | Our file |
+|---|---|---|
+| card | reused `inspections/inspection-card.tsx`'s shape, in-codebase — not a fourth Obytes pull for the same left-thumb layout | `src/features/v2/requests/request-card.tsx` |
+| list | Obytes `feed-screen.tsx` shape, same as every other list here | `src/features/v2/requests/requests-screen.tsx` |
+| tab row (type) | reused `bids/material-tab-bar.tsx` — third use | — |
+| tab row (status) | reused `ui/Tabs.tsx` — deliberately the quieter control, for hierarchy against the bold type row | — |
+| contract | `nextjs-port/src/features/buyer/pages/buyer/BuyerRequests.tsx` (570 lines) | `src/features/v2/requests/types.ts` |
+| fixtures | — | `src/features/v2/requests/__fixtures__/requests.ts` |
+| route | — | `app/v2/dashboard/requests.tsx` |
+
+### The plan doc was wrong about the endpoint shape
+
+`README.md` lists ONE endpoint and says it returns "Buy Now purchases AND Make
+Offer requests in one list." Checked against the source before building: there
+are **two** endpoints — `GET /order/buyer/{id}` (orders only,
+`orderApiSlice.ts:85`) and `GET /offer/user?buyer_id={id}` (offers only,
+`bidApiSlice.ts:641`) — merged on the CLIENT. The web screen's own docblock
+says so. `phase-1-ui.md`'s "Build with Row + RowThumb" was also wrong for this
+data — `Row`'s API is too thin for a 4-field meta strip plus dual status/urgency
+lines; built with the established card lineage instead.
+
+Verified live against buyer 574 (2026-09-24): **0 orders, 7 offers**, all
+`pending`. Real data only exercises the order-side empty state and the offer
+"awaiting" bucket — the fixture still needed every bucket, which is what a
+fixture is for.
+
+### Two real defects the web pass found — both fixed, both re-measured
+
+1. **A live React warning on screen**: *"A props object containing a 'key'
+   prop is being spread into JSX."* `RequestItem` had a field literally named
+   `key` (for the FlashList extractor), and `<RequestCard {...item} />`
+   spread it as a prop — React reserves that name. Neither `tsc` nor any Jest
+   gate caught it; only looking at the rendered page did. Renamed to `rowId`
+   throughout.
+2. **~270px of dead space** between the two tab rows and the list. Measured,
+   not eyeballed: the secondary status-filter `ScrollView` had no explicit
+   height, so on web it inherited `alignItems: stretch` from the flex-column
+   screen and stretched to fill available vertical space (314px measured,
+   should be ~44px). First fix attempt — `height: MIN_TOUCH` on the
+   `ScrollView`'s own `style` — was confirmed present in the bundle and still
+   did not work; the fix had to go on a wrapping `View`, mirroring exactly how
+   `MaterialTabBar`'s `tabsSlot` already does it above it. Second attempt
+   measured correct: all 10 tabs at 44px, count line moved from y=476 to
+   y=206.
+   ⚠️ Also re-learned mid-fix: a `ScrollView` inside a stale browser TAB does
+   not reliably pick up a bundle change on `reload(ignoreCache: true)` — the
+   fixed bundle was confirmed present via a direct curl of the exact entry
+   URL, and the fix still measured wrong until a brand-new tab was opened.
+   Same "prove the bundle, then prove the render separately" lesson as the
+   device work; it applies to the web harness too.
+
+### Verified — web (`127.0.0.1:8002`, Chrome DevTools MCP)
+
+All 11 rows, both tab rows (type: All 11/Buy Now 4/Offers 7; status: all 6
+buckets present with correct counts), every accessibility label correct
+(`role="link"`, "Offer #301, Accepted" etc.), sort order newest→oldest, the
+no-title/no-currency no-join offer row, the dead-image `onError` fallback, the
+106-character title truncating at 2 lines without breaking the layout, both
+urgency lines ("Your turn — payment due") on the two `dueNow` rows, both
+colour schemes. Zero console errors beyond the one deliberately-dead fixture
+URL. Screenshots: `requests-web-{1,fixed,light}.png`.
+
+**Not verified: any control press** (card navigation, tab switching). Same
+platform limit as every other page here — `Animated.createAnimatedComponent`
+wrapped `Pressable`s are inert in the browser (`Docs/v2/TRAPS.md`). Device
+pass is outstanding.
+
+### Deliberately not built
+
+**No "Pay now" button**, even on the two `dueNow` (accepted/payment_processing)
+rows. The web sends that state to a checkout flow; no payment or checkout
+screen exists anywhere in v2 mobile. A button that opens nothing is the
+failure this codebase keeps re-discovering — surfaced as an urgency line
+instead. Revisit once a payment screen exists.
+
+### Not phase 2
+
+No query, no wiring — this page stayed at fixtures on purpose this session.
+Phase 2 needs BOTH endpoints run in parallel, with the web's partial-load
+handling (only a fully-empty screen blocks; a half-loaded one shows what it
+has plus a quiet "still loading offers…" note) — not built.
+
+### Gates
+
+`tsc --noEmit` clean · `v2Adherence`, `v2Contrast`, `v2MaterialCoverage` green
+· `v2Inventory` route list updated. The two reds
+(`v2 reachability › has exactly one entry point`, `keeps that entry point
+behind the default-OFF flag`) are the concurrent session's — `app/(lab)/(tabs)/`
+does not exist on disk at all right now; confirmed before writing this, not
+this work's file.
+
+---
+
+## `/v2/dashboard/orders/[id]` — Order detail & tracking (PHASE 1, fixtures only)
+
+The fifth buyer page, and the one that needed the most checking. Its plan's
+named source turned out to be dead code, and a first attempt at wiring it up
+turned out to be wrong before it shipped — both worth a full write-up.
+
+| Part | Source | Our file |
+|---|---|---|
+| screen | composed directly from kit primitives — no list template to copy, this is a detail page (same shape as `app/v2/listing/[id].tsx`) | `src/features/v2/order-detail/order-detail-screen.tsx` |
+| contract | `nextjs-port/src/services/api/slices/{checkoutApiSlice,shipmentApiSlice}.ts` | `src/features/v2/order-detail/types.ts` |
+| fixtures | — | `src/features/v2/order-detail/__fixtures__/order-detail.ts` |
+| route | — | `app/v2/dashboard/orders/[id].tsx` |
+
+### The plan's named source is dead code — the fifth such citation
+
+`README.md` says to port `BuyerOrder.tsx`. Exhaustive grep across
+`nextjs-port` (2026-09-24): **imported by nothing, anywhere.** The live
+`/buyer/buy-now-orders` route renders an entirely different component
+(`BuyerBuyNowOrders.tsx`) — a plain list with no clickable rows and no detail
+view at all. There is no reachable per-order detail screen anywhere in the
+current web app. `BuyerOrder.tsx` is also `@ts-nocheck`, has a stray
+`console.log("orders is", data)` left in, double-wraps itself in
+`DashboardLayout` (every live page's own comments warn against exactly that),
+and invents a THIRD checkout-status vocabulary that matches neither of the
+other two. None of its field names or status values were trusted — every one
+was checked against the live `GET /checkouts/buyer/574` response instead. The
+declared `CheckoutStatus` enum (`pending → confirmed → ready → shipped →
+delivered → completed`, plus terminal `cancelled`) matches the LIVE list
+screen's vocabulary, not the dead file's — that is the one used here.
+
+### A wiring decision was drafted, checked, and reverted before shipping
+
+The obvious move: send "Buy Now" rows on `/v2/dashboard/requests` here instead
+of to the listing. Checked before shipping it:
+
+```
+GET /order/buyer/574     → 0 rows   (what a Buy Now ROW is built from)
+GET /checkouts/buyer/574 → 4 rows   (what THIS screen reads)
+```
+
+Same buyer, same session: two disjoint tables. `order_id` and `checkout_id`
+are not proven to correspond to the same purchase, or to correspond at all —
+`BuyerRequests.tsx`'s own docblock warned about exactly this table split.
+Wiring one into the other would have been the "opens the wrong thing" failure
+this session already caught twice, one level less obvious: it would have
+opened *something*, which is harder to notice than a dead link. **This screen
+has no entry point anywhere in the app right now** — matching the web's own
+orphaned state — and needs either a genuine join field or its own reachable
+list before it is reachable. Full reasoning in the route file's docblock.
+
+### One progression shown, not two
+
+A checkout has a coarse 6-stage status; a shipment, once one exists, has a
+real per-event history against a DIFFERENT 10-value enum. Showing both as
+separate progress rails risked them visibly disagreeing (checkout says
+"Shipped", shipment rail still says "Preparing") — chrome contradicting
+itself, the `v2-screen` skill's coherence rule. Built as ONE `Timeline` (the
+checkout stages) plus a plain chronological `Row` list (the real shipment
+events, newest first) below it — `Timeline`'s model is a fixed step count with
+one current index, and an event history is neither fixed-length nor
+guaranteed to have hit every intermediate stage.
+
+`cancelled` gets NO progression rail at all — `CHECKOUT_STAGES` excludes it on
+purpose, matching the one thing the dead source file got right ("if cancelled,
+return null" on its own stepper). A 6-step "on its way to delivery" bar over
+an order that will never be delivered is exactly the bug the skill warns
+about.
+
+### The shipment endpoint is genuinely auth-gated
+
+Unlike every other buyer endpoint touched this session, `GET
+/shipment/order/:id` returned `{"success":false,"message":"Authentication
+required"}` live (checkout id 4, real). The shipment fixture is therefore
+built from the DECLARED type only (`shipmentApiSlice.ts` — fully typed, no
+`@ts-nocheck`, and its own docblock states "absence is a first-class answer":
+`{shipment: null, canBook, blockers}`, taken verbatim), not from a real
+response. Said plainly in the fixture file too. Phase 2 for this half needs a
+real session, not just a buyer id.
+
+### A real bug the web pass caught: the bottom tab bar was showing
+
+Every sibling dashboard route passes `tabBar={false}` to `Screen`; this one
+didn't, and a full-page screenshot showed the Home/Browse/Matches/Messages/
+Account tab bar sitting at the bottom of a page nested inside the dashboard
+drawer. Fixed, and re-confirmed by curling the exact bundle URL for
+`tabBar: false` before reloading — same "prove the bundle, then prove the
+render" discipline as every other fix this session.
+
+### Verified — web (`127.0.0.1:8002`, direct URL — no UI entry point to click through)
+
+- **91** (shipped, 4-event history): header, facts, Timeline (Shipped = active
+  dot, Delivered/Completed dimmed), carrier + tracking + destination, all 4
+  events sorted newest-first. `order-detail-web-{shipped,top,light,light2}.png`
+- **95** (cancelled): no Timeline, "This order was cancelled." · "Ship to" row
+  correctly absent (empty address) · "Not shipped yet."
+- **10** (real live shape — no batch join, `created_at: null`): "No photo",
+  title falls back to "Batch #484", "Placed —" not "Invalid Date", Timeline at
+  stage 0
+- **97** (112-char title, 1-event shipment): truncates at 2 lines without
+  pushing the chip off; single-event shipment renders without breaking
+- **99999** (invalid id): "That order did not load. Go back to Orders &
+  requests and open it again." — same not-found pattern as listing detail
+- both colour schemes · zero console errors
+
+**Not verified: any control press** (same platform limit as every page this
+session — `Animated.createAnimatedComponent` `Pressable`s are inert on web)
+and, separately here, **no in-app navigation path to reach this screen at
+all** — every check above was a direct URL, which is honest given the "no
+entry point" finding above, not a workaround for it.
+
+### Gates
+
+`tsc --noEmit` clean · `v2Adherence`, `v2Contrast`, `v2MaterialCoverage`,
+`v2Inventory` all green (89/89) — the concurrent session's route-tree issue
+that failed `v2Inventory` on the requests page has since resolved on its own.
+
+---
+
+## `/v2/dashboard` — Buying home (PHASE 1, fixtures only)
+
+**The buyer dashboard's sixth and final page.** Built last, per its own plan,
+because it composes rows the five screens already built this session define.
+`app/v2/dashboard/index.tsx` — previously a bare `<Redirect
+href={DASHBOARD_HOME} />` to `/v2/dashboard/bids` — is now this screen.
+
+| Part | Source | Our file |
+|---|---|---|
+| screen | editorial judgement ported from `BuyerDashboard.tsx` (1,103 lines); composed from kit primitives, no template | `src/features/v2/buying-home/buying-home-screen.tsx` |
+| logic | `types.ts`'s `buildActionItems()` — the one real derivation on this page | `src/features/v2/buying-home/types.ts` |
+| fixtures | shaped to exercise the three thresholds, not one-row-per-status | `src/features/v2/buying-home/__fixtures__/buying-home.ts` |
+| route | `app/v2/dashboard/index.tsx` (replaces the old redirect) | — |
+
+### What was taken, and what deliberately wasn't — full reasoning in `types.ts`
+
+**Taken:** the `ActionRequired` section's three verbatim thresholds
+(`batch_step === 6` → payment due, `=== 7` → pickup ready, an inspection
+within 7 days and not yet attended) — reusing `bids/types.ts`'s
+`BATCH_STEPS`/`isPending` rather than re-deriving them.
+
+**Not taken, each with a reason:** the AI-assistant hero (this app's chat is
+already `/v2/chat`, not a second front door); the "Open requests" stat tile
+(the web counts a completely separate Want-To-Buy feature under that name —
+nothing to do with this session's "Orders & requests" screen despite the
+near-identical label, and no v2 WTB screen exists to link it to — replaced
+with the real Orders & requests count); "Won lots" as its own tile (a filter
+of "Active bids" one tap away inside a screen already built — replaced with
+Inspections, which the web's own tile row omits); and the 450-line inline
+tabbed "Recent Activity" re-implementation of bids/offers/inspections —
+porting that would have been exactly the "inventing those rows twice" the
+plan's own README warns against.
+
+### A layout-and-empty-state bug caught before it shipped: two contradictory states
+
+First draft put a bottom `EmptyState` ("Nothing needs your attention") below
+the always-populated "At a glance" rows, shown only when Action Required was
+empty. That is two states of the SAME page disagreeing — a full summary grid
+sitting under a component whose whole vocabulary is "there is nothing here."
+Fixed before it ever rendered: Action Required now always keeps its header,
+and shows either the urgency rows or a single quiet `SectionNote` ("You're
+all caught up") — never an EmptyState competing with populated content
+elsewhere on the same screen.
+
+### Two smaller bugs the web pass caught
+
+1. **A boundary-sensitive relative date.** A fixture inspection authored as
+   "2 days out" rendered "Inspection tomorrow", not "in 2 days" — `Date.now()`
+   evaluated a few seconds after the fixture's timestamp was baked always
+   reads fractionally under 2.0 days, landing in the wrong label bucket.
+   Fixed by moving the fixture to 3 days out, clear of the boundary, and
+   correcting the fixture's own comment to match.
+2. **A raw `paddingHorizontal: 24` in the route file**, caught by
+   `v2Adherence` — should have been `GUTTER`. Fixed, and while fixing it,
+   corrected the gutter to live in the SCREEN's own styles (matching every
+   sibling dashboard route) rather than the route file, which had drifted
+   from convention.
+
+### `/v2/dashboard` — the bare path — now resolves. It used to not.
+
+`routes.ts` carried a standing warning that bare `/v2/dashboard` "does
+nothing at all" under the Drawer layout (found by deep-linking twice and
+landing on Home both times, on an earlier session). That was true only
+because `index.tsx` was a stub redirect with no real content of its own.
+**Verified live, 2026-09-24: `http://127.0.0.1:8002/v2/dashboard` now opens
+this screen correctly**, with no route-tree error. The stale warning comment
+was corrected in place rather than deleted outright, flagging that it was
+re-checked rather than assumed still true — and `v2Dashboard`'s constant
+value was deliberately left pointing at the concrete `/v2/dashboard/bids`
+path rather than switched to the now-working bare one, since one page
+resolving does not retroactively prove every other typed-route caller
+behaves the same way.
+
+### Verified — web (`127.0.0.1:8002`)
+
+Both the bare `/v2/dashboard` path and — implicitly, since it is the same
+route file — the drawer's own reachable state. 3 Action Required rows, each
+thresholded correctly (a `batch_step: 3` bid and a 9-days-out inspection
+correctly absent; an attended inspection correctly absent despite being
+"soon"). 4 summary rows with correct counts. Full-page screenshots in both
+schemes (`buying-home-web-{full,light}.png`) confirm no bottom tab bar and no
+dead space — the exact bug caught on the order-detail page one screen earlier,
+checked for here from the start. Zero console errors.
+
+**Not verified: the empty Action-Required state** (no fixture row currently
+produces zero action items) and **no control press** — same standing web
+limitation as every page this session.
+
+### Gates
+
+`tsc --noEmit` clean · `v2Adherence`, `v2Contrast`, `v2MaterialCoverage`,
+`v2Inventory` all green (89/89).
+
+---
+
+## The buyer dashboard is now feature-complete at Phase 1/2
+
+Six pages, all reachable, all gate-green:
+
+| Page | Phase |
+|---|---|
+| My bids | **2 — live API** |
+| Watchlist | **2 — live API** |
+| Inspections | 2 — wired, unverified on real rows (test buyer has none) |
+| Orders & requests | 1 — fixtures |
+| Order detail & tracking | 1 — fixtures, **no in-app entry point yet** |
+| Buying home | 1 — fixtures |
+
+Remaining before this section is fully phase 2: wire requests (two endpoints)
+and order-detail (checkout + auth-gated shipment), decide how order-detail
+becomes reachable, and revisit `v2Dashboard`'s route constant now that the
+bare path works.
+
+---
+
+## `/v2/dashboard/seller-bids` — Bids on my listings (PHASE 1, fixtures only)
+
+**First seller page.** The plan was wrong about the DATA this time, not just
+the file — worth reading in full.
+
+| Part | Source | Our file |
+|---|---|---|
+| card | reused the `inspection-card.tsx`/`request-card.tsx` lineage — fourth pull | `src/features/v2/seller-bids/seller-bid-card.tsx` |
+| list | Obytes shape, no tabs (the real source has none) | `src/features/v2/seller-bids/seller-bids-screen.tsx` |
+| contract | `nextjs-port/src/features/seller/pages/dashboard/SellerBidDashboard.tsx` (the LIVE half, not the plan's cited file) | `src/features/v2/seller-bids/types.ts` |
+| fixtures | — | `src/features/v2/seller-bids/__fixtures__/seller-bids.ts` |
+| route | — | `app/v2/dashboard/seller-bids.tsx` |
+
+### The plan said "don't build a screen" — and that part was right. It named the wrong SCREEN.
+
+`README.md`: reuse the buyer's `MyBids` with a `batchBasePath` prop, because
+`SellerMyBids.tsx` is 14 lines delegating to it. True about the file. Checked
+`MyBids.tsx`'s query before trusting the claim, though: `batchBasePath` only
+changes a navigation URL (`MyBids.tsx:362`) — the data query
+(`useGetBuyerBidsQuery({ buyerId: localStorage.userId })`) is unconditional.
+**Following the plan literally would have shipped a screen showing a seller
+their own bids placed as a buyer, under a label that says the opposite.**
+
+The plan's cited endpoint (`GET /seller/bids/{sellerId}`,
+`buyerApiSlice.ts:323`) is real but grepped to confirm who calls it: a dead
+file (`Bids.tsx`, imported by nothing — this session's now-familiar pattern)
+plus two components that turned out to use a DIFFERENT slice's same-named
+hook instead. Traced the actual live route
+(`app/(seller)/dashboard/bids/page.tsx`) rather than trusting any name match:
+its default export is `@deprecated` and immediately `<Navigate>`s into a
+3-tab parent (`SellerBuyerActivity.tsx` — `buy-now-orders` /
+`negotiated-offers` / `auction-bids`), which renders the real content
+(`SellerAuctionBidsPanel`, a named export of the SAME file) on a THIRD
+endpoint the plan never mentioned: `GET /buyer/bid/seller/{userId}`
+(`batchApiSlice.ts`). Verified live against seller 571 — real 4-field
+envelope (`success, data, dashboardSummary, pagination`), `data` the array
+directly, 16 batches total, the sampled page all `summary.total: 0` (a real
+"listed, no bids yet" case).
+
+The web's other two tabs map to this dashboard's next two planned pages
+(Offers received, Orders) — not folded into this one.
+
+### What was built
+
+One flat, unfiltered-by-status list of the seller's batches that HAVE bid
+activity (`hasBidActivity()`, matching `SellerBidDashboard.tsx:59-62`'s own
+filter exactly — a batch nobody bid on does not belong in this list). Each
+card: thumbnail with a "+N" product-count badge, batch ref + status chip,
+title, and a compact stat line (total/accepted/pending — `rejected` and
+`counter_offer` are real fields on the live response and kept in the type,
+just not surfaced in the compact line). No "Edit listing" button — no seller
+write flow exists anywhere in the v2 dashboard.
+
+### One real accessibility bug the web pass caught
+
+The visible stat line correctly says "1 bid" (singular), but the
+`accessibilityLabel` said "1 bids" unconditionally — found in the a11y
+snapshot, not visible in a screenshot. Fixed to match the same singular/plural
+branch the visible text already had.
+
+### Verified — web (`127.0.0.1:8002`)
+
+7 of 8 fixture batches shown (the 0-bid one correctly filtered out — count
+reads "7 listings with bids"). Badge, dead-image fallback (2 "No photo"
+placeholders: the no-products batch and the dead-URL batch), 108-character
+title truncating cleanly, accent-tone stat line only on rows with
+`pending > 0` (verified visually — the accepted-only row reads plain grey).
+All rows proper `link` roles with correct a11y labels. Both colour schemes.
+Zero console errors beyond the one deliberately-dead fixture URL.
+`seller-bids-web-{full,light}.png`.
+
+**Not verified: any control press** — same standing web limitation as every
+page this session.
+
+### Gates
+
+`tsc --noEmit` clean · `v2Adherence`, `v2Contrast`, `v2MaterialCoverage`,
+`v2Inventory` all green (89/89).
+
+---
+
+## `/v2/dashboard/seller-offers` — Offers received (PHASE 1, first WRITE screen)
+
+Second seller page, and the first screen on this dashboard with an
+accept/reject flow. Its plan source was genuinely live this time (checked
+anyway) — but the endpoint audit turned up something bigger than a wrong
+citation.
+
+| Part | Source | Our file |
+|---|---|---|
+| card | fifth pull of the `inspection-card.tsx` lineage, plus a genuinely new action row | `src/features/v2/seller-offers/offer-card.tsx` |
+| confirm sheet | structure copied from `auth/SignInSheet.tsx` (RN `<Modal>` + its own `GestureHandlerRootView`) | `src/features/v2/seller-offers/ConfirmOfferSheet.tsx` |
+| list | Obytes shape | `src/features/v2/seller-offers/seller-offers-screen.tsx` |
+| contract | `nextjs-port/src/features/buyer/pages/offer/SellerOffer.tsx` — genuinely live (one importer, no redirect) | `src/features/v2/seller-offers/types.ts` |
+| fixtures | — | `src/features/v2/seller-offers/__fixtures__/seller-offers.ts` |
+| route | — | `app/v2/dashboard/seller-offers.tsx` |
+
+### ⚠️ A security finding, not just a data-shape correction: password hashes in an unauthenticated response
+
+`GET /offer/seller?sellerID={id}` is unauthenticated (curled with no token —
+200, real rows, same class as `Docs/v2/SECURITY-WISHLIST.md`) **and its
+response embeds each bidding buyer's full WordPress user row, including
+`user_pass` (the password hash) and `user_activation_key`.** Verified live
+against seller 571. The live web screen itself never even reads
+`offer.buyer` — only the bare `offer.user_id` — so the dangerous half of the
+response is pure backend over-fetch that happens to be harmless in the UI
+that currently consumes it and a live hazard to anything else that might.
+
+Full write-up added to `Docs/v2/SECURITY-WISHLIST.md` (2026-09-24 entry) —
+combined severity is worse than the wishlist class alone: an unauthenticated
+caller can harvest password hashes for every buyer who has offered to a
+given seller, and seller ids are far more guessable than buyer ids. **No
+code fix belongs in this PR** — this is a backend fix and the user's call on
+scheduling. This screen's own types model ONLY `user_id`; `buyer` is typed
+`unknown` and nothing in the feature reads it.
+
+Also: the plan's cited HTTP method (`PUT /offer/{id}/status`) is wrong — the
+live mutation sends `PATCH`.
+
+### Phase 1's "mutation" is real UI over a LOCAL state change, and that's deliberate
+
+The plan flags this as "the first mutation" and calls for a confirm step,
+not a spinner. Built the full interaction — tap Accept/Reject/Mark sold/
+Decline → `ConfirmOfferSheet` with real confirm copy naming the buyer,
+amount and listing → on confirm, the row's status flips. What flips it is a
+local `setState`, not a network call — a Phase-1 screen must not touch the
+network, and a dead Accept button that does nothing when pressed is the
+exact "control that looks live and isn't" failure this codebase keeps
+flagging. Simulating the transition proves the whole chain (copy, dismissal,
+the row re-rendering with new transitions) without either problem. Phase 2
+deletes one `setState` call and puts the real `PATCH` there; the sheet's
+`PrimaryAction` already accepts `loading`.
+
+### The card breaks from every earlier card's pattern on purpose
+
+Every prior card this session is one tap target to a destination. This one
+is not — it has two (or zero) explicit action buttons and NO `onPress` on
+the card itself. Reasoned explicitly in the card's docblock: giving the card
+BOTH a navigate action and two write actions would put three different
+meanings on one row, which is a worse ambiguity than the "two controls doing
+the same thing" pattern flagged elsewhere.
+
+### Verified — web (`127.0.0.1:8002`)
+
+All 7 fixture offers: correct status-specific button PAIRS (pending →
+Accept/Reject, payment_processing → Mark sold/Decline — genuinely different
+pairs per status, not a shared set), terminal statuses (sold, rejected) show
+zero buttons, the quoted-message line, both "No photo" cases in the right
+place (no-join row, dead-URL row), the ×3 quantity suffix, a 108-character
+title. Every action is a proper `button` role. Both colour schemes.
+`seller-offers-web-{full,light}.png`.
+
+**A real interruption during this pass, not mine:** a concurrent session's
+`app/scan/processing.tsx` hit a live syntax error mid-edit and took the
+WHOLE Metro build down with a full-screen error overlay for about two
+minutes — confirmed by the file's mtime (seconds old) and by the bundle
+response shrinking from 21MB to a 9KB error JSON and back. Waited for
+recovery rather than touching a file that wasn't mine; re-verified cleanly
+once the bundle was a real 21MB response again.
+
+**Not verified: the confirm-and-transition interaction itself.** Same
+standing web limitation as every page this session — `PillButton`,
+`PrimaryAction` and `QuietAction` all share the
+`Animated.createAnimatedComponent` wrapper that is inert in the browser.
+Confirmed by checking their source, not assumed. Device pass outstanding for
+the actual tap-to-confirm-to-transition chain.
+
+### Gates
+
+`tsc --noEmit` clean · `v2Adherence`, `v2Contrast`, `v2MaterialCoverage` all
+green. `v2Inventory` has two reds — both `scan/*` route-list mismatches from
+the same concurrent session's in-progress restructuring (four scan routes
+missing from disk, one newly present) — confirmed via `ls app/v2/scan/`
+against the test's expected list, not this work's file.
+
+---
+
+## `/v2/dashboard/seller-orders` — Orders / checkouts (PHASE 1)
+
+Third seller page. `SellerOrder.tsx` was genuinely live again (third file
+citation in a row that checked out) — but the same `@ts-nocheck` /
+guessed-envelope pattern needed the same live verification as every plan
+this session, and this time it turned up a THIRD occurrence of the security
+finding from the previous page.
+
+| Part | Source | Our file |
+|---|---|---|
+| card | sixth pull of the `inspection-card.tsx` lineage — two chips (fulfilment + payment), not one | `src/features/v2/seller-orders/order-card.tsx` |
+| confirm sheet | copied from `seller-offers/ConfirmOfferSheet.tsx`, itself from `auth/SignInSheet.tsx` | `src/features/v2/seller-orders/ConfirmOrderSheet.tsx` |
+| list | Obytes shape | `src/features/v2/seller-orders/seller-orders-screen.tsx` |
+| contract | `nextjs-port/src/features/buyer/pages/order/SellerOrder.tsx` — live | `src/features/v2/seller-orders/types.ts` — **re-exports** the canonical checkout vocabulary from `order-detail/types.ts` rather than redeclaring it |
+| fixtures | — | `src/features/v2/seller-orders/__fixtures__/seller-orders.ts` |
+| route | — | `app/v2/dashboard/seller-orders.tsx` |
+
+### ⚠️ The security finding, a THIRD time — now confirmed as a pattern
+
+`GET /checkouts/seller/{sellerId}` — a different endpoint, a different slice
+file (`checkoutApiSlice.ts:73`) — has the identical shape to the previous
+page's finding: unauthenticated, and each real row (4, seller 571) carries
+the SAME full `buyer` WordPress object, password hash included. Two
+unrelated endpoints on two unrelated slice files with the identical
+over-fetch is a backend QUERY PATTERN, not two isolated bugs — flagged as
+such in `Docs/v2/SECURITY-WISHLIST.md`'s new "THIRD occurrence" entry, with
+a recommendation to check the join systematically rather than wait to trip
+over each caller. This screen's types model only `buyer_id`.
+
+Also confirmed, same class as offers: the plan's HTTP method (`PUT`) is
+wrong — the live mutation sends `PATCH`.
+
+### The envelope differs from its own sibling endpoint
+
+Verified live before trusting the web's own `@ts-nocheck` guess
+(`orders?.orders`) — it turned out to be right, but only checking would have
+caught it if wrong, same as the buyer-side `BuyerOrder.tsx` guess that
+WASN'T. `GET /checkouts/seller/{id}` responds `{success, orders: Checkout[],
+pagination}` — the key is `orders`, not `data`. Its sibling,
+`/checkouts/buyer/{id}` (used by `order-detail/`), responds `{success, data:
+Checkout[]}`. Same row shape, different top-level key. A fifth distinct
+envelope shape found this session across nominally-similar endpoints.
+
+### The canonical vocabulary caught a real gap in the WEB's own screen
+
+`SellerOrder.tsx`'s hand-rolled `OrderStatus` type has 6 values, MISSING
+`ready` — the declared, canonical `CheckoutStatus` enum has 7. The web's own
+action UI can never write or display `ready` (its `statusColors`/
+`statusLabels` lookups would hit `undefined` for a checkout somehow at that
+stage). Rather than replicate the gap, this screen reuses
+`order-detail/types.ts`'s full 7-stage table — so a `ready` checkout renders
+correctly here (chip, no crash) even though no button in this screen's own
+action set ever writes that status. Verified live: fixture row #3 (`ready`)
+renders its chip and correctly shows ZERO action buttons.
+
+### Two chips, not one — a genuine addition over `offer-card.tsx`
+
+A checkout has two independent axes (fulfilment status, payment status);
+`offer-card.tsx`/`seller-bid-card.tsx` each needed only one chip. Collapsing
+both into one would hide whichever axis lost. `PAYMENT_LABELS` covers both
+real payment states seen live (`pending`, and the fixture's
+`manual_received` case for the no-join row).
+
+### No full `Timeline` on the row, despite the plan's "Build with"
+
+A 6-dot progress rail on every row of a scanning list is heavy — N rows
+would each draw the same shape at a different position. `Timeline` is
+already the right primitive for ONE order's own detail page (built —
+`order-detail/order-detail-screen.tsx` uses it for exactly this vocabulary);
+a compact chip pair carries the same information at list density, with the
+full rail one tap away once order-detail is reachable.
+
+### Verified — web (`127.0.0.1:8002`)
+
+All 9 fixture orders, every transition pair correct per status (pending →
+Accept/Cancel, confirmed → Mark shipped/Cancel — a DIFFERENT pair — shipped
+→ Mark delivered only, delivered → Complete only), terminal states
+(completed, cancelled) and the unreachable `ready` state all correctly show
+zero buttons, both "No photo" cases in the right rows, the ×2/×4 quantity
+suffixes, a 108-character title, both payment labels. Every action a proper
+`button` role. Both colour schemes. `seller-orders-web-{full,light}.png`.
+
+**Not verified: the confirm-and-transition interaction** — same standing web
+limitation (`PillButton`/`PrimaryAction`/`QuietAction` share the web-inert
+`Animated.createAnimatedComponent` wrapper). Device pass outstanding.
+
+### Gates
+
+`tsc --noEmit` clean · `v2Adherence`, `v2Contrast`, `v2MaterialCoverage` all
+green. `v2Inventory` has the same two `scan/*` reds as the previous page —
+the concurrent session's in-progress restructuring, re-confirmed via
+`ls app/v2/scan/` before writing this, not this work's file.
+
+---
+
+## `/v2/drafts` and `/v2/listings` — Card Redesign (matching `seller-bids`)
+
+Redesigned both pages from flat rows (`Row` + `Hairline`) to the modern, tactile
+card architecture established by `seller-bids` (`SellerBidCard`):
+
+| Part | Description | File |
+|---|---|---|
+| Draft Card | Left thumbnail with `+N` badge for multi-item drafts, `AI Draft` / `Manual Draft` label + age chip / resuming spinner, 2-line title, and stats caption. Uses `MaterialFill` and `usePressFeedback`. | `src/features/v2/drafts/draft-card.tsx` |
+| Listing Card | Left thumbnail with `+N` badge for multi-product batches, `Batch #{id}` + status chip, 2-line title, and commercial summary caption. Uses `MaterialFill` and `usePressFeedback`. | `src/features/v2/listings/listing-card.tsx` |
+| Drafts Screen | `FlashList` with card layout, count header, pull-to-refresh, empty/error states. | `app/v2/drafts.tsx` |
+| Listings Screen | `FlashList` with card layout, count header, pull-to-refresh, empty/error states. | `app/v2/listings.tsx` |
+
+### Gates
+
+`tsc --noEmit` clean (0 errors) · `v2Adherence`, `v2Contrast`, `v2MaterialCoverage`, `v2Inventory` all green (89/89 tests passed).
+

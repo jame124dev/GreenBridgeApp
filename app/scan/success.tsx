@@ -206,7 +206,14 @@ export default function SuccessScreen() {
               // (launchSellerScan); send them back to the lab home, not the
               // seller tab group that scanHome (/(tabs)) points at.
               // See processing-v2.tsx — flag decides where home is.
-              router.replace(IS_CUSTOMER ? homeRoute() : routes.scanHome)
+              {
+                // if/else, not a ternary — see the TS2590 note in `detection.tsx`.
+                if (IS_CUSTOMER) {
+                  router.replace(homeRoute());
+                } else {
+                  router.replace(routes.scanHome);
+                }
+              }
             }
             fullWidth
           />
@@ -223,11 +230,14 @@ export default function SuccessScreen() {
                       })
                     : t('mobile.success.viewBatchSummary')
               }
-              onPress={() =>
-                router.push(
-                  hasItemList ? routes.activityHistory : routes.listingDetail(pk),
-                )
-              }
+              onPress={() => {
+                // if/else, not a ternary — see the TS2590 note in `detection.tsx`.
+                if (hasItemList) {
+                  router.push(routes.activityHistory);
+                } else {
+                  router.push(routes.listingDetail(pk));
+                }
+              }}
               variant="secondary"
               fullWidth
             />

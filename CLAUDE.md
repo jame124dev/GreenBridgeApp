@@ -33,8 +33,35 @@ Agreed 2026-09-15, after a day of replies the user was not reading.
 - **Keep working.** Decide the obvious calls and carry on; do not check in between steps.
   Stop only for what is genuinely the user's: palette, WCAG sign-off, missing endpoints,
   credentials, anything that writes real data.
+- ⚠️ **"Keep working" applies to work already agreed — it does not set new scope.**
+  A QUESTION IS NOT AN INSTRUCTION. On 2026-09-24 *"are you plugging the api as well in screen?"*
+  was answered and then treated as an order to wire three screens to the live API; the user's
+  next message was *"who said for you for api add"*. Answer the question, say what you could do
+  next, and stop. Impatient phrasing is a reason to ask, not to assume.
+  **And never start new scope in a turn triggered by a system or background-task event** — those
+  notifications say in their own text that they are not user input. With no human message, the
+  only safe moves are finishing the step already in flight and reporting. See `../MISTAKES.md`,
+  2026-09-24.
+- **A METHOD the user has stated is not one of those calls — apply it to every item in scope
+  without re-deciding it per item.** The dashboard method is *clone a template repo into
+  `ui_git_repo/`, copy its files in, then adjust*. It was re-litigated four times in one session,
+  the last time by arguing the existing kit's `Tabs` made copying a tab bar unnecessary — before
+  reading the candidate, which turned out to be better (a sliding interpolated indicator vs. our
+  jumping one). If an application looks wrong, **build it first and say why afterwards, with the
+  result in hand.** A reservation is worth something only once the alternative exists and can be
+  compared. See `../MISTAKES.md`, 2026-09-23.
 - Evidence beats prose. A measured number, a screenshot, a grep — those are the value.
   Confident tone is not: four claims were stated confidently and wrongly in one day.
+
+## Building a dashboard page
+
+**`Docs/Dashboard/PAGE_PLAYBOOK.md` is the flow — follow it, do not re-derive it.**
+The user's instruction is `Build <page> following Docs/Dashboard/PAGE_PLAYBOOK.md`
+and that is the whole brief. It covers: take the contract (not the markup) from
+`../nextjs-port`, clone a React Native template into `ui_git_repo/`, `cp` its
+files in and adjust them *in place*, fixtures, the route, the gates, and the
+device pass. Page list and order: `src/features/v2/dashboard/nav.ts`.
+Worked example: `/v2/dashboard/bids`.
 
 ## Where the v2 work is tracked
 
@@ -53,9 +80,18 @@ Agreed 2026-09-15, after a day of replies the user was not reading.
 - **RNGH does not reach inside a RN `<Modal>`** without its own `GestureHandlerRootView`.
   If one control in a modal works and the rest do not, compare which `Pressable` each imports.
 - **Never put a `return` above a hook.** Gate the hook's input (`enabled`) or its result.
-- The device is `BQCA9TNVEY4PSSSK`, Metro on **8082** (8081 is a Vite server). Its display
-  override is density 408 → **423dp**, so nothing here has been seen at 360dp; `wm density`
-  is blocked by ColorOS (`WRITE_SECURE_SETTINGS`).
+- The device is `BQCA9TNVEY4PSSSK`. Its display override is density 408 → **423dp**, so nothing
+  here has been seen at 360dp; `wm density` is blocked by ColorOS (`WRITE_SECURE_SETTINGS`).
+- ⚠️ **NEVER assume the Metro port — measure which one the device is on.** This row used to say
+  *"Metro on 8082 (8081 is a Vite server)"*; on 2026-09-23 **both ports were Metro for this same
+  app** (`curl :8081/status` and `:8082/status` each returned `packager-status:running`), and only
+  **8082** had the device attached. Ports move whenever someone starts a second `expo start`.
+  The positive check, before any bundle probe:
+  `curl -s http://127.0.0.1:<port>/json/list` → the right port names
+  `com.greenbidz.bridge (realme RMX2151)`; the wrong one returns `[]`.
+  This matters because a freshness probe aimed at the unattached Metro returns a **fresh, green,
+  entirely irrelevant** answer — it bundles the same source and tells you nothing about what the
+  phone is running. (See `MISTAKES.md`, 2026-09-23.)
 - **The dev scheme pill eats taps.** `SchemeToggleDev`'s floating magenta `SYS → LIGHT` control
   floats over the bottom-left of EVERY v2 screen and has now sat on top of three real controls
   (chat's camera/attach keys, 7e's "Go to Details", 7e's "Installed" chip). It swallows the touch

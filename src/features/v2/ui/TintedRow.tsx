@@ -14,7 +14,7 @@
  * changes the margins, padding, radius and leading shape — i.e. a different
  * component wearing the same name.
  */
-import React, { type ReactNode } from 'react';
+import React, { useState, type ReactNode } from 'react';
 import {
   StyleSheet,
   View,
@@ -25,7 +25,6 @@ import {
 // JS responder system, which RNGH intercepts natively — inside Home's pager it
 // never receives the tap. See the note in `features/v2/home/HomePager.tsx`.
 import { Pressable } from 'react-native-gesture-handler';
-import Animated from 'react-native-reanimated';
 import { ChevronRight } from 'lucide-react-native';
 
 import {
@@ -34,16 +33,14 @@ import {
   ROW_SUBLINE_GAP,
   control,
   icon,
+  press,
   radius,
   space,
-  usePressFeedback,
   useV2Colors,
 } from '@/theme/v2';
 
 import { MaterialFill } from './Surface';
 import { Text } from './Text';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function TintedRow({
   title,
@@ -64,17 +61,46 @@ export function TintedRow({
   testID?: string;
 }) {
   const c = useV2Colors();
-  const { animatedStyle, onPressIn, onPressOut } = usePressFeedback({ scale: false });
+  /**
+   * ⚠️ PLAIN STATE, NOT `usePressFeedback` / `Animated.createAnimatedComponent`.
+   *
+   * Investigated 2026-09-24 as a suspect in a Home-screen collapse bug (this
+   * row and the promo banner below it painting as a blank void after a scroll
+   * gesture, `uiautomator` reporting `y2 < y1` — an inverted rect). The ACTUAL
+   * root cause was `HomePager.tsx`'s `TabView` seeding `tabViewLayout.height`
+   * at 0 until its own `onLayout` corrected it, which fed a 0 `minHeight` into
+   * `RTVScrollView`'s content container (see the `tabView: { width, height }`
+   * fix and its comment there). Once that was fixed, a scripted repro —
+   * scroll away and back, twice — showed this row painting correctly every
+   * time, with `uiautomator` back to normal bounds and React Native's own
+   * `onLayout` reporting an unchanged, valid layout throughout (it never
+   * refires on scroll, only on real layout change) — proof the row itself was
+   * never broken.
+   *
+   * The switch away from `Animated.createAnimatedComponent` here was a
+   * plausible-but-unconfirmed suspect tried while root-causing, not the fix —
+   * kept because it is simpler (no Reanimated nesting inside `RTVScrollView`'s
+   * own Reanimated stack), not because it was proven necessary. It does mean
+   * press feedback here is an instant opacity snap instead of `usePressFeedback`'s
+   * timed fade; reintroduce that ONE nesting level up (a value computed outside
+   * this component driving a plain `Pressable`'s style) if the fade is wanted
+   * back, rather than re-wrapping this component in `Animated.createAnimatedComponent`.
+   */
+  const [pressed, setPressed] = useState(false);
 
   return (
-    <AnimatedPressable
+    <Pressable
       testID={testID}
       onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
       accessibilityRole="button"
       accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
-      style={[styles.row, { backgroundColor: c.wash }, animatedStyle, style]}
+      style={[
+        styles.row,
+        { backgroundColor: c.wash, opacity: pressed ? press.opacity : 1 },
+        style,
+      ]}
     >
       {/* Material. No shadow: this row sits inside Home's swiping pane. */}
       <MaterialFill role="wash" ink="ink" radius={radius.lg} />
@@ -96,7 +122,7 @@ export function TintedRow({
       </View>
 
       <ChevronRight size={icon.md} color={c.inkSubtle} />
-    </AnimatedPressable>
+    </Pressable>
   );
 }
 

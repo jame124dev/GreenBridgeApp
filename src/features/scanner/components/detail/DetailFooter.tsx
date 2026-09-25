@@ -1,5 +1,9 @@
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+
+import { Hairline } from '@/features/v2/ui';
+import { GUTTER, space } from '@/theme/v2';
 
 import { useSubmitCtaLabel } from '@/features/seller/components/SellerApprovalNotice';
 import type { RequiredRowKey, RequiredStatus } from '@/features/scanner/requiredStatus';
@@ -59,10 +63,36 @@ export function DetailFooter({
   const { t } = useTranslation();
   const submitLabel = useSubmitCtaLabel(t('mobile.detail.submitListing'));
 
+  /*
+    ⚠️ THE ANDROID NAVIGATION BAR. This footer is the last thing on the screen
+    and it must clear the system bar underneath it.
+
+    It does NOT get that for free from `Screen`. `Screen` applies its
+    `bottomReserve` in exactly three places — the `footer` PROP's view, the
+    scroll content container, and the scroll indicators (`Screen.tsx:244,290,295`)
+    — and `app/scan/detail.tsx` uses none of them: it passes `scroll={false}`
+    with no `footer` prop and renders this component as a plain child, so it
+    lands in the `<View style={{flex:1}}>` branch, which has no padding at all.
+
+    The app is edge-to-edge (Expo 56 ⇒ targetSdk 35+, which Android enforces),
+    so content draws BEHIND the nav bar. With only `space.sm` (6dp) of bottom
+    padding the buttons sat ~18dp into the gesture inset, and would sit ~42dp
+    behind a 3-button bar (48dp) — the mode this was never tested in.
+
+    Applied HERE rather than in the screen so every consumer of this footer is
+    covered, present and future.
+  */
+  const insets = useSafeAreaInsets();
+
   // Split from the old single `footerCls`: the top border + surface now belong to
   // the wrapper so the required-progress strip sits inside the same pinned block.
-  const wrapperCls = 'border-t border-brand-border-strong bg-brand-surface';
-  const rowCls = 'flex-row items-center gap-sm px-lg pt-2.5 pb-2.5';
+  /*
+    The footer's own chrome, in v2 tokens rather than `brand-*` classes. The
+    top rule is a `Hairline` (rendered below) instead of `border-t
+    border-brand-border-strong`, matching the three other scan screens; the
+    ground is left to `Screen` so the footer does not paint a second surface
+    colour over it.
+  */
 
   const actions = (() => {
     if (isGrouped) {
@@ -146,7 +176,8 @@ export function DetailFooter({
   })();
 
   return (
-    <View className={wrapperCls}>
+    <View>
+      <Hairline />
       {required && onPressRow ? (
         <RequiredProgressStrip
           rows={required.rows}
@@ -155,7 +186,22 @@ export function DetailFooter({
           onPressRow={onPressRow}
         />
       ) : null}
-      <View className={rowCls}>{actions}</View>
+      {/* `insets.bottom`, measured — never a constant. It is ~24dp under
+          gesture navigation and ~48dp under the 3-button bar, and the whole
+          point is that the app cannot know which the phone is using. */}
+      <View style={[styles.row, { paddingBottom: space.sm + insets.bottom }]}>
+        {actions}
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: GUTTER,
+    paddingVertical: space.sm,
+  },
+});

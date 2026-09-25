@@ -3,6 +3,139 @@
 Audited 2026-09-17 against `nextjs-port`. One line each. Status is what mobile
 has **today**, not what is planned.
 
+---
+
+## ⚠️ RE-AUDIT 2026-09-22 — read this before the 09-17 text below
+
+Three of this document's load-bearing facts have changed or were wrong. The
+09-17 body is kept because its reasoning is still useful, but where the two
+disagree, this section wins.
+
+### 1. Mobile is NOT missing two steps. The web's Route and Inspection default OFF.
+
+The 09-17 summary says a web batch walks six steps
+(`Intake · Detected · Valuation · Route · Inspection · Review`) against mobile's
+four. That is the spine with every flag on. Read from `ScanV2FlowPage.tsx`:
+
+| Flag | Source | Default |
+|---|---|---|
+| `SCANV2_ROUTE_STEP_ENABLED = SCANV2_SCRAP_LOT_ENABLED` | `:313`, `:260` — `NEXT_PUBLIC_SCANV2_SCRAP_LOT === "true"` | **OFF** |
+| `SCANV2_INSPECTION_STEP_ENABLED = SCANV2_SCRAP_LOT_ENABLED && SCANV2_INSPECTION_ENABLED` | `:281-282`, `:270-271` | **OFF** |
+| `SCANV2_VALUATION_ENABLED` | `:293-294` — `!== "false"` | ON |
+| `SCANV2_SUBMIT_STEP_ENABLED` | `:256-257` — `!== "false"` | ON |
+
+So the web's **default batch spine is four steps** — `Intake · Detected ·
+Valuation · Review` — which is exactly mobile's `capture · items · valuation ·
+review`. **The decision to drop Route and Inspection did not diverge from the
+web; it matches the web's default configuration.** They are scrap-lot
+composition, behind a flag that is off.
+
+`"skipped"`, the 4th step state mobile omits, is only ever applied to those same
+two steps, and only when the seller picks "sell as product" over "scrap lot"
+(`scanV2SkippedSteps`, `:2981-2989`). With both steps absent there is nothing to
+skip — mobile's `V2StepState` of three values is correct, not a shortfall.
+
+### 2. The single-item predicate matches, and it is count-only.
+
+Web: `isSingleItemReview(counts) => Number(counts?.total) === 1`
+(`utils/scanv2SingleItem.ts:43-45`) — `total`, not `accepted`, and `undefined`
+is false so a 17-item lot never flashes the single screen. Mobile's
+`v2SpineForDraft(itemCount)` is the same axis, and its third shape (`null` ⇒
+empty spine, no denominator) is the honest extra mobile needs because capture
+and analyzing run before anything has been counted.
+
+### 3. The 09-17 server blocker is GONE — and #4 is no longer blocked on it.
+
+Re-measured on `greenbidz-gcp`: `controller/draftItemsController.js` is on disk
+(53,325 bytes, `Sep 17 14:16` — fixed hours after this doc was written),
+`SCANV2_REVIEW_SCALE=true`, routes mounted at `routes/draftRoutes.js:139-144`,
+and `greenbidz-test-backend` restarted `2026-09-21T13:53Z`, after the controller
+landed. **Ten tasks sat behind a blocker that stopped existing the same
+afternoon.** Detail in `todo/SCANV2_V2UI_14_ITEM_ROUTE.md`.
+
+### 4. Two things the 09-17 text does not know
+
+- **The web's Scan V2 is not in production.** `ScanV2FlowPage` is mounted only
+  at the unguarded dev route `app/scanv2-flow/page.tsx:13-19`; the production
+  `/dashboard/new-submission-upload` was reverted to the legacy flow
+  (`app/(seller)/dashboard/new-submission-upload/page.tsx:21-29`). "Parity with
+  the web" means parity with a dev-route flow. There are also stale duplicate
+  copies of the spine under `src/scanflow/...` and `src/valuation/...` — do not
+  port from those.
+- **The web seller flow has no guest concept at all.** It is entry-gated by
+  `ProtectedRoute` (`app/(seller)/layout.tsx:7`), and `grep -ci guest` over the
+  whole flow directory returns zero. ⚠️ This does **not** license changing
+  mobile: mobile's guest-first scan is required by App Review 5.1.1(v) (the
+  1.0.3 (21) rejection) and the web's *valuation* flow is separately
+  guest-capable (`src/lib/guestValuationRecord.ts`). Where mobile comments claim
+  they are "matching `nextjs-port`'s gate-at-publish", they mean the valuation
+  flow, not this one. Leave mobile's behaviour alone.
+
+### 5. THE STRUCTURAL DIFFERENCE — why the web has no orphaned screens and mobile has three
+
+This is the most useful thing in the comparison and the 09-17 audit missed it entirely, because it
+compared screen-for-screen rather than comparing the *shape*.
+
+**The web's whole flow is ONE PAGE with internal state.** `ScanV2FlowPage.tsx:613` holds
+`const [step, setStep] = useState<UploadFlowStep>("empty")` plus a second machine `submitStage`, and
+every transition is `setStep(...)` / `setSubmitStage(...)`. `grep -c 'router.push|router.replace'`
+over that 3,400-line file returns **1**. There is essentially no navigation in the flow at all.
+
+**Mobile split the same flow into ~10 expo-router routes.** Every transition is a `router.push`.
+
+That difference is the entire reason for §2A of the work order:
+
+| | Web | Mobile |
+|---|---|---|
+| A "screen" is | a render branch of one component | a route file |
+| Reachability is | **guaranteed** — if its condition can be true, it renders | **manual** — something must `router.push` it |
+| An unreachable screen is | impossible by construction | what happened three times (`analyzing.tsx`, and `items`/`review` outside the resume lane) |
+| Passing state along is | already in scope | a param, a store write, or a mapper between two types named `DraftItem` |
+
+So mobile did not merely "not finish the wiring" — it adopted a structure where the wiring is a
+separate, forgettable step, and then forgot it. Worth knowing before W1–W6: the work is not
+"translate the web's steps", it is "supply the connective tissue the web never needed".
+
+### 6. ONE DOOR vs TWO — the answer to "photos, Excel, CSV, PDF"
+
+**The web has a single intake that takes all of them.** `ScanV2Intake.tsx:93-98`:
+
+```
+accept="image/*,application/pdf,…spreadsheetml.sheet,text/csv,application/csv,.docx,.xlsx,.xls,.pptx,.csv"
+```
+
+One drop zone; the lane is chosen *after* the file is known — its own docblock: *"PDFs go through
+the AI scan lane, spreadsheets through the structured-map lane."* It also accepts a **pasted**
+spreadsheet and turns it into a real CSV (`utils/scanv2PasteIntake.ts`).
+
+**Mobile has two doors, and neither is that one:**
+
+- The scan flow is **camera-only**. There is no file picker in it.
+- PDFs, spreadsheets and CSVs arrive **only through chat** (`app/v2/chat.tsx:1019` →
+  `picker.pickDocument()` → `runExtractLane`), which writes a server draft that surfaces later in
+  the drafts list.
+
+So a seller with a supplier spreadsheet has to know to open the **assistant** rather than press
+**Scan it** — and nothing on the Home screen says so. That is not a missing screen (§4.9's
+`documents.tsx`); it is a missing **door**, and it is why W6 is "decide the entry" rather than
+"build the screen".
+
+### So what is actually left
+
+| Web step (default flags) | Mobile today |
+|---|---|
+| Intake | ✅ `capture` + `analyzing` |
+| Detected items | ✅ `items.tsx` |
+| Valuation | 🟡 decision layer built (`valuationSummary` + `valuationView`); **no screen** |
+| Review | 🟡 four sub-steps exist; **spine not wired**, still renders `Step n of 4` |
+| Route / Inspection | ✅ correctly absent — off by default on the web too |
+| Review item (single) | 🟡 in the spine, not wired |
+
+Three pieces of work, not six: **the items→review route** (task 14, built
+2026-09-22 — `src/features/v2/scan/openDetectedItem.ts`), **wiring `spine.ts`
+into `reviewKit.StepHeader`** (task 03 / D4), and **the Valuation screen**
+(task 12).
+
 ## The difference in one sentence
 
 The web builds its step spine from the draft: a **batch** walks
@@ -221,3 +354,79 @@ screen, which is why opening one fails" — true until #1/#3/#5 landed.)*
 - The document lane reports progress in **chat**, but 7a already has the
   designed UI for it — including a `Reading documents` phase
   (`analyzing.tsx:143`).
+
+---
+
+# Whole-app comparison: nextjs-port (101lab.co) vs the mobile app
+
+Added 2026-09-23. **Everything above this line is about the SCAN FLOW only** —
+that was the question when this file was started. This section is the wider
+one: what a person can do on the web that they cannot do on mobile.
+
+Counted from the route trees, not from memory: `nextjs-port` has **119**
+`page.tsx` routes (44 under `(seller)/dashboard`, 13 under `(buyerdash)`, 4
+under `(buyerplain)`, the rest public/content); the mobile app has **22** v2
+routes plus ~35 on the older `(lab)` UI.
+
+## The one structural fact that decides most of this
+
+**Mobile does not re-implement browsing — it embeds the web.**
+`MarketplaceWebView` loads 101lab.co inside the app, and `navPolicy.ts` keeps
+*every* `101lab.co` / `greenbidz.com` URL inside the WebView (only other hosts
+— maps, mailto:, payment redirects — bounce to the system browser). So a web
+page is reachable on mobile **if the marketplace links to it**.
+
+That gives three states, and they are not the same thing:
+
+| | meaning |
+|---|---|
+| **Native** | built with the v2 kit, works offline-ish, follows the design |
+| **Embedded** | the real web page inside the app's WebView — it works, but it is web chrome in a native app, and nobody has checked it at phone width |
+| **Absent** | no route links there from the marketplace, so there is no way in |
+
+⚠️ I verified the navigation POLICY permits these hosts. I did **not** click
+through to each page from the mobile marketplace, so "Embedded" below means
+"permitted and linked from the site", not "verified on the phone".
+
+## Native on mobile
+
+Auth (email + password, register with 6-digit code, password reset) · AI scan →
+detect → review (photos / details / pricing / location) → valuation step →
+publish · drafts · the seller's own listings · wants and matches · messages ·
+the AI assistant chat · account and settings · notifications · delete account.
+
+## What the web has and mobile does not
+
+| Cluster | Web routes | On mobile |
+|---|---|---|
+| **Seller dashboard** — orders, offers, bids, shipments, submissions, products, reports, sales-sync, storefront, buyer-activity, auction/batch groups, auto-approval | 44 routes under `(seller)/dashboard` | **Absent natively.** The app has no orders, offers, bids or shipments screen at all. |
+| **Seller org** — team, users, permissions, invitations, seller-network, company-organization | part of the 44 | **Absent.** No way to manage a team or invite anyone from the phone. |
+| **Buyer dashboard** — watchlist, bids, winning-bids, order history, buy-now orders, inspections, shipments | 13 routes under `(buyerdash)` | **Absent natively.** Mobile's Buying pane is "Your wants" + "Matched for you" only. |
+| **Checkout** — `/buyer/checkout`, `/buyer/checkout/[batchId]`, `(seller)/checkout` | 4 routes under `(buyerplain)` + 2 | **Embedded at best.** Nothing native; a payment redirect leaves the WebView to the system browser by policy. |
+| **Bulk upload / manual listing** — `/dashboard/bulk-upload`, `/dashboard/new-listing`, `/sell/manual`, `/new-submission-upload` | 4 | **Absent.** Mobile creates listings one way only: the camera. See § "ONE DOOR vs TWO" above. |
+| **Standalone valuation** — `/valuation`, `/valuation/submitted`, `/inspection-report` | 3 | **Absent as a flow.** Mobile has a valuation STEP inside scan (`/v2/scan/valuation`), which is a different thing: the web one is a lead-gen entry point for someone who has not signed up. |
+| **Google sign-in** — `/auth/google-callback`, `/complete-google-profile` | 2 | **Absent.** Mobile auth is email + password only; no `GoogleSignin` anywhere in the app. |
+| **Become a seller** — `/become-seller`, `/account-pending`, `/pending-permission` | 3 | Partial: mobile has `(auth)/pending` and `(lab)/sell/apply`. ⚠️ `sell/apply` carries an App Review note — read the top of that file before touching it. |
+| **Content** — about, blog + `[slug]`, faq, how-it-works, resellers, factories, direct-sales, shipping, legal pages | ~12 | **Absent natively**, embedded if linked. No blog or FAQ in the app. |
+| **Token entry points** — `/r/[token]` (referral), `/draft/preview/[token]`, `/sourced/[key]`, `/unsubscribe` | 4 | **Absent.** These are email-link destinations; on a phone they open the browser, not the app — no deep-link handler for them. |
+
+## What mobile has that the web does not
+
+- The **camera-first create flow** as the primary path, with on-device capture,
+  reorder, and the multi-item split. The web's `/sell/ai` is the same engine
+  behind a file picker.
+- **Push notifications** (OneSignal).
+- The **v2 design system** — the web is still on the older look.
+
+## Reading this before acting
+
+The gap is not 97 routes of work. Most of those 44 dashboard routes are one
+feature each for a seller who is at a desk, and the honest question is which of
+them someone would do *on a phone*. The three that look phone-shaped from here:
+**orders/shipments status**, **bids and offers on your listings** (both are
+"tell me what happened while I was away" — which is what notifications already
+half-solve), and **watchlist**. Everything in the org/reports/sales-sync group
+reads as desk work.
+
+None of this is a recommendation yet — it is the map. Deciding what to build
+needs the usage data, which is not in this repo.

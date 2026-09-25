@@ -70,12 +70,24 @@ export function useStreamReveal(source: string, settled: boolean, byWord = false
         return;
       }
 
-      if (byWordRef.current) {
+      const rest = src.slice(shownLenRef.current);
+      // ⚠️ Word cadence needs WORDS, and four of this app's six locales do not
+      // delimit them. `\s*\S+\s*` over Chinese, Japanese or Thai matches the
+      // entire tail as ONE token, so `take` advances the whole remainder in a
+      // single frame and the answer appears instantly with no streaming at all.
+      // Measured: a 15-character zh reply -> 1 match, first advance 15 of 15;
+      // the same shape in English -> 8 matches, first advance 4 of 39.
+      //
+      // So the cadence is chosen per frame from the text in hand, not from the
+      // caller's flag alone. Mixed content sorts itself out: as soon as the
+      // unrevealed tail contains whitespace, words resume.
+      const canUseWords = byWordRef.current && /\s/.test(rest);
+
+      if (canUseWords) {
         // Word cadence: split the unrevealed tail into whole words (each match
         // carries its own leading/trailing whitespace, so summing lengths keeps
         // the char offset exact), then advance ~1/6 of the remaining words per
         // frame (min 1). Pure trailing whitespace flushes to the end.
-        const rest = src.slice(shownLenRef.current);
         const words = rest.match(/\s*\S+\s*/g);
         if (!words) {
           shownLenRef.current = src.length;

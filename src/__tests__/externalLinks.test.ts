@@ -147,12 +147,26 @@ describe('outbound web links', () => {
    * expected. Enforce the real constraint: the entry point is a router push,
    * never a URL.
    */
+  /**
+   * ⚠️ THE ROUTE MOVED, THE RULE DID NOT. Until 2026-09-23 this asserted the
+   * literal `router.push('/(auth)/register')` inside `login.tsx`. The
+   * wash-hero rebuild replaced the bottom "Don't have an account?" link with
+   * the Sign in / Create account segment, which lives in the shared
+   * `AuthShell` — so the string legitimately left this file. What must NOT
+   * change is that the entry point is a router navigation and that no URL
+   * appears on either surface; both are still asserted, one level up.
+   */
   it('the login screen routes to native signup, not a web page', () => {
-    const src = read('app/(auth)/login.tsx');
-    const lines = codeLines(src);
-    expect(lines.some(({ line }) => line.includes("router.push('/(auth)/register')"))).toBe(true);
-    // Belt and braces: no http(s) literal anywhere in the screen's code.
-    const urls = lines.filter(({ line }) => /['"`]https?:\/\//.test(line));
+    const shell = codeLines(read('src/features/v2/auth/AuthShell.tsx'));
+    expect(shell.some(({ line }) => line.includes("'/(auth)/register'"))).toBe(true);
+    expect(shell.some(({ line }) => /router\.(push|replace)/.test(line))).toBe(true);
+
+    // Belt and braces: no http(s) literal on the login screen OR in the shell
+    // it renders — a URL in either one is the Guideline 3.1.1 failure again.
+    const urls = [
+      ...codeLines(read('app/(auth)/login.tsx')),
+      ...shell,
+    ].filter(({ line }) => /['"`]https?:\/\//.test(line));
     expect(urls.map((l) => `${l.n}: ${l.line.trim()}`)).toEqual([]);
   });
 

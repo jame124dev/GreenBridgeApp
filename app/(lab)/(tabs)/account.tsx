@@ -169,7 +169,15 @@ function LabAccountAuthed() {
                       haptics.tap();
                       // `as unknown as Href` for the same reason line 126 does
                       // it: typed routes don't know this path.
-                      router.push('/v2' as unknown as Href);
+                      //
+                      // `replace`, not `push` — 2026-09-24. A `push` left this
+                      // whole (lab) stack sitting underneath v2, so 6 BACK
+                      // presses from inside v2 walked back out into the OLD
+                      // home (`Docs/v2/TRAPS.md`'s "Reset with a deep link,
+                      // never N × BACK"). `replace` drops this screen from the
+                      // stack on the way in, so there is nothing old-UI left
+                      // to back into.
+                      router.replace('/v2' as unknown as Href);
                     }}
                     accessibilityRole="button"
                     accessibilityLabel="Open the new UI (in progress)"

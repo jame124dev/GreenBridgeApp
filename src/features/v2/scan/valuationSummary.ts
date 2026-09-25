@@ -86,7 +86,7 @@ export function parseBand(raw: string | null | undefined): Band | null {
 }
 
 /** Which rows a total should cover. */
-function countedRows(items: readonly DraftItem[]): DraftItem[] {
+export function countedRows(items: readonly DraftItem[]): DraftItem[] {
   const accepted = items.filter((i) => i.status === 'accepted');
   // Before anyone has accepted anything, a total over nothing is useless — so
   // fall back to everything still in play. Discarded rows never count.
@@ -108,7 +108,7 @@ function addBand(acc: Band | null, next: Band | null): Band | null {
  * set — it is an empty cell that survived extraction as a number — and adding
  * it to a total while NOT counting it as missing hides it twice over.
  */
-function isPriced(r: DraftItem): boolean {
+export function isPriced(r: DraftItem): boolean {
   return typeof r.price === 'number' && Number.isFinite(r.price) && r.price > 0;
 }
 

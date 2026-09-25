@@ -44,14 +44,16 @@
  * dead. See `V2_CHECKLIST.md`.
  */
 import React, { useRef, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
 // `Pressable` from GESTURE HANDLER, not react-native — see `home/HomePager.tsx`.
 import { Pressable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Images, X, Zap, ZapOff } from 'lucide-react-native';
+import { FileText, Images, X, Zap, ZapOff } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
+import { requireAuth, useIsGuest } from '@/features/auth/requireAuth';
 import { EmptyState, MaterialFill, Screen, ScrimPill, Text } from '@/features/v2/ui';
 import {
   GUTTER,
@@ -68,6 +70,9 @@ import { routes } from '@/lib/routes';
 import { compressPhoto } from '@/services/upload/compress';
 import { useScanDraft, type Photo } from '@/stores/scanDraftStore';
 
+import { humanBytes, pickScanFiles, type DraftDoc } from '@/features/v2/scan/pickScanFiles';
+import { startScanRun } from '@/features/v2/scan/startScanRun';
+
 /** The guided frame. A 4:3 window the nameplate is meant to sit inside. */
 const FRAME_RATIO = 0.75;
 /** Shutter. Bigger than `MIN_TOUCH` on purpose — it is used one-handed, at arm's length. */
@@ -75,7 +80,16 @@ const SHUTTER = 74;
 
 export default function V2Camera() {
   const c = useV2Colors();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  /**
+   * Only for the HINT on the file control — never for hiding it.
+   *
+   * A control that disappears for a guest teaches them the app cannot do the
+   * thing. The control stays; pressing it opens the gate, and the hint says so
+   * before the press. See `onAddFile`.
+   */
+  const isGuest = useIsGuest();
   /**
    * `append` = shoot INTO the draft already under review (7b's ADD tile).
    * Anything else = the normal path: these photos start a new scan.
@@ -89,6 +103,16 @@ export default function V2Camera() {
   const [permission, requestPermission] = useCameraPermissions();
 
   const [photos, setPhotos] = useState<Photo[]>([]);
+  /**
+   * Files picked from the device that are NOT images — a spec sheet, a manual,
+   * a parts list. They ride alongside the photos into the same draft; the
+   * detector reads a PDF's page-images the way it reads a nameplate shot.
+   *
+   * Images picked from the same dialog are compressed and merged into `photos`
+   * instead, so the pipeline cannot tell them from a captured frame.
+   */
+  const [docs, setDocs] = useState<DraftDoc[]>([]);
+  const [picking, setPicking] = useState(false);
   const [torch, setTorch] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -173,8 +197,90 @@ export default function V2Camera() {
     }
   };
 
+  /**
+   * Open the system file picker and take what comes back.
+   *
+   * The sorting, the size caps and the filename flattening are in
+   * `pickScanFiles` — ported from the shipped camera so the two cannot drift.
+   * What is left here is what to SAY, which is the part that belongs to a
+   * screen.
+   *
+   * A refusal names the file and both numbers. "File too large" on its own
+   * leaves the person with nothing to do; "X is 63.2 MB — over the 50.0 MB
+   * limit for this format" tells them which file and by how much.
+   */
+  const runPick = async () => {
+    if (picking) return;
+    setPicking(true);
+    try {
+      const picked = await pickScanFiles();
+      if (picked.canceled) return;
+
+      if (picked.photos.length > 0) setPhotos((prev) => [...prev, ...picked.photos]);
+      if (picked.docs.length > 0) {
+        setDocs((prev) => [...prev, ...picked.docs]);
+        haptics.tap();
+      }
+
+      if (picked.oversize.length === 1) {
+        const o = picked.oversize[0];
+        Alert.alert(
+          t('mobile.scanv2.camera.tooLargeTitle'),
+          t('mobile.scanv2.camera.tooLargeBody', {
+            name: o.name,
+            size: humanBytes(o.size),
+            limit: humanBytes(o.limit),
+          }),
+        );
+      } else if (picked.oversize.length > 1) {
+        Alert.alert(
+          t('mobile.scanv2.camera.tooLargeTitle'),
+          t('mobile.scanv2.camera.tooLargeManyBody', { count: picked.oversize.length }),
+        );
+      } else if (picked.photos.length === 0 && picked.docs.length === 0) {
+        // Picked something, got nothing usable — silence here would read as
+        // the control being dead.
+        Alert.alert(
+          t('mobile.scanv2.camera.pickFailedTitle'),
+          t('mobile.scanv2.camera.pickFailedBody'),
+        );
+      }
+    } catch {
+      haptics.error();
+      Alert.alert(
+        t('mobile.scanv2.camera.pickFailedTitle'),
+        t('mobile.scanv2.camera.pickFailedBody'),
+      );
+    } finally {
+      setPicking(false);
+    }
+  };
+
+  /**
+   * ⚠️ THE GATE IS IN FRONT OF THE PICKER, NOT BEHIND IT.
+   *
+   * `useSmartDetect.ts:63-71` throws `'Sign in required to analyze documents'`
+   * when there is no `profile.id` — documents go up through GCS, which needs a
+   * seller id, and the legacy multipart fallback carries images only. v2's
+   * scan flow is deliberately open to guests (`startV2Scan.ts`), so without
+   * this a guest can attach a spec sheet, press Review, and be thrown at the
+   * processing screen — after the picking, with the file already chosen.
+   *
+   * So the account is asked for at the moment of reaching for the control.
+   * `'sell'` is the closest existing reason ("Sign in to list equipment") and
+   * the reason set is closed — see the KIT GAP note in the task report.
+   */
+  const onAddFile = () => requireAuth('sell', () => void runPick());
+
+  const removeDoc = (index: number) => {
+    setDocs((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const onDone = async () => {
-    if (starting || photos.length === 0) return;
+    // Photos OR documents, or both. A documents-only scan is a real path —
+    // the backend analyses PDF page-images, and the shipped camera has allowed
+    // it since the office-docs work (`app/scan/camera.tsx:409-416`).
+    if (starting || (photos.length === 0 && docs.length === 0)) return;
     setStarting(true);
     try {
       if (append) {
@@ -198,41 +304,32 @@ export default function V2Camera() {
         */
         const draft = useScanDraft.getState().current;
         if (!draft) throw new Error('append with no draft under review');
-        await useScanDraft.getState().updatePhotos([...draft.photos, ...photos]);
+        if (photos.length > 0) {
+          await useScanDraft.getState().updatePhotos([...draft.photos, ...photos]);
+        }
+        if (docs.length > 0) {
+          // Re-read: `updatePhotos` replaced `current` with a new object, so
+          // `draft` above is a stale snapshot. MERGE — a draft under review
+          // may already carry documents from the scan that created it.
+          const after = useScanDraft.getState().current;
+          useScanDraft.getState().patch({ documents: [...(after?.documents ?? []), ...docs] });
+        }
         haptics.success();
         router.back();
         return;
       }
 
-      await useScanDraft.getState().start(photos);
       /*
-        ⚠️ THIS GOES TO THE SHIPPED PROCESSING SCREEN, NOT TO v2's 7a, AND
-        THAT IS NOT AN OVERSIGHT.
+        Create the draft, attach the documents, route to the detector.
 
-        There are two detection mechanisms in this app and they are not
-        interchangeable:
-
-          useSmartDetect          POST /wp/analyze-smart-detection-v2 (SSE).
-                                  What `app/scan/processing.tsx` runs. Works
-                                  today; it is how every real scan happens.
-
-          recognition-jobs        POST /recognition-jobs, then tail
-                                  GET /recognition-jobs/:id/stream. What 7a
-                                  was built to WATCH — it takes a `?job=<id>`
-                                  and follows it.
-
-        7a only observes. Starting a run is one of the deferred writes, listed
-        in its own docblock, so routing here with no job id lands on "No scan
-        running" — I did exactly that and it is a dead end for anyone holding
-        two photos they just took.
-
-        So the camera hands to the mechanism that actually runs. The chrome is
-        the shipped one for those two screens, which is the same compromise
-        Browse already makes: a working flow in mixed chrome beats a v2-pure
-        dead end. Point this at `/v2/scan/analyzing` the moment 7a can start
-        its own run. See "the two detection mechanisms" in `V2_CHECKLIST.md`.
+        All three moved to `startScanRun` on 2026-09-22 when the intake screen
+        became a second door into the same run. Both the load-bearing ordering
+        (`patch()` silently no-ops before `start()` has created `current`) and
+        the reason the hand-off is the SHIPPED processing screen rather than
+        v2's `analyzing.tsx` are written out there, once, instead of in each
+        door.
       */
-      router.replace(routes.scanProcessing);
+      await startScanRun({ photos, docs });
     } catch {
       haptics.error();
       Alert.alert('Could not start the scan', 'Your photos are still here. Try again.');
@@ -241,7 +338,14 @@ export default function V2Camera() {
     }
   };
 
-  const shotCount = photos.length;
+  /**
+   * What is on the way forward — photos AND documents.
+   *
+   * One number rather than two: the roll is the way ON, and splitting it into
+   * "2 photos · 1 file" makes the person work out whether either of them is
+   * the button.
+   */
+  const attachmentCount = photos.length + docs.length;
 
   // flat: the viewfinder is a hole in the app, not a surface of it.
   return (
@@ -288,6 +392,71 @@ export default function V2Camera() {
         <ScrimPill tone="scrim" label="Frame the nameplate" style={styles.frameHint} />
       </View>
 
+      {/* ── Attached documents ──
+
+          A picked PDF or spreadsheet has no thumbnail to show in the roll, so
+          without a strip the only feedback for "Add files" is the count going
+          up by one — indistinguishable from a shot being taken. Each chip
+          names its file and carries its own remove control, because the roll
+          cannot undo a document and a wrong attachment would otherwise be
+          unremovable short of leaving the camera. */}
+      {/* ── The guest's warning, BEFORE the tap ──
+          `onAddFile` gates with `requireAuth`, so a guest who reaches for the
+          files control gets a sign-in sheet. Saying so first is the difference
+          between a gate and an ambush: the shutter beside it is genuinely open
+          to them, so without this the two controls look equally available and
+          only one is. Occupies the doc strip's slot, which a guest can never
+          fill — they cannot attach a document without the account this pill is
+          telling them about. */}
+      {isGuest && docs.length === 0 ? (
+        <ScrimPill
+          tone="scrim"
+          label={t('mobile.scanv2.camera.addFileGuestHint')}
+          style={[
+            styles.guestHint,
+            { bottom: insets.bottom + space['5xl'] + SHUTTER + space['3xl'] },
+          ]}
+        />
+      ) : null}
+
+      {docs.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: space.md }}
+          /* Clears the SHUTTER, not the round controls. The bottom bar's tallest
+             child is the shutter (`SHUTTER` = 74), not `control.avatar` (40) —
+             offsetting by the latter puts the strip 18pt INSIDE the shutter,
+             which is what the first version did and the device showed. Measured
+             off the constants rather than nudged until it looked right:
+             the bar's padding is `insets.bottom + space['5xl']`, so the shutter
+             top is that + SHUTTER, and the strip sits one `3xl` above it. */
+          style={[styles.docStrip, { bottom: insets.bottom + space['5xl'] + SHUTTER + space['3xl'] }]}
+        >
+          {docs.map((d, i) => (
+            // flat: sits ON the viewfinder, so the ground is photography — the
+            // same reason `ScrimPill` is exempt. A ramp tints the frame behind.
+            <View key={`${d.uri}-${i}`} style={[styles.docChip, { backgroundColor: c.scrimStrong }]}>
+              <FileText size={icon.sm} color={c.onScrim} strokeWidth={1.8} />
+              <Text variant="captionMedium" color="onScrim" numberOfLines={1} style={styles.docChipText}>
+                {d.name}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  haptics.tap();
+                  removeDoc(i);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t('mobile.scanv2.camera.removeFile', { name: d.name })}
+                hitSlop={space['2xl']}
+              >
+                <X size={icon.sm} color={c.onScrim} strokeWidth={2} />
+              </Pressable>
+            </View>
+          ))}
+        </ScrollView>
+      ) : null}
+
       {/* ── Bottom bar ── */}
       <View style={[styles.bottom, { paddingBottom: insets.bottom + space['5xl'] }]}>
         {/* The roll, and the way forward.
@@ -301,18 +470,18 @@ export default function V2Camera() {
             it, which collided with the shutter AND was vague. Naming the
             action removes both problems: no second line, no ambiguity. */}
         <View style={styles.side}>
-          {shotCount > 0 ? (
+          {attachmentCount > 0 ? (
             <Pressable
               onPress={() => void onDone()}
               disabled={starting}
               accessibilityRole="button"
-              accessibilityLabel={`Review ${shotCount} ${shotCount === 1 ? 'photo' : 'photos'} and start the scan`}
+              accessibilityLabel={t('mobile.scanv2.camera.reviewA11y', { count: attachmentCount })}
               style={[styles.roll, { backgroundColor: c.accent, opacity: starting ? 0.6 : 1 }]}
             >
               <MaterialFill role="accent" ink="onAccent" radius={radius.pill} />
               <Images size={icon.sm} color={c.onAccent} strokeWidth={1.8} />
               <Text variant="captionMedium" color="onAccent">
-                {`Review ${shotCount}`}
+                {`Review ${attachmentCount}`}
               </Text>
             </Pressable>
           ) : null}
@@ -333,9 +502,33 @@ export default function V2Camera() {
           </View>
         </Pressable>
 
-        {/* Balances the roll so the shutter stays centred. The drawn mic lives
-            here; it is absent until 3a exists rather than present and dead. */}
-        <View style={styles.side} />
+        {/* ── The document door ──
+
+            The slot that balances the roll, which until now held nothing. It is
+            the OTHER way in: a seller whose nameplate is painted over, or who
+            already has the spec sheet as a PDF or the lot as a spreadsheet,
+            cannot use the shutter at all. `nextjs-port`'s `/valuation` takes
+            photos and documents through ONE picker (`ScanV2Intake.tsx` ACCEPT),
+            and the shipped camera has had this control since the office-docs
+            work (`app/scan/camera.tsx`) — v2 dropped it, which is the gap the
+            user reported as *"last time we have upload document option"*.
+
+            Round, scrimmed, same size as the torch: it is a viewfinder control,
+            so it uses the viewfinder's own primitive rather than a new shape.
+            `onAddFile` gates BEFORE the picker opens — see its docblock. */}
+        <View style={styles.side}>
+          {picking ? (
+            // flat: the busy twin of `RoundControl`, which sits over the
+            // viewfinder — photography, not a surface of the app.
+            <View style={[styles.round, { backgroundColor: c.scrimStrong }]}>
+              <ActivityIndicator color={c.onScrim} />
+            </View>
+          ) : (
+            <RoundControl label={t('mobile.scanv2.camera.addFile')} onPress={onAddFile}>
+              <FileText size={icon.lg} color={c.onScrim} strokeWidth={2} />
+            </RoundControl>
+          )}
+        </View>
       </View>
 
     </View>
@@ -433,6 +626,28 @@ const styles = StyleSheet.create({
   },
   shutterCore: { width: SHUTTER - 16, height: SHUTTER - 16, borderRadius: radius.pill },
 
+  // Attached documents ride ABOVE the bottom bar: a document has no thumbnail
+  // in the roll, so without this a picked file is invisible and the only
+  // feedback is the count going up.
+  docStrip: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    paddingHorizontal: GUTTER,
+    gap: space.md,
+  },
+  /** Same slot as `docStrip`, but centred — it is one sentence, not a row. */
+  guestHint: { position: 'absolute', alignSelf: 'center' },
+  docChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    minHeight: MIN_TOUCH,
+    paddingHorizontal: space['2xl'],
+    borderRadius: radius.pill,
+  },
+  // Keeps a long spec-sheet filename from pushing the remove control off-screen.
+  docChipText: { maxWidth: 180 },
 });
 
 const cornerStyles = StyleSheet.create({

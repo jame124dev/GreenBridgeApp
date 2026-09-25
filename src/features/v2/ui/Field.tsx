@@ -23,7 +23,7 @@
  * other section in this design is titled. Passing `label` also wires
  * `accessibilityLabel`, so the input is never announced as just "text field".
  */
-import React, { type ReactNode } from 'react';
+import React, { forwardRef, type ReactNode } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -38,8 +38,12 @@ import {
 import { Pressable } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 
+import { Eye, EyeOff } from 'lucide-react-native';
+
 import {
+  MIN_TOUCH,
   control,
+  icon,
   radius,
   space,
   type as typeScale,
@@ -81,7 +85,20 @@ export type FieldProps = Omit<TextInputProps, 'style' | 'placeholderTextColor'> 
   style?: StyleProp<ViewStyle>;
 };
 
-export function Field({
+/**
+ * ⚠️ `forwardRef` — a form cannot chain its fields without it.
+ *
+ * `returnKeyType="next"` on a field is a promise that the key moves to the next
+ * input, and keeping that promise means calling `.focus()` on it, which needs a
+ * ref. Without one, every field on a four-field form dead-ends and the person
+ * closes the keyboard and re-taps four times. It also silently disables
+ * react-hook-form's `shouldFocusError`, so a failed submit leaves the caret
+ * nowhere and the first bad field can be off screen.
+ *
+ * The ref is the `TextInput`'s, not the wrapper's — `.focus()` is what callers
+ * want, and handing back a `View` that cannot focus would be worse than no ref.
+ */
+export const Field = forwardRef<TextInput, FieldProps>(function Field({
   label,
   variant = 'body',
   lines,
@@ -93,22 +110,45 @@ export function Field({
   style,
   accessibilityLabel,
   ...input
-}: FieldProps) {
+}: FieldProps, ref) {
   const c = useV2Colors();
 
   return (
     <View style={style}>
       {label ? (
-        <Text variant="eyebrow" color="inkSubtle" style={styles.label}>
+        // `inkMuted`, not `inkSubtle`. `palette.ts` documents `inkSubtle`
+        // (2.94:1 on light base) as acceptable for METADATA — a timestamp, a
+        // row's third line. This label is the input's ACCESSIBLE NAME and the
+        // only thing saying what to type, which is not metadata.
+        <Text variant="eyebrow" color="inkMuted" style={styles.label}>
           {label}
         </Text>
       ) : null}
 
+      {/*
+        ⚠️ THE RESTING BORDER IS NOT DECORATION — WITHOUT IT THE INPUT IS INVISIBLE.
+
+        A field is `surface` on a `base` ground. Those are `#F5F9F7` on `#FFFFFF`
+        in light and `#16261F` on `#08150F` in dark: **1.06:1** and **1.18:1**.
+        WCAG 1.4.11 asks 3:1 of a control's visible boundary, so until 2026-09-22
+        the only thing that made a field look like a field was the red border it
+        got when it was WRONG. Two independent reviewers opened the auth screens
+        cold and both led with it — one described seeing "two labels floating
+        over nothing".
+
+        This is the same finding `PrimaryAction` already documents for its
+        `quiet` variant (1.27:1 on base) and resolves the same way: the shape
+        has to be drawn, not implied by a fill that is a rounding error away
+        from the page.
+
+        `hairlineStrong`, not `hairline` — `hairline` is `#F2F5F3`, which is
+        LIGHTER than the surface it would outline.
+      */}
       <View
         style={[
           styles.field,
-          { backgroundColor: c.surface },
-          invalid && { borderWidth: 1, borderColor: c.danger },
+          { backgroundColor: c.surface, borderWidth: 1, borderColor: c.hairlineStrong },
+          invalid && { borderColor: c.danger },
         ]}
       >
         {/* Material. A field is a 52pt filled box on `surface` — structurally
@@ -119,6 +159,7 @@ export function Field({
         <MaterialFill role="surface" ink="ink" radius={radius.xl} />
         {leading}
         <TextInput
+          ref={ref}
           {...input}
           multiline={multiline}
           accessibilityLabel={accessibilityLabel ?? label}
@@ -140,13 +181,17 @@ export function Field({
           color={invalid ? 'danger' : 'inkSubtle'}
           style={styles.help}
           accessibilityRole={invalid ? 'alert' : undefined}
+          // `alert` alone does not announce on Android — TalkBack reads a live
+          // region, and a validation message that appears silently is a
+          // validation message a screen-reader user never learns about.
+          accessibilityLiveRegion={invalid ? 'assertive' : 'none'}
         >
           {help}
         </Text>
       ) : null}
     </View>
   );
-}
+});
 
 /**
  * A bare tappable glyph — no ground, no shape, just the icon.
@@ -156,8 +201,15 @@ export function Field({
  * `IconAction` (a 46pt filled accent circle) would put a second green shape on
  * a screen that already has its one primary pill.
  *
- * The 44pt target is made up entirely by `hitSlop`, so the drawn glyph can be
- * as small as the layout needs.
+ * ⚠️ IT CARRIES A REAL BOX, NOT `hitSlop`. The target used to be made up
+ * entirely of slop: `space.xl` (12) on each side of an `icon.lg` (18) glyph is
+ * **42pt**, two short of the `MIN_TOUCH` this very file asserts — and the
+ * password eye is the one control here a person jabs at repeatedly. `BrandBar`
+ * reached the same conclusion about its own header controls and swapped slop
+ * for real boxes; slop also cannot be seen by a layout dump, so an undersized
+ * target measured as correct.
+ *
+ * `minWidth`/`minHeight`, so a glyph LARGER than the minimum is not squeezed.
  *
  * `accessibilityLabel` is required — there is no visible text to fall back on.
  */
@@ -182,11 +234,51 @@ export function GlyphButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
-      hitSlop={{ top: space.xl, bottom: space.xl, left: space.xl, right: space.xl }}
-      style={[disabled && styles.disabled, animatedStyle]}
+      style={[styles.glyphBox, disabled && styles.disabled, animatedStyle]}
     >
       {children}
     </AnimatedPressable>
+  );
+}
+
+/**
+ * `RevealToggle` — the eye inside a password field.
+ *
+ * Lives in the kit because five fields across three auth screens need it and
+ * the first two grew their own copy. It is `trailing` content for a `Field`.
+ *
+ * The label flips with the state, so a screen reader announces what the control
+ * will DO rather than what the field currently is — "Show password" while
+ * hidden, "Hide password" while shown.
+ *
+ * Callers that own TWO password fields should drive both from ONE piece of
+ * state: revealing only one of a password/confirm pair leaves the single
+ * question that pair exists to answer — do they match? — unanswerable by
+ * looking.
+ */
+export function RevealToggle({
+  on,
+  onToggle,
+  labels,
+}: {
+  /** True when the password is visible. */
+  on: boolean;
+  onToggle: () => void;
+  /** Localised `{ show, hide }`. Defaults are English, for a screen with no i18n. */
+  labels?: { show: string; hide: string };
+}) {
+  const c = useV2Colors();
+  return (
+    <GlyphButton
+      accessibilityLabel={on ? (labels?.hide ?? 'Hide password') : (labels?.show ?? 'Show password')}
+      onPress={onToggle}
+    >
+      {on ? (
+        <EyeOff size={icon.lg} color={c.inkSubtle} strokeWidth={1.75} />
+      ) : (
+        <Eye size={icon.lg} color={c.inkSubtle} strokeWidth={1.75} />
+      )}
+    </GlyphButton>
   );
 }
 
@@ -225,5 +317,12 @@ const styles = StyleSheet.create({
     paddingTop: space['3xl'],
   },
   help: { marginTop: space.md },
+  /** See `GlyphButton` — a real 44pt box, because hitSlop was 42 and invisible. */
+  glyphBox: {
+    minWidth: MIN_TOUCH,
+    minHeight: MIN_TOUCH,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   disabled: { opacity: 0.45 },
 });

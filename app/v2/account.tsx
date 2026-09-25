@@ -35,7 +35,8 @@
  */
 import React, { useCallback } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { RTVScrollView } from 'reanimated-tab-view';
+import { Redirect, router } from 'expo-router';
 
 import { routes } from '@/lib/routes';
 import { User } from 'lucide-react-native';
@@ -61,6 +62,7 @@ import {
   Screen,
   SectionHeader,
   Text,
+  useTabBarReserve,
 } from '@/features/v2/ui';
 import { draftsEnabled } from '@/lib/flags';
 import { haptics } from '@/lib/haptics';
@@ -287,7 +289,12 @@ function GuestBlock({ onSignIn }: { onSignIn: () => void }) {
 
 // ── Screen ─────────────────────────────────────────────────────────────────
 
-export default function V2Account() {
+/**
+ * The real screen, now mounted as ONE PANE of `RootTabsPager` (2026-09-25).
+ * `hideOwnTabBar` — see the note in `browse.tsx`.
+ */
+export function AccountScreen() {
+  const reserve = useTabBarReserve();
   const signOut = useLogout();
   const isGuest = useIsGuest();
   const session = useAuth((s) => s.profile);
@@ -355,6 +362,9 @@ export default function V2Account() {
   return (
     <Screen
       testID="v2-account"
+      hideOwnTabBar
+      scroll={false}
+      contentStyle={styles.fill}
       header={
         <IdentityHeader
           initials={isGuest ? '' : initialsFor(name, email)}
@@ -368,6 +378,21 @@ export default function V2Account() {
         />
       }
     >
+      {/*
+        `RTVScrollView`, NOT a plain `ScrollView` — see the note above
+        `MatchesAuthed`'s `RTVFlatList` in `matches.tsx`. Account is the one
+        pane that used `Screen`'s OWN default scroll (`scroll` defaults true),
+        which is a plain `ScrollView` and never received a vertical drag once
+        this screen moved inside `RootTabsPager`.
+      */}
+      <RTVScrollView
+        // `flex:1` is load-bearing — without it the scroller sizes to its
+        // CONTENT rather than the available space, same trap `matches.tsx`
+        // documents for `RTVFlatList`.
+        style={styles.fill}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: reserve + space['6xl'] }}
+      >
       <View style={styles.body}>
         {isGuest ? (
           <GuestBlock onSignIn={() => go(() => requireAuth('account', () => undefined))} />
@@ -379,6 +404,44 @@ export default function V2Account() {
             onRetry={() => void profileQuery.refetch()}
           />
         )}
+
+        {/*
+          ── BUYING, the mirror of Selling below ──────────────────────────
+          Added 2026-09-23. This screen was already the app's dashboard hub —
+          it carried "Selling" (My listings, Drafts, Offers received) and no
+          counterpart for the other half of the marketplace. eBay resolves the
+          same problem the same way: one hub holding Bids/Offers and Watchlist
+          rather than a tab per list, and a summary of what needs attention on
+          the home screen. Home's Buying pane stays that summary; this is the
+          index.
+
+          ⚠️ NOT a hamburger, which was the other option considered. This app
+          already navigates by a bottom tab bar, and a drawer would be a
+          second navigation system hiding the same destinations behind a menu.
+
+          ⚠️ `__DEV__` ONLY, and it comes out in phase 2. `/v2/bids` renders
+          four hardcoded rows today, so shipping this row would put invented
+          bids in front of a real buyer. The gate is the whole reason the
+          screen can be reachable at all before its API exists — see
+          `Docs/Dashboard/buyer/my-bids/phase-2-api.md`.
+        */}
+        {/* eslint-disable-next-line no-constant-condition -- TEMP HIDE 2026-09-24, ask before restoring: `__DEV__ &&` */}
+        {__DEV__ && false ? (
+          <>
+            <SectionHeader title="Dashboard" />
+            <Hairline />
+            <Row
+              testID="v2-account-buyer-dashboard"
+              title="Buyer dashboard"
+              subtitle="Bids, orders, watchlist — sample data for now"
+              titleVariant="row"
+              trailing={<RowTrailing />}
+              accessibilityLabel="Buyer dashboard. Bids, orders and watchlist. Sample data for now."
+              onPress={() => go(() => requireAuth('account', () => router.push(routes.v2Dashboard)))}
+            />
+            <View style={styles.sectionGap} />
+          </>
+        ) : null}
 
         <SectionHeader title="Selling" />
 
@@ -521,11 +584,22 @@ export default function V2Account() {
           </View>
         ) : null}
       </View>
+      </RTVScrollView>
     </Screen>
   );
 }
 
+/** The route. `RootTabsPager` (mounted at `/v2`) hosts the real screen; this
+ *  keeps `/v2/account` deep links and the tab bar's old `href` alive. */
+export default function V2AccountRedirect() {
+  return <Redirect href="/v2?tab=account" />;
+}
+
 const styles = StyleSheet.create({
+  /** `Screen` measures its body with `width:100%` and no flex; a scroller
+   *  inside that collapses to zero height without this. */
+  fill: { flex: 1 },
+
   // Header
   avatar: {
     width: control.avatarLg,

@@ -39,7 +39,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 
 import { Text } from '@/components/ui';
-import { brand, fonts, greenDarkest, greenLight, greenMedium, lab, radius, spacing } from '@/constants/theme';
+import { fonts, greenDarkest, greenLight, greenMedium, lab, radius, spacing } from '@/constants/theme';
 import { relativeTime } from '@/features/lab/data/matchesFromApi';
 import { POP_STAGGER_MS, usePop, usePressScale } from '@/animations/recipes';
 import { haptics } from '@/lib/haptics';
@@ -83,6 +83,28 @@ function initialsOf(name: string): string {
 function avatarGradient(seed: number): readonly [string, string] {
   const safe = Number.isFinite(seed) ? Math.abs(Math.trunc(seed)) : 0;
   return AVATAR_GRADIENTS[safe % AVATAR_GRADIENTS.length] ?? AVATAR_GRADIENTS[0];
+}
+
+/**
+ * A stable seed for ONE PERSON, from their name.
+ *
+ * ⚠️ THE SEED USED TO BE `Number(data.ID) + Number(data.batch_id)` — the
+ * conversation id plus the listing id. Neither has anything to do with who the
+ * counterparty is, so the SAME seller got a different colour in every thread:
+ * an inbox screenshot showed "Jerry Seller" as four different greens down one
+ * list, which reads as a rendering fault rather than as decoration. An avatar
+ * colour is an identity cue or it is noise.
+ *
+ * djb2, truncated — not for cryptography, just a stable spread over five
+ * gradients. `>>> 0` keeps it unsigned so the caller's `Math.abs` has nothing
+ * to undo.
+ */
+function seedFromName(name: string): number {
+  let h = 5381;
+  for (let i = 0; i < name.length; i++) {
+    h = ((h << 5) + h + name.charCodeAt(i)) >>> 0;
+  }
+  return h;
 }
 
 export function ConversationRow({
@@ -140,7 +162,9 @@ export function ConversationRow({
 
       <View style={styles.avatarWrap}>
         <LinearGradient
-          colors={[...avatarGradient(Number(data.ID) + Number(data.batch_id))]}
+          // Seeded by the PERSON, so one seller is one colour across every
+          // thread they appear in. See `seedFromName`.
+          colors={[...avatarGradient(seedFromName(name))]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.avatar}
@@ -201,6 +225,27 @@ export function ConversationRow({
 const styles = StyleSheet.create({
   // Card row — same surface/border/radius as HomeRecentWants + the Matches cards.
   // `overflow: hidden` clips the unread accent bar to the rounded corners.
+  /*
+    ── A LIST ROW, NOT A CARD ────────────────────────────────────────────────
+
+    This was a self-contained card: 1pt border, `radius.lg`, its own surface,
+    floated on a 12pt gap. One of them looks considered; TEN of them is ten
+    identical outlined boxes down the screen, and the borders stop carrying any
+    information because every row has one. On a real inbox (screenshot,
+    2026-09-25) it read as noise, and the reported complaint was exactly that —
+    no separation you can actually follow.
+
+    An inbox is a continuous list, so the rows are now flat and separated by a
+    HAIRLINE between them (`deals.tsx`'s `Separator`). The border that
+    surrounded each row becomes the single line between two rows: one rule
+    instead of two stacked ones, which is also what makes a long list scannable.
+
+    The unread treatment is untouched and still carries three independent cues
+    (left bar, tinted ground, weight) — see `rowUnread` below. The radius stays
+    so the tint on an unread row is a rounded block rather than a full-bleed
+    band, and `overflow: hidden` stays because the left accent bar is absolutely
+    positioned.
+  */
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -208,9 +253,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: lab.hairline,
-    backgroundColor: brand.surface,
     overflow: 'hidden',
   },
   // Cues 2 + 3 — tinted surface and a soft green border on the whole card.

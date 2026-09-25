@@ -30,6 +30,7 @@ export function SectionNote({
   actionLabel,
   onAction,
   action = 'stacked',
+  variant = 'caption',
 }: {
   children: string;
   /** `danger` for a failure the person can retry. */
@@ -49,6 +50,17 @@ export function SectionNote({
    * a reason to ship a 20pt tap area.
    */
   action?: 'stacked' | 'inline';
+  /**
+   * Text size. `caption` (12pt) is the default and right for a note beside
+   * something else — metadata, a hint under a field.
+   *
+   * Pass `body` when the note IS the message rather than an aside. The chat's
+   * failed-turn and empty-answer states do: rendered at `caption` they were the
+   * smallest text on a screen otherwise set in 15pt prose, which is backwards
+   * for the one line that most needs reading. Default-preserving on purpose —
+   * this component is used across many list screens.
+   */
+  variant?: 'caption' | 'body';
 }) {
   return (
     <View
@@ -56,7 +68,7 @@ export function SectionNote({
       accessibilityRole={tone === 'danger' ? 'alert' : undefined}
     >
       <Text
-        variant="caption"
+        variant={variant}
         color={tone === 'danger' ? 'danger' : 'inkSubtle'}
         // minWidth:0 or the note refuses to shrink and pushes the inline
         // action off the right edge.

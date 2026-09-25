@@ -24,26 +24,29 @@ jest.mock('@/lib/mmkv', () => ({
 // Button.tsx pulls in react-native-reanimated for its press-scale animation;
 // the native Worklets module isn't initialized under jest, so stub the bits
 // Button actually uses (mirrors the pattern in forgot-password.test.tsx).
-jest.mock('react-native-reanimated', () => {
-  const RN = require('react-native');
-  return {
-    __esModule: true,
-    default: { View: RN.View, Text: RN.Text, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
-    useAnimatedStyle: () => ({}),
-    withTiming: (v: unknown) => v,
-  };
-});
+jest.mock('react-native-reanimated', () =>
+  require('@/test-utils/reanimatedMock').reanimatedMock(),
+);
 jest.mock('@/features/auth/useLogin', () => ({
   useLogin: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 import '@/i18n'; // initializes real en resources so t('mobile.auth.forgotShort') === 'Forgot?'
 
+// The screen is v2 since 2026-09-22, so `useV2Colors()` needs a provider. In
+// the app that comes from `app/(auth)/_layout.tsx`; a test that renders the
+// screen alone has to supply it, or the render throws
+// "useV2Theme must be used inside <V2ThemeProvider>".
+import { V2ThemeProvider } from '@/theme/v2';
+
 import LoginScreen from '../login';
 
 describe('login email prefill', () => {
   it('prefills the email field from the "email" search param (forgot-password round-trip)', () => {
-    const { getByDisplayValue } = render(<LoginScreen />);
+    const { getByDisplayValue } = render(
+      <V2ThemeProvider>
+        <LoginScreen />
+      </V2ThemeProvider>,
+    );
     expect(getByDisplayValue('saved@example.com')).toBeTruthy();
   });
 });

@@ -22,7 +22,7 @@
  *    body copy run to a 700pt measure. Content caps at MAX_CONTENT_WIDTH and
  *    centres instead of stretching.
  */
-import React, { type ReactNode } from 'react';
+import React, { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -34,6 +34,8 @@ import { StatusBar } from 'expo-status-bar';
 import {
   KeyboardAwareScrollView,
   KeyboardStickyView,
+  useKeyboardState,
+  type KeyboardAwareScrollViewRef,
 } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -42,6 +44,7 @@ import {
   GUTTER,
   HEADER_SHEET_RADIUS,
   MAX_CONTENT_WIDTH,
+  duration,
   space,
   useV2Colors,
   useV2Theme,
@@ -84,6 +87,19 @@ type ScreenProps = {
   /** Leave room for the tab bar. Off for full-screen flows like scan/review. */
   tabBar?: boolean;
   /**
+   * Reserve the tab bar's space (`tabBar` stays true) but don't render this
+   * screen's OWN `<TabBar/>`.
+   *
+   * For a screen mounted as one PANE of `RootTabsPager` — five screens now
+   * swipe under one shared bar (driven by the pager's index, not by
+   * `usePathname()`), so each pane rendering its own bar underneath would
+   * stack five bars, one per pane, all but the current one invisible but
+   * still measuring and animating. Standalone (reached by direct deep link,
+   * outside the pager) a screen keeps `hideOwnTabBar` unset and renders its
+   * own bar exactly as before.
+   */
+  hideOwnTabBar?: boolean;
+  /**
    * A sticky primary action, held below the content.
    *
    * Rendered as a FLEX SIBLING of the body, not as an overlay — so it is
@@ -122,6 +138,7 @@ export function Screen({
   headerFlush = false,
   bleed = false,
   tabBar = true,
+  hideOwnTabBar = false,
   footer,
   ground = 'base',
   keyboard = false,
@@ -157,8 +174,66 @@ export function Screen({
     <View style={[styles.measure, !scroll && styles.flex, contentStyle]}>{children}</View>
   );
 
+  /**
+   * ⚠️ THE STICKY FOOTER RIDES UP WITH THE KEYBOARD, SO IT SITS BETWEEN THE
+   * KEYBOARD AND THE FIELD YOU ARE TYPING INTO — AND WILL COVER IT.
+   *
+   * `KeyboardAwareScrollView`'s `bottomOffset` is the gap it keeps between the
+   * focused input and the top of the KEYBOARD. It knows nothing about this
+   * footer. With a flat 34 the field was scrolled to 34pt above the keyboard,
+   * which is exactly where the footer lands.
+   *
+   * Measured on register, Confirm password focused, 2026-09-22: the input at
+   * y1219–1320 with the footer's two rows at y1073–1215 and y1252–1367 — the
+   * second row drawn straight over the input, and the CONFIRM PASSWORD label
+   * hidden behind the Send button. Reported by the user, not by a test: nothing
+   * throws, the screen renders, and the field is simply not where you can see
+   * it. It got worse the moment a footer grew to two rows, which is the tell
+   * that a hardcoded offset was standing in for a measurement.
+   *
+   * So measure it. `onLayout` gives the real height including whatever the
+   * screen put in there, and the reserve follows it.
+   */
+  const [footerH, setFooterH] = useState(0);
+
+  /**
+   * ⚠️ RE-ASK FOR THE SCROLL ONCE THE HEADER HAS FINISHED CHANGING SIZE.
+   *
+   * The scroll offset the library picks when the keyboard opens is computed
+   * against the layout of that instant. A screen whose header COLLAPSES on
+   * keyboard-open (the auth shell drops its eyebrow and subtitle) changes the
+   * scroller's frame a moment later — it grew from 1006px to 1262px on login
+   * — and the offset chosen for the small frame is simply kept. Measured
+   * result: the focused field pinned to the top of the window with ~89px
+   * scrolled past it, which is exactly its own label. You are then typing
+   * into an unlabelled box, and on sign-up that means two identical password
+   * boxes.
+   *
+   * The library exposes `assureFocusedInputVisible()` for this. Called after
+   * the frame settles, it recomputes against the real one.
+   *
+   * ⚠️ NOT a `setState` in an effect — this is a ref call, and the cleanup
+   * cancels the timer so a fast open/close cannot fire it against an
+   * unmounted tree. `bottomOffset` was the first suspect and is NOT the
+   * cause: zeroing it changed the measured layout by nothing at all.
+   */
+  const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
+  const keyboardVisible = useKeyboardState((s) => s.isVisible);
+  useEffect(() => {
+    if (!keyboard || !keyboardVisible) return;
+    const id = setTimeout(() => scrollRef.current?.assureFocusedInputVisible(), duration.base);
+    return () => clearTimeout(id);
+    // `footerH` is a dependency because the footer is the OTHER thing that
+    // resizes on keyboard-open (the auth shell drops its secondary row), and
+    // it settles on its own `onLayout`, a frame or two after the header. With
+    // only `keyboardVisible` here the recompute fired between the two changes
+    // and the label went back to scrolling off — the same bug, one layout
+    // pass later. Re-run on every change to either edge of the slot.
+  }, [keyboard, keyboardVisible, footerH]);
+
   const footerView = footer ? (
     <View
+      onLayout={(e) => setFooterH(e.nativeEvent.layout.height)}
       style={[
         styles.footer,
         {
@@ -207,6 +282,7 @@ export function Screen({
 
       {scroll ? (
         <Scroller
+          ref={keyboard ? scrollRef : undefined}
           style={styles.flex}
           // With a footer the reserve belongs to the footer, not the scroll
           // content — the footer is a sibling and already occupies that space.
@@ -219,7 +295,15 @@ export function Screen({
           scrollIndicatorInsets={{ bottom: footer ? 0 : bottomReserve }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          bottomOffset={keyboard ? space['8xl'] : undefined}
+          /*
+            Clear the KEYBOARD *and* the sticky footer standing on top of it —
+            see the note on `footerH`. Deliberately not trimmed by
+            `insets.bottom` (the footer's own bottom padding, which the keyboard
+            covers): over-reserving costs a few points of extra scroll, while
+            under-reserving hides the field being typed into, and one of those
+            is a bug.
+          */
+          bottomOffset={keyboard ? footerH + space['8xl'] : undefined}
         >
           {body}
         </Scroller>
@@ -238,7 +322,7 @@ export function Screen({
         footerView
       )}
 
-      {tabBar ? <TabBar /> : null}
+      {tabBar && !hideOwnTabBar ? <TabBar /> : null}
     </View>
   );
 }

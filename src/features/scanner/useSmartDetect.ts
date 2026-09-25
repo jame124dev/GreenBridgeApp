@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 
-import { smartDetect, smartDetectFromUrls } from '@/services/scanner/smartDetect';
+import { smartDetectFromUrls } from '@/services/scanner/smartDetect';
 import { smartDetectStream } from '@/services/scanner/smartDetectStream';
 import {
   type GcsDocumentInput,
@@ -9,6 +9,7 @@ import {
   uploadGcsPhotos,
 } from '@/services/scanner/uploadGcsPhotos';
 import { gcsUrlForAnalyze } from '@/services/scanner/gcsUrl';
+import { guestSellerId } from '@/services/scanner/guestSellerId';
 import { smartDetectV2Enabled } from '@/features/scanner/smartDetectV2Enabled';
 import type { SmartStreamEvent } from '@/features/scanner/smartDetectStreamTypes';
 import { useAuth } from '@/stores/authStore';
@@ -26,9 +27,21 @@ import { useScanDraft, type Photo } from '@/stores/scanDraftStore';
  *      `image_urls` JSON mode. Vision API fetches each URL through the
  *      `/gcs/serve` proxy.
  *
- * Falls back to the legacy multipart `smartDetect` when there's no seller
- * profile (shouldn't happen on a guarded screen, but defensive — keeps the
- * mutation unconditionally async).
+ * ⚠️ GUEST SELLER ID — a signed-in profile is NOT required to run this.
+ * `sellerId` only namespaces the GCS object path
+ * (`sellers/{sellerId}/...`) and scopes per-seller concurrency caps on the
+ * backend; it is never checked against a real `sellers` row (confirmed
+ * against `nextjs-port`'s `/valuation` guest flow, which runs the identical
+ * `/gcs/upload` + smart-detect endpoints for anonymous visitors). So a guest
+ * gets `guestSellerId()` — a per-device `"guest-xxxxxxxx"` id, persisted in
+ * MMKV so a resumed session reuses it — instead of a real profile id.
+ *
+ * Previously this threw "Sign in required to analyze documents" for any
+ * guest scan that included a document (PDF/Word/Excel), forcing a real
+ * sign-in before the AI could even look at the file. Photos-only guest
+ * scans never hit this, which is why the bug only showed up on document
+ * scans specifically. Fixed 2026-09-24 by porting the web guest pattern
+ * rather than gating on auth at all.
  *
  * Same external surface as before (`{ photos, language, signal? }` → mapped
  * detection) so call sites in `processing.tsx` don't change.
@@ -60,16 +73,7 @@ export function useSmartDetect() {
        */
       onEvent?: (e: SmartStreamEvent) => void;
     }) => {
-      const sellerId = useAuth.getState().profile?.id;
-      if (!sellerId) {
-        // No auth context → can't upload to GCS. Stay on the legacy multipart
-        // path. That path only supports images; document analysis is a
-        // signed-in feature.
-        if (documents && documents.length > 0) {
-          throw new Error('Sign in required to analyze documents');
-        }
-        return smartDetect(photos, language, signal);
-      }
+      const sellerId = useAuth.getState().profile?.id ?? guestSellerId();
 
       // Upload photos when we have any. Skipped entirely on a docs-only
       // scan so the seller can run AI on a PDF without a paired photo.

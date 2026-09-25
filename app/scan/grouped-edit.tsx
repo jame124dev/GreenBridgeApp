@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
-import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FormProvider, useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
@@ -7,7 +8,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
-import { HStack, Screen, Text } from '@/components/ui';
+/*
+  v2 KIT for this screen's CHROME — app bar, footer, CTA. The form CARDS below
+  are the shared set from `features/scanner/components/detail/`, rendered
+  identically by `app/scan/detail.tsx`; they are ported separately so both
+  screens move together.
+*/
+import { GlyphButton, Hairline, PrimaryAction, Screen, Text } from '@/features/v2/ui';
+import { GUTTER, icon, space, useV2Colors } from '@/theme/v2';
 import {
   CategoryConditionCard,
   DescriptionCard,
@@ -32,7 +40,6 @@ import { useLabCategories } from '@/features/scanner/useLabCategories';
 import { haptics } from '@/lib/haptics';
 import { routes } from '@/lib/routes';
 import { useScanDraft } from '@/stores/scanDraftStore';
-import { brand } from '@/constants/theme';
 
 /**
  * Round 2 R2 — per-item editor for the multi-product review hub.
@@ -59,7 +66,17 @@ export default function GroupedEditScreen() {
   const { index: indexParam } = useLocalSearchParams<{ index: string }>();
   const index = Number(indexParam);
 
+  const c = useV2Colors();
+  const insets = useSafeAreaInsets();
   const queuedItems = useScanDraft((s) => s.queuedItems);
+  /** For "PRODUCT 3 OF 9" in the app bar — read live, so a removal re-counts. */
+  const total = queuedItems.length;
+  /**
+   * The sticky footer's measured height, fed to the scroll view's
+   * `bottomOffset`. 0 until the first layout pass, which is correct: the
+   * keyboard cannot be open before the footer has been laid out.
+   */
+  const [footerH, setFooterH] = useState(0);
   const patchQueuedItem = useScanDraft((s) => s.patchQueuedItem);
 
   const item = Number.isFinite(index) ? queuedItems[index] : undefined;
@@ -187,38 +204,59 @@ export default function GroupedEditScreen() {
     // Screen's own ScrollView wraps the header, the KeyboardAwareScrollView below
     // and the Save footer — nesting same-axis scrollers, un-pinning the footer,
     // and double-reserving the bottom inset (~48px dead gap under the CTA).
-    <Screen padded={false} scroll={false} edges={['top', 'bottom']}>
-      <HStack
-        align="center"
-        justify="space-between"
-        style={{ paddingHorizontal: 20, paddingTop: 8 }}
-      >
-        <Pressable
+    <Screen scroll={false} tabBar={false} testID="scan-grouped-edit">
+      {/*
+        Same app bar as `scan/detection` and `scan/grouped-review`, so moving
+        between the three reads as one flow. The heading was `text-5xl` centred
+        between a bare chevron and a 24pt spacer — at that size "Product 10"
+        crowded the back control, and the spacer was 24pt against a 44pt
+        button, so the title was never actually centred.
+      */}
+      <View style={styles.appBar}>
+        <GlyphButton
           onPress={() => router.back()}
-          hitSlop={12}
-          accessibilityRole="button"
           accessibilityLabel={t('mobile.common.back', { defaultValue: 'Back' })}
         >
-          <ChevronLeft color={brand.foreground} size={24} />
-        </Pressable>
-        <Text
-          className="font-heading text-5xl text-brand-foreground"
-          style={{ lineHeight: 28 }}
-        >
-          {t('mobile.groupedEdit.heading', {
-            defaultValue: 'Product {{index}}',
-            index: index + 1,
-          })}
-        </Text>
-        <View style={{ width: 24 }} />
-      </HStack>
+          <ChevronLeft color={c.ink} size={icon.lg} strokeWidth={1.8} />
+        </GlyphButton>
+        <View style={styles.appBarCentre}>
+          {/*
+            "PRODUCT 3 OF 9", not "Product 3". The seller arrives here from a
+            list of N and will come back to it; the count is the only thing on
+            this screen saying how much is left. `total` comes from the live
+            queue, so it stays right if an item is removed.
+          */}
+          <Text variant="eyebrow" color="inkMuted">
+            {t('mobile.groupedEdit.eyebrow', {
+              index: index + 1,
+              total,
+              defaultValue: `PRODUCT ${index + 1} OF ${total}`,
+            })}
+          </Text>
+        </View>
+        <View style={styles.appBarSpacer} />
+      </View>
+      <Hairline />
 
       <FormProvider {...form}>
         <KeyboardAwareScrollView
-          className="flex-1"
-          contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 8 }}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          bottomOffset={24}
+          /*
+            ⚠️ `bottomOffset` must clear the STICKY FOOTER, not just the
+            keyboard. `FORM_INPUT_RULES.md` §4: a footer that rides up with the
+            IME lands exactly where a keyboard-aware scroll puts the focused
+            field, so the LAST field of a long form is covered while every
+            control on it still works. This form's last card is LOCATION — the
+            one field every product here is missing — so that is precisely the
+            field at risk.
+
+            Measured, not guessed: `footerH` comes from the footer's own
+            `onLayout` below. A hardcoded 24 was the previous value and it
+            stopped being right the moment the footer's padding changed.
+          */
+          bottomOffset={footerH + space.xl}
         >
           <PhotosCard
             photos={item.photos ?? []}
@@ -283,71 +321,56 @@ export default function GroupedEditScreen() {
           own, so the IME draws over this footer. Both platforms wrapped; iOS is
           unverified on win32. */}
       <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+        {/*
+          The 60-line CTA that was here — a local reimplementation of the
+          primary button, wired with `loading`/`disabled` constants that were
+          hardcoded `false` — is replaced by the kit's `PrimaryAction`. Its one
+          real finding is preserved in that primitive: the fill belongs on an
+          inner View, never on a `({ pressed }) => …` style, because NativeWind's
+          interop silently drops layout props from a functional style.
+        */}
         <View
-          className="px-md pt-sm pb-md bg-brand-background"
-          style={{ borderTopWidth: 1, borderTopColor: brand.border }}
+          style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}
+          // Feeds `bottomOffset` above — see the note there for why this is
+          // measured rather than written down.
+          onLayout={(e) => setFooterH(e.nativeEvent.layout.height)}
         >
-        {/* D6: local brand-CTA override (pre-coding note D-1) — does NOT touch
-            the shared `Button` primitive, so the rest of the app keeps its
-            current emerald primary. Disabled = flat neutral fill (NOT
-            opacity-50) per D-1. The editor's Save path has no loading/disabled
-            state today, but the conditional styles are wired for completeness
-            so future use can flip a `loading` prop without re-skinning. */}
-        {(() => {
-          const loading = false;
-          const disabled = false;
-          const isInactive = loading || disabled;
-          return (
-            <Pressable
+          <Hairline />
+          <View style={styles.footerBody}>
+            <PrimaryAction
+              label={t('mobile.groupedEdit.saveReturn', { defaultValue: 'Save & Return' })}
               onPress={onSave}
-              disabled={isInactive}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: isInactive, busy: loading }}
-              accessibilityLabel={t('mobile.groupedEdit.saveReturn', {
-                defaultValue: 'Save & Return',
-              })}
-            >
-              {({ pressed }) => (
-                // Fill + padding on a plain inner View — a functional style on
-                // an interop'd Pressable silently drops layout props on this
-                // RN/NativeWind build (it made the hub Submit button collapse to
-                // bare text). A View is immune.
-                <View
-                  style={{
-                    backgroundColor: isInactive
-                      ? '#d4d8df'
-                      : pressed
-                      ? brand.primaryDim
-                      : brand.primary,
-                    minHeight: 52,
-                    paddingVertical: 14,
-                    paddingHorizontal: 16,
-                    borderRadius: 12,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text
-                      className="font-semi text-2xl"
-                      style={{
-                        color: isInactive ? brand.mutedForeground : '#ffffff',
-                      }}
-                    >
-                      {t('mobile.groupedEdit.saveReturn', {
-                        defaultValue: 'Save & Return',
-                      })}
-                    </Text>
-                  )}
-                </View>
-              )}
-            </Pressable>
-          );
-        })()}
+              testID="scan-grouped-edit-save"
+            />
+          </View>
         </View>
       </KeyboardStickyView>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  appBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: GUTTER,
+    paddingTop: space.sm,
+    paddingBottom: space.xs,
+  },
+  appBarCentre: { flex: 1, alignItems: 'center' },
+  /** Mirrors the back button's 44pt width so the eyebrow is optically centred. */
+  appBarSpacer: { width: 44 },
+
+  scroll: { flex: 1 },
+  /*
+    The cards carry their own internal padding, so the container supplies only
+    the gutter and the rhythm between them. `paddingBottom` is deliberately
+    generous: this is a long form whose last card must be reachable above the
+    sticky footer even with the keyboard closed.
+  */
+  scrollContent: { paddingHorizontal: GUTTER, paddingBottom: space['7xl'], gap: space.sm },
+
+  // `paddingBottom` is applied at the call site from `insets.bottom`.
+  footer: { paddingTop: 0 },
+  footerBody: { paddingHorizontal: GUTTER, paddingTop: space.sm },
+});

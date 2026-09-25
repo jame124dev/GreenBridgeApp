@@ -15,7 +15,7 @@ that redirected a fresh install to login was rejected by App Review on
 
 | Screen | Guest handling | Verdict |
 |---|---|---|
-| 6a Home — selling | drafts + listings hidden; Scan / type / bell gate on press | ✅ correct |
+| 6a Home — selling | drafts + listings hidden; **Scan / type are OPEN to a guest since 2026-09-22** (gate moved to Publish `usePublishDraft` + Save draft `useSaveDraft`, matching the web's gate-at-publish — see `SellingPane.tsx` `onScan`); bell gates on press | ✅ correct (re-checked on prod 2026-09-25) |
 | 6b Home — buying | wants + matches hidden (in a CHILD component, so a guest never fires the authed query) | ✅ correct |
 | 6c Browse | none — open to all | ✅ correct by design |
 | 6d Matches | whole-screen fork, `MatchesGuest` | ✅ correct |

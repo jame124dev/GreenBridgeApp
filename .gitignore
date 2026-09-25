@@ -33,6 +33,11 @@ yarn-error.*
 # local env files
 .env
 .env*.local
+# ⚠️ `.env` and `.env*.local` do NOT match a backup like
+# `.env.bak-localhost-1790056062`, which is how one turned up untracked — and
+# therefore stageable — while holding a real key. Anything that starts `.env`
+# is a secret until proven otherwise.
+.env.*
 
 # typescript
 *.tsbuildinfo
@@ -101,3 +106,7 @@ credentials/
 # non-canonical.
 /*.xml
 app_debug/
+
+# Cloned UI reference repos — read and copy from, never bundled or committed.
+# See ui_git_repo/README.md. Excluded from tsconfig and metro.config.js too.
+ui_git_repo/

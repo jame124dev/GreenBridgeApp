@@ -28,14 +28,14 @@ import React, { type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
 
-import { GlyphButton, ProgressLine, SectionHeader, Text } from '@/features/v2/ui';
+import { GlyphButton, SectionHeader, Text } from '@/features/v2/ui';
 import {
   icon,
   space,
   useV2Colors,
 } from '@/theme/v2';
 
-import { REVIEW_STEP_TOTAL, type ReviewStep, reviewStepIndex, reviewStepLabel } from './wizardState';
+import { type ReviewStep } from './wizardState';
 
 
 // ── StepHeader ─────────────────────────────────────────────────────────────
@@ -83,8 +83,6 @@ export function StepHeader({
   progress?: boolean;
 }) {
   const c = useV2Colors();
-  const stepNumber = reviewStepIndex(step) + 1;
-  const percent = Math.round((stepNumber / REVIEW_STEP_TOTAL) * 100);
   const draftLabel =
     itemTotal > 1 ? `Draft · ${itemIndex + 1} of ${itemTotal}` : 'Draft';
 
@@ -117,23 +115,35 @@ export function StepHeader({
         ) : null}
       </View>
 
-      {progress ? (
-        <>
-          <View style={styles.progressMeta}>
-            <Text variant="eyebrow" color="inkMuted">
-              {`Step ${stepNumber} of ${REVIEW_STEP_TOTAL} · ${reviewStepLabel(step)}`}
-            </Text>
-            <Text variant="captionMedium" color="inkMuted">{`${percent}%`}</Text>
-          </View>
+      {/*
+        ⛔ NO SECOND PROGRESS INDICATOR HERE. A `Step n of 4` eyebrow, a
+        percentage and a 3pt `ProgressLine` used to sit in this header — while
+        every one of the four review screens renders a four-row `Timeline` rail
+        ~100pt below it (`photos.tsx:642`, `details.tsx:575`, `pricing.tsx:363`,
+        `location.tsx:418`) that names all four steps, marks the current one,
+        AND carries a live "what is left" sentence from `stepNeeds`
+        ("Needs a price, or switch to Make offer").
 
-          <ProgressLine
-            value={stepNumber}
-            total={REVIEW_STEP_TOTAL}
-            on="wash"
-            label={`Review progress, step ${stepNumber} of ${REVIEW_STEP_TOTAL}`}
-          />
-        </>
-      ) : null}
+        Two progress systems, one screen, ~150pt apart. `UX_DESIGN_RULES.md`
+        asks "Can anything be removed?" and "Are there any duplicate controls?
+        (there should be none)". The rail is strictly the better of the two — it
+        is a sentence rather than a fraction — so the header's copy went, not
+        the rail.
+
+        Removing it also buys back the vertical space that pushed the first
+        field below the fold on every step.
+
+        ⚠️ An attempt on 2026-09-22 to make this header count the WHOLE review
+        (item 2 of 3 on Pricing = 7 of 12 = 58%) was reverted the same day. The
+        arithmetic was right and is kept in `spine.ts` as `v2ReviewProgress`,
+        but it is **deliberately not wired**: `itemTotal` is always 1 today —
+        `analyzing.tsx:704-709` sends every multi-product detection to the OLD
+        grouped flow — so it changed nothing, and the moment the batch path IS
+        wired the bar would promise a twelve-screen journey the UI has no
+        forward navigation through past screen four. Chrome describing a journey
+        nobody can walk is the exact defect `spine.ts` was written to end. Wire
+        it only together with a "Next item" transition.
+      */}
     </>
   );
 }

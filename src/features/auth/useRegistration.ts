@@ -17,7 +17,7 @@
  * See src/services/auth/register.ts for why the flow is native rather than a
  * web hand-off (App Store Guideline 3.1.1).
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   completeSignup,
@@ -71,8 +71,32 @@ const INITIAL: RegistrationState = {
   result: null,
 };
 
+/**
+ * Seconds before "Send a new code" is offered again.
+ *
+ * The same 30 as `useForgotPassword`'s `RESEND_COOLDOWN`, deliberately: the two
+ * flows put an identical-looking link under an identical-looking 6-digit field,
+ * and one of them being tap-spammable while the other was not is a difference
+ * with no reason behind it. Signup had NO cooldown at all until 2026-09-22 — a
+ * reviewer comparing the two screens found it.
+ *
+ * Not imported from the reset hook: that one is private to its module, and
+ * making one flow's constant load-bearing for the other couples two independent
+ * screens for the sake of one number.
+ */
+const RESEND_COOLDOWN = 30;
+
 export function useRegistration() {
   const [state, setState] = useState<RegistrationState>(INITIAL);
+
+  /** Counts down while it is above zero, then the effect stops itself. */
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const id = setInterval(() => setResendCooldown((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, [resendCooldown]);
 
   const fail = useCallback((err: unknown) => {
     const e = err instanceof RegisterError ? err : null;
@@ -97,6 +121,10 @@ export function useRegistration() {
       try {
         await signupInitiate(email, password);
         setState((s) => ({ ...s, busy: false, step: 'code', email, name, password }));
+        // A code has just gone out — the cooldown starts here, not only on a
+        // manual resend, or the first thing the code step offers is "send
+        // another one" the instant it opens.
+        setResendCooldown(RESEND_COOLDOWN);
         return true;
       } catch (err) {
         fail(err);
@@ -126,16 +154,21 @@ export function useRegistration() {
   );
 
   const resend = useCallback(async () => {
+    // Refuse while counting down. The UI also disables the control, but a hook
+    // that only *looks* rate-limited is rate-limited by the screen, and the
+    // reset flow guards here for the same reason.
+    if (resendCooldown > 0) return false;
     setState((s) => ({ ...s, busy: true, error: null }));
     try {
       await resendVerificationCode(state.email);
       setState((s) => ({ ...s, busy: false }));
+      setResendCooldown(RESEND_COOLDOWN);
       return true;
     } catch (err) {
       fail(err);
       return false;
     }
-  }, [state.email, fail]);
+  }, [state.email, fail, resendCooldown]);
 
   /** Manual "go back a step" for the UI's back affordance. */
   const back = useCallback(() => {
@@ -149,5 +182,5 @@ export function useRegistration() {
 
   const reset = useCallback(() => setState(INITIAL), []);
 
-  return { state, submitCredentials, submitCode, resend, back, reset };
+  return { state, resendCooldown, submitCredentials, submitCode, resend, back, reset };
 }

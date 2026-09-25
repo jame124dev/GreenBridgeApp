@@ -120,10 +120,14 @@ export function SignInSheet() {
 
   const go = (path: '/(auth)/login' | '/(auth)/register') => {
     // REMEMBER WHERE WE CAME FROM, or signing in throws the person out of v2.
-    // `login.tsx` finishes with `router.replace('/(lab)/(tabs)/home')` — the
-    // OLD home — so without this a guest who gates on a v2 screen signs in and
-    // lands in the previous UI, with no way back except the dev door. Seen on
-    // device 2026-09-16 and reported by the user before that.
+    //
+    // ⚠️ This is the INPUT to the fix, not a description of a bug that is still
+    // live. `login.tsx` used to finish with `router.replace('/(lab)/(tabs)/home')`
+    // — the OLD home — so a guest who gated on a v2 screen signed in and landed
+    // in the previous UI with no way back except the dev door. Seen on device
+    // 2026-09-16 and reported by the user before that. Both auth screens and the
+    // root AuthGuard now go through `postAuthLanding()`, which READS what is
+    // stored here. Stop storing it and the ejection comes back.
     //
     // `pathname` and not `href`: query params on these screens are navigation
     // state, and re-entering a half-filled form after an auth round-trip is

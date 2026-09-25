@@ -147,7 +147,16 @@ describe('useRegistration', () => {
     expect(result.current.state.busy).toBe(false);
   });
 
-  it('resend keeps the user on the code step', async () => {
+  /**
+   * ⚠️ SENDING THE FIRST CODE STARTS THE COOLDOWN, so a resend has to wait.
+   *
+   * Added 2026-09-22 with the cooldown itself. Before it, this test called
+   * `resend()` immediately and passed — which is exactly the behaviour being
+   * removed: "Send a new code" was tappable the instant the code step opened,
+   * and repeatedly. The reset flow has always rate-limited the identical-looking
+   * link; signup did not.
+   */
+  it('refuses a resend while the cooldown is running', async () => {
     mockInitiate.mockResolvedValue(undefined);
     mockResend.mockResolvedValue(undefined);
 
@@ -155,12 +164,49 @@ describe('useRegistration', () => {
     await act(async () => {
       await result.current.submitCredentials('a@b.com', 'hunter2hunter2', 'A B');
     });
+
+    expect(result.current.resendCooldown).toBeGreaterThan(0);
+
+    let accepted: boolean | undefined;
     await act(async () => {
-      await result.current.resend();
+      accepted = await result.current.resend();
     });
 
-    expect(mockResend).toHaveBeenCalledWith('a@b.com');
+    expect(accepted).toBe(false);
+    expect(mockResend).not.toHaveBeenCalled();
+    // Refusing must not move the user, or a rate limit becomes a dead end.
     expect(result.current.state.step).toBe('code');
+  });
+
+  it('resend keeps the user on the code step once the cooldown has elapsed', async () => {
+    jest.useFakeTimers();
+    mockInitiate.mockResolvedValue(undefined);
+    mockResend.mockResolvedValue(undefined);
+
+    try {
+      const { result } = renderHook(() => useRegistration());
+      await act(async () => {
+        await result.current.submitCredentials('a@b.com', 'hunter2hunter2', 'A B');
+      });
+
+      // Run the hook's own 1s ticker down to zero rather than reaching into its
+      // state — the countdown is the thing under test.
+      await act(async () => {
+        jest.advanceTimersByTime(30_000);
+      });
+      expect(result.current.resendCooldown).toBe(0);
+
+      await act(async () => {
+        await result.current.resend();
+      });
+
+      expect(mockResend).toHaveBeenCalledWith('a@b.com');
+      expect(result.current.state.step).toBe('code');
+      // And it re-arms, so the link cannot then be held down.
+      expect(result.current.resendCooldown).toBeGreaterThan(0);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('splits one name field into first and last for the API', async () => {

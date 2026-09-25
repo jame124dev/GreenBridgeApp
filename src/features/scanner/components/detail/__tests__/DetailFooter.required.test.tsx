@@ -1,5 +1,6 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 
 jest.mock('@/lib/flags', () => ({ draftsEnabled: () => false, SMART_DETECT_ENABLED: true }));
@@ -12,7 +13,13 @@ jest.mock('@/features/seller/components/SellerApprovalNotice', () => ({
   SellerApprovalNotice: () => null,
 }));
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { V2ThemeProvider } from '@/theme/v2';
 import { DetailFooter } from '@/features/scanner/components/detail/DetailFooter';
+
+/** A 3-button navigation bar's inset — the case this footer was never tested in. */
+const NAV_BAR_INSET = 48;
 import type { RequiredStatus } from '@/features/scanner/requiredStatus';
 
 /**
@@ -64,7 +71,40 @@ function renderFooter(overrides: Partial<React.ComponentProps<typeof DetailFoote
     onSaveAndReturnToReview: jest.fn(),
     ...overrides,
   };
-  return { ...render(<DetailFooter {...props} />), props };
+  /*
+    ⚠️ `V2ThemeProvider` IS REQUIRED. The footer's buttons are the kit's
+    `PrimaryAction` now, and every v2 primitive reads the theme through
+    `useV2Theme`, which THROWS rather than falling back when no provider is
+    mounted ("must be used inside <V2ThemeProvider>"). Rendering the component
+    bare therefore fails at render, not at assert, and the error names the
+    theme rather than the footer.
+
+    `initialPreference="light"` pins the scheme so a colour assertion cannot
+    depend on the host's dark-mode setting. Same wrapper the `app/(auth)` v2
+    suites use.
+  */
+  return {
+    /*
+      `SafeAreaProvider` with EXPLICIT metrics, not the real one. The footer
+      reads `useSafeAreaInsets()` to clear the Android navigation bar, and that
+      hook THROWS without a provider ("No safe area value available"). Pinning
+      `bottom: NAV_BAR_INSET` also makes the reserve assertable instead of
+      whatever the host happens to report.
+    */
+    ...render(
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 400, height: 800 },
+          insets: { top: 24, left: 0, right: 0, bottom: NAV_BAR_INSET },
+        }}
+      >
+        <V2ThemeProvider initialPreference="light">
+          <DetailFooter {...props} />
+        </V2ThemeProvider>
+      </SafeAreaProvider>,
+    ),
+    props,
+  };
 }
 
 /** The CTA's label is `t('mobile.detail.submitListing')`; react-i18next is
@@ -120,5 +160,44 @@ describe('DetailFooter — M-8: the footer mounts the required-progress strip', 
     });
     expect(queryByText('Title')).toBeNull();
     expect(queryByText('Price')).toBeNull();
+  });
+
+  /*
+    ── THE ANDROID NAVIGATION BAR ────────────────────────────────────────────
+
+    This footer is the last thing on `app/scan/detail.tsx`, and that screen
+    passes `scroll={false}` with no `footer` prop — so `Screen`'s own
+    `bottomReserve` never reaches it (it is applied only to the footer PROP,
+    the scroll content and the scroll indicators: `Screen.tsx:244,290,295`).
+    The footer therefore has to reserve the inset itself.
+
+    The app is edge-to-edge, which Android enforces from targetSdk 35, so the
+    buttons draw BEHIND the system bar unless something insets them. Before
+    this, the row had a flat `space.sm` (6dp): ~18dp into the gesture inset,
+    ~42dp behind a 3-button bar.
+
+    Asserted as "at least the inset", not an exact number, so the test pins the
+    BEHAVIOUR and not the current spacing token.
+  */
+  it('reserves the navigation-bar inset so the buttons are not behind it', () => {
+    const { toJSON } = renderFooter({ allRequired: true });
+
+    /*
+      Walk the rendered tree for ANY node reserving at least the inset, rather
+      than locating the submit button by its label: this suite runs without
+      i18n resources, so the button renders the raw key. The assertion is about
+      layout, so it should not depend on copy at all.
+    */
+    const paddings: number[] = [];
+    const walk = (node: unknown): void => {
+      if (!node || typeof node !== 'object') return;
+      const n = node as { props?: { style?: unknown }; children?: unknown[] };
+      const style = StyleSheet.flatten(n.props?.style) as { paddingBottom?: number } | undefined;
+      if (typeof style?.paddingBottom === 'number') paddings.push(style.paddingBottom);
+      (n.children ?? []).forEach(walk);
+    };
+    walk(toJSON());
+
+    expect(Math.max(0, ...paddings)).toBeGreaterThanOrEqual(NAV_BAR_INSET);
   });
 });

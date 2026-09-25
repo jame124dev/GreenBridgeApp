@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FormProvider } from 'react-hook-form';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Keyboard, StyleSheet, View } from 'react-native';
 import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +30,25 @@ import {
   useDetailController,
   useRowScroller,
 } from '@/features/scanner/components/detail';
+/*
+  v2 SHELL. This route is a thin composition — the visible surface is the
+  fifteen cards under `features/scanner/components/detail/*`, which are still on
+  the old kit. What changes here is the container only:
+
+    SafeAreaView + `bg-brand-background`  →  v2 `Screen`
+
+  `Screen` owns the safe areas (so `edges={['top','bottom']}` goes), the status
+  bar style and the ground colour, and `scroll={false}` leaves this screen's own
+  `KeyboardAwareScrollView` in charge — which it must be, because `scrollRef`
+  drives the row-jump that the footer chips and the invalid-submit alert use.
+
+  ⚠️ ORDER IS LOAD-BEARING AND TESTED. `keyboardStickyFooter.test.ts` asserts
+  that the first JSX element after `</KeyboardAwareScrollView>` IS
+  `KeyboardStickyView` — anything else is a footer sitting behind the IME. The
+  sticky block stays a direct sibling of the scroll view inside `Screen`.
+*/
+import { Screen } from '@/features/v2/ui';
+import { GUTTER, space } from '@/theme/v2';
 import { routes } from '@/lib/routes';
 import { useScanDraft } from '@/stores/scanDraftStore';
 import { useCreateDraft, useUpdateDraft } from '@/services/drafts/draftHooks';
@@ -134,16 +152,16 @@ export default function DetailScreen() {
 
   return (
     <FormProvider {...form}>
-      <SafeAreaView className="flex-1 bg-brand-background" edges={['top', 'bottom']}>
+      <Screen scroll={false} tabBar={false} testID="scan-detail">
         <DetailAppBar />
         <KeyboardAwareScrollView
           ref={scrollRef}
-          className="flex-1"
+          style={styles.scroll}
           // 132, not 48: the sticky footer is ~112pt tall (progress strip + two
           // buttons + the home-indicator inset) and 48 left the last card sitting
           // underneath it, so LOCATION and INSTALLATION were unreachable without
           // fighting the scroll.
-          contentContainerStyle={{ padding: 16, paddingBottom: 132, gap: 8 }}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           bottomOffset={24}
         >
@@ -289,12 +307,26 @@ export default function DetailScreen() {
             onPressRow={scrollToRow}
           />
         </KeyboardStickyView>
-      </SafeAreaView>
+      </Screen>
     </FormProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1 },
+  /*
+    `paddingBottom: 132` is NOT on the spacing scale and stays a literal on
+    purpose — it is a measurement of the sticky footer (progress strip + two
+    buttons + the home-indicator inset), not a design step. Rounding it to
+    `space['8xl']` would put LOCATION back underneath the footer.
+
+    ⚠️ It is also a hardcoded number that has to clear a sibling whose height
+    this screen owns — the exact shape `FORM_INPUT_RULES.md` says to measure
+    with `onLayout` instead. Left as-is in this pass because changing it is a
+    behaviour change, not a design one, and the footer here is conditionally
+    hidden while typing. Flagged rather than quietly kept.
+  */
+  scrollContent: { padding: GUTTER, paddingBottom: 132, gap: space.sm },
   // `display: none` rather than unmounting: unmounting the footer would drop the
   // progress strip's layout registrations and make the row-jump targets stale.
   hidden: { display: 'none' },

@@ -1,21 +1,43 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toast } from 'sonner-native';
-import {
-  AlertCircle,
-  Bell,
-  Check,
-  FileText,
-  RefreshCw,
-  Sparkles,
-  Timer,
-} from 'lucide-react-native';
+import { Bell, FileText, Sparkles, Timer } from 'lucide-react-native';
 
-import { AppImage, Button, Screen, Stack } from '@/components/ui';
-import { brand, fonts } from '@/constants/theme';
+/*
+  v2 KIT. This is the screen a scan actually lands on — `processing.tsx`
+  redirects here whenever `EXPO_PUBLIC_SMART_DETECT_V2=1`, which is the default
+  — so it is the one that has to read as the redesign.
+
+  Presentation only: every hook, effect, mutation, SSE handler and
+  `router.replace` below is untouched.
+
+  `Screen` and `Text` deliberately shadow the old-kit exports of the same name.
+  The four local helpers this file grew — `Shimmer`, `PulseDot`, `FadeInUp`,
+  `AnimatedBar` — are replaced by the kit's `Shimmer`, `Timeline`'s own active
+  dot, `EnterOnMount` and `ProgressLine`.
+*/
+import {
+  Chip,
+  EnterOnMount,
+  Hairline,
+  PrimaryAction,
+  ProgressLine,
+  QuietAction,
+  Row,
+  RowThumb,
+  Screen,
+  SectionHeader,
+  SectionNote,
+  Shimmer,
+  SoftPanel,
+  Text,
+  Timeline,
+  type TimelineStep,
+} from '@/features/v2/ui';
+import { GUTTER, icon, radius, space, useV2Colors } from '@/theme/v2';
 import { manualEntryDefaults } from '@/features/scanner/constants';
 import { shouldSkipDetectionChoice } from '@/features/scanner/smartDetectionRouting';
 import { shouldOfferBackground } from '@/features/scanner/backgroundAffordance';
@@ -60,9 +82,8 @@ import { getSiteType } from '@/services/scanner/buildFormData';
  * mapped result is byte-identical between v1 and v2).
  */
 
-// AI / active accent — fork-aware so the scan flow matches the app it's in:
-// forest-green brand in the customer (lab) app, emerald in the seller app.
-const ACCENT = IS_CUSTOMER ? brand.primary : '#10b981';
+// `ACCENT` (a fork-aware `brand.primary` / `#10b981`) is gone — the accent is
+// `c.accent` from the palette now, which flips with the colour scheme.
 
 // 5-phase timeline, mapped from the backend SSE `stage.phase` enum. Phase 2
 // (office docs) renamed `preparing_pdfs` → `preparing_documents`; the backend
@@ -123,87 +144,24 @@ function mmss(ms: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-// ── Small animated primitives ────────────────────────────────────────────────
+/*
+  ── FOUR LOCAL PRIMITIVES DELETED ──────────────────────────────────────────
 
-function Shimmer({ style }: { style?: object }) {
-  const v = useRef(new Animated.Value(0.4)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(v, { toValue: 1, duration: 750, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(v, { toValue: 0.4, duration: 750, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [v]);
-  return <Animated.View style={[{ backgroundColor: '#e3e7ee', borderRadius: 4, opacity: v }, style]} />;
-}
+  `Shimmer`, `PulseDot`, `FadeInUp` and `AnimatedBar` were ~80 lines of
+  hand-rolled `Animated` built here because the kit was not in reach when this
+  screen was written. All four now come from `@/features/v2/ui`:
 
-function PulseDot() {
-  const v = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.timing(v, { toValue: 1, duration: 1600, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [v]);
-  const ringScale = v.interpolate({ inputRange: [0, 1], outputRange: [1, 2.6] });
-  const ringOpacity = v.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] });
-  return (
-    <View style={{ width: 12, height: 12, alignItems: 'center', justifyContent: 'center' }}>
-      <Animated.View
-        style={{
-          position: 'absolute',
-          width: 12,
-          height: 12,
-          borderRadius: 6,
-          backgroundColor: ACCENT,
-          transform: [{ scale: ringScale }],
-          opacity: ringOpacity,
-        }}
-      />
-      <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: ACCENT }} />
-    </View>
-  );
-}
+    Shimmer      → `Shimmer`        (same job, theme-aware, honours Reduce Motion)
+    AnimatedBar  → `ProgressLine`
+    FadeInUp     → `EnterOnMount`
+    PulseDot     → `Timeline` draws its own active dot
 
-/** Mount fade-in-up wrapper — used as each product card streams in. */
-function FadeInUp({ children }: { children: React.ReactNode }) {
-  const v = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(v, {
-      toValue: 1,
-      duration: 480,
-      easing: Easing.bezier(0.16, 1, 0.3, 1),
-      useNativeDriver: true,
-    }).start();
-  }, [v]);
-  const translateY = v.interpolate({ inputRange: [0, 1], outputRange: [12, 0] });
-  return <Animated.View style={{ opacity: v, transform: [{ translateY }] }}>{children}</Animated.View>;
-}
-
-/** Progress bar whose fill width eases smoothly toward `progress` (0..1). */
-function AnimatedBar({ progress }: { progress: number }) {
-  const v = useRef(new Animated.Value(progress)).current;
-  useEffect(() => {
-    Animated.timing(v, {
-      toValue: progress,
-      duration: 500,
-      easing: Easing.out(Easing.ease),
-      useNativeDriver: false,
-    }).start();
-  }, [progress, v]);
-  const width = v.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
-  return (
-    <View style={{ height: 8, borderRadius: 999, backgroundColor: '#e3e7ee', overflow: 'hidden' }}>
-      <Animated.View style={{ height: '100%', width, borderRadius: 999, backgroundColor: ACCENT }} />
-    </View>
-  );
-}
+  None of them honoured Reduce Motion, and all four hard-coded `#e3e7ee` or
+  `ACCENT` — so they were invisible on a dark ground.
+*/
 
 export default function ProcessingV2Screen() {
+  const c = useV2Colors();
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const draft = useScanDraft((s) => s.current);
@@ -255,7 +213,30 @@ export default function ProcessingV2Screen() {
   const phaseIndex = PHASE_ORDER.indexOf(phase);
   const productTotal = detection?.count;
   const stepNum = Math.min(phaseIndex + 1, TIMELINE.length);
-  const progress = stepNum / TIMELINE.length;
+
+  /** Past the last phase — the timeline stops pulsing. */
+  const settled = phaseIndex >= TIMELINE.length - 1;
+
+  /*
+    The timeline's rows. `detail` is a sub-line `Timeline` shows only while its
+    step is the ACTIVE one, which is where the live "Analyzing 3 of 7…" and the
+    server's own phase message belong — the old rows rendered that sub-line
+    themselves, per row, with a spinning icon beside it.
+  */
+  const timelineSteps: readonly TimelineStep[] = TIMELINE.map((row) => {
+    const productSub =
+      row.phase === 'extracting_products' && productTotal
+        ? t('mobile.processingV2.analyzingCount', {
+            current: Math.min(products.length + 1, productTotal),
+            total: productTotal,
+            defaultValue: 'Analyzing {{current}} of {{total}}…',
+          })
+        : null;
+    return {
+      label: t(`mobile.processingV2.phase.${row.key}`, row.label),
+      detail: productSub ?? phaseMsg ?? undefined,
+    };
+  });
 
   // Elapsed timer.
   useEffect(() => {
@@ -355,7 +336,12 @@ export default function ProcessingV2Screen() {
           if (leftInBackgroundRef.current) return;
           if (backgroundRecognitionEnabled()) clearStoredJobId();
           setIsNavigating(true);
-          router.replace(m === 'single' ? routes.scanDetail : routes.scanGroupedReview);
+          // if/else, not a ternary — see the TS2590 note in `detection.tsx`.
+          if (m === 'single') {
+            router.replace(routes.scanDetail);
+          } else {
+            router.replace(routes.scanGroupedReview);
+          }
         } else {
           if (augmentedPhotos.length > basePhotos.length) {
             await useScanDraft.getState().updatePhotos(augmentedPhotos);
@@ -584,7 +570,12 @@ export default function ProcessingV2Screen() {
     // `homeRoute()` — v2's "Scan it" pushes into THIS old scan flow, so a
     // hardcoded legacy home here ejects a v2 seller the moment their scan
     // finishes. Identical to before when the v2 flag is off.
-    router.replace(IS_CUSTOMER ? homeRoute() : routes.scanHome);
+    // if/else, not a ternary — see the TS2590 note in `detection.tsx`.
+    if (IS_CUSTOMER) {
+      router.replace(homeRoute());
+    } else {
+      router.replace(routes.scanHome);
+    }
   }, [t]);
 
   // Resolve a product's thumbnail: the first local photo it references, else
@@ -620,227 +611,122 @@ export default function ProcessingV2Screen() {
 
   if (showError) {
     return (
-      <Screen scroll={false} contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
-        <View accessibilityLiveRegion="polite" accessibilityRole="alert">
-          <Stack gap="xl" style={{ marginTop: 24 }}>
-            <View
-              style={{
-                backgroundColor: brand.warningBg,
-                borderWidth: 1,
-                borderColor: brand.warningBorder,
-                borderRadius: 10,
-                padding: 16,
-                gap: 8,
-              }}
-            >
-              <AlertCircle color={brand.warningText} size={22} />
-              <Text style={{ fontFamily: fonts.heading, fontSize: 16, color: '#92400e' }}>
-                {t('mobile.processing.errorTitle', "We couldn't analyze your items")}
-              </Text>
-              <Text style={{ fontFamily: fonts.regular, color: brand.warningText, fontSize: 13, lineHeight: 18 }}>
-                {errorMessage}
-              </Text>
-            </View>
-            <Button label={t('mobile.processing.tryAgain', { defaultValue: 'Try again' })} onPress={retry} fullWidth />
-            <Button label={t('mobile.processing.continueWithoutAi')} onPress={skipToDetail} variant="secondary" fullWidth />
-            <Button label={t('mobile.processing.retake')} onPress={retake} variant="ghost" fullWidth />
-          </Stack>
+      <Screen scroll={false} tabBar={false} testID="scan-processing-v2-error">
+        <View style={styles.errorPage}>
+          <View accessibilityLiveRegion="polite" style={styles.errorBody}>
+            <Text variant="h3">
+              {t('mobile.processing.errorTitle', "We couldn't analyze your items")}
+            </Text>
+            <SectionNote tone="danger">{errorMessage}</SectionNote>
+          </View>
+
+          {/*
+            THREE full-width buttons of equal weight was three primary actions.
+            "Try again" is the one that resumes what the seller asked for, so it
+            is the only filled pill; the other two are quiet alternatives.
+          */}
+          <View style={styles.errorActions}>
+            <PrimaryAction
+              label={t('mobile.processing.tryAgain', { defaultValue: 'Try again' })}
+              onPress={retry}
+            />
+            <QuietAction label={t('mobile.processing.continueWithoutAi')} onPress={skipToDetail} />
+            <QuietAction label={t('mobile.processing.retake')} onPress={retake} />
+          </View>
         </View>
       </Screen>
     );
   }
 
   return (
-    <Screen scroll={false} contentContainerStyle={{ flex: 1, backgroundColor: brand.background }}>
+    <Screen scroll={false} tabBar={false} testID="scan-processing-v2">
       <ScrollView
-        contentContainerStyle={{
-          padding: 20,
-          paddingTop: 12,
+        contentContainerStyle={[
+          styles.scrollContent,
           // Clear the sticky footer — taller when the background action shows.
-          paddingBottom: (offerBackground ? 190 : 96) + insets.bottom,
-        }}
+          { paddingBottom: (offerBackground ? 190 : 96) + insets.bottom },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Non-fatal rejection banners (Phase 2 — office docs rejected mid-stream). */}
-        {nonFatalRejections.length > 0 && (
-          <View style={{ marginBottom: 12, gap: 8 }}>
-            {nonFatalRejections.map((r) => (
-              <View
-                key={r.key}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  gap: 8,
-                  backgroundColor: '#fef3c7',
-                  borderWidth: 1,
-                  borderColor: '#fbbf24',
-                  borderRadius: 8,
-                  padding: 10,
-                }}
-                accessibilityRole="alert"
-                accessibilityLabel={r.name ? `${r.name}: ${r.message}` : r.message}
-              >
-                <AlertCircle size={16} color="#92400e" style={{ marginTop: 1 }} />
-                <View style={{ flex: 1 }}>
-                  {r.name ? (
-                    <Text
-                      style={{
-                        fontFamily: fonts.mono,
-                        fontSize: 11,
-                        color: '#92400e',
-                        marginBottom: 2,
-                      }}
-                      numberOfLines={1}
-                    >
-                      {r.name}
-                    </Text>
-                  ) : null}
-                  <Text
-                    style={{ fontFamily: fonts.regular, fontSize: 13, color: '#7c2d12', lineHeight: 18 }}
-                  >
-                    {r.message}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
+        {nonFatalRejections.map((r) => (
+          <SectionNote key={r.key} tone="danger">
+            {r.name ? `${r.name}: ${r.message}` : r.message}
+          </SectionNote>
+        ))}
 
-        {/* AI badge */}
-        <View
-          style={{
-            alignSelf: 'flex-start',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 5,
-            backgroundColor: 'rgba(16,185,129,0.10)',
-            borderWidth: 1,
-            borderColor: 'rgba(16,185,129,0.25)',
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 999,
-          }}
-        >
-          <Sparkles size={13} color={ACCENT} />
-          <Text style={{ fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.5, color: '#0f9b6c' }}>
-            {t('mobile.processingV2.aiAnalyzing', 'AI ANALYZING')}
-          </Text>
-        </View>
+        <Chip label={t('mobile.processingV2.aiAnalyzing', 'AI ANALYZING')} tone="accent" />
 
-        <Text style={{ fontFamily: fonts.heading, fontSize: 28, color: brand.foreground, marginTop: 12 }}>
+        <Text variant="h1" style={styles.heading}>
           {t('mobile.processing.heading', 'Analyzing your items')}
         </Text>
-        <Text style={{ fontFamily: fonts.regular, fontSize: 14, color: brand.mutedForeground, marginTop: 2 }}>
+        <Text variant="body" color="inkMuted" style={styles.subheading}>
           {t('mobile.processingV2.subtitle', 'Live results appear as we find them')}
         </Text>
 
-        {/* Progress bar */}
-        <View style={{ marginTop: 24 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-            <Text style={{ fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.5, color: brand.mutedForeground }}>
-              {t('mobile.processingV2.stepOf', {
-                current: stepNum,
-                total: TIMELINE.length,
-                defaultValue: 'STEP {{current}} OF {{total}}',
-              })}
-            </Text>
-            <Text style={{ fontFamily: fonts.mono, fontSize: 11, color: brand.primary }}>
-              {Math.round(progress * 100)}%
-            </Text>
-          </View>
-          <AnimatedBar progress={progress} />
+        {/*
+          Progress. `ProgressLine` replaces the local `AnimatedBar` — same eased
+          fill, but theme-aware and Reduce-Motion-aware, and it carries the
+          `accessibilityValue` the hand-rolled bar never had, so the percentage
+          is available to a screen reader instead of being pixels only.
+        */}
+        <View style={styles.progressBlock}>
+          {/*
+            The "20%" that sat on the right is GONE, on the component's own
+            instruction: "the design has no chunky progress bar and no
+            percentage label beside it: the count lives in the heading above
+            ('STEP 1 OF 5'), and this is the visual echo." Two numbers for one
+            fact, one of them rounded, is the duplicate-control rule applied to
+            readouts.
+          */}
+          <Text variant="eyebrow" color="inkMuted">
+            {t('mobile.processingV2.stepOf', {
+              current: stepNum,
+              total: TIMELINE.length,
+              defaultValue: 'STEP {{current}} OF {{total}}',
+            })}
+          </Text>
+          <ProgressLine
+            value={stepNum}
+            total={TIMELINE.length}
+            label={t('mobile.processing.heading', 'Analyzing your items')}
+            animated
+          />
         </View>
 
         {/* Document chip */}
         {docInfo ? (
-          <View
-            style={{
-              marginTop: 20,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 10,
-              backgroundColor: brand.surface,
-              borderWidth: 1,
-              borderColor: brand.border,
-              borderRadius: 10,
-              padding: 12,
-            }}
-          >
-            <View style={{ padding: 6, borderRadius: 8, backgroundColor: '#f1f5f9' }}>
-              <FileText size={18} color={brand.mutedForeground} />
+          <SoftPanel style={styles.docPanel}>
+            <View style={styles.docRow}>
+              <FileText size={icon.md} color={c.inkMuted} strokeWidth={1.8} />
+              <Text variant="bodyMedium" style={styles.docText}>
+                {t('mobile.processingV2.documentsReady', {
+                  count: docInfo.count,
+                  pages: docInfo.pages,
+                  defaultValue:
+                    docInfo.count === 1
+                      ? 'Document ready · {{pages}} pages'
+                      : '{{count}} documents ready · {{pages}} pages',
+                })}
+              </Text>
             </View>
-            <Text style={{ fontFamily: fonts.mono, fontSize: 12, color: brand.foreground }}>
-              {t('mobile.processingV2.documentsReady', {
-                count: docInfo.count,
-                pages: docInfo.pages,
-                defaultValue:
-                  docInfo.count === 1
-                    ? 'Document ready · {{pages}} pages'
-                    : '{{count}} documents ready · {{pages}} pages',
-              })}
-            </Text>
-          </View>
+          </SoftPanel>
         ) : null}
 
-        {/* Phase timeline */}
-        <View style={{ marginTop: 24, paddingLeft: 4, borderLeftWidth: 2, borderLeftColor: '#e3e7ee' }}>
-          {TIMELINE.map((row, i) => {
-            const done = phaseIndex > i;
-            const current = phaseIndex === i;
-            const productSub =
-              current && row.phase === 'extracting_products' && productTotal
-                ? t('mobile.processingV2.analyzingCount', {
-                    current: Math.min(products.length + 1, productTotal),
-                    total: productTotal,
-                    defaultValue: 'Analyzing {{current}} of {{total}}…',
-                  })
-                : null;
-            return (
-              <View key={row.phase} style={{ paddingLeft: 22, marginBottom: i === TIMELINE.length - 1 ? 0 : 22 }}>
-                {/* dot */}
-                <View style={{ position: 'absolute', left: done ? -17 : -11, top: done ? 0 : 4 }}>
-                  {done ? (
-                    <View
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 12,
-                        backgroundColor: ACCENT,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderWidth: 3,
-                        borderColor: brand.background,
-                      }}
-                    >
-                      <Check size={14} color="#fff" strokeWidth={3.5} />
-                    </View>
-                  ) : current ? (
-                    <PulseDot />
-                  ) : (
-                    <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#c4c9d2' }} />
-                  )}
-                </View>
-                <Text
-                  style={{
-                    fontFamily: current ? fonts.semibold : fonts.regular,
-                    fontSize: 15,
-                    color: current ? brand.foreground : done ? brand.mutedForeground : '#9aa1ad',
-                    textDecorationLine: done ? 'line-through' : 'none',
-                  }}
-                >
-                  {t(`mobile.processingV2.phase.${row.key}`, row.label)}
-                </Text>
-                {current && (phaseMsg || productSub) ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 }}>
-                    <RefreshCw size={12} color={ACCENT} />
-                    <Text style={{ fontFamily: fonts.regular, fontSize: 13, color: ACCENT }}>
-                      {productSub ?? phaseMsg}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            );
-          })}
+        {/*
+          Phase timeline — the kit's `Timeline`, replacing ~60 lines that drew
+          their own rail, their own three dot states and their own active
+          sub-line.
+
+          Two things go with it. The DONE rows were struck through
+          (`textDecorationLine: 'line-through'`) — a completed phase is not a
+          cancelled one, and strikethrough reads as "this did not happen".
+          And the pending rows sat at `#9aa1ad` on `#f8f9ff`, which is about
+          2.4:1 — under the 4.5:1 floor. `Timeline` renders both states from
+          palette roles that the contrast suite checks.
+        */}
+        <View style={styles.timeline} accessibilityLiveRegion="polite">
+          <Timeline steps={timelineSteps} current={phaseIndex} live={!settled} />
         </View>
 
         {/* "Continue in background" moved OUT of the scroll flow into the
@@ -849,180 +735,108 @@ export default function ProcessingV2Screen() {
 
         {/* Detection banner */}
         {detection ? (
-          <FadeInUp>
-            <View
-              style={{
-                marginTop: 24,
-                backgroundColor: brand.successBg,
-                borderWidth: 1,
-                borderColor: brand.successBorder,
-                borderRadius: 10,
-                padding: 14,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 12,
-              }}
-            >
-              <Sparkles size={18} color={ACCENT} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: brand.foreground }}>
-                  {t('mobile.processingV2.foundCount', {
-                    count: detection.count,
-                    defaultValue: `Found ${detection.count} ${detection.count === 1 ? 'item' : 'items'}`,
-                  })}
-                </Text>
-                {detection.summary ? (
-                  <Text
-                    numberOfLines={2}
-                    style={{ fontFamily: fonts.regular, fontSize: 13, color: brand.mutedForeground, marginTop: 2 }}
-                  >
-                    {detection.summary}
+          <EnterOnMount>
+            <SoftPanel style={styles.detectionPanel}>
+              <View style={styles.detectionRow}>
+                <View style={styles.detectionText}>
+                  <Text variant="rowTitle">
+                    {t('mobile.processingV2.foundCount', {
+                      count: detection.count,
+                      defaultValue: `Found ${detection.count} ${detection.count === 1 ? 'item' : 'items'}`,
+                    })}
                   </Text>
-                ) : null}
+                  {detection.summary ? (
+                    <Text variant="caption" color="inkMuted" numberOfLines={2}>
+                      {detection.summary}
+                    </Text>
+                  ) : null}
+                </View>
+                {/*
+                  Confidence as a `Chip`, not a 22pt number over an 8pt caption.
+                  At 8pt "CONFIDENT" was below every legibility floor we hold
+                  elsewhere, and the pair gave a model's self-reported score the
+                  largest type on the screen — louder than the item names it is
+                  describing.
+                */}
+                <Chip
+                  label={`${Math.round(detection.confidence * 100)}% ${t('mobile.processingV2.confident', 'confident')}`}
+                  tone="accent"
+                />
               </View>
-              {/* Prominent confidence */}
-              <View style={{ alignItems: 'center', minWidth: 52 }}>
-                <Text style={{ fontFamily: fonts.heading, fontSize: 22, color: ACCENT, lineHeight: 24 }}>
-                  {Math.round(detection.confidence * 100)}%
-                </Text>
-                <Text style={{ fontFamily: fonts.mono, fontSize: 8, letterSpacing: 0.5, color: brand.mutedForeground }}>
-                  {t('mobile.processingV2.confident', 'CONFIDENT')}
-                </Text>
-              </View>
-            </View>
-          </FadeInUp>
+            </SoftPanel>
+          </EnterOnMount>
         ) : null}
 
         {/* Live product list */}
         {(products.length > 0 || remainingSkeletons > 0) ? (
-          <View style={{ marginTop: 24 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderBottomWidth: 1,
-                borderBottomColor: brand.border,
-                paddingBottom: 8,
-                marginBottom: 12,
-              }}
-            >
-              <Text style={{ fontFamily: fonts.headingSemibold, fontSize: 18, color: brand.foreground }}>
-                {t('mobile.processingV2.productsFound', 'Products found')}
-              </Text>
-              {productTotal != null ? (
-                <View
-                  style={{
-                    backgroundColor: '#f1f5f9',
-                    borderWidth: 1,
-                    borderColor: brand.border,
-                    borderRadius: 6,
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                  }}
-                >
-                  <Text style={{ fontFamily: fonts.mono, fontSize: 11, color: brand.mutedForeground }}>
-                    {products.length} / {productTotal}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
+          <View style={styles.productsBlock}>
+            <SectionHeader
+              title={t('mobile.processingV2.productsFound', 'Products found')}
+              trailing={
+                productTotal != null ? (
+                  <Chip label={`${products.length} / ${productTotal}`} tone="neutral" />
+                ) : undefined
+              }
+            />
 
-            <View style={{ gap: 12 }}>
+            <View>
+              {/*
+                One `Row` per product, the same component the rest of v2 uses
+                for a list item — so a detected product looks like a product
+                everywhere it appears, instead of like a card invented here.
+
+                `titleLines={2}` matters: AI-written titles here run past 90
+                characters, and without a bounded title the trailing price gets
+                pushed off-screen (trap 3 in the v2 skill).
+
+                The three metadata chips collapse into ONE subtitle. Three
+                bordered pills for "Used · LabGreenbidz · Grade B" is three
+                boxes drawn around text that reads perfectly well as a line,
+                and it left no room for the price on a narrow phone.
+              */}
               {products.map((p) => {
                 const uri = thumbnailFor(p);
+                const meta = [p.condition, p.siteType, p.grade ? `Grade ${p.grade}` : undefined]
+                  .filter(Boolean)
+                  .join(' · ');
                 return (
-                  <FadeInUp key={p.index}>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        gap: 12,
-                        backgroundColor: brand.surface,
-                        borderWidth: 1,
-                        borderColor: brand.border,
-                        borderRadius: 10,
-                        padding: 12,
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 64,
-                          height: 64,
-                          borderRadius: 8,
-                          overflow: 'hidden',
-                          backgroundColor: '#f1f5f9',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        {uri ? (
-                          <AppImage source={{ uri }} style={{ width: 64, height: 64 }} contentFit="cover" />
-                        ) : (
-                          <Sparkles size={20} color={ACCENT} />
-                        )}
-                      </View>
-                      <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <Text
-                          numberOfLines={2}
-                          style={{ fontFamily: fonts.semibold, fontSize: 14, color: brand.foreground, lineHeight: 18 }}
-                        >
-                          {p.name}
-                        </Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6, alignItems: 'center' }}>
-                          {[p.condition, p.siteType, p.grade ? `Grade ${p.grade}` : undefined]
-                            .filter(Boolean)
-                            .map((chip, ci) => (
-                              <View
-                                key={ci}
-                                style={{
-                                  backgroundColor: '#f1f5f9',
-                                  borderWidth: 1,
-                                  borderColor: brand.border,
-                                  borderRadius: 4,
-                                  paddingHorizontal: 6,
-                                  paddingVertical: 2,
-                                }}
-                              >
-                                <Text style={{ fontFamily: fonts.mono, fontSize: 10, color: brand.foreground }}>
-                                  {chip}
-                                </Text>
-                              </View>
-                            ))}
-                          {p.price ? (
-                            <Text style={{ fontFamily: fonts.semibold, fontSize: 12, color: brand.primaryDim, marginLeft: 'auto' }}>
-                              {t('mobile.processingV2.est', { price: p.price, defaultValue: `Est. ${p.price}` })}
-                            </Text>
-                          ) : null}
-                        </View>
-                      </View>
-                    </View>
-                  </FadeInUp>
+                  <EnterOnMount key={p.index}>
+                    <Row
+                      title={p.name}
+                      titleLines={2}
+                      subtitle={meta || undefined}
+                      leading={
+                        <RowThumb uri={uri}>
+                          <Sparkles size={icon.md} color={c.inkDisabled} strokeWidth={1.6} />
+                        </RowThumb>
+                      }
+                      trailing={
+                        p.price ? (
+                          <Chip
+                            label={t('mobile.processingV2.est', {
+                              price: p.price,
+                              defaultValue: `Est. ${p.price}`,
+                            })}
+                            tone="accent"
+                          />
+                        ) : null
+                      }
+                    />
+                  </EnterOnMount>
                 );
               })}
 
-              {/* Skeletons for products still being analyzed */}
+              {/*
+                Skeletons for products still being analyzed. Shaped like the
+                `Row` above so the list does not reflow when a real one lands —
+                same 56pt thumb, same two text lines, same left inset.
+              */}
               {Array.from({ length: remainingSkeletons }).map((_, i) => (
-                <View
-                  key={`sk-${i}`}
-                  style={{
-                    flexDirection: 'row',
-                    gap: 12,
-                    backgroundColor: brand.surface,
-                    borderWidth: 1,
-                    borderColor: brand.border,
-                    borderStyle: 'dashed',
-                    borderRadius: 10,
-                    padding: 12,
-                  }}
-                >
-                  <Shimmer style={{ width: 64, height: 64, borderRadius: 8 }} />
-                  <View style={{ flex: 1, justifyContent: 'center', gap: 8 }}>
-                    <Shimmer style={{ height: 14, width: '75%' }} />
-                    <Shimmer style={{ height: 10, width: '45%' }} />
-                    <View style={{ flexDirection: 'row', gap: 4 }}>
-                      <Shimmer style={{ height: 14, width: 36 }} />
-                      <Shimmer style={{ height: 14, width: 48 }} />
-                    </View>
+                <View key={`sk-${i}`} style={styles.skeletonRow}>
+                  <Shimmer style={styles.skeletonThumb} />
+                  <View style={styles.skeletonText}>
+                    <Shimmer style={styles.skeletonLine1} />
+                    <Shimmer style={styles.skeletonLine2} />
                   </View>
                 </View>
               ))}
@@ -1035,63 +849,30 @@ export default function ProcessingV2Screen() {
           prominent (but not pushy) affordance here; Cancel stays a quiet
           destructive text; the timer + provenance drop to a muted meta row. */}
       <View
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          paddingHorizontal: 20,
-          paddingTop: 14,
-          // Lift above the Android nav bar / home indicator.
-          paddingBottom: insets.bottom + 12,
-          backgroundColor: brand.surface,
-          borderTopWidth: 1,
-          borderTopColor: brand.border,
-          gap: 12,
-        }}
+        style={[
+          styles.footer,
+          { backgroundColor: c.surface, paddingBottom: insets.bottom + space.xl },
+        ]}
       >
+        <Hairline />
+
         {offerBackground ? (
-          <View style={{ gap: 6 }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('mobile.processing.continueInBackground', {
+          <View style={styles.footerAction}>
+            {/*
+              `PrimaryAction variant="tinted"` — the same tinted pill the rest
+              of v2 uses for "let this keep running", replacing a hand-built
+              `Pressable` with two `rgba(16,185,129,…)` literals. It carries its
+              own 44pt height and press feedback; the old one had neither.
+            */}
+            <PrimaryAction
+              label={t('mobile.processing.continueInBackground', {
                 defaultValue: 'Continue in background',
               })}
-              accessibilityHint={t('mobile.processing.backgroundHint', {
-                defaultValue: "Keep using the app — we'll notify you when it's ready.",
-              })}
               onPress={handleContinueInBackground}
-              // Emerald-tinted outline ties the action to this screen's AI accent
-              // (progress bar / checks / detection), reading as "let the AI keep
-              // working" rather than a generic CTA.
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                borderWidth: 1,
-                borderColor: 'rgba(16,185,129,0.35)',
-                backgroundColor: 'rgba(16,185,129,0.08)',
-                borderRadius: 10,
-                paddingVertical: 13,
-              }}
-            >
-              <Bell size={16} color={ACCENT} />
-              <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: '#0f9b6c' }}>
-                {t('mobile.processing.continueInBackground', {
-                  defaultValue: 'Continue in background',
-                })}
-              </Text>
-            </Pressable>
-            <Text
-              style={{
-                fontFamily: fonts.regular,
-                fontSize: 12,
-                lineHeight: 16,
-                color: brand.mutedForeground,
-                textAlign: 'center',
-              }}
-            >
+              variant="tinted"
+              icon={<Bell size={icon.lg} color={c.accentInk} strokeWidth={1.8} />}
+            />
+            <Text variant="caption" color="inkMuted" style={styles.footerHint}>
               {t('mobile.processing.backgroundHint', {
                 defaultValue: "Keep using the app — we'll notify you when it's ready.",
               })}
@@ -1099,29 +880,76 @@ export default function ProcessingV2Screen() {
           </View>
         ) : null}
 
-        {/* Meta row — timer + provenance (muted) · Cancel (quiet destructive). */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Timer size={12} color={brand.mutedForeground} />
-            <Text style={{ fontFamily: fonts.mono, fontSize: 11, color: brand.mutedForeground }}>
-              {mmss(elapsed)}
-            </Text>
-            <Text style={{ fontFamily: fonts.mono, fontSize: 9, letterSpacing: 0.8, color: brand.placeholder }}>
-              · GREENBIDZ VISION AI
+        {/* Meta row — timer + provenance (muted) · Cancel (quiet). */}
+        <View style={styles.metaRow}>
+          <View style={styles.meta}>
+            <Timer size={icon.sm} color={c.inkSubtle} strokeWidth={1.8} />
+            <Text variant="eyebrow" color="inkSubtle">
+              {`${mmss(elapsed)} · GREENBIDZ VISION AI`}
             </Text>
           </View>
-          <Pressable
+          <QuietAction
+            label={t('common.cancel', 'Cancel')}
             onPress={cancel}
-            accessibilityRole="button"
-            hitSlop={8}
-            style={{ paddingHorizontal: 10, paddingVertical: 6 }}
-          >
-            <Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: brand.destructive }}>
-              {t('common.cancel', 'Cancel')}
-            </Text>
-          </Pressable>
+            tone="danger"
+            variant="bodyMedium"
+          />
         </View>
       </View>
     </Screen>
   );
 }
+
+/*
+  Styles, in tokens. Previously every rule was an inline object, which is how 19
+  raw hex values and 26 `fontSize`s accumulated in one file without anyone
+  seeing them together.
+*/
+const styles = StyleSheet.create({
+  scrollContent: { paddingHorizontal: GUTTER, paddingTop: space.md, gap: space.md },
+  heading: { marginTop: space.md },
+  subheading: { marginTop: space.xxs },
+
+  progressBlock: { marginTop: space['2xl'], gap: space.sm },
+
+  docPanel: { marginTop: space.lg },
+  docRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  docText: { flex: 1, minWidth: 0 },
+
+  timeline: { marginTop: space['2xl'] },
+
+  detectionPanel: { marginTop: space['2xl'] },
+  detectionRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  /** `minWidth: 0` or the title never truncates and the chip is pushed off. */
+  detectionText: { flex: 1, minWidth: 0, gap: space.xxs },
+
+  productsBlock: { marginTop: space['2xl'] },
+
+  skeletonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingVertical: space.md,
+  },
+  skeletonThumb: { width: 56, height: 56, borderRadius: radius.md },
+  skeletonText: { flex: 1, gap: space.sm },
+  skeletonLine1: { height: 14, width: '75%', borderRadius: radius.xs },
+  skeletonLine2: { height: 10, width: '45%', borderRadius: radius.xs },
+
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: GUTTER,
+    gap: space.md,
+  },
+  footerAction: { gap: space.sm },
+  footerHint: { textAlign: 'center' },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+
+  errorPage: { flex: 1, paddingHorizontal: GUTTER, paddingTop: space['2xl'], gap: space['2xl'] },
+  errorBody: { gap: space.sm },
+  errorActions: { gap: space.sm },
+});

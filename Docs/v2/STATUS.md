@@ -10,6 +10,10 @@ Route list, the door, and the count of controls that explain themselves are
 asserted by [`v2Inventory.test.ts`](../../src/__tests__/v2Inventory.test.ts),
 not here. What follows is what a grep cannot know.
 
+**Handing this to a tester?** [QA-PLAN.md](QA-PLAN.md) is the manual pass — four
+passes, a 17-screen coverage matrix, and a do-not-file list built from the
+blocked items below, so nobody re-reports a known 404.
+
 ## Progress
 
 Worked top-down. Each item carries a **Status** line, and "DONE" is reserved for
@@ -43,6 +47,49 @@ something seen working, not something written.
 controls pressed, each photographed: the bell and "or type the details" both
 gate; the Buying pane, Browse, the assistant, Matches, Messages and the language
 sheet all render. Nothing dead, nothing trapping a guest.
+
+### QA Pass A — run on device 2026-09-21, **PASS** with four defects
+
+[QA-PLAN.md](QA-PLAN.md) §2 executed in full on RMX2151, signed out. **21
+controls pressed, each photographed.**
+
+| | result |
+|---|---|
+| A1 · guests can look | 8/8 surfaces render, no sign-in wall |
+| A2 · guests asked at the right moment | 10/10 gates fire, each with copy naming the reason |
+| A3 · the sign-in sheet's own buttons | 3/3 live — sign-in, registration, and the escape |
+
+The 5.1.1(v) rule holds in both directions: nothing is gated at the door, and
+nothing lets a guest fill a form before asking.
+
+| # | defect | severity | state |
+|---|---|---|---|
+| D1 | Chat logged a React error on **every** open | HIGH | ✅ FIXED + verified |
+| D2 | Browse: floating "Filters" pill covers a lot's title | MEDIUM | 🟡 OPEN — web side |
+| D3 | "Language and currency" is gated for guests | MEDIUM | 🟡 OPEN |
+| D4 | Sign-in / registration are old chrome | LOW | 🟡 OPEN — add to §8 |
+
+**D1 — fixed.** `useChatController.ts:63` seeded the conversation store from a
+`useState(() => …)` lazy initialiser, which runs in the **render phase**, while
+`useConversation` is subscribed on the next line. React answered *"Cannot update
+a component (`ChatScreen`) while rendering a different component
+(`ChatScreen`)"* on every chat open, and the LogBox banner it raises sits over
+the tab bar. Moved to a ref-guarded `useLayoutEffect` — after render, before
+paint, so a thread opened with an `initialQuery` still never flashes empty.
+Verified on device: chat opens clean, and *"Help me price a used centrifuge"*
+streamed back a real reply. 243 chat tests and `tsc` green.
+
+⚠️ This is shipped lab-chat code, not v2-only — the old `/(lab)/chat` screen
+uses the same controller and had the same warning.
+
+**D3 is a consistency question, not a missing gate.** A guest CAN change
+language from Home's `EN` control — the sheet opens and works — but the
+"Language and currency" row on Account raises the sign-in sheet. Same setting,
+two answers. Display preferences arguably should not need an account at all.
+
+**D2 belongs to the marketplace page,** not to the app: the pill is the web
+page's own floating Filters button, and inside the WebView it lands mid-card
+over the lot title rather than at the foot of the viewport.
 
 ⚠️ **Six of thirteen are blocked on a person, not on work** — five of those on
 one thing: the dev checkout has no `draftItemsController.js` and no
@@ -225,22 +272,31 @@ Everything a seller can press in the scan flow now writes. What is left:
 - `analyzing.tsx:662,673` — "Continue in background" and Cancel do the local
   half only; the server halves are `POST /recognition-jobs/:id/detach` and a
   cancel call.
-- `ChatCards.tsx:118` — **bigger than the TODO says.** The line reads "replace
-  with a real save-this-as-a-want action", which sounds like one button. In fact
-  v2's card dispatcher handles only `product_list` and `product`; a `wtb_draft`
-  frame falls to the default and renders *"This answer included a 'wtb_draft'
-  card, which v2 does not draw yet."*
+- ~~`ChatCards.tsx:118` — the save-a-want card~~ — ✅ **DONE 2026-09-21.**
+  `WantDraftCard.tsx` draws `wtb_draft` in v2 chrome: keyword chips, condition
+  multi-select with an "Any" that clears, budget field with tiers, quantity, the
+  preview-match teaser, and the post-save pending-approval state. Behaviour
+  borrowed from `LabWtbDraftCard`; budget maths extracted to
+  `features/lab/chat/wantBudget.ts` so both cards share one copy (11 new tests).
 
-  So the whole save-a-want flow is absent from v2, and `CHATBOT_RULES` makes it
-  mandatory: a no-match must LEAD with the save-a-want offer. The shipped
-  `LabWtbDraftCard` (`features/lab/chat/cards.tsx:1355`) is the thing to port —
-  ~200 lines carrying condition chips, budget tiers seeded from preview prices,
-  quantity, and the post-save pending-approval state.
+  Proven on device: asked for a Bruker Avance III 600 MHz NMR, the card rendered
+  with the title, keywords and the £80,000 budget the assistant had extracted;
+  pressed a budget chip and the field followed it.
 
-  ⚠️ Do NOT "fix" this by building a want out of the search string. The card is
-  driven by a STRUCTURED draft the assistant emits; a want invented from a
-  free-text query arrives with no category or condition, which is precisely the
-  shape the WTB data-quality review found unusable.
+  ⚠️ **Pressing Save as a guest first produced "Couldn't save that want — please
+  try again"** — untrue and unactionable, because `POST /wtb` needs an account
+  and retrying could never work. That is the "gated too LATE" half of 5.1.1(v).
+  Now wrapped in `requireAuth('want', …)`, and the sign-in sheet was seen firing
+  with its own reason copy. Worth remembering: the port was faithful to a card
+  that only ever ran for signed-in users, so the guest case had no precedent to
+  copy — a borrowed implementation carries its original's assumptions.
+
+  ⚠️ Still unproven: the **post-save state**. It needs a signed-in account, and
+  saving creates a real staging want.
+
+  Note for whoever reads this next: the assistant does not always emit
+  `wtb_draft`. Asked directly as a guest it offered to take a name and email as
+  a "guest lead" instead; asking it to *draft* the want produced the card.
 - `BuyingPane.tsx:326,355` — match detail's bid/contact-seller, and create.
 
 ## 11 · The extract lane degrades cleanly — ✅ DONE 2026-09-21
@@ -339,6 +395,11 @@ first thing a buyer sees.
 
 ## Health
 
-- 146 suites / 1451 tests green; `tsc` and eslint clean.
+- 148 suites / 1464 tests green; `tsc` clean.
+- ⚠️ **eslint is NOT clean, and the earlier claim here that it was should not be
+  trusted.** `npm run lint` reports 76 errors across 22 files — all pre-existing
+  and **none in `app/v2/` or `src/features/v2/`** (worst offenders:
+  `app/scan/processing-v2.tsx` 23, `src/components/AppSplash.tsx` 17,
+  `src/components/ui/Sheet.tsx` 10). Counted 2026-09-21.
 - Branch `feat/v2-ui`, 7 commits, **not pushed**.
 - Running on device (RMX2151) against staging, bundle served in 2.6s.

@@ -86,16 +86,33 @@ export function PrimaryAction({
     white, up to `accentWash` under `accentInk` — so no part of the pill is
     worse for contrast than the flat fill was. See `theme/v2/material.ts`.
   */
-  const m = outlined
-    ? null
-    : filled
-      ? material(c, scheme, 'accent', 'onAccent')
-      : material(c, scheme, 'accentWash', 'accentInk');
+  const m =
+    outlined || disabled
+      ? null
+      : filled
+        ? material(c, scheme, 'accent', 'onAccent')
+        : material(c, scheme, 'accentWash', 'accentInk');
 
   return (
     <AnimatedPressable
       testID={testID}
-      onPress={onPress}
+      /*
+        ⚠️ THE HANDLER IS GUARDED, NOT JUST THE PROP.
+
+        `disabled={inert}` below is the right declaration, but it is the only
+        thing standing between a `loading` submit button and a SECOND submit,
+        and it is not reliable on its own: with the gesture-handler `Pressable`
+        a press still reached `onPress` while `accessibilityState.disabled` was
+        `true` — caught by `DetailFooter.required.test.tsx`'s "disabled ONLY
+        while submitting" case the moment this component replaced the footer's
+        own button. Whether that reflects device behaviour or only the test
+        environment is not established; either way the cost of the guard is one
+        comparison and the cost of being wrong is a duplicate POST.
+      */
+      onPress={() => {
+        if (inert) return;
+        onPress();
+      }}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       disabled={inert}
@@ -105,10 +122,35 @@ export function PrimaryAction({
       style={[
         styles.base,
         {
-          backgroundColor: filled ? c.accent : outlined ? 'transparent' : c.accentWash,
+          /*
+            ⚠️ DISABLED IS A COLOUR HERE, NOT AN OPACITY — and that is not a
+            style preference.
+
+            The obvious `opacity: disabled ? 0.45 : 1` does NOT work on this
+            component, whatever position it takes in the style array.
+            `usePressFeedback` drives `animatedStyle` through Reanimated, which
+            returns `opacity` unconditionally (`1` at rest) and applies it
+            IMPERATIVELY to the native view every frame. An imperative write
+            beats a static style, so the dim was silently discarded and a
+            disabled primary button rendered at full strength: measured on
+            device 2026-09-22, the enabled "Take a photo" and the disabled
+            "Extract items" were both rgb(40,109,80), to the byte — while
+            `disabled` really did block the press. It looked pressable and did
+            nothing, which is the worst pairing available.
+
+            Painting the fill instead keeps the decision out of Reanimated's
+            reach. The material gradient is also suppressed above, because a
+            live gradient over a dead fill reads as enabled again.
+          */
+          backgroundColor: disabled
+            ? c.fill
+            : filled
+              ? c.accent
+              : outlined
+                ? 'transparent'
+                : c.accentWash,
           borderColor: outlined ? c.hairlineStrong : 'transparent',
           borderWidth: outlined ? 1 : 0,
-          opacity: disabled ? 0.45 : 1,
         },
         // A shadow needs something to cast from, so it goes on the pressable
         // and the gradient sits inside it. `quiet` has no fill and so casts
@@ -134,14 +176,45 @@ export function PrimaryAction({
           </View>
         </>
       ) : null}
-      {loading ? (
-        <ActivityIndicator size="small" color={filled ? c.onAccent : c.accentInk} />
-      ) : (
-        icon ? <View style={styles.icon}>{icon}</View> : null
-      )}
-      <Text variant="action" color={filled ? 'onAccent' : 'accentInk'}>
-        {label}
-      </Text>
+      {/*
+        The CONTENT may be dimmed with opacity even though the pill may not:
+        Reanimated only drives the root pressable, so a static opacity on a
+        CHILD survives. That matters because the caller owns the icon's colour
+        (`<Sparkles color={c.onAccent} />`), which would otherwise stay white
+        on the muted disabled fill and disappear.
+      */}
+      <View style={styles.content}>
+        {loading ? (
+          <ActivityIndicator size="small" color={filled ? c.onAccent : c.accentInk} />
+        ) : icon ? (
+          /*
+            The dim goes on the ICON ALONE, and only when disabled.
+            The caller owns the icon's colour (`<Sparkles color={c.onAccent} />`),
+            so on the muted disabled fill it would otherwise stay white and
+            vanish. The LABEL must not be dimmed as well: `inkDisabled` is
+            already the designed disabled ink, and stacking 0.45 on top of it
+            measured **1.23:1** against the fill on device — a button whose
+            text you cannot read is worse than one that looks enabled.
+          */
+          <View style={[styles.icon, disabled ? styles.dimmed : null]}>{icon}</View>
+        ) : null}
+        {/*
+          `inkMuted`, not `inkDisabled`, and the reason is measured rather than
+          chosen. Against the disabled ground (`fill`, #EDF1EE in light):
+
+            inkDisabled #B4C0B9 → 1.65:1     inkSubtle #8B9A92 → 2.58:1
+            inkMuted    #5A6B62 → 4.96:1
+
+          `inkDisabled` is calibrated for the page grounds (`base`/`surface`),
+          and on this wash it collapses — 1.63:1 read straight off the device,
+          which is a label you cannot read at all. A disabled button still has
+          to say what it would do; that is the whole reason it is shown rather
+          than hidden. `inkMuted` keeps it clearly secondary AND legible.
+        */}
+        <Text variant="action" color={disabled ? 'inkMuted' : filled ? 'onAccent' : 'accentInk'}>
+          {label}
+        </Text>
+      </View>
     </AnimatedPressable>
   );
 }
@@ -150,6 +223,17 @@ const GRAD_START = { x: 0, y: 0 } as const;
 const GRAD_END = { x: 0, y: 1 } as const;
 
 const styles = StyleSheet.create({
+  /** The disabled dim. Applied after `animatedStyle` — see the note there. */
+  /**
+   * Row wrapper so icon + label dim together. See the note at its use.
+   *
+   * It carries `base`'s gap: once the icon and the label stopped being direct
+   * children of the pill, `base.gap` separated this wrapper from nothing and
+   * the glyph sat flush against the text.
+   */
+  content: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  /** Applied to the CONTENT, never the root — Reanimated owns the root. */
+  dimmed: { opacity: 0.45 },
   fill: { borderRadius: radius.pill },
   base: {
     height: control.button,

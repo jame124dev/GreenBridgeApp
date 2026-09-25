@@ -37,6 +37,7 @@ import { useSession } from '@/features/lab/stores/sessionStore';
 import { useThread } from '@/features/lab/stores/threadStore';
 import { hasOfficeExtractFile } from '@/features/lab/chat/officeExtract';
 import { runExtractLane } from '@/services/scanner/extractLane';
+import { guestSellerId } from '@/services/scanner/guestSellerId';
 
 /**
  * What to say for each job phase. Only the phases a person waits through get a
@@ -145,8 +146,13 @@ export function useLabTurn(): UseLabTurn {
       let imageUrls: string[] | undefined;
       let documentUrls: string[] | undefined;
       if (hasAttachments) {
-        const sellerId = useAuth.getState().profile?.id;
-        if (!sellerId) throw new Error('Sign in required to analyze attachments');
+        // Guest-safe — same reasoning as `useSmartDetect.ts`: `sellerId` only
+        // namespaces the GCS object path and scopes concurrency, it is never
+        // checked against a real `sellers` row. Was hard-blocking a guest's
+        // attachment (image OR doc) with no path forward; see
+        // `guestSellerId.ts` for the pattern this ports from
+        // (`nextjs-port`'s `/valuation` guest flow).
+        const sellerId = useAuth.getState().profile?.id ?? guestSellerId();
 
         const images = attachments.filter((a) => a.isImage);
         const docs = attachments.filter((a) => !a.isImage);

@@ -1,8 +1,17 @@
 import '../global.css';
 import '@/i18n';
 
+import { silenceExceljsLogNoise } from '@/lib/silenceExceljsLogNoise';
+silenceExceljsLogNoise();
+
 import { useEffect, type ReactNode } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
+// The i18n INSTANCE, not `useTranslation`: `endSession` is a plain function
+// called from an effect callback, not a component, so there is no hook to use.
+// eslint's `import/no-named-as-default-member` suggests `import { t }` here —
+// deliberately not taken: that binding is captured at module load, and this
+// module is evaluated before `@/i18n` has finished initialising.
+import i18n from 'i18next';
 
 import { hasPendingV2Return, homeRoute } from '@/features/v2/routing/postAuthLanding';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -38,7 +47,7 @@ import {
   Poppins_600SemiBold,
 } from '@expo-google-fonts/poppins';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Toaster } from 'sonner-native';
+import { Toaster, toast } from 'sonner-native';
 
 import { setUnauthorizedHandler } from '@/api/interceptors';
 import { AppSplash } from '@/components/AppSplash';
@@ -53,19 +62,92 @@ import {
   fetchSupportedMarketplaces,
   SUPPORTED_QUERY_KEY,
 } from '@/features/scanner/routing/supportedMarketplaces';
+import { logout } from '@/services/auth/logout';
 import { isSessionExpired } from '@/lib/authSession';
 import { warnMissingEnvInDev } from '@/lib/env';
 import { queryClient } from '@/lib/queryClient';
 import { initOneSignal, loginOneSignal } from '@/lib/onesignal';
 import { useAuth } from '@/stores/authStore';
 
-// Post-auth home route for this bundle: the customer (lab) app or the seller
-// tabs. Selected once at build time by the EXPO_PUBLIC_USER_TYPE fork.
-const HOME_ROUTE = '/(lab)/(tabs)/home';
+// ⛔ `HOME_ROUTE = '/(lab)/(tabs)/home'` used to live here. It is gone, not
+// unused: "home" is `homeRoute()` from `postAuthLanding.ts`, the one flag-keyed
+// answer for the whole app. Four separate copies of this constant are exactly
+// why the launch redirect stayed on the old UI for a version after the
+// post-auth return had been fixed. Do not reintroduce it — import `homeRoute`.
 
 warnMissingEnvInDev();
 
 SplashScreen.preventAutoHideAsync();
+
+/**
+ * WHAT HAPPENS WHEN A SESSION DIES — one function, because it happened in two
+ * places and only one of them was ever thought about.
+ *
+ * Both callers previously did `reset()` then `router.replace('/(auth)/login')`.
+ * `reset()` clears the profile, so from that instant the person **is a guest**
+ * — and this file states the rule against walling a guest twice, fifteen lines
+ * apart, both times citing the App Review rejection of 1.0.3 (21) on
+ * 2026-08-24 under Guideline 5.1.1(v).
+ *
+ * The wall was removed for someone who had never signed in and left standing
+ * for everyone who had — the larger group, since every account reaches it
+ * eventually just by not opening the app until the refresh token dies.
+ *
+ * ── IT WAS A DEAD END, NOT A DETOUR ────────────────────────────────────────
+ *
+ * Found on device 2026-09-22 with two phones on one Metro: the Realme (no
+ * stored profile) cold-booted into v2 Home as a guest; the Samsung (stored
+ * profile, expired refresh token) cold-booted into the full-screen sign-in
+ * form. `app/(auth)/login.tsx` has no "continue as guest" affordance,
+ * `app/(auth)/_layout.tsx` is a bare `Stack` with `headerShown: false`, and it
+ * is reached by `replace` — so there is no back entry. A returning user could
+ * not browse a single product.
+ *
+ * ── WHAT IT DOES INSTEAD ───────────────────────────────────────────────────
+ *
+ * Lands them where a guest belongs (`homeRoute()` — flag-keyed, never a
+ * hardcoded path) and SAYS the session ended, because being signed out
+ * silently is its own defect: the seller's listings simply vanish. Signing in
+ * is then offered at the point of use by `requireAuth()`, which is how the
+ * rest of the app already asks.
+ */
+function endSession(reset: () => void, router: ReturnType<typeof useRouter>): void {
+  /**
+   * ⚠️ `logout()` FIRST, AND IT IS NOT OPTIONAL.
+   *
+   * `useAuth.reset()` removes only `auth.approval` and the in-memory state
+   * (`stores/authStore.ts:62-65`). `auth.profile`, `auth.userId` and both
+   * SecureStore tokens survive it — `services/auth/logout.ts` is the only thing
+   * that clears them.
+   *
+   * That was survivable while this path ended on the sign-in screen, because
+   * signing in overwrote the stale row. Landing on Home removes that repair
+   * step, so without this the SAME expired refresh token is rehydrated on the
+   * next cold boot, `isSessionExpired()` is true again, and the toast fires
+   * again — every launch, for ever. Each launch also has a window, before the
+   * async check resolves, where Home renders the signed-in shell and fires
+   * account-scoped queries against a dead token.
+   *
+   * The 401 arm already gets this for free (`api/interceptors.ts` awaits
+   * `logout()` before calling the handler); doing it here is what actually
+   * makes the two arms converge, which was the point of extracting them.
+   * `logout()` is idempotent, so the double call on that arm is harmless.
+   */
+  void logout();
+  reset();
+  /**
+   * `defaultValue`, not a positional second argument: `t(key, 'string')` is
+   * read as options by some i18next configs and silently renders the KEY.
+   * The key exists in all six locales — this default is the belt, not the
+   * braces.
+   */
+  toast.info(
+    i18n.t('mobile.auth.sessionEnded', {
+      defaultValue: 'Your session ended. Sign in again to pick up where you left off.',
+    }),
+  );
+  router.replace(homeRoute());
+}
 
 function AuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -76,16 +158,17 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
   // Boot guard: a persisted profile whose refresh token has expired is a dead
   // session — the app looks logged in but every authed call (esp. the AI chat)
-  // is treated as anonymous. Force re-login instead. Fail-open (see
+  // is treated as anonymous. Clear it instead. Fail-open (see
   // isSessionExpired): only fires when the refresh token is provably expired.
+  //
+  // ⛔ IT DOES NOT SEND THEM TO THE SIGN-IN SCREEN. It used to, and that
+  // rebuilt the 5.1.1(v) wall for everyone who HAD an account — see the note
+  // on `endSession` below.
   useEffect(() => {
     if (!hydrated || !profile) return;
     let cancelled = false;
     void isSessionExpired().then((expired) => {
-      if (!cancelled && expired) {
-        reset();
-        router.replace('/(auth)/login');
-      }
+      if (!cancelled && expired) endSession(reset, router);
     });
     return () => {
       cancelled = true;
@@ -195,8 +278,10 @@ export default function RootLayout() {
       // the request simply needed an account the caller does not have. The
       // caller shows its own empty state or a `requireAuth` prompt.
       if (!useAuth.getState().profile) return;
-      reset();
-      router.replace('/(auth)/login');
+      // Same landing as the boot guard — see `endSession`. This is the path the
+      // comment above already calls "the 5.1.1(v) wall rebuilt one layer down";
+      // it was fixed for the guest arm and left standing for this one.
+      endSession(reset, router);
     });
     // Init only — the permission ask is deliberately NOT here (it fired on the
     // login screen). PushPermissionGate owns it, post-auth.

@@ -170,3 +170,86 @@ Native tree, which is the right probe for "is there a native client" and the
 wrong one for "is this route reached from the app". A WebView is a client that
 no grep of this repo will ever show. When a surface is a WebView, ask what the
 embedded page calls, not what the host app calls.
+
+---
+
+## ⚠️ 2026-09-24 — a second, WORSE class: unauthenticated routes leaking password hashes
+
+Found while building the mobile "Offers received" (seller) screen —
+`Docs/Dashboard/seller/offers/`. This is not the same bug as the routes
+above; it stacks with them.
+
+**The route.** `GET /offer/seller?sellerID={id}&page&limit`
+(`nextjs-port/src/services/api/slices/bidApiSlice.ts:653-663`), the endpoint
+behind `SellerOffer.tsx` — the live screen at
+`/dashboard/seller/offers`.
+
+**Unauthenticated, confirmed live:**
+
+```
+curl "https://testapi.greenbidz.com/api/v1/offer/seller?sellerID=571&page=1&limit=1" \
+  -H "x-platform: LabGreenbidz"
+→ HTTP 200, real rows. No Authorization header, no cookie, no x-system-key.
+```
+
+Same class as every route enumerated above: `:sellerId`-in-query, no guard.
+
+**What makes this one worse: the response embeds the FULL WordPress `buyer`
+user record, unfiltered, including `user_pass` (the password hash) and
+`user_activation_key`.** Verified live, seller 571, 2026-09-24:
+
+```json
+"buyer": {
+  "ID": 574, "user_login": "...", "user_pass": "$P$B...",
+  "user_nicename": "...", "user_email": "...", "user_url": "",
+  "user_registered": "...", "user_activation_key": "...",
+  "user_status": 0, "display_name": "..."
+}
+```
+
+`SellerOffer.tsx` itself never reads `offer.buyer` at all (grepped — the live
+UI only ever reads `offer.user_id`, a bare number) — the backend join returns
+the ENTIRE row from whatever table `buyer` comes from with no field
+allowlist, and the frontend simply never happened to look at the dangerous
+half of what it was sent.
+
+**Combined severity is worse than the wishlist class alone.** That class lets
+an unauthenticated caller read one person's buying intent or checkout
+history by guessing an id. This lets the SAME caller, at the SAME cost,
+harvest password hashes and activation keys for every buyer who has ever
+made an offer to a given seller — and seller ids are far more guessable
+(sequential, low cardinality, often visible in a listing URL) than a random
+buyer id. `user_activation_key` in particular is a live WordPress mechanism
+(used for password-reset / account-activation flows) that this response
+hands to anyone who asks.
+
+**No code was changed for this.** The mobile screen this was found while
+building types the buyer ONLY as a bare `user_id` number — no `displayName`,
+no resolved name, nothing from the `buyer` object at all — by design; see
+`src/features/v2/seller-offers/types.ts`'s own note. The fix belongs on the
+backend (auth-guard the route AND stop the join from returning the whole
+`wp_users` row), same as the wishlist class, and is the user's call on
+scheduling, not something to fix from a mobile PR.
+
+### 2026-09-24, same day — a THIRD occurrence: this is a pattern, not a one-off
+
+Found immediately after the entry above, while building the next seller
+screen ("Orders (seller)"). **`GET /checkouts/seller/{sellerId}`** — a
+DIFFERENT endpoint, a different slice file
+(`checkoutApiSlice.ts:73`), same backend — has the identical shape:
+unauthenticated (curled with no token, 200, real rows, seller 571) and each
+of the 4 real checkout rows carries the SAME full `buyer` object:
+`{ID, user_login, user_pass, user_nicename, user_email, user_url,
+user_registered, user_activation_key, user_status, display_name}`.
+
+Two unrelated endpoints on two unrelated slice files, both joining the
+SELLER-facing "who did this" query straight onto `wp_users` with no field
+allowlist, is enough to say this is a backend QUERY PATTERN — every
+seller-facing "who is the buyer" join probably does this — not two
+independent bugs. Worth checking systematically (grep the backend for the
+join, not waiting to trip over each caller one screen at a time) rather than
+patching per-endpoint as mobile happens to build against them.
+
+Same handling as before: this screen's own types
+(`src/features/v2/seller-orders/types.ts`) model only `buyer_id`, nothing
+else from the row's `buyer` field.

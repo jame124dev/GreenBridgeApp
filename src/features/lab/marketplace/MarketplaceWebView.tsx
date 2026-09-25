@@ -195,18 +195,33 @@ export const MarketplaceWebView = forwardRef<MarketplaceWebViewHandle, Props>(
       return () => registerMarketplaceAuthClear(null);
     }, [registerAuthClear]);
 
-    // Android hardware back → navigate WebView history before leaving the screen.
-    useEffect(() => {
-      if (Platform.OS !== 'android') return;
-      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (canGoBackRef.current) {
-          webRef.current?.goBack();
-          return true;
-        }
-        return false;
-      });
-      return () => sub.remove();
-    }, []);
+    /**
+     * Android hardware back → navigate WebView history before leaving the screen.
+     *
+     * ⚠️ `useFocusEffect`, NOT `useEffect`. The Browse tab stays MOUNTED when you
+     * switch tabs, so a plain `useEffect` keeps this listener registered for the
+     * whole session: press Back on Matches, or Account, or anywhere else, and if
+     * this WebView happens to have history it silently rewinds a page the user
+     * cannot see instead of doing what Back should do on the screen they are
+     * actually looking at. The bug is invisible on the Browse tab itself, which
+     * is why it survived.
+     *
+     * The focus effect two hooks above already does exactly this for auth
+     * re-injection — same reason, same fix.
+     */
+    useFocusEffect(
+      useCallback(() => {
+        if (Platform.OS !== 'android') return;
+        const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+          if (canGoBackRef.current) {
+            webRef.current?.goBack();
+            return true;
+          }
+          return false;
+        });
+        return () => sub.remove();
+      }, []),
+    );
 
     const reload = useCallback(() => {
       haptics.tap();

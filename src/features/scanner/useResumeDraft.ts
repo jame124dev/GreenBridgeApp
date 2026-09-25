@@ -81,7 +81,11 @@ export async function resumeDraftById(
      * handler this branch does not fire and behaviour is byte-identical.
      */
     if (onMultiItem && isMultiItemDraft(detail)) {
-      onMultiItem(id, itemCountOf(detail));
+      // Awaited — v2's handler now fetches every row and hydrates the
+      // grouped-review queue before navigating (2026-09-25), which is real
+      // async work the caller's spinner (`resumingId`) should stay up for,
+      // the same as every other branch below.
+      await onMultiItem(id, itemCountOf(detail));
       return;
     }
 
@@ -134,7 +138,16 @@ export async function resumeDraftById(
       const store = useScanDraft.getState();
       if (shouldSkipDetectionChoice(r.mapped, r.sourcePhotos.length)) {
         const m = await store.applySmartDetection(r.mapped, r.sourcePhotos);
-        router.push(m === 'single' ? routes.scanDetail : routes.scanGroupedReview);
+        // if/else, not a ternary — behaviour identical. Two `Href`s in one
+        // expression makes TypeScript resolve expo-router's generated route
+        // union across both branches, and that union is past the limit now that
+        // `app/v2/scan/` carries more screens than when this file was committed
+        // (`TS2590`, `typedRoutes: true`).
+        if (m === 'single') {
+          router.push(routes.scanDetail);
+        } else {
+          router.push(routes.scanGroupedReview);
+        }
       } else {
         // Ambiguous → the 2-step detection wizard, which reads its photos off
         // `current`. Establish that draft FIRST (start() clears any stale
@@ -186,7 +199,7 @@ export async function resumeDraftById(
  * Called instead of hydrating when the draft holds more than one item.
  * See the FOURTH SHAPE note in `resumeDraftById`.
  */
-export type MultiItemHandler = (draftId: string, itemCount: number) => void;
+export type MultiItemHandler = (draftId: string, itemCount: number) => void | Promise<void>;
 
 /** How many items the draft holds. Absent or unparseable counts as one. */
 function itemCountOf(detail: { product_count?: unknown }): number {
@@ -195,14 +208,30 @@ function itemCountOf(detail: { product_count?: unknown }): number {
 }
 
 /**
- * More than one item ⇒ no single-item screen can show it.
+ * More than one item ⇒ no single-item screen can show it — UNLESS the draft
+ * is `payload.kind === 'pending-ai'`, whose items were never going to be in
+ * `gb_listing_draft_items` in the first place.
  *
- * Keyed on the COUNT rather than on a payload marker (`scanv2`, `source`,
- * …) because the count is what actually decides whether the review flow can
- * hold the draft, and it is reported the same way by every producer — the
- * extract lane, the web, and the camera.
+ * Found 2026-09-25 on a real 10-item draft (id 273, product_count=10):
+ * `count > 1` was true, `onMultiItem` (`openMultiItemDraft`) ran, its
+ * `listAllDraftItems` correctly returned zero rows, and the seller saw
+ * "This draft has no items yet" — for a draft whose 10 products were sitting
+ * right there the whole time, in `payload.result.products`. Two producers
+ * report the count identically but store the items in incompatible places:
+ * the newer durable extract worker (`gb_recognition_jobs.kind === 'extract'`,
+ * `payload.kind === 'scanv2-extract-header'`) writes one `gb_listing_draft_items`
+ * row per unit; the older "legacy" smart-detect path (still live for a
+ * document/spreadsheet upload, `payload.kind === 'pending-ai'`) writes the
+ * whole detection result straight into the draft's own `payload` blob and
+ * never touches that table at all. The `kind === 'pending-ai'` branch further
+ * down in `resumeDraftById` already reads `payload.result` via
+ * `mapPendingAiDraft` and already routes a multi-item result to
+ * `scanGroupedReview` — it was just unreachable, shadowed by this check
+ * firing first on product_count alone.
  */
-function isMultiItemDraft(detail: { product_count?: unknown }): boolean {
+function isMultiItemDraft(detail: { product_count?: unknown; payload?: unknown }): boolean {
+  const kind = (detail.payload as { kind?: string } | undefined)?.kind;
+  if (kind === 'pending-ai') return false;
   return itemCountOf(detail) > 1;
 }
 

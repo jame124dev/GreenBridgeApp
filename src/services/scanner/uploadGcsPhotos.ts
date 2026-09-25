@@ -106,7 +106,7 @@ async function appendDocument(fd: FormData, doc: GcsDocumentInput) {
  */
 export async function uploadGcsDocuments(
   documents: GcsDocumentInput[],
-  opts: { sellerId: number; sessionId?: string; signal?: AbortSignal },
+  opts: { sellerId: number | string; sessionId?: string; signal?: AbortSignal },
 ): Promise<GcsUploadResult> {
   if (documents.length === 0) {
     throw new Error('uploadGcsDocuments: no documents to upload');
@@ -166,7 +166,7 @@ export async function uploadGcsDocuments(
 
 export async function uploadGcsPhotos(
   photos: Photo[],
-  opts: { sellerId: number; sessionId?: string; signal?: AbortSignal },
+  opts: { sellerId: number | string; sessionId?: string; signal?: AbortSignal },
 ): Promise<GcsUploadResult> {
   if (photos.length === 0) {
     throw new Error('uploadGcsPhotos: no photos to upload');

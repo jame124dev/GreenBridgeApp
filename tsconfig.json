@@ -16,6 +16,8 @@
   ],
   "exclude": [
     "node_modules",
-    "_debug_bundle"
+    "_debug_bundle",
+    "ui_git_repo",
+    "bkp"
   ]
 }

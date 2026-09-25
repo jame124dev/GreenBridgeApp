@@ -86,11 +86,39 @@ export function listingTitle(b: SellerBatch): string {
 }
 
 /**
- * "See all 7" — the canvas counts, and a count is the useful part of the link.
- * But both endpoints are paged, so the loaded length is only the whole truth
- * when there is no more to fetch. When there is, the label drops the number
- * rather than under-reporting it.
+ * Same facts as `listingSubtitle`, minus status — for a card that already
+ * shows status as its own `Chip` (the dashboard's card shape), so the word
+ * would otherwise appear twice on one row.
  */
-export function seeAll(loaded: number, hasMore: boolean): string {
-  return hasMore ? 'See all' : `See all ${loaded}`;
+export function listingMeta(b: SellerBatch): string | undefined {
+  const parts: string[] = [];
+  const items = Number(b.itemsCount) || 0;
+  if (items > 1) parts.push(plural(items, 'item', 'items'));
+  const bids = Number(b.bidsCount) || 0;
+  if (bids > 0) parts.push(plural(bids, 'offer', 'offers'));
+  return parts.length > 0 ? parts.join(' · ') : undefined;
 }
+
+export function listingStatusLabel(b: SellerBatch): string {
+  return STATUS_LABEL[classifyStatus(b)];
+}
+
+/** `accent` only for `live` — "this is the reason you are looking at this row" (see `Chip`'s docblock). */
+export function listingTone(b: SellerBatch): 'accent' | 'neutral' {
+  return classifyStatus(b) === 'live' ? 'accent' : 'neutral';
+}
+
+/**
+ * ⛔ `seeAll(loaded, hasMore)` used to live here and was REMOVED 2026-09-22.
+ *
+ * It built its label in English inline (`` `See all ${loaded}` ``) and, being a
+ * pure module with no React, had no way to reach a translator — so it could not
+ * survive the v2 scan surface being localised into six languages.
+ *
+ * Its two callers were both in `SellingPane`, which now owns `seeAllLabel`
+ * and goes through `t()`. Deleted rather than left behind returning a string
+ * nothing renders. The reasoning it carried is kept there: both endpoints are
+ * paged, so the loaded length is only the whole truth when there is nothing
+ * more to fetch — when there is, the label drops the number rather than
+ * under-reporting it.
+ */

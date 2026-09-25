@@ -1,21 +1,5 @@
 {
-  "skipDangerousModePermissionPrompt": true,
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell -Command \"Start-Sleep 4; $adb = '$env:LOCALAPPDATA\\Android\\Sdk\\platform-tools\\adb.exe'; $out = 'C:\\Users\\abhay\\OneDrive\\Desktop\\GreenBridge\\GreenBridgeApp\\.claude\\last-screen.png'; if (Test-Path $adb) { & $adb shell screencap /sdcard/last-screen.png; & $adb pull /sdcard/last-screen.png $out }\"",
-            "async": true
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(*)",
       "PowerShell(*)",
@@ -54,10 +38,28 @@
       "Bash(npx tsc *)",
       "PowerShell(adb devices 2>&1)",
       "PowerShell($env:PATH += \";$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\"; adb devices)",
-      "PowerShell($env:PATH += \";$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\"; adb shell input keyevent 82)"
+      "PowerShell($env:PATH += \";$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\"; adb shell input keyevent 82)",
+      "mcp__stitch__list_projects",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); p=d['projects']; print\\(len\\(p\\)\\); [print\\(x.get\\('projectId'\\), '|', x.get\\('title'\\) or x.get\\('name'\\)\\) for x in p[:8]]\")"
     ],
+    "defaultMode": "bypassPermissions",
     "additionalDirectories": [
       "\\mnt\\c\\Users\\abhay\\OneDrive\\Desktop\\GreenBridge\\GreenBridgeApp"
     ]
-  }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -Command \"Start-Sleep 4; $adb = '$env:LOCALAPPDATA\\Android\\Sdk\\platform-tools\\adb.exe'; $out = 'C:\\Users\\abhay\\OneDrive\\Desktop\\GreenBridge\\GreenBridgeApp\\.claude\\last-screen.png'; if (Test-Path $adb) { & $adb shell screencap /sdcard/last-screen.png; & $adb pull /sdcard/last-screen.png $out }\"",
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "skipDangerousModePermissionPrompt": true
 }

@@ -1,19 +1,31 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, Text, View } from 'react-native';
-import RNAnimated, {
-  Easing as RNEasing,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
-import { AlertCircle, Check, Cog } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner-native';
 
-import { AppImage, Button, Screen, Stack } from '@/components/ui';
+import { AppImage } from '@/components/ui';
+/*
+  v2 KIT. This screen is the first thing seen after the shutter, so it is the
+  first thing that must read as the redesign. Presentation only — every hook,
+  effect, mutation and `router.replace` below is untouched.
+
+  `Screen` and `Text` shadow the old-kit exports of the same name on purpose:
+  the v2 `Screen` owns safe areas, the header sheet and the tab-bar reserve,
+  and the v2 `Text` refuses a raw `fontSize`.
+*/
+import {
+  Chip,
+  Hairline,
+  PrimaryAction,
+  QuietAction,
+  Screen,
+  SectionNote,
+  Text,
+  Timeline,
+  type TimelineStep,
+} from '@/features/v2/ui';
+import { GUTTER, radius, space } from '@/theme/v2';
 import { manualEntryDefaults, marketplaceFromSiteType } from '@/features/scanner/constants';
 import { routingPatchFromAi } from '@/features/scanner/routing/routingState';
 // ⚠️ `supportedMarketplacesCache`, NEVER `supportedMarketplaces` — same import
@@ -42,25 +54,18 @@ import {
 } from '@/services/scanner/uploadGcsPhotos';
 import { gcsUrlForAnalyze } from '@/services/scanner/gcsUrl';
 import { getSiteType } from '@/services/scanner/buildFormData';
-import { brand, fonts } from '@/constants/theme';
 
-/**
- * S6.2.b2.ii — StyleSheet.create dissolved. The processing screen has many
- * one-off ornamental styles (laser sweep, telemetry rings, gradient pills,
- * step-row states with shadows) that don't compose into className cleanly.
- * Strategy: className for layout/colors that map; inline `style={{...}}` for
- * the rest. Shared values pulled to `const` objects at top.
- */
-// AI / active accent — fork-aware so the scan flow matches the app it's in:
-// forest-green brand in the customer (lab) app, emerald in the seller app.
-const ACCENT = IS_CUSTOMER ? brand.primary : '#10b981';
+/*
+  REVERSED: "StyleSheet.create dissolved".
 
-const checkCircleBase = {
-  width: 22,
-  height: 22,
-  borderRadius: 11,
-  marginRight: 8,
-};
+  The note that stood here described the old strategy — className for what
+  mapped, inline `style={{…}}` for "one-off ornamental styles (laser sweep,
+  telemetry rings, gradient pills, step-row states with shadows)". Every one of
+  those ornaments is gone, and the styles are back in a single `StyleSheet` at
+  the foot of the file. `ACCENT` (a fork-aware `brand.primary` / `#10b981`) and
+  `checkCircleBase` went with them: the accent is `c.accent` from the palette
+  now, and nothing draws its own check circle — `Timeline` does.
+*/
 
 // Maps the backend's 5-phase SSE enum onto the existing 4 step rows. Static —
 // module scope so it isn't a churning effect dependency.
@@ -104,25 +109,13 @@ export default function ProcessingScreen() {
     t('mobile.processing.subStatus_draft'),
   ];
 
-  const laserSweepVal = useMemo(() => new Animated.Value(0), []);
-  const checkScale1 = useMemo(() => new Animated.Value(0), []);
-  const checkScale2 = useMemo(() => new Animated.Value(0), []);
-  const checkScale3 = useMemo(() => new Animated.Value(0), []);
-  const checkScale4 = useMemo(() => new Animated.Value(0), []);
-
-  const rowEntrance1 = useMemo(() => new Animated.Value(0), []);
-  const rowEntrance2 = useMemo(() => new Animated.Value(0), []);
-  const rowEntrance3 = useMemo(() => new Animated.Value(0), []);
-  const rowEntrance4 = useMemo(() => new Animated.Value(0), []);
-
-  const activeDotOpacity = useMemo(() => new Animated.Value(0.4), []);
-  const bgPulse = useMemo(() => new Animated.Value(0), []);
-  // Scanner frame gear — rotates continuously. Driven by reanimated (not RN's
-  // legacy Animated) because RN Web's Animated.timing + useNativeDriver path
-  // intermittently failed to apply the rotate transform; reanimated produces
-  // a real CSS animation on web and a native worklet on iOS/Android.
-  const gearAngle = useSharedValue(0);
-
+  /*
+    REMOVED: eleven `Animated.Value`s — four check-pops, four row entrances, a
+    pulsing dot, a laser sweep and a background pulse — plus the three effects
+    that drove them. `Timeline` owns its own motion and honours Reduce Motion,
+    so keeping these would be a second animation system running against a
+    component that is already animating, with nothing bound to it.
+  */
   const useSmart = SMART_DETECT_ENABLED && mode === 'single';
   const isPending = useSmart ? smart.isPending : analyze.isPending;
   const isSuccess = useSmart ? smart.isSuccess : analyze.isSuccess;
@@ -180,100 +173,6 @@ export default function ProcessingScreen() {
     // pdf_pages / fatal error: no step change in this pass.
   }, []);
 
-  const reducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (!isPending) return;
-
-    if (reducedMotion) {
-      rowEntrance1.setValue(1);
-      rowEntrance2.setValue(1);
-      rowEntrance3.setValue(1);
-      rowEntrance4.setValue(1);
-      activeDotOpacity.setValue(1);
-      bgPulse.setValue(0);
-      return;
-    }
-
-    rowEntrance1.setValue(0);
-    rowEntrance2.setValue(0);
-    rowEntrance3.setValue(0);
-    rowEntrance4.setValue(0);
-    activeDotOpacity.setValue(0.4);
-    bgPulse.setValue(0);
-
-    Animated.stagger(150, [
-      Animated.timing(rowEntrance1, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.timing(rowEntrance2, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.timing(rowEntrance3, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.timing(rowEntrance4, { toValue: 1, duration: 400, useNativeDriver: true }),
-    ]).start();
-
-    const activeDotAnim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(activeDotOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.timing(activeDotOpacity, { toValue: 0.4, duration: 600, useNativeDriver: true }),
-      ]),
-    );
-    activeDotAnim.start();
-
-    const bgPulseAnim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bgPulse, { toValue: 1, duration: 3000, useNativeDriver: true }),
-        Animated.timing(bgPulse, { toValue: 0, duration: 3000, useNativeDriver: true }),
-      ]),
-    );
-    bgPulseAnim.start();
-
-    return () => {
-      activeDotAnim.stop();
-      bgPulseAnim.stop();
-    };
-  }, [isPending, reducedMotion, rowEntrance1, rowEntrance2, rowEntrance3, rowEntrance4, activeDotOpacity, bgPulse]);
-
-  // Gear spin — reanimated `withRepeat` runs as a CSS animation on web and a
-  // worklet on native, both of which actually drive the transform (the
-  // legacy RN Animated.timing + useNativeDriver path was silently dropping
-  // the transform on RN Web). Started once on mount; `withRepeat(-1)`
-  // keeps it spinning until unmount.
-  //
-  // We deliberately IGNORE `prefers-reduced-motion` for this animation:
-  // the gear is a loading indicator (the same exception spec'd for spinners
-  // and progress bars in WCAG 2.3.3), not decorative parallax. Other
-  // animations on this screen (active-dot pulse, row entrance) still honour
-  // the preference.
-  useEffect(() => {
-    gearAngle.value = 0;
-    gearAngle.value = withRepeat(
-      withTiming(360, { duration: 4000, easing: RNEasing.linear }),
-      -1,
-      false,
-    );
-  }, [gearAngle]);
-
-  const gearAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${gearAngle.value}deg` }],
-  }));
-
-  useEffect(() => {
-    if (!isPending) return;
-    if (reducedMotion) {
-      laserSweepVal.setValue(0);
-      return;
-    }
-
-    const laserLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(laserSweepVal, { toValue: 1, duration: 1500, useNativeDriver: true }),
-        Animated.timing(laserSweepVal, { toValue: 0, duration: 1500, useNativeDriver: true }),
-      ]),
-    );
-    laserLoop.start();
-
-    return () => {
-      laserLoop.stop();
-    };
-  }, [isPending, reducedMotion, laserSweepVal]);
 
   // Themed step walk — driven by a plain mount timer, NOT the mutation state.
   // The loader is on screen from mount until navigation, but `isPending`
@@ -285,19 +184,6 @@ export default function ProcessingScreen() {
   useEffect(() => {
     // v2 drives steps from real SSE events (effect below) — skip the fake walk.
     if (useV2Stream) return;
-    const checkScales = [checkScale1, checkScale2, checkScale3, checkScale4];
-    const complete = (val: Animated.Value) => {
-      if (reducedMotion) {
-        val.setValue(1);
-        return;
-      }
-      Animated.spring(val, {
-        toValue: 1,
-        friction: 4,
-        tension: 40,
-        useNativeDriver: true,
-      }).start();
-    };
 
     const MAX_PENDING_STEP = 3;
     let step = 0;
@@ -306,15 +192,12 @@ export default function ProcessingScreen() {
         clearInterval(interval);
         return;
       }
-      // The active step just "completed" — pop its checkmark so the now-
-      // completed row actually shows a check (its scale is otherwise 0).
-      complete(checkScales[step]);
       step += 1;
       setCurrentStep(step);
     }, 1800);
 
     return () => clearInterval(interval);
-  }, [useV2Stream, reducedMotion, checkScale1, checkScale2, checkScale3, checkScale4]);
+  }, [useV2Stream]);
 
   // v2: advance the step indicator from real stream phases, and pop the
   // checkmarks for every step the backend has already passed. Steps only
@@ -323,21 +206,17 @@ export default function ProcessingScreen() {
   // for the extracting step) so it never looks frozen between sparse events.
   useEffect(() => {
     if (!useV2Stream || streamPhase == null) return;
-    const step = PHASE_TO_STEP[streamPhase];
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurrentStep(step);
-    const checkScales = [checkScale1, checkScale2, checkScale3, checkScale4];
-    for (let i = 0; i < step; i++) checkScales[i].setValue(1);
-  }, [useV2Stream, streamPhase, checkScale1, checkScale2, checkScale3, checkScale4]);
+    setCurrentStep(PHASE_TO_STEP[streamPhase]);
+  }, [useV2Stream, streamPhase]);
 
-  // On a real result, fill in every check and mark the final step done just
-  // before the screen navigates away.
+  // On a real result, mark the final step done just before the screen
+  // navigates away.
   useEffect(() => {
     if (!isSuccess) return;
-    [checkScale1, checkScale2, checkScale3, checkScale4].forEach((s) => s.setValue(1));
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentStep(4);
-  }, [isSuccess, checkScale1, checkScale2, checkScale3, checkScale4]);
+  }, [isSuccess]);
 
   const analyzeRef = useRef(analyze);
   const smartRef = useRef(smart);
@@ -458,9 +337,12 @@ export default function ProcessingScreen() {
                 if (backgroundRecognitionEnabled()) clearStoredJobId();
                 setApplyError(null);
                 setIsNavigating(true);
-                router.replace(
-                  mode === 'single' ? routes.scanDetail : routes.scanGroupedReview,
-                );
+                // if/else, not a ternary — see the TS2590 note in `detection.tsx`.
+                if (mode === 'single') {
+                  router.replace(routes.scanDetail);
+                } else {
+                  router.replace(routes.scanGroupedReview);
+                }
               } else {
                 // Stash the augmented photos on the draft so the
                 // detection screen can read them — it uses `draft.photos`
@@ -615,7 +497,12 @@ export default function ProcessingScreen() {
     // at is disabled there. Mirrors app/scan/success.tsx.
     // See processing-v2.tsx — v2's Scan it lands in this flow, so "home" must
     // be the flag's answer, not a hardcoded legacy route.
-    router.replace(IS_CUSTOMER ? homeRoute() : routes.scanHome);
+    // if/else, not a ternary — see the TS2590 note in `detection.tsx`.
+    if (IS_CUSTOMER) {
+      router.replace(homeRoute());
+    } else {
+      router.replace(routes.scanHome);
+    }
 
     void (async () => {
       try {
@@ -656,21 +543,6 @@ export default function ProcessingScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft?.photos, draft?.documents]);
 
-  const laserTranslateX = laserSweepVal.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-45, 305],
-  });
-
-  const rowY1 = rowEntrance1.interpolate({ inputRange: [0, 1], outputRange: [20, 0] });
-  const rowY2 = rowEntrance2.interpolate({ inputRange: [0, 1], outputRange: [20, 0] });
-  const rowY3 = rowEntrance3.interpolate({ inputRange: [0, 1], outputRange: [20, 0] });
-  const rowY4 = rowEntrance4.interpolate({ inputRange: [0, 1], outputRange: [20, 0] });
-
-  const bgPulseScale = bgPulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.96, 1.04],
-  });
-
   const mutationError = useSmart ? smart.error : analyze.error;
   const showError = (useSmart ? smart.isError : analyze.isError) || !!applyError;
   const errorMessage =
@@ -688,499 +560,198 @@ export default function ProcessingScreen() {
   const showLoader = isPending || isNavigating || (!draft.ai && !showError);
 
   if (showLoader) {
-    // v2: append a live "k/N" to the extracting-products step once detection
-    // has reported a product count. Falls back to the plain label otherwise.
-    const extractingLabel =
+    /*
+      v2: the live "k/N" is the extracting step's `detail`, not part of its
+      label. `Timeline` shows `detail` only while that step is the active one,
+      which is the honest placement — a count of products extracted means
+      nothing next to a step that has not started, and reads as stale next to
+      one that has finished. Previously it was concatenated into the label and
+      so stayed on screen for the rest of the run.
+    */
+    const extractingDetail =
       useV2Stream && productProgress.total
-        ? `${subStatuses[2]} ${productProgress.done}/${productProgress.total}`
-        : subStatuses[2];
+        ? `${productProgress.done}/${productProgress.total}`
+        : undefined;
 
-    const stepsData = [
-      { id: 0, label: subStatuses[0], scale: checkScale1, opacity: rowEntrance1, translateY: rowY1 },
-      { id: 1, label: subStatuses[1], scale: checkScale2, opacity: rowEntrance2, translateY: rowY2 },
-      { id: 2, label: extractingLabel, scale: checkScale3, opacity: rowEntrance3, translateY: rowY3 },
-      { id: 3, label: subStatuses[3], scale: checkScale4, opacity: rowEntrance4, translateY: rowY4 },
+    const timelineSteps: readonly TimelineStep[] = [
+      { label: subStatuses[0] },
+      { label: subStatuses[1] },
+      { label: subStatuses[2], detail: extractingDetail },
+      { label: subStatuses[3] },
     ];
 
     return (
-      <Screen
-        scroll={false}
-        contentContainerStyle={{
-          flexGrow: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 24,
-          backgroundColor: brand.background,
-        }}
-      >
+      <Screen scroll={false} tabBar={false} testID="scan-processing">
+        <View style={styles.loader}>
         {/* Non-fatal Phase 2 rejection banners — floats over the centered
             loader so the user sees which files got dropped without shifting
             the animation. Rarely visible (v2 redirects this screen before
             mutating; only the SMART_DETECT_V2_ENABLED=0 cohort hits this). */}
         {nonFatalRejections.length > 0 && (
-          <View
-            style={{
-              position: 'absolute',
-              top: 16,
-              left: 16,
-              right: 16,
-              gap: 8,
-              zIndex: 10,
-            }}
-            pointerEvents="box-none"
-          >
+          <View style={styles.banners} pointerEvents="box-none">
+            {/*
+              `SectionNote tone="danger"` instead of the hand-built amber card.
+              It already carries the alert role, the danger colour and the
+              spacing, so the file-name line is the only thing left to say —
+              and it belongs in the same note, not in a second `<Text>` with
+              its own hex.
+            */}
             {nonFatalRejections.map((r) => (
-              <View
-                key={r.key}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  gap: 8,
-                  backgroundColor: '#fef3c7',
-                  borderWidth: 1,
-                  borderColor: '#fbbf24',
-                  borderRadius: 8,
-                  padding: 10,
-                }}
-                accessibilityRole="alert"
-                accessibilityLabel={r.name ? `${r.name}: ${r.message}` : r.message}
-              >
-                <AlertCircle size={16} color="#92400e" style={{ marginTop: 1 }} />
-                <View style={{ flex: 1 }}>
-                  {r.name ? (
-                    <Text
-                      style={{
-                        fontFamily: fonts.mono,
-                        fontSize: 11,
-                        color: '#92400e',
-                        marginBottom: 2,
-                      }}
-                      numberOfLines={1}
-                    >
-                      {r.name}
-                    </Text>
-                  ) : null}
-                  <Text style={{ fontFamily: fonts.regular, fontSize: 13, color: '#7c2d12', lineHeight: 18 }}>
-                    {r.message}
-                  </Text>
-                </View>
-              </View>
+              <SectionNote key={r.key} tone="danger">
+                {r.name ? `${r.name}: ${r.message}` : r.message}
+              </SectionNote>
             ))}
           </View>
         )}
 
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: -1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-          }}
-          pointerEvents="none"
-        >
-          <View
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              height: 1.5,
-              backgroundColor: 'rgba(16, 185, 129, 0.05)',
-            }}
-          />
-          <View
-            style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              width: 1.5,
-              backgroundColor: 'rgba(16, 185, 129, 0.05)',
-            }}
-          />
-          {[
-            { w: 320, h: 320 },
-            { w: 480, h: 480 },
-            { w: 640, h: 640 },
-          ].map((d, i) => (
-            <Animated.View
-              key={i}
-              style={{
-                position: 'absolute',
-                width: d.w,
-                height: d.h,
-                borderRadius: 9999,
-                borderWidth: 1.5,
-                borderColor: 'rgba(16, 185, 129, 0.08)',
-                transform: [{ scale: bgPulseScale }],
-              }}
-            />
-          ))}
-        </View>
+        {/*
+          REMOVED: the ambient crosshair + three pulsing rings.
 
-        <View
-          className="flex-row items-center"
-          style={{
-            backgroundColor: '#ff9800',
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 999,
-            gap: 4,
-            marginBottom: 20,
-          }}
-        >
-          <Text style={{ fontSize: 10 }}>✨</Text>
-          <Text
-            style={{
-              fontFamily: fonts.bold,
-              fontSize: 10,
-              color: '#ffffff',
-              letterSpacing: 0.4,
-            }}
-          >
-            {t('mobile.processing.aiWorking')}
-          </Text>
-        </View>
+          Five raw `rgba(16,185,129,…)` values drawing decoration behind the
+          content. v2 is "space instead of boxes" and its motion rule is that
+          motion answers what a person DID — there is no ambient drift. 7a as
+          drawn has no rings and no spinning gear: the timeline IS the content
+          of the wait. Dropping them is the point, not a casualty of the port.
+        */}
+        {/*
+          The badge. `Chip` in the accent tone replaces a hand-rolled orange
+          pill — `#ff9800` was the one colour on this screen that belonged to
+          no palette at all, and white-on-orange at 10pt bold is the kind of
+          contrast the v2 audit exists to catch.
+        */}
+        <Chip label={t('mobile.processing.aiWorking')} tone="accent" />
 
-        {/* Scanner frame — square with corner brackets + a rotating gear at
-            the center. Mirrors the Stitch "AI Processing Insights" focal
-            element. Hidden when the device prefers reduced motion (the gear
-            spin would be visual noise). The corner brackets are 4 small
-            absolute Views; cheaper than rendering an SVG and adapts to any
-            container size. */}
-        <View
-          style={{
-            width: 140,
-            height: 140,
-            marginBottom: 24,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {/* Backdrop chip behind the gear — barely-there fill so the corner
-              brackets feel like they're framing something. */}
-          <View
-            style={{
-              position: 'absolute',
-              top: 12,
-              left: 12,
-              right: 12,
-              bottom: 12,
-              backgroundColor: 'rgba(148, 163, 184, 0.10)',
-              borderRadius: 12,
-            }}
-          />
-          {/* Four corner brackets. */}
-          {(['tl', 'tr', 'bl', 'br'] as const).map((corner) => {
-            const isTop = corner.startsWith('t');
-            const isLeft = corner.endsWith('l');
-            return (
-              <View
-                key={corner}
-                style={{
-                  position: 'absolute',
-                  width: 20,
-                  height: 20,
-                  borderColor: '#94a3b8',
-                  ...(isTop ? { top: 0, borderTopWidth: 2.5 } : { bottom: 0, borderBottomWidth: 2.5 }),
-                  ...(isLeft ? { left: 0, borderLeftWidth: 2.5 } : { right: 0, borderRightWidth: 2.5 }),
-                  borderTopLeftRadius: isTop && isLeft ? 4 : 0,
-                  borderTopRightRadius: isTop && !isLeft ? 4 : 0,
-                  borderBottomLeftRadius: !isTop && isLeft ? 4 : 0,
-                  borderBottomRightRadius: !isTop && !isLeft ? 4 : 0,
-                }}
-              />
-            );
-          })}
-          {/* Reanimated wrapper — drives the rotate transform via a worklet
-              on native and a CSS animation on web. Works in both. */}
-          <RNAnimated.View style={gearAnimatedStyle}>
-            <Cog size={72} color="#94a3b8" strokeWidth={1.5} />
-          </RNAnimated.View>
-        </View>
+        {/*
+          REMOVED: the 140pt scanner frame — four bracket Views, a grey
+          backdrop and a 72pt gear spinning on a Reanimated worklet.
 
-        <Text
-          className="text-center"
-          style={{
-            fontFamily: fonts.heading,
-            fontSize: 26,
-            color: brand.foreground,
-            marginBottom: 4,
-          }}
-        >
+          It was the focal point of the old screen and it says nothing: a gear
+          is not this product, and a spinner that reports no progress is the
+          "generic loader" `UX_DESIGN_RULES.md` forbids. The timeline below
+          says the same thing with real phases, so the gear was decoration
+          competing with the content for the top of the screen.
+        */}
+        <View style={styles.headingGap} />
+
+        <Text variant="h2" style={styles.center}>
           {t('mobile.processing.heading')}
         </Text>
-        <Text
-          className="text-center"
-          style={{
-            fontFamily: fonts.regular,
-            fontSize: 13,
-            color: brand.mutedForeground,
-            marginBottom: 28,
-          }}
-        >
+        <Text variant="body" color="inkMuted" style={styles.subheading}>
           {t('mobile.processing.timeEstimate')}
         </Text>
 
-        <View
-          className="self-center"
-          style={{ width: '100%', maxWidth: 290, gap: 10, marginBottom: 24 }}
-        >
-          {stepsData.map((step) => {
-            const isCompleted = currentStep > step.id;
-            const isActive = currentStep === step.id;
+        {/*
+          THE STEP LIST — now the kit's `Timeline`, which is the same component
+          7a uses, so the two analyzing surfaces finally agree.
 
-            const stepBg = isCompleted
-              ? 'rgba(255, 255, 255, 0.95)'
-              : isActive
-              ? '#ffffff'
-              : 'rgba(255, 255, 255, 0.4)';
-            const stepBorder = isCompleted ? '#e2e8f0' : isActive ? ACCENT : '#f1f5f9';
-            const stepShadow = isActive
-              ? {
-                  shadowColor: ACCENT,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 10,
-                  elevation: 3,
-                }
-              : isCompleted
-              ? {
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.02,
-                  shadowRadius: 4,
-                  elevation: 1,
-                }
-              : null;
+          What it replaces: four cards, each with its own background, border,
+          iOS shadow + Android elevation, a bespoke check circle, a pulsing
+          dot, and a 40pt "laser" sweeping across the active row — about 120
+          lines carrying twelve raw colours and three `rgba()` literals.
 
-            return (
-              <Animated.View
-                key={step.id}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingVertical: 8,
-                  paddingHorizontal: 10,
-                  borderRadius: 10,
-                  position: 'relative',
-                  overflow: 'hidden',
-                  borderWidth: 1.5,
-                  backgroundColor: stepBg,
-                  borderColor: stepBorder,
-                  ...(stepShadow ?? {}),
-                  opacity: step.opacity,
-                  transform: [{ translateY: step.translateY }],
-                }}
-              >
-                {isCompleted ? (
-                  <Animated.View
-                    style={{
-                      ...checkCircleBase,
-                      backgroundColor: ACCENT,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transform: [{ scale: step.scale }],
-                    }}
-                  >
-                    <Check size={12} color="#ffffff" strokeWidth={3.5} />
-                  </Animated.View>
-                ) : isActive ? (
-                  <View
-                    style={{
-                      ...checkCircleBase,
-                      borderWidth: 2.5,
-                      borderColor: ACCENT,
-                      backgroundColor: 'transparent',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Animated.View
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: ACCENT,
-                        opacity: activeDotOpacity,
-                      }}
-                    />
-                  </View>
-                ) : (
-                  <View
-                    style={{
-                      ...checkCircleBase,
-                      borderWidth: 2,
-                      borderColor: '#cbd5e1',
-                      backgroundColor: 'transparent',
-                    }}
-                  />
-                )}
-
-                <Text
-                  style={{
-                    fontFamily: fonts.semibold,
-                    fontSize: 14,
-                    flex: 1,
-                    color: isCompleted ? '#64748b' : isActive ? '#0f172a' : '#94a3b8',
-                  }}
-                >
-                  {step.label}
-                </Text>
-
-                {isActive && (
-                  <Animated.View
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      height: '100%',
-                      width: 40,
-                      backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                      borderRightWidth: 2,
-                      borderRightColor: ACCENT,
-                      transform: [{ translateX: laserTranslateX }],
-                    }}
-                  />
-                )}
-              </Animated.View>
-            );
-          })}
+          `Timeline` takes `steps` and a `current` index and draws done /
+          active / pending itself, honouring Reduce Motion. The live "k/N" on
+          the extracting step survives as that step's `detail`, which is
+          exactly what `detail` is for: a sub-line shown only while its step is
+          the active one.
+        */}
+        <View style={styles.timeline}>
+          <Timeline steps={timelineSteps} current={currentStep} live={isPending} />
         </View>
 
+        {/*
+          A bare `Pressable` wrapping a coloured `<Text>` was a tap target of
+          whatever the text happened to measure, padded out with `hitSlop`.
+          `QuietAction` is the kit's answer and carries its own 44pt box.
+        */}
         {backgroundRecognitionEnabled() && (
-          <Pressable
-            accessibilityRole="button"
+          <QuietAction
+            label={t('mobile.processing.continueInBackground', {
+              defaultValue: 'Continue in background',
+            })}
             onPress={handleContinueInBackground}
-            hitSlop={8}
-            style={{ marginBottom: 12 }}
-          >
-            <Text
-              className="text-center"
-              style={{
-                fontFamily: fonts.semibold,
-                fontSize: 14,
-                color: brand.primary,
-              }}
-            >
-              {t('mobile.processing.continueInBackground', {
-                defaultValue: 'Continue in background',
-              })}
-            </Text>
-          </Pressable>
+          />
         )}
 
-        {slowMsg ? (
-          <Text
-            className="text-center"
-            style={{
-              fontFamily: fonts.regular,
-              fontSize: 13,
-              color: brand.warning,
-              marginTop: 10,
-            }}
-          >
-            {t('mobile.processing.slow')}
-          </Text>
-        ) : null}
+        {/*
+          "This is taking longer than usual" is an explanation, so it is a
+          `SectionNote` — muted, not danger: the run has not failed, and
+          colouring it amber told people something had gone wrong when nothing
+          had.
+        */}
+        {slowMsg ? <SectionNote tone="muted">{t('mobile.processing.slow')}</SectionNote> : null}
 
-        {/* Powered-by footer — pinned to the bottom of the screen via
-            absolute positioning so the rest of the loader stays centered
-            regardless of how tall the device viewport is. */}
-        <Text
-          className="text-center"
-          style={{
-            position: 'absolute',
-            bottom: 24,
-            left: 24,
-            right: 24,
-            fontFamily: fonts.regular,
-            fontSize: 10,
-            letterSpacing: 1.2,
-            color: '#94a3b8',
-            textTransform: 'uppercase',
-          }}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-        >
-          {t('mobile.processing.poweredBy', {
-            defaultValue: 'Powered by GreenBidz Industrial Vision AI v4.2',
-          })}
-        </Text>
+        </View>
+
+        {/*
+          The attribution line, moved OUT of the centred column and into the
+          screen's own bottom edge. It used to be `position: 'absolute'` inside
+          the scroller with hard 24pt insets, which ignored the safe area — on
+          a gesture-nav phone it sat under the home indicator.
+        */}
+        <View style={styles.attribution}>
+          <Hairline />
+          <Text
+            variant="eyebrow"
+            color="inkSubtle"
+            style={styles.center}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {t('mobile.processing.poweredBy', {
+              defaultValue: 'Powered by GreenBidz Industrial Vision AI v4.2',
+            })}
+          </Text>
+        </View>
       </Screen>
     );
   }
 
   if (showError) {
     return (
-      <Screen scroll={false} contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
-        <ScrollView
-          horizontal
-          style={{ marginTop: 24, maxHeight: 100 }}
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {draft.photos.map((p) => (
-            <AppImage
-              key={p.uri}
-              source={{ uri: p.uri }}
-              style={{ width: 80, height: 80, borderRadius: 8, opacity: 0.5 }}
-            />
-          ))}
-        </ScrollView>
+      <Screen scroll={false} tabBar={false} testID="scan-processing-error">
+        <View style={styles.error}>
+          <ScrollView
+            horizontal
+            style={styles.photoStrip}
+            contentContainerStyle={styles.photoStripContent}
+            showsHorizontalScrollIndicator={false}
+          >
+            {draft.photos.map((p) => (
+              <AppImage key={p.uri} source={{ uri: p.uri }} style={styles.photo} />
+            ))}
+          </ScrollView>
 
-        <View accessibilityLiveRegion="polite" accessibilityRole="alert">
-          <Stack gap="xl" style={{ marginTop: 24 }}>
-            <View
-              style={{
-                backgroundColor: brand.warningBg,
-                borderWidth: 1,
-                borderColor: brand.warningBorder,
-                borderRadius: 10,
-                padding: 16,
-                alignItems: 'flex-start',
-                gap: 8,
-              }}
-            >
-              <View
-                className="items-center justify-center"
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: '#fef3c7',
-                }}
-              >
-                <AlertCircle color={brand.warningText} size={22} />
-              </View>
-              <Text style={{ fontFamily: fonts.bold, fontSize: 15, color: '#92400e' }}>
-                {t('mobile.processing.errorTitle', "We couldn't read your photos")}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fonts.regular,
-                  color: brand.warningText,
-                  fontSize: 13,
-                  lineHeight: 18,
-                }}
-              >
-                {errorMessage}
-              </Text>
-            </View>
-            <Button
-              label={t('mobile.processing.retake')}
-              onPress={retake}
-              variant="secondary"
-              fullWidth
-            />
-            <Button
+          {/*
+            One `SectionNote tone="danger"` where there was an amber card with
+            its own border, its own 36pt icon disc and two `<Text>`s at
+            `#92400e`. The note owns the alert role and the colour; the title
+            and the reason read as one sentence, which is how the person reads
+            them anyway.
+
+            Kept: `accessibilityLiveRegion` on the wrapper, so the failure is
+            announced when it replaces the loader rather than only drawn.
+          */}
+          <View accessibilityLiveRegion="polite" style={styles.errorBody}>
+            <Text variant="h3">
+              {t('mobile.processing.errorTitle', "We couldn't read your photos")}
+            </Text>
+            <SectionNote tone="danger">{errorMessage}</SectionNote>
+          </View>
+
+          {/*
+            ONE primary. "Continue without AI" is the action that gets the
+            seller to a listing, so it is the filled pill; retaking is the
+            quieter alternative. The old screen made both `Button`s full-width
+            and gave the SECONDARY slot to the one that moves forward.
+          */}
+          <View style={styles.errorActions}>
+            <PrimaryAction
               label={t('mobile.processing.continueWithoutAi')}
               onPress={skipToDetail}
-              fullWidth
             />
-          </Stack>
+            <QuietAction label={t('mobile.processing.retake')} onPress={retake} />
+          </View>
         </View>
       </Screen>
     );
@@ -1188,3 +759,46 @@ export default function ProcessingScreen() {
 
   return null;
 }
+
+/*
+  Styles, in tokens.
+
+  The file's own note said "StyleSheet.create dissolved" and every rule moved
+  inline — which is how 22 raw hex values and 12 `fontSize`s accumulated here
+  without anyone seeing them together. They are back in one block precisely so
+  the next person can read the whole surface at once, and so the v2 adherence
+  test has something to police.
+*/
+const styles = StyleSheet.create({
+  /** The centred column. `Screen` owns the safe areas; this owns the gutter. */
+  loader: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: GUTTER,
+    gap: space.lg,
+  },
+  /** Floats over the centred column so a dropped file does not shift it. */
+  banners: {
+    position: 'absolute',
+    top: space.lg,
+    left: space.lg,
+    right: space.lg,
+    gap: space.sm,
+    zIndex: 10,
+  },
+  center: { textAlign: 'center' },
+  /** Replaces the 140pt gear block — the same breathing room, none of the ink. */
+  headingGap: { height: space.xl },
+  subheading: { textAlign: 'center', marginBottom: space.xl },
+  /** The canvas caps the step column rather than letting it run the full width. */
+  timeline: { width: '100%', maxWidth: 290 },
+  attribution: { paddingHorizontal: GUTTER, paddingTop: space.md, gap: space.md },
+
+  error: { flex: 1, paddingHorizontal: GUTTER, paddingTop: space.xl, gap: space['2xl'] },
+  photoStrip: { maxHeight: 100, flexGrow: 0 },
+  photoStripContent: { gap: space.sm },
+  photo: { width: 80, height: 80, borderRadius: radius.sm, opacity: 0.5 },
+  errorBody: { gap: space.sm },
+  errorActions: { gap: space.sm },
+});

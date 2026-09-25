@@ -405,7 +405,21 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
 
-  separator: { height: spacing.md },
+  /*
+    A DIVIDER, not a gap. This was `height: spacing.md` — 12pt of nothing —
+    which worked while each row drew its own border and is invisible now that
+    they do not. The rule is inset by the row's horizontal padding plus the
+    avatar, so it starts under the text and not under the avatar: the standard
+    inbox treatment, and it keeps the avatars reading as a column.
+
+    `hairlineWidth`, not 1: on a 3x screen 1dp is three physical pixels and
+    draws as a grey stripe rather than a rule.
+  */
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: lab.hairline,
+    marginLeft: spacing.md + 44 + spacing.md,
+  },
 
   emptyFill: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
   centered: { alignItems: 'center', justifyContent: 'center', gap: spacing.lg, paddingVertical: spacing['3xl'] },

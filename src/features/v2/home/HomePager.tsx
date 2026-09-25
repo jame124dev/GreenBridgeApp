@@ -97,7 +97,7 @@ export function HomePager({
    * it the window width up front means it is laid out on render one, which is
    * what `initialLayout` exists for.
    */
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
 
   /**
    * ⚠️ `TabView` is IMPERATIVE, not controlled. It seeds its own
@@ -174,7 +174,31 @@ export function HomePager({
        * `useState`, so this is the library's own supported override, not a
        * patch. If the bar is ever un-suppressed, delete this line with it.
        */
-      initialLayout={{ tabView: { width }, tabBar: { height: 0 } }}
+      /**
+       * ⚠️ `tabView.height` IS ALSO LOAD-BEARING, for the same reason
+       * `tabBar.height: 0` above is.
+       *
+       * `tabView` seeds a `{ width: 0, height: 0 }` default (`TabView.tsx:171`)
+       * and corrects both from the outer container's own `onLayout` — but only
+       * `width` was fed here, so `height` started at 0 and
+       * `tabViewCarouselLayout.height` (`= tabViewLayout.height -
+       * tabBarLayout.height`) inherited that 0 into `RTVScrollView`'s content
+       * container `minHeight` (`RTVScrollView.tsx:66`). Measured on device
+       * 2026-09-24: "Ask the assistant" and the guest promo banner — the rows
+       * directly below the hero — painted as a blank void; `uiautomator`
+       * reported their bounds with `y2 < y1`, an inverted rect, matching a
+       * collapsed/negative height rather than a normal one just being short.
+       *
+       * Full window height is a deliberate OVER-estimate, not the true
+       * available height under the fixed brand-bar-and-tabs header above this
+       * pager — that header's own height is not known synchronously here. A
+       * `minHeight` a little TALLER than needed only adds harmless extra
+       * scroll room on a short pane; one that is too SHORT is what collapsed
+       * these rows. Never go back to omitting it on the theory that `onLayout`
+       * "should" self-correct — it is exactly what was already relied on and
+       * did not happen on this screen.
+       */
+      initialLayout={{ tabView: { width, height }, tabBar: { height: 0 } }}
     />
   );
 }

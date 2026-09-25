@@ -29,7 +29,7 @@ import { StyleSheet, View } from 'react-native';
 // JS responder system, which RNGH intercepts natively — inside Home's pager it
 // never receives the tap. See the note in `features/v2/home/HomePager.tsx`.
 import { Pressable } from 'react-native-gesture-handler';
-import Animated from 'react-native-reanimated';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { router, usePathname } from 'expo-router';
 import {
   Home,
@@ -51,6 +51,7 @@ import {
   usePressFeedback,
   useV2Colors,
 } from '@/theme/v2';
+import { useKeyboardInset } from '@/features/lab/chat/hooks/useKeyboardInset';
 import { haptics } from '@/lib/haptics';
 
 import { Text } from './Text';
@@ -122,37 +123,92 @@ function activeTabFor(pathname: string): TabKey | null {
   return null;
 }
 
-export function TabBar() {
+type TabBarProps = {
+  /**
+   * Controlled mode, for the single shared bar `RootTabsPager` renders below
+   * its swiping panes. When set, the active tab and every tap are driven by
+   * the pager's index instead of `usePathname()`/`router.navigate` — the
+   * panes are five mounted scenes of ONE route (`/v2`), so the pathname never
+   * changes between them and cannot tell them apart.
+   */
+  index?: number;
+  onChangeIndex?: (next: number) => void;
+};
+
+export function TabBar({ index, onChangeIndex }: TabBarProps = {}) {
   const c = useV2Colors();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const active = activeTabFor(pathname);
+  const controlled = index != null && onChangeIndex != null;
+  const active = controlled ? TABS[index]?.key : activeTabFor(pathname);
+
+  // 78pt of BAR, then the gesture bar underneath it — so the height is the sum,
+  // not 78 with padding stuffed inside it.
+  //
+  // Setting `height: 78` and adding `paddingBottom: insets.bottom` separately
+  // does NOT do this: the fixed height wins and the padding pushes the labels
+  // down THROUGH the bar, straight under the Android navigation buttons. Caught
+  // on a device; the layout looked correct in every other respect.
+  const barHeight = control.tabBar + insets.bottom;
+
+  /**
+   * ── The bar gets out of the keyboard's way ──
+   *
+   * This is React Navigation's `tabBarHideOnKeyboard` (older name
+   * `keyboardHidesTabBar`), which defaults to TRUE — we cannot use the option
+   * itself because `app/v2/_layout.tsx` is a `Stack` and this bar is a plain
+   * component `Screen` renders, so the behaviour is reproduced here.
+   *
+   * It is not cosmetic. `KeyboardProvider` (mounted in `app/_layout.tsx`)
+   * disables Android's `adjustResize`, so with the IME open the window stays
+   * full height — measured on RMX2151: `mFrame=[0,0][1080,2400]`. This bar is a
+   * flex SIBLING below the content, so it went on reserving `barHeight` at the
+   * bottom of that window, behind the keyboard. Every screen that lifts its own
+   * footer by the keyboard height then overshot by exactly `barHeight`: on
+   * `/v2/chat` the composer floated 122dp above the keyboard and the thread
+   * above it was squeezed to a sliver — the starter prompts had no room to draw
+   * at all.
+   *
+   * Collapsing the bar returns those 122dp to the content, and the consumer's
+   * `paddingBottom: keyboardInset` becomes correct again with no change on its
+   * side. `useKeyboardInset` is the repo's existing 3-channel reconciled value,
+   * so a missed native callback cannot strand the bar collapsed.
+   *
+   * The ramp is `barHeight`, not the keyboard height: the bar must be GONE by
+   * the time the rising keyboard reaches it, and tying it to the full travel
+   * would still be half-open when covered.
+   */
+  const kb = useKeyboardInset();
+  const collapse = useAnimatedStyle(() => {
+    const t = Math.min(kb.value / Math.max(barHeight, 1), 1);
+    return {
+      height: barHeight * (1 - t),
+      paddingBottom: insets.bottom * (1 - t),
+      opacity: 1 - t,
+    };
+  }, [barHeight, insets.bottom]);
 
   return (
-    <View
+    <Animated.View
       accessibilityRole="tablist"
       style={[
         styles.bar,
         {
           backgroundColor: c.base,
           borderTopColor: c.hairline,
-          // 78pt of BAR, then the gesture bar underneath it — so the height is
-          // the sum, not 78 with padding stuffed inside it.
-          //
-          // Setting `height: 78` and adding `paddingBottom: insets.bottom`
-          // separately does NOT do this: the fixed height wins and the padding
-          // pushes the labels down THROUGH the bar, straight under the Android
-          // navigation buttons. Caught on a device; the layout looked correct
-          // in every other respect.
-          height: control.tabBar + insets.bottom,
-          paddingBottom: insets.bottom,
         },
+        collapse,
       ]}
     >
-      {TABS.map((tab) => (
-        <TabButton key={tab.key} tab={tab} on={tab.key === active} />
+      {TABS.map((tab, i) => (
+        <TabButton
+          key={tab.key}
+          tab={tab}
+          on={tab.key === active}
+          onPress={controlled ? () => onChangeIndex!(i) : undefined}
+        />
       ))}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -173,7 +229,17 @@ export function TabBar() {
  * press, not a double tap. R1 wants an answer inside 100ms; R3 says it must fire
  * on `onPressIn` and must not wait for the work. Both now do.
  */
-function TabButton({ tab, on }: { tab: Tab; on: boolean }) {
+function TabButton({
+  tab,
+  on,
+  onPress,
+}: {
+  tab: Tab;
+  on: boolean;
+  /** Set by the controlled (pager) mode; moves the pager's index instead of
+   *  navigating a route. */
+  onPress?: () => void;
+}) {
   const c = useV2Colors();
   const { animatedStyle, onPressIn, onPressOut } = usePressFeedback({ scale: false });
   const { label, Icon, href } = tab;
@@ -185,6 +251,10 @@ function TabButton({ tab, on }: { tab: Tab; on: boolean }) {
         // Selection feel, per responsiveness.md R5 — and BEFORE the navigate,
         // because tactile feedback degrades from 70ms, tighter than visual.
         haptics.tap();
+        if (onPress) {
+          onPress();
+          return;
+        }
         // `navigate`, not `push` — tabs replace each other rather than
         // stacking, so Back leaves the app instead of walking the
         // history of every tab you touched.
@@ -257,6 +327,10 @@ const styles = StyleSheet.create({
     borderTopWidth: HAIRLINE_WIDTH,
     alignItems: 'flex-start',
     paddingTop: space.xl,
+    // The tabs keep their intrinsic height while the BAR animates to zero, so
+    // without this they spill out of it and draw over the composer on the way
+    // down.
+    overflow: 'hidden',
   },
   tab: {
     flex: 1,

@@ -192,16 +192,40 @@ describe('setDraftItemsStatus', () => {
   });
 
   it('sends the op/select body the bulk planner expects', async () => {
-    api.post.mockResolvedValue({ status: 200, data: { success: true, updated: 1 } });
+    api.post.mockResolvedValue({ status: 200, data: { success: true, data: { updated: 1 } } });
     await setDraftItemsStatus(247, [2189], 'accept');
 
     const [, body] = api.post.mock.calls[0] as [string, unknown];
     expect(body).toEqual({ op: 'accept', select: { item_ids: [2189] } });
   });
 
-  it('reports how many rows changed', async () => {
-    api.post.mockResolvedValue({ status: 200, data: { success: true, updated: 3 } });
+  /**
+   * ⚠️ THE ENVELOPE IS `{ success, data: { updated } }` — AND THIS FIXTURE
+   * USED TO SAY OTHERWISE.
+   *
+   * It mocked `data: { success: true, updated: 3 }`, i.e. `updated` at the top
+   * level, and it passed — because the reader it was written against did
+   * `Number(res.data?.updated)` too. Both were wrong in the same direction, so
+   * the test confirmed the code to itself and proved nothing about the server.
+   * The controller returns
+   * `res.status(200).json({ success: true, data: { updated, ...lot_group_id } })`
+   * (`101recycle-greenbidz-backend/controller/draftItemsController.js:517-521`,
+   * and identically at `:510-513` for a zero-row selection), so the real
+   * answer was `undefined` → `null` on every successful synchronous bulk.
+   *
+   * `null` is this function's sentinel for "202, not applied yet", which is why
+   * it went unnoticed: the wrong value was a legal one. A mock written from the
+   * code cannot catch that; only reading the controller can.
+   */
+  it('reports how many rows changed, reading the { data: { updated } } envelope', async () => {
+    api.post.mockResolvedValue({ status: 200, data: { success: true, data: { updated: 3 } } });
     await expect(setDraftItemsStatus(247, [1, 2, 3], 'accept')).resolves.toBe(3);
+  });
+
+  /** The old, wrong shape must now read as "no count", not as 3. */
+  it('does NOT read a top-level `updated` — that envelope is not the server\'s', async () => {
+    api.post.mockResolvedValue({ status: 200, data: { success: true, updated: 3 } });
+    await expect(setDraftItemsStatus(247, [1, 2, 3], 'accept')).resolves.toBeNull();
   });
 
   /**

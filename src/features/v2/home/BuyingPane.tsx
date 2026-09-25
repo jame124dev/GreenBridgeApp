@@ -347,13 +347,39 @@ function BuyingPaneInner() {
 
 
 
+  /**
+   * Home's "Type it" — the BUYING half of the pair with 6a's "type the details".
+   *
+   * ⚑ It opens the ASSISTANT IN BUY MODE (2026-09-23). Owner: *"buying mode
+   * type goes in ai chat with buy mode."*
+   *
+   * It used to `requireAuth('want', … push('/(lab)/(tabs)/matches'))` — the
+   * shipped My Wants screen — so the headline action under "What are you
+   * looking for? / Type the spec and we watch the market for it" asked a guest
+   * to sign in and then showed them a LIST rather than anywhere to type a spec.
+   *
+   * Ungated now, because the assistant is: *"Guest mode: the assistant is open
+   * to everyone, INCLUDING SENDING"* (`app/v2/chat.tsx`). The account is asked
+   * for when a want is actually saved.
+   *
+   * Mode is not a route param — `/v2/chat` reads it from the shared composer
+   * store, so set it before navigating rather than trusting what the last
+   * screen left there. Same two lines as this pane's assistant row.
+   */
   const onType = () => {
     haptics.impact();
-    // TODO(v2-nav): the v2 want composer is not drawn. Until it is, this hands
-    // off to the shipped My Wants screen, which owns the sheet that actually
-    // creates a want — the same way 6a's "or type the details" hands off to
-    // the shipped listing-method picker. TODO(v2-writes): the create itself
-    // stays out of v2 in this pass.
+    useComposer.getState().setMode('buy');
+    router.push('/v2/chat');
+  };
+
+  /**
+   * "Add a want" inside the buyer sections — a DIFFERENT control, kept on the
+   * screen that actually creates one. It shared `onType` until the change
+   * above; had it kept sharing, redirecting Home's button would silently have
+   * sent this one to the assistant too.
+   */
+  const onAddWant = () => {
+    haptics.impact();
     requireAuth('want', () => router.push('/(lab)/(tabs)/matches'));
   };
 
@@ -457,7 +483,7 @@ function BuyingPaneInner() {
 
       {/* Account-scoped. Absent for a guest and absent when wants are switched
           off in this build — the same shape 6a uses for drafts. */}
-      {!isGuest && WTB_ENABLED ? <BuyerSections onAddWant={onType} /> : null}
+      {!isGuest && WTB_ENABLED ? <BuyerSections onAddWant={onAddWant} /> : null}
 
     </PaneShell>
   );

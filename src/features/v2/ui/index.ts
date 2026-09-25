@@ -28,16 +28,19 @@ export { SectionNote } from './SectionNote';
 export { EmptyState } from './EmptyState';
 export { BrandBar } from './BrandBar';
 export { Tabs, HOME_MODE_TABS, type TabItem, type HomeMode } from './Tabs';
+export { SegmentedControl, type SegmentItem } from './SegmentedControl';
 
 // Content
 export { Bubble, type BubbleFrom } from './Bubble';
 export { Row, RowThumb, RowTrailing } from './Row';
+export { ListCard } from './ListCard';
 export { TintedRow } from './TintedRow';
 export { PromoBanner } from './PromoBanner';
 export { Chip } from './Chip';
 export { SoftPanel } from './SoftPanel';
 export { Stepper } from './Stepper';
-export { Field, GlyphButton, type FieldProps } from './Field';
+export { Field, GlyphButton, RevealToggle, type FieldProps } from './Field';
+export { OtpField } from './OtpField';
 export { ProgressLine } from './ProgressLine';
 export { Timeline, type TimelineStep } from './Timeline';
 
@@ -48,7 +51,12 @@ export { EnterOnMount, Shimmer } from './Motion';
 export { PrimaryAction } from './PrimaryAction';
 export { QuietAction } from './QuietAction';
 export { PillButton, type PillTone } from './PillButton';
+export { OptionCard } from './OptionCard';
 export { IconAction } from './IconAction';
 
 // Development only — renders null in production builds.
 export { SchemeToggleDev } from './SchemeToggleDev';
+
+// The confirm-before-write sheet. `@gorhom/bottom-sheet` — see its own
+// docblock for the theme-bridging trap before using it anywhere new.
+export { ConfirmSheet, type ConfirmSheetRef } from './ConfirmSheet';

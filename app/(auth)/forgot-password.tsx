@@ -1,30 +1,65 @@
-// Native 3-step forgot-password wizard (email → 6-digit code → new password),
-// replacing the old web hand-off. Presentational: all flow logic lives in
-// useForgotPassword; this maps error CODES → localized copy and renders the
-// step. Styling mirrors the login screen (forest/eco-teal Stitch palette).
-import { useEffect, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, Text as RNText, TextInput, View } from 'react-native';
+/**
+ * Native 3-step forgot-password wizard (email → 6-digit code → new password),
+ * on the "Wash Hero" frame, 2026-09-23.
+ *
+ * Presentational only: all flow logic lives in `useForgotPassword`. This maps
+ * error CODES → localized copy and renders the step, which is why the hook can
+ * stay i18n-free and unit-tested. None of that changed.
+ *
+ * ── WHY THIS ONE WAS CONVERTED TOO (TWICE NOW) ─────────────────────────────
+ *
+ * It is ONE TAP from sign-in. When `login.tsx` moved to v2 tokens and this was
+ * still on the old kit, pressing "Forgot password?" went from the green wash
+ * sheet to a white page with a monospace label — seen on device, and the kind
+ * of seam `UX_DESIGN_RULES.md` exists to prevent. The same argument applies to
+ * the wash-hero rebuild: sign-in now opens with a wash panel and a curved
+ * sheet, so a recovery flow with a bare header would be the identical seam one
+ * tap later. A converted entry point whose first exit is unconverted is not a
+ * converted flow.
+ *
+ * ── THE TWO THINGS THAT ARE NOT LIKE ITS SIBLINGS ──────────────────────────
+ *
+ * 1. **No segmented control.** Password reset is not a third face of "sign in
+ *    or create an account" — it is a flow you are already inside. `AuthShell`
+ *    takes `segmented={false}`, and the labelled way back to sign-in lives in
+ *    the footer where it can survive an error line growing the body.
+ *
+ * 2. **The code step has a COUNTDOWN, and it stays prominent.** It is the only
+ *    screen in the app where the user is racing something, and burying the
+ *    remaining time in a caption is how someone types a correct code into an
+ *    expired session and is told it is wrong. It sits directly under the
+ *    cells, and turns `danger` at zero rather than only changing its words.
+ */
+import { useEffect, useRef, useState } from 'react';
+import { BackHandler, StyleSheet, View, type TextInput } from 'react-native';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronLeft } from 'lucide-react-native';
 import { toast } from 'sonner-native';
 
-import { Button } from '@/components/ui/Button';
-import { OtpInput } from '@/components/ui/OtpInput';
+import {
+  Field,
+  GlyphButton,
+  OtpField,
+  PrimaryAction,
+  QuietAction,
+  RevealToggle,
+  SectionNote,
+  Text,
+} from '@/features/v2/ui';
+import { AuthShell } from '@/features/v2/auth/AuthShell';
+import { AuthStepRail } from '@/features/v2/auth/AuthStepRail';
 import { useForgotPassword } from '@/features/auth/useForgotPassword';
 import {
   newPasswordSchema, resetEmailSchema,
   type NewPasswordInput, type ResetEmailInput,
 } from '@/features/auth/schema';
 import type { ResetErrorCode } from '@/services/auth/passwordReset';
+import { GUTTER, icon, space, useV2Colors } from '@/theme/v2';
 
-const FOREST = '#14452f';
-const TEXT_PRIMARY = '#1A1C1F';
-const TEXT_SECONDARY = '#43474F';
-const HAIRLINE = '#E1E5EC';
+const STEP_ORDER = ['email', 'otp', 'password'] as const;
 
 function mm(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -32,7 +67,7 @@ function mm(seconds: number) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-// Privacy: show a***@domain, not the full address, in the "code sent to" hint.
+/** Privacy: show a***@domain, not the full address, in the "code sent to" hint. */
 function maskEmail(email: string): string {
   const [user, domain] = email.split('@');
   if (!domain || !user) return email;
@@ -42,7 +77,7 @@ function maskEmail(email: string): string {
 
 export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
+  const c = useV2Colors();
   const fp = useForgotPassword();
 
   // Map a hook error CODE → localized copy (keeps the hook i18n-free/testable).
@@ -69,25 +104,44 @@ export default function ForgotPasswordScreen() {
     else fp.back();
   };
 
-  return (
-    <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
-      <Pressable onPress={goBack} hitSlop={12} accessibilityRole="button" style={styles.backBtn}>
-        <ChevronLeft size={24} color={TEXT_PRIMARY} />
-      </Pressable>
+  const stepIndex = STEP_ORDER.indexOf(fp.step as (typeof STEP_ORDER)[number]);
 
-      {fp.step === 'email' && <EmailStep fp={fp} errText={errText} />}
-      {fp.step === 'otp' && <OtpStep fp={fp} errText={errText} />}
-      {fp.step === 'password' && <PasswordStep fp={fp} errText={errText} />}
+  /**
+   * The chevron sits in the wash between the brand bar and the title. Unlike
+   * sign-up's first step, EVERY step of this flow has one: there is no segment
+   * here to act as the way out, and step one is reached by a tap that is easy
+   * to make by accident.
+   */
+  const leading = (
+    <View style={styles.headerRow}>
+      <GlyphButton
+        accessibilityLabel={t('mobile.auth.register.backToSignIn')}
+        onPress={goBack}
+      >
+        <ChevronLeft size={icon.hero} color={c.ink} strokeWidth={1.75} />
+      </GlyphButton>
     </View>
   );
+
+  const rail = stepIndex >= 0 ? <AuthStepRail index={stepIndex} total={STEP_ORDER.length} /> : null;
+
+  if (fp.step === 'otp') {
+    return <OtpStep fp={fp} errText={errText} leading={leading} rail={rail} />;
+  }
+  if (fp.step === 'password') {
+    return <PasswordStep fp={fp} errText={errText} leading={leading} rail={rail} />;
+  }
+  return <EmailStep fp={fp} errText={errText} leading={leading} rail={rail} />;
 }
 
 type StepProps = {
   fp: ReturnType<typeof useForgotPassword>;
   errText: (c: ResetErrorCode | null) => string | null;
+  leading: React.ReactNode;
+  rail: React.ReactNode;
 };
 
-function EmailStep({ fp, errText }: StepProps) {
+function EmailStep({ fp, errText, leading, rail }: StepProps) {
   const { t } = useTranslation();
   const { control, handleSubmit, formState: { errors } } = useForm<ResetEmailInput>({
     resolver: zodResolver(resetEmailSchema),
@@ -98,73 +152,193 @@ function EmailStep({ fp, errText }: StepProps) {
     if (ok) toast(t('mobile.auth.reset.codeSent'));
   });
   const serverErr = errText(fp.error);
+
   return (
-    <View style={styles.body}>
-      <RNText style={styles.title}>{t('mobile.auth.reset.emailTitle')}</RNText>
-      <RNText style={styles.subtitle}>{t('mobile.auth.reset.emailSubtitle')}</RNText>
-      <RNText style={styles.label}>{t('mobile.auth.reset.emailLabel')}</RNText>
+    <AuthShell
+      mode="signin"
+      segmented={false}
+      leading={leading}
+      title={t('mobile.auth.reset.emailTitle')}
+      subtitle={t('mobile.auth.reset.emailSubtitle')}
+      testID="v2-auth-reset-email"
+      footer={
+        /*
+          ⚠️ THE WAY BACK TO SIGN-IN IS A LABELLED CONTROL, NOT JUST THE CHEVRON.
+
+          This step had exactly one exit: a 30pt back arrow in the corner. Someone
+          who tapped "Forgot password?" by mistake, or who remembers the password
+          while looking at this screen, had nothing that said "sign in" anywhere
+          on it. The later steps of this same flow offer a labelled way out and
+          this one did not.
+
+          In the footer, not the body, for the reason register's had to move
+          there: an error line grows the body and pushes a trailing control below
+          the fold, which is exactly when the escape hatch is wanted.
+        */
+        <PrimaryAction
+          label={t('mobile.auth.reset.sendCode')}
+          onPress={onSubmit}
+          loading={fp.isPending}
+          testID="v2-auth-reset-send"
+        />
+      }
+      footerQuiet={
+        <QuietAction
+          label={t('mobile.auth.register.backToSignIn')}
+          onPress={() => router.replace('/(auth)/login')}
+          tone="accent"
+          variant="captionMedium"
+          testID="v2-auth-reset-signin"
+        />
+      }
+    >
+      {rail}
+
       <Controller
         control={control}
         name="email"
         render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput
-            style={styles.input}
+          <Field
+            label={t('mobile.auth.reset.emailLabel')}
             value={value}
             onChangeText={onChange}
             onBlur={onBlur}
             placeholder="you@example.com"
-            placeholderTextColor="#9aa1ad"
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
+            textContentType="username"
+            returnKeyType="go"
+            onSubmitEditing={onSubmit}
+            invalid={Boolean(errors.email)}
+            help={errors.email?.message ? t(errors.email.message) : undefined}
+            testID="v2-auth-reset-email-input"
           />
         )}
       />
-      {errors.email?.message ? <RNText style={styles.err}>{t(errors.email.message)}</RNText> : null}
-      {serverErr ? <RNText style={styles.err}>{serverErr}</RNText> : null}
-      <Button label={t('mobile.auth.reset.sendCode')} onPress={onSubmit} loading={fp.isPending} fullWidth />
-    </View>
+
+      {serverErr ? (
+        <View style={styles.note}>
+          <SectionNote tone="danger" variant="body">
+            {serverErr}
+          </SectionNote>
+        </View>
+      ) : null}
+    </AuthShell>
   );
 }
 
-function OtpStep({ fp, errText }: StepProps) {
+function OtpStep({ fp, errText, leading, rail }: StepProps) {
   const { t } = useTranslation();
   const [otp, setOtp] = useState('');
   const serverErr = errText(fp.error);
-  // A wrong code clears the field (hook sets error, screen resets input).
-  useEffect(() => {
-    if (fp.error === 'INVALID_OTP') setOtp('');
-  }, [fp.error]);
+  const expired = fp.secondsLeft === 0;
+
+  /**
+   * A rejected code clears the field, so the next attempt starts clean.
+   *
+   * Done in the HANDLER, from `submitOtp`'s result — not in an effect watching
+   * `error`. The effect version was a `setState` inside an effect (cascading
+   * renders; eslint `react-hooks/set-state-in-effect`) and it only fired when
+   * the error CHANGED, so entering the same wrong code twice left the six
+   * digits sitting there.
+   */
+  const verify = (value: string) => {
+    void fp.submitOtp(value).then((ok) => {
+      if (!ok) setOtp('');
+    });
+  };
+
   return (
-    <View style={styles.body}>
-      <RNText style={styles.title}>{t('mobile.auth.reset.otpTitle')}</RNText>
-      <RNText style={styles.subtitle}>{t('mobile.auth.reset.otpSubtitle', { email: maskEmail(fp.email) })}</RNText>
-      <OtpInput value={otp} onChange={setOtp} onComplete={(v) => fp.submitOtp(v)} />
-      <RNText style={styles.timer}>{mm(fp.secondsLeft)}</RNText>
-      {serverErr ? <RNText style={styles.err}>{serverErr}</RNText> : null}
-      <RNText style={styles.hint}>{fp.secondsLeft === 0 ? t('mobile.auth.reset.codeExpired') : t('mobile.auth.reset.useRecentCode')}</RNText>
-      <Button label={t('mobile.auth.reset.verify')} onPress={() => fp.submitOtp(otp)} loading={fp.isPending} fullWidth />
-      <Pressable
-        disabled={fp.resendCooldown > 0}
-        onPress={() => fp.resend().then((ok) => { if (ok) toast(t('mobile.auth.reset.newCodeSent')); })}
-        style={{ marginTop: 14, alignItems: 'center', opacity: fp.resendCooldown > 0 ? 0.5 : 1 }}
+    <AuthShell
+      mode="signin"
+      segmented={false}
+      leading={leading}
+      title={t('mobile.auth.reset.otpTitle')}
+      subtitle={t('mobile.auth.reset.otpSubtitle', { email: maskEmail(fp.email) })}
+      testID="v2-auth-reset-otp"
+      footer={
+        <PrimaryAction
+          label={t('mobile.auth.reset.verify')}
+          onPress={() => verify(otp)}
+          loading={fp.isPending}
+          testID="v2-auth-reset-verify"
+        />
+      }
+    >
+      {rail}
+
+      <View style={styles.otp}>
+        <OtpField
+          value={otp}
+          onChange={setOtp}
+          onComplete={verify}
+          invalid={fp.error === 'INVALID_OTP'}
+        />
+      </View>
+
+      {/*
+        The countdown, and it is `h3` rather than a caption — see the header.
+        `danger` at zero: the copy below already changes, but a sentence that
+        changes wording is a much weaker signal than a number that changes
+        colour, and this is the moment the user needs to stop typing and ask
+        for a new code.
+      */}
+      <Text
+        variant="h3"
+        color={expired ? 'danger' : 'inkMuted'}
+        style={styles.centered}
       >
-        <RNText style={styles.resend}>
-          {fp.resendCooldown > 0
+        {mm(fp.secondsLeft)}
+      </Text>
+      <Text variant="caption" color="inkSubtle" style={styles.centered}>
+        {expired
+          ? t('mobile.auth.reset.codeExpired')
+          : t('mobile.auth.reset.useRecentCode')}
+      </Text>
+
+      {serverErr ? (
+        <View style={styles.note}>
+          <SectionNote tone="danger" variant="body">
+            {serverErr}
+          </SectionNote>
+        </View>
+      ) : null}
+
+      <QuietAction
+        label={
+          fp.resendCooldown > 0
             ? t('mobile.auth.reset.resendIn', { seconds: fp.resendCooldown })
-            : t('mobile.auth.reset.resend')}
-        </RNText>
-      </Pressable>
-    </View>
+            : t('mobile.auth.reset.resend')
+        }
+        onPress={() =>
+          fp.resend().then((ok) => {
+            if (ok) toast(t('mobile.auth.reset.newCodeSent'));
+          })
+        }
+        disabled={fp.resendCooldown > 0}
+        tone="accent"
+        style={styles.recovery}
+        testID="v2-auth-reset-resend"
+      />
+    </AuthShell>
   );
 }
 
-function PasswordStep({ fp, errText }: StepProps) {
+function PasswordStep({ fp, errText, leading, rail }: StepProps) {
   const { t } = useTranslation();
   const { control, handleSubmit, formState: { errors } } = useForm<NewPasswordInput>({
     resolver: zodResolver(newPasswordSchema),
     defaultValues: { newPassword: '', confirmPassword: '' },
   });
+
+  const confirmRef = useRef<TextInput>(null);
+  /** One toggle for both boxes — see the note on `RevealToggle`. */
+  const [reveal, setReveal] = useState(false);
+  const revealLabels = {
+    show: t('mobile.auth.showPasswordA11y'),
+    hide: t('mobile.auth.hidePasswordA11y'),
+  };
   const onSubmit = handleSubmit(async ({ newPassword }) => {
     try {
       await fp.submitNewPassword(newPassword);
@@ -175,46 +349,106 @@ function PasswordStep({ fp, errText }: StepProps) {
     }
   });
   const serverErr = errText(fp.error);
+
   return (
-    <View style={styles.body}>
-      <RNText style={styles.title}>{t('mobile.auth.reset.passwordTitle')}</RNText>
-      <RNText style={styles.label}>{t('mobile.auth.reset.newPassword')}</RNText>
-      <Controller
-        control={control}
-        name="newPassword"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput style={styles.input} value={value} onChangeText={onChange} onBlur={onBlur} secureTextEntry autoCapitalize="none" />
-        )}
-      />
-      {errors.newPassword?.message ? <RNText style={styles.err}>{t(errors.newPassword.message)}</RNText> : null}
-      <RNText style={styles.label}>{t('mobile.auth.reset.confirmPassword')}</RNText>
-      <Controller
-        control={control}
-        name="confirmPassword"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <TextInput style={styles.input} value={value} onChangeText={onChange} onBlur={onBlur} secureTextEntry autoCapitalize="none" />
-        )}
-      />
-      {errors.confirmPassword?.message ? <RNText style={styles.err}>{t(errors.confirmPassword.message)}</RNText> : null}
-      {serverErr ? <RNText style={styles.err}>{serverErr}</RNText> : null}
-      <Button label={t('mobile.auth.reset.resetPassword')} onPress={onSubmit} loading={fp.isPending} fullWidth />
-    </View>
+    <AuthShell
+      mode="signin"
+      segmented={false}
+      leading={leading}
+      title={t('mobile.auth.reset.passwordTitle')}
+      testID="v2-auth-reset-password"
+      footer={
+        <PrimaryAction
+          label={t('mobile.auth.reset.resetPassword')}
+          onPress={onSubmit}
+          loading={fp.isPending}
+          testID="v2-auth-reset-submit"
+        />
+      }
+    >
+      {rail}
+
+      <View style={styles.fields}>
+        <Controller
+          control={control}
+          name="newPassword"
+          render={({ field: { onChange, value, onBlur } }) => (
+            <Field
+              label={t('mobile.auth.reset.newPassword')}
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              secureTextEntry={!reveal}
+              autoCapitalize="none"
+              autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="next"
+              onSubmitEditing={() => confirmRef.current?.focus()}
+              trailing={
+                <RevealToggle
+                  on={reveal}
+                  onToggle={() => setReveal((v) => !v)}
+                  labels={revealLabels}
+                />
+              }
+              invalid={Boolean(errors.newPassword)}
+              help={errors.newPassword?.message ? t(errors.newPassword.message) : undefined}
+              testID="v2-auth-reset-new"
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="confirmPassword"
+          render={({ field: { onChange, value, onBlur } }) => (
+            <Field
+              label={t('mobile.auth.reset.confirmPassword')}
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              ref={confirmRef}
+              secureTextEntry={!reveal}
+              autoCapitalize="none"
+              autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="go"
+              onSubmitEditing={onSubmit}
+              trailing={
+                <RevealToggle
+                  on={reveal}
+                  onToggle={() => setReveal((v) => !v)}
+                  labels={revealLabels}
+                />
+              }
+              invalid={Boolean(errors.confirmPassword)}
+              help={
+                errors.confirmPassword?.message
+                  ? t(errors.confirmPassword.message)
+                  : undefined
+              }
+              testID="v2-auth-reset-confirm"
+            />
+          )}
+        />
+      </View>
+
+      {serverErr ? (
+        <View style={styles.note}>
+          <SectionNote tone="danger" variant="body">
+            {serverErr}
+          </SectionNote>
+        </View>
+      ) : null}
+    </AuthShell>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#ffffff', paddingHorizontal: 24 },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  body: { marginTop: 16, gap: 12 },
-  title: { fontFamily: 'HankenGrotesk_700Bold', fontSize: 26, color: TEXT_PRIMARY },
-  subtitle: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 20, color: TEXT_SECONDARY, marginBottom: 8 },
-  label: { fontFamily: 'JetBrainsMono_400Regular', fontSize: 12, letterSpacing: 0.6, color: TEXT_SECONDARY, textTransform: 'uppercase', marginTop: 4 },
-  input: {
-    minHeight: 52, borderRadius: 12, borderWidth: 1.5, borderColor: HAIRLINE,
-    paddingHorizontal: 16, fontFamily: 'Inter_400Regular', fontSize: 15, color: TEXT_PRIMARY, backgroundColor: '#ffffff',
-  },
-  err: { fontFamily: 'Inter_400Regular', fontSize: 12.5, color: '#b42318' },
-  hint: { fontFamily: 'Inter_400Regular', fontSize: 12.5, color: TEXT_SECONDARY, textAlign: 'center' },
-  timer: { fontFamily: 'JetBrainsMono_400Regular', fontSize: 13, color: TEXT_SECONDARY, textAlign: 'center' },
-  resend: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: FOREST },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginTop: space.md },
+  /** Cancels `SectionNote`'s own gutter — the sheet already has one. */
+  note: { marginHorizontal: -GUTTER, marginTop: space['3xl'] },
+  fields: { gap: space['5xl'] },
+  otp: { marginBottom: space['5xl'] },
+  centered: { textAlign: 'center' },
+  recovery: { marginTop: space['5xl'] },
 });
