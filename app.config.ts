@@ -31,7 +31,11 @@ export default (): ExpoConfig => ({
   // 1.0.1 was native in-app registration + the seller-upgrade application.
   // 1.0.0 (16) was approved and Pending Developer Release; that approval was
   // given up to submit 1.0.2, which had the sign-up flow 1.0.0 was missing.
-  version: '1.0.3',
+  // 1.0.3 reached "Ready for Distribution" in App Store Connect, so that
+  // version number is spent: an approved version cannot take a new build, and
+  // a binary stamped 1.0.3 cannot be attached to a new App Store version
+  // either. 1.0.4 carries the v2 UI update (2026-09-25).
+  version: '1.0.4',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   userInterfaceStyle: 'light',
