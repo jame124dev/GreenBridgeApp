@@ -65,7 +65,8 @@
         "EXPO_PUBLIC_DETECT_STREAM": "1",
         "EXPO_PUBLIC_DRAFTS": "1",
         "EXPO_PUBLIC_BACKGROUND_RECOGNITION": "1",
-        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "a9a5c723-9a00-438f-a522-2bd9178ff99f"
+        "EXPO_PUBLIC_ONESIGNAL_APP_ID": "a9a5c723-9a00-438f-a522-2bd9178ff99f",
+        "EXPO_PUBLIC_V2_UI": "1"
       }
     }
   },
