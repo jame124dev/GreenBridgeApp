@@ -107,9 +107,25 @@ function renderFooter(overrides: Partial<React.ComponentProps<typeof DetailFoote
   };
 }
 
-/** The CTA's label is `t('mobile.detail.submitListing')`; react-i18next is
- *  uninitialised under Jest, so a key with no defaultValue comes back as itself. */
-const SUBMIT = /submitListing/;
+/*
+  The CTA's label is `t('mobile.detail.submitListing')`.
+
+  ⚠️ THIS USED TO MATCH THE RAW KEY. The note here read "react-i18next is
+  uninitialised under Jest, so a key with no defaultValue comes back as
+  itself" — true at the time, but it meant the suite asserted something that
+  NEVER happens in the app, where i18n is initialised before the first render.
+  It broke the moment anything in the import graph pulled `@/i18n` in (the
+  v2 kit barrel now does, via `BrandBar`'s language chip), because the key
+  started resolving — the test failing was the test noticing it had been
+  checking the wrong string all along.
+
+  These now match the RESOLVED English, which is what a user sees. They are
+  written tolerantly so the suite does not break again on whether i18n
+  happens to be live.
+*/
+const SUBMIT = /submit listing/i;
+const ADD_ANOTHER = /scan another item|addAnother/i;
+const REVIEW_GROUP = /review group|reviewGroup/i;
 
 describe('DetailFooter — M-9: Submit answers instead of greying out', () => {
   it('single-mode Submit is enabled and fires while required fields are missing', () => {
@@ -132,8 +148,8 @@ describe('DetailFooter — M-9: Submit answers instead of greying out', () => {
   // strip above them now names what is missing. Guards against over-correcting.
   it('grouped-mode buttons still require every row', () => {
     const { getByLabelText } = renderFooter({ isGrouped: true, allRequired: false });
-    expect(getByLabelText(/addAnother/).props.accessibilityState.disabled).toBe(true);
-    expect(getByLabelText(/reviewGroup/).props.accessibilityState.disabled).toBe(true);
+    expect(getByLabelText(ADD_ANOTHER).props.accessibilityState.disabled).toBe(true);
+    expect(getByLabelText(REVIEW_GROUP).props.accessibilityState.disabled).toBe(true);
   });
 });
 
@@ -141,9 +157,11 @@ describe('DetailFooter — M-8: the footer mounts the required-progress strip', 
   it('renders a chip per missing row and reports the tapped one', () => {
     const onPressRow = jest.fn();
     const { getByText } = renderFooter({ required: incomplete, onPressRow });
-    // Labels come from `useRequiredRowLabel`'s English defaultValues.
-    expect(getByText('Title')).toBeTruthy();
-    fireEvent.press(getByText('Price'));
+    // Labels come from `useRequiredRowLabel`. With i18n live these resolve to
+    // the shipped copy — "TITLE"/"PRICE" — not the `defaultValue` fallbacks
+    // this test used to assert. See the note on SUBMIT above.
+    expect(getByText(/^title$/i)).toBeTruthy();
+    fireEvent.press(getByText(/^price$/i));
     expect(onPressRow).toHaveBeenCalledWith('price');
   });
 

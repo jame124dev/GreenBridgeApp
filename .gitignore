@@ -110,3 +110,4 @@ app_debug/
 # Cloned UI reference repos — read and copy from, never bundled or committed.
 # See ui_git_repo/README.md. Excluded from tsconfig and metro.config.js too.
 ui_git_repo/
+scripts/out/

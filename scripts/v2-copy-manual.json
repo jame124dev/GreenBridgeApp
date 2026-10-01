@@ -1,0 +1,1770 @@
+{
+  "_README": [
+    "Hand-written translations for v2 copy that is NOT already in the locale files.",
+    "Keyed by the ENGLISH SENTENCE exactly as it renders, because that is what",
+    "src/features/v2/ui/Text.tsx looks up (see src/i18n/v2Auto.ts).",
+    "scripts/build-v2-dictionary.js merges this over the auto-filled entries, so",
+    "a key here always wins. Add a string here the moment you add v2 copy; an",
+    "empty value falls through to English and is safe to ship."
+  ],
+  "_skipped": {
+    "#9AA89F": "hex colour value",
+    "#9ca3af": "colour value",
+    "101IT": "marketplace brand name",
+    "101LAB": "marketplace brand name",
+    "101MACHINE": "marketplace brand name",
+    "101RECYCLE": "marketplace brand name",
+    "AI": "used as-is in all five target locales",
+    "Agilent / Waters HPLC + DAD": "brand names plus technical abbreviations only",
+    "Agilent 1260 Infinity II HPLC": "brand and product model name",
+    "English": "language-picker option shown in its own language (endonym)",
+    "GreenBidz": "brand name",
+    "HPLC + DAD": "technical equipment abbreviations only, no translatable copy",
+    "HankenGrotesk_700Bold": "font family name",
+    "IBMPlexSans_600SemiBold": "font family name",
+    "TWD (NT$)": "currency code and symbol token",
+    "Thermo Scientific TSX −80°C Freezer": "brand and product model name",
+    "USD ($)": "currency code and symbol token",
+    "UTC": "standard time-zone token kept in Latin",
+    "details": "ReviewStep slug (wizardState.ts:60), not user-facing copy",
+    "font-heading": "font family token",
+    "font-heading-semi": "font family token",
+    "font-sans": "font family token",
+    "mobile.listingEdit.field.title": "i18n key, not user-facing copy",
+    "you@example.com": "email placeholder, stays Latin",
+    "上海 (GMT+8)": "already in Chinese script",
+    "台北 (GMT+8)": "already in Chinese script",
+    "東京 (GMT+9)": "already in CJK script",
+    "香港 (GMT+8)": "already in Chinese script"
+  },
+  "\"Find an LC-20 under $12k\"": {
+    "zh-hant": "「找一台 12,000 美元以下的 LC-20」",
+    "zh-hans": "「找一台 12,000 美元以下的 LC-20」",
+    "ja": "「1 万 2 千ドル以下の LC-20 を探して」",
+    "th": "“หา LC-20 ราคาต่ำกว่า 12,000 ดอลลาร์”",
+    "vi": "“Tìm một chiếc LC-20 dưới 12.000 đô”"
+  },
+  "A spec sheet or a list — PDF, Word, Excel": {
+    "zh-hant": "規格表或清單 — PDF、Word、Excel",
+    "zh-hans": "规格表或清单 — PDF、Word、Excel",
+    "ja": "仕様書やリスト — PDF、Word、Excel",
+    "th": "เอกสารสเปกหรือรายการ — PDF, Word, Excel",
+    "vi": "Bảng thông số hoặc danh sách — PDF, Word, Excel"
+  },
+  "AI estimate — verify before publishing.": {
+    "zh-hant": "AI 估算 — 刊登前請自行確認。",
+    "zh-hans": "AI 估算 — 发布前请自行确认。",
+    "ja": "AI による推定です — 公開前にご確認ください。",
+    "th": "เป็นค่าประมาณจาก AI — โปรดตรวจสอบก่อนเผยแพร่",
+    "vi": "Ước tính bởi AI — hãy kiểm tra trước khi đăng."
+  },
+  "Active bids": {
+    "zh-hant": "進行中的出價",
+    "zh-hans": "进行中的出价",
+    "ja": "進行中の入札",
+    "th": "การเสนอราคาที่ยังดำเนินอยู่",
+    "vi": "Lượt trả giá đang hoạt động"
+  },
+  "Add a file": {
+    "zh-hant": "新增檔案",
+    "zh-hans": "添加文件",
+    "ja": "ファイルを追加",
+    "th": "เพิ่มไฟล์",
+    "vi": "Thêm tệp"
+  },
+  "Add a photo or file": {
+    "zh-hant": "新增照片或檔案",
+    "zh-hans": "添加照片或文件",
+    "ja": "写真やファイルを追加",
+    "th": "เพิ่มรูปภาพหรือไฟล์",
+    "vi": "Thêm ảnh hoặc tệp"
+  },
+  "Add to your message": {
+    "zh-hant": "加入您的訊息",
+    "zh-hans": "加入您的消息",
+    "ja": "メッセージに追加",
+    "th": "เพิ่มลงในข้อความของคุณ",
+    "vi": "Thêm vào tin nhắn của bạn"
+  },
+  "Agilent 1260 HPLC · deal #4821": {
+    "zh-hant": "Agilent 1260 HPLC · 交易 #4821",
+    "zh-hans": "Agilent 1260 HPLC · 交易 #4821",
+    "ja": "Agilent 1260 HPLC · 取引 #4821",
+    "th": "Agilent 1260 HPLC · ดีล #4821",
+    "vi": "Agilent 1260 HPLC · giao dịch #4821"
+  },
+  "Agilent or Waters HPLC + DAD": {
+    "zh-hant": "Agilent 或 Waters HPLC + DAD",
+    "zh-hans": "Agilent 或 Waters HPLC + DAD",
+    "ja": "Agilent または Waters の HPLC + DAD",
+    "th": "Agilent หรือ Waters HPLC + DAD",
+    "vi": "Agilent hoặc Waters HPLC + DAD"
+  },
+  "Alerts about bids, offers and matches are tied to your account, so we know where to send them.": {
+    "zh-hant": "競標、出價與配對的通知會連結您的帳戶，我們才知道要寄到哪裡。",
+    "zh-hans": "竞标、出价与匹配的通知会关联您的账户，我们才知道发送到哪里。",
+    "ja": "入札・オファー・マッチングの通知はアカウントに紐づくため、送信先が分かります。",
+    "th": "การแจ้งเตือนเกี่ยวกับการประมูล ข้อเสนอ และรายการที่ตรงกัน จะผูกกับบัญชีของคุณ เราจึงรู้ว่าจะส่งไปที่ไหน",
+    "vi": "Thông báo về lượt đấu giá, đề nghị và kết quả phù hợp được gắn với tài khoản của bạn, để chúng tôi biết gửi đi đâu."
+  },
+  "Allow the camera": {
+    "zh-hant": "允許使用相機",
+    "zh-hans": "允许使用相机",
+    "ja": "カメラを許可",
+    "th": "อนุญาตให้ใช้กล้อง",
+    "vi": "Cho phép dùng camera"
+  },
+  "Approval": {
+    "zh-hant": "審核",
+    "zh-hans": "审核",
+    "ja": "承認",
+    "th": "การอนุมัติ",
+    "vi": "Phê duyệt"
+  },
+  "Ask a seller about shipping, condition or what a lot comes with, and the whole thread stays in one place. You only need an account so the seller knows who is writing.": {
+    "zh-hant": "向賣家詢問運送、機況或這批商品包含哪些配件，所有對話都留在同一處。需要帳戶，只是為了讓賣家知道是誰在聯絡。",
+    "zh-hans": "向卖家询问运输、机况或这批商品包含哪些配件，所有对话都留在同一处。需要账户，只是为了让卖家知道是谁在联系。",
+    "ja": "配送や状態、この商品に何が付属するかを出品者に質問できます。やり取りはすべて1か所にまとまります。アカウントが必要なのは、誰からの連絡かを出品者がわかるようにするためだけです。",
+    "th": "สอบถามผู้ขายเรื่องการจัดส่ง สภาพเครื่อง หรือสิ่งที่รวมอยู่ในล็อตนี้ได้ โดยบทสนทนาทั้งหมดอยู่ในที่เดียว ที่ต้องมีบัญชีก็เพียงเพื่อให้ผู้ขายรู้ว่าใครเป็นผู้ติดต่อ",
+    "vi": "Hỏi người bán về vận chuyển, tình trạng máy hoặc những gì đi kèm trong lô hàng, toàn bộ cuộc trò chuyện được giữ ở một nơi. Bạn chỉ cần tài khoản để người bán biết ai đang liên hệ."
+  },
+  "Asking": {
+    "zh-hant": "開價",
+    "zh-hans": "开价",
+    "ja": "希望価格",
+    "th": "ราคาที่ขอ",
+    "vi": "Giá chào"
+  },
+  "Assistant": {
+    "zh-hant": "助理",
+    "zh-hans": "助理",
+    "ja": "アシスタント",
+    "th": "ผู้ช่วย",
+    "vi": "Trợ lý"
+  },
+  "At a glance": {
+    "zh-hant": "概覽",
+    "zh-hans": "概览",
+    "ja": "概要",
+    "th": "ภาพรวม",
+    "vi": "Tổng quan"
+  },
+  "Bangkok (GMT+7)": {
+    "zh-hant": "曼谷 (GMT+7)",
+    "zh-hans": "曼谷 (GMT+7)",
+    "ja": "バンコク (GMT+7)",
+    "th": "กรุงเทพฯ (GMT+7)",
+    "vi": "Bangkok (GMT+7)"
+  },
+  "Batch #": {
+    "zh-hant": "批次編號",
+    "zh-hans": "批次编号",
+    "ja": "バッチ番号",
+    "th": "หมายเลขชุด",
+    "vi": "Số lô"
+  },
+  "Batch Info": {
+    "zh-hant": "批次資訊",
+    "zh-hans": "批次信息",
+    "ja": "バッチ情報",
+    "th": "ข้อมูลชุด",
+    "vi": "Thông tin lô"
+  },
+  "Bid Types": {
+    "zh-hant": "出價類型",
+    "zh-hans": "出价类型",
+    "ja": "入札種別",
+    "th": "ประเภทการประมูล",
+    "vi": "Loại trả giá"
+  },
+  "Bidding": {
+    "zh-hant": "競標",
+    "zh-hans": "竞拍",
+    "ja": "入札",
+    "th": "การประมูล",
+    "vi": "Đấu giá"
+  },
+  "Bids": {
+    "zh-hant": "出價",
+    "zh-hans": "出价",
+    "ja": "入札",
+    "th": "การประมูล",
+    "vi": "Lượt trả giá"
+  },
+  "Bids on my listings": {
+    "zh-hant": "我的商品收到的出價",
+    "zh-hans": "我的商品收到的出价",
+    "ja": "自分の出品への入札",
+    "th": "การเสนอราคาสินค้าของฉัน",
+    "vi": "Lượt trả giá cho tin của tôi"
+  },
+  "Bids, orders, watchlist — sample data for now": {
+    "zh-hant": "出價、訂單、追蹤清單 — 目前為範例資料",
+    "zh-hans": "出价、订单、关注列表 — 目前为示例数据",
+    "ja": "入札・注文・ウォッチリスト — 現在はサンプルデータです",
+    "th": "การเสนอราคา คำสั่งซื้อ รายการที่ติดตาม — ขณะนี้เป็นข้อมูลตัวอย่าง",
+    "vi": "Đấu giá, đơn hàng, danh sách theo dõi — hiện là dữ liệu mẫu"
+  },
+  "Browse equipment": {
+    "zh-hant": "瀏覽設備",
+    "zh-hans": "浏览设备",
+    "ja": "機器を探す",
+    "th": "ดูเครื่องจักรและอุปกรณ์",
+    "vi": "Duyệt thiết bị"
+  },
+  "Browse lots": {
+    "zh-hant": "瀏覽商品",
+    "zh-hans": "浏览商品",
+    "ja": "出品を見る",
+    "th": "ดูรายการสินค้า",
+    "vi": "Duyệt lô hàng"
+  },
+  "Describe what you are selling, or add a photo of the nameplate, and it drafts the listing.": {
+    "zh-hant": "描述您要出售的設備，或上傳銘牌照片，系統就會為您草擬商品內容。",
+    "zh-hans": "描述您要出售的设备，或上传铭牌照片，系统就会为您草拟商品内容。",
+    "ja": "売りたい機器を説明するか、銘板の写真を追加すると、出品内容を下書きします。",
+    "th": "อธิบายสิ่งที่คุณต้องการขาย หรือเพิ่มรูปป้ายข้อมูล แล้วระบบจะร่างประกาศให้",
+    "vi": "Mô tả thiết bị bạn muốn bán, hoặc thêm ảnh nhãn máy, và hệ thống sẽ soạn tin đăng."
+  },
+  "I have a used CNC machine to sell": {
+    "zh-hant": "我有一台二手 CNC 工具機要賣",
+    "zh-hans": "我有一台二手 CNC 机床要卖",
+    "ja": "中古の CNC 工作機械を売りたい",
+    "th": "ฉันมีเครื่อง CNC มือสองจะขาย",
+    "vi": "Tôi có một máy CNC đã qua sử dụng cần bán"
+  },
+  "Help me price my lab equipment": {
+    "zh-hant": "幫我估一下實驗室設備的價格",
+    "zh-hans": "帮我估一下实验室设备的价格",
+    "ja": "実験機器の価格を見積もってほしい",
+    "th": "ช่วยประเมินราคาอุปกรณ์ห้องแล็บให้หน่อย",
+    "vi": "Giúp tôi định giá thiết bị phòng thí nghiệm"
+  },
+  "List several items from photos": {
+    "zh-hant": "用照片一次刊登多項商品",
+    "zh-hans": "用照片一次发布多项商品",
+    "ja": "写真から複数の商品をまとめて出品",
+    "th": "ลงประกาศหลายรายการจากรูปภาพ",
+    "vi": "Đăng nhiều món cùng lúc từ ảnh"
+  },
+  "What are you selling?": {
+    "zh-hant": "您要出售什麼？",
+    "zh-hans": "您要出售什么？",
+    "ja": "何を売りますか？",
+    "th": "คุณต้องการขายอะไร",
+    "vi": "Bạn muốn bán gì?"
+  },
+  "What are you\nlooking for?": {
+    "_note": "The Buying pane's display title. The LINE BREAK is part of the key — BuyingPane renders {'What are you\\nlooking for?'} as one literal, so a single-line key never matches. The Selling pane next to it uses a real t() key, which is why only this one stayed English.",
+    "zh-hant": "您在尋找\n什麼設備？",
+    "zh-hans": "您在寻找\n什么设备？",
+    "ja": "お探しの\n機器は？",
+    "th": "คุณกำลังมองหา\nอะไรอยู่?",
+    "vi": "Bạn đang tìm\nthiết bị gì?"
+  },
+  "Buy Now": {
+    "zh-hant": "立即購買",
+    "zh-hans": "立即购买",
+    "ja": "今すぐ購入",
+    "th": "ซื้อเลย",
+    "vi": "Mua ngay"
+  },
+  "Active": {
+    "zh-hant": "進行中",
+    "zh-hans": "进行中",
+    "ja": "有効",
+    "th": "ใช้งานอยู่",
+    "vi": "Đang hoạt động"
+  },
+  "Outbid": {
+    "zh-hant": "已被超越",
+    "zh-hans": "已被超越",
+    "ja": "上回られました",
+    "th": "ถูกเสนอราคาสูงกว่า",
+    "vi": "Bị trả giá cao hơn"
+  },
+  "Requests": {
+    "zh-hant": "需求",
+    "zh-hans": "需求",
+    "ja": "リクエスト",
+    "th": "คำขอ",
+    "vi": "Yêu cầu"
+  },
+  "Accepted": {
+    "zh-hant": "已接受",
+    "zh-hans": "已接受",
+    "ja": "承諾済み",
+    "th": "ตอบรับแล้ว",
+    "vi": "Đã chấp nhận"
+  },
+  "Awaiting seller": {
+    "zh-hant": "等待賣家回覆",
+    "zh-hans": "等待卖家回复",
+    "ja": "出品者の対応待ち",
+    "th": "รอผู้ขายตอบกลับ",
+    "vi": "Chờ người bán"
+  },
+  "Completed": {
+    "zh-hant": "已完成",
+    "zh-hans": "已完成",
+    "ja": "完了",
+    "th": "เสร็จสิ้น",
+    "vi": "Hoàn tất"
+  },
+  "Confirmed": {
+    "zh-hant": "已確認",
+    "zh-hans": "已确认",
+    "ja": "確定済み",
+    "th": "ยืนยันแล้ว",
+    "vi": "Đã xác nhận"
+  },
+  "Delivered": {
+    "zh-hant": "已送達",
+    "zh-hans": "已送达",
+    "ja": "配達済み",
+    "th": "จัดส่งถึงแล้ว",
+    "vi": "Đã giao"
+  },
+  "Lost": {
+    "zh-hant": "未得標",
+    "zh-hans": "未中标",
+    "ja": "落札ならず",
+    "th": "ไม่ชนะประมูล",
+    "vi": "Không trúng"
+  },
+  "Won": {
+    "zh-hant": "已得標",
+    "zh-hans": "已中标",
+    "ja": "落札",
+    "th": "ชนะประมูล",
+    "vi": "Trúng thầu"
+  },
+  "Paid": {
+    "zh-hant": "已付款",
+    "zh-hans": "已付款",
+    "ja": "支払い済み",
+    "th": "ชำระเงินแล้ว",
+    "vi": "Đã thanh toán"
+  },
+  "Payment due": {
+    "zh-hant": "待付款",
+    "zh-hans": "待付款",
+    "ja": "お支払い待ち",
+    "th": "ถึงกำหนดชำระ",
+    "vi": "Cần thanh toán"
+  },
+  "Payment pending": {
+    "zh-hant": "付款處理中",
+    "zh-hans": "付款处理中",
+    "ja": "支払い保留中",
+    "th": "รอการชำระเงิน",
+    "vi": "Chờ thanh toán"
+  },
+  "Payment processing": {
+    "zh-hant": "付款處理中",
+    "zh-hans": "付款处理中",
+    "ja": "支払い処理中",
+    "th": "กำลังดำเนินการชำระเงิน",
+    "vi": "Đang xử lý thanh toán"
+  },
+  "Pending": {
+    "zh-hant": "待處理",
+    "zh-hans": "待处理",
+    "ja": "保留中",
+    "th": "รอดำเนินการ",
+    "vi": "Đang chờ"
+  },
+  "Ready": {
+    "zh-hant": "已就緒",
+    "zh-hans": "已就绪",
+    "ja": "準備完了",
+    "th": "พร้อมแล้ว",
+    "vi": "Sẵn sàng"
+  },
+  "Rejected": {
+    "zh-hant": "已婉拒",
+    "zh-hans": "已婉拒",
+    "ja": "却下",
+    "th": "ปฏิเสธแล้ว",
+    "vi": "Đã từ chối"
+  },
+  "Shipped": {
+    "zh-hant": "已出貨",
+    "zh-hans": "已发货",
+    "ja": "発送済み",
+    "th": "จัดส่งแล้ว",
+    "vi": "Đã gửi hàng"
+  },
+  "Sold": {
+    "zh-hant": "已售出",
+    "zh-hans": "已售出",
+    "ja": "売約済み",
+    "th": "ขายแล้ว",
+    "vi": "Đã bán"
+  },
+  "Accept order": {
+    "zh-hant": "接受訂單",
+    "zh-hans": "接受订单",
+    "ja": "注文を承諾",
+    "th": "ตอบรับคำสั่งซื้อ",
+    "vi": "Chấp nhận đơn hàng"
+  },
+  "Cancel order": {
+    "zh-hant": "取消訂單",
+    "zh-hans": "取消订单",
+    "ja": "注文をキャンセル",
+    "th": "ยกเลิกคำสั่งซื้อ",
+    "vi": "Hủy đơn hàng"
+  },
+  "Decline": {
+    "zh-hant": "婉拒",
+    "zh-hans": "婉拒",
+    "ja": "辞退する",
+    "th": "ปฏิเสธ",
+    "vi": "Từ chối"
+  },
+  "Reject": {
+    "zh-hant": "拒絕",
+    "zh-hans": "拒绝",
+    "ja": "却下する",
+    "th": "ปฏิเสธ",
+    "vi": "Từ chối"
+  },
+  "Publish": {
+    "zh-hant": "發布",
+    "zh-hans": "发布",
+    "ja": "公開する",
+    "th": "เผยแพร่",
+    "vi": "Đăng"
+  },
+  "Mark shipped": {
+    "zh-hant": "標記為已出貨",
+    "zh-hans": "标记为已发货",
+    "ja": "発送済みにする",
+    "th": "ทำเครื่องหมายว่าจัดส่งแล้ว",
+    "vi": "Đánh dấu đã gửi"
+  },
+  "Mark delivered": {
+    "zh-hant": "標記為已送達",
+    "zh-hans": "标记为已送达",
+    "ja": "配達済みにする",
+    "th": "ทำเครื่องหมายว่าส่งถึงแล้ว",
+    "vi": "Đánh dấu đã giao"
+  },
+  "Mark sold": {
+    "zh-hant": "標記為已售出",
+    "zh-hans": "标记为已售出",
+    "ja": "売約済みにする",
+    "th": "ทำเครื่องหมายว่าขายแล้ว",
+    "vi": "Đánh dấu đã bán"
+  },
+  "AI Draft": {
+    "zh-hant": "AI 草稿",
+    "zh-hans": "AI 草稿",
+    "ja": "AI 下書き",
+    "th": "ฉบับร่างจาก AI",
+    "vi": "Bản nháp AI"
+  },
+  "All": {
+    "zh-hant": "全部",
+    "zh-hans": "全部",
+    "ja": "すべて",
+    "th": "ทั้งหมด",
+    "vi": "Tất cả"
+  },
+  "Checking for new messages…": {
+    "zh-hant": "正在檢查新訊息…",
+    "zh-hans": "正在检查新消息…",
+    "ja": "新着メッセージを確認しています…",
+    "th": "กำลังตรวจหาข้อความใหม่…",
+    "vi": "Đang kiểm tra tin nhắn mới…"
+  },
+  "No inspections yet": {
+    "zh-hant": "尚無驗機紀錄",
+    "zh-hans": "尚无验机记录",
+    "ja": "点検の記録はまだありません",
+    "th": "ยังไม่มีรายการตรวจสอบ",
+    "vi": "Chưa có lần kiểm định nào"
+  },
+  "Nothing is being analyzed": {
+    "zh-hant": "目前沒有進行中的分析",
+    "zh-hans": "目前没有进行中的分析",
+    "ja": "解析中のものはありません",
+    "th": "ยังไม่มีการวิเคราะห์ที่กำลังทำงาน",
+    "vi": "Không có mục nào đang được phân tích"
+  },
+  "What are you looking for?": {
+    "zh-hant": "您在找什麼？",
+    "zh-hans": "您在找什么？",
+    "ja": "何をお探しですか？",
+    "th": "คุณกำลังมองหาอะไร",
+    "vi": "Bạn đang tìm gì?"
+  },
+  "Submitted": {
+    "zh-hant": "已送出",
+    "zh-hans": "已提交",
+    "ja": "送信済み",
+    "th": "ส่งแล้ว",
+    "vi": "Đã gửi"
+  },
+  "Live": {
+    "zh-hant": "上架中",
+    "zh-hans": "上架中",
+    "ja": "公開中",
+    "th": "เผยแพร่อยู่",
+    "vi": "Đang hiển thị"
+  },
+  "In review": {
+    "zh-hant": "審核中",
+    "zh-hans": "审核中",
+    "ja": "審査中",
+    "th": "อยู่ระหว่างตรวจสอบ",
+    "vi": "Đang duyệt"
+  },
+  "Nothing is waiting on you.": {
+    "zh-hant": "目前沒有待您處理的事項。",
+    "zh-hans": "目前没有待您处理的事项。",
+    "ja": "対応が必要なものはありません。",
+    "th": "ไม่มีรายการที่รอคุณดำเนินการ",
+    "vi": "Không có việc nào đang chờ bạn."
+  },
+  "Add business documents to finish.": {
+    "zh-hant": "上傳公司文件即可完成驗證。",
+    "zh-hans": "上传公司文件即可完成验证。",
+    "ja": "法人書類をアップロードすると完了します。",
+    "th": "เพิ่มเอกสารบริษัทเพื่อให้เสร็จสมบูรณ์",
+    "vi": "Thêm giấy tờ doanh nghiệp để hoàn tất."
+  },
+  "Price on request": {
+    "zh-hant": "價格請洽詢",
+    "zh-hans": "价格请洽询",
+    "ja": "価格はお問い合わせください",
+    "th": "สอบถามราคา",
+    "vi": "Giá liên hệ"
+  },
+  "Sign in to your account": {
+    "zh-hant": "登入您的帳戶",
+    "zh-hans": "登录您的账户",
+    "ja": "アカウントにログイン",
+    "th": "เข้าสู่ระบบบัญชีของคุณ",
+    "vi": "Đăng nhập tài khoản của bạn"
+  },
+  "Your listings, saved searches and messages live here.": {
+    "zh-hant": "您的商品、已儲存的搜尋與訊息都在這裡。",
+    "zh-hans": "您的商品、已保存的搜索与消息都在这里。",
+    "ja": "出品・保存した検索条件・メッセージはここにあります。",
+    "th": "ประกาศ การค้นหาที่บันทึกไว้ และข้อความของคุณอยู่ที่นี่",
+    "vi": "Tin đăng, tìm kiếm đã lưu và tin nhắn của bạn ở đây."
+  },
+  "Create account": {
+    "zh-hant": "建立帳號",
+    "zh-hans": "创建账号",
+    "ja": "アカウントを作成",
+    "th": "สร้างบัญชี",
+    "vi": "Tạo tài khoản"
+  },
+  "I already have an account": {
+    "zh-hant": "我已經有帳號",
+    "zh-hans": "我已经有账号",
+    "ja": "すでにアカウントをお持ちの方",
+    "th": "ฉันมีบัญชีอยู่แล้ว",
+    "vi": "Tôi đã có tài khoản"
+  },
+  "Keep browsing": {
+    "zh-hant": "繼續瀏覽",
+    "zh-hans": "继续浏览",
+    "ja": "閲覧を続ける",
+    "th": "ดูต่อ",
+    "vi": "Tiếp tục duyệt"
+  },
+  "Do later": {
+    "zh-hant": "稍後再說",
+    "zh-hans": "稍后再说",
+    "ja": "後で",
+    "th": "ไว้ทีหลัง",
+    "vi": "Để sau"
+  },
+  "Invalid email or password": {
+    "zh-hant": "電子郵件或密碼不正確",
+    "zh-hans": "电子邮件或密码不正确",
+    "ja": "メールアドレスまたはパスワードが正しくありません",
+    "th": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+    "vi": "Email hoặc mật khẩu không đúng"
+  },
+  "Instant": {
+    "zh-hant": "即時",
+    "zh-hans": "即时",
+    "ja": "即時",
+    "th": "ทันที",
+    "vi": "Tức thì"
+  },
+  "Off": {
+    "zh-hant": "關閉",
+    "zh-hans": "关闭",
+    "ja": "オフ",
+    "th": "ปิด",
+    "vi": "Tắt"
+  },
+  "Browsing as a guest": {
+    "zh-hant": "以訪客身分瀏覽",
+    "zh-hans": "以访客身份浏览",
+    "ja": "ゲストとして閲覧中",
+    "th": "กำลังเรียกดูในฐานะผู้เยี่ยมชม",
+    "vi": "Đang duyệt với tư cách khách"
+  },
+  "Buy Now purchases on your listings will appear here.": {
+    "zh-hant": "買家以「立即購買」買下您的商品後，會顯示在這裡。",
+    "zh-hans": "买家以「立即购买」买下您的商品后，会显示在这里。",
+    "ja": "あなたの出品が「今すぐ購入」で購入されると、ここに表示されます。",
+    "th": "การซื้อแบบ ซื้อเลย สำหรับสินค้าของคุณจะแสดงที่นี่",
+    "vi": "Các giao dịch Mua ngay trên tin của bạn sẽ xuất hiện ở đây."
+  },
+  "Buyer dashboard": {
+    "zh-hant": "買家主頁",
+    "zh-hans": "买家主页",
+    "ja": "バイヤーダッシュボード",
+    "th": "แดชบอร์ดผู้ซื้อ",
+    "vi": "Bảng điều khiển người mua"
+  },
+  "Buyers send you an offer. You set the price when you accept one.": {
+    "zh-hant": "由買家向您出價，您接受時才決定成交價格。",
+    "zh-hans": "由买家向您出价，您接受时才决定成交价格。",
+    "ja": "購入希望者がオファーを送ります。価格はオファーを承諾する際に決まります。",
+    "th": "ผู้ซื้อจะส่งข้อเสนอมาให้คุณ และราคาจะกำหนดเมื่อคุณตอบรับข้อเสนอ",
+    "vi": "Người mua gửi đề nghị cho bạn. Giá được chốt khi bạn chấp nhận một đề nghị."
+  },
+  "Buying": {
+    "zh-hant": "採購",
+    "zh-hans": "采购",
+    "ja": "買う",
+    "th": "ซื้อ",
+    "vi": "Mua"
+  },
+  "CO₂ emissions": {
+    "zh-hant": "CO₂ 排放量",
+    "zh-hans": "CO₂ 排放量",
+    "ja": "CO₂ 排出量",
+    "th": "การปล่อย CO₂",
+    "vi": "Lượng phát thải CO₂"
+  },
+  "Category and currency are set once you choose — we will not guess them.": {
+    "zh-hant": "分類與貨幣由您選定後才會套用 — 我們不會自行猜測。",
+    "zh-hans": "分类与货币由您选定后才会应用 — 我们不会自行猜测。",
+    "ja": "カテゴリーと通貨はお選びいただいた時点で確定します — こちらで推測することはありません。",
+    "th": "หมวดหมู่และสกุลเงินจะถูกกำหนดเมื่อคุณเลือกเท่านั้น — เราจะไม่เดาแทนคุณ",
+    "vi": "Danh mục và tiền tệ chỉ được đặt khi bạn chọn — chúng tôi không tự đoán."
+  },
+  "Checking every new listing against your wants…": {
+    "zh-hant": "正在以您的需求比對每一筆新商品…",
+    "zh-hans": "正在以您的需求比对每一笔新商品…",
+    "ja": "新着の出品を保存した条件と照合しています…",
+    "th": "กำลังเทียบประกาศใหม่ทุกรายการกับสิ่งที่คุณต้องการ…",
+    "vi": "Đang đối chiếu mọi tin mới với nhu cầu của bạn…"
+  },
+  "Checking what is still outstanding…": {
+    "zh-hant": "正在確認還有哪些項目未完成…",
+    "zh-hans": "正在确认还有哪些项目未完成…",
+    "ja": "未完了の項目を確認しています…",
+    "th": "กำลังตรวจสอบรายการที่ยังค้างอยู่…",
+    "vi": "Đang kiểm tra những mục còn thiếu…"
+  },
+  "Checking your saved wants for new matches…": {
+    "zh-hant": "正在為您儲存的需求尋找新的配對…",
+    "zh-hans": "正在为您保存的需求寻找新的匹配…",
+    "ja": "保存した条件に合う新着を確認しています…",
+    "th": "กำลังตรวจหารายการใหม่ที่ตรงกับสิ่งที่คุณบันทึกไว้…",
+    "vi": "Đang tìm tin mới khớp với nhu cầu bạn đã lưu…"
+  },
+  "Choose from photos": {
+    "zh-hant": "從相簿選擇",
+    "zh-hans": "从相册选择",
+    "ja": "写真から選ぶ",
+    "th": "เลือกจากรูปภาพ",
+    "vi": "Chọn từ ảnh"
+  },
+  "Close the camera": {
+    "zh-hant": "關閉相機",
+    "zh-hans": "关闭相机",
+    "ja": "カメラを閉じる",
+    "th": "ปิดกล้อง",
+    "vi": "Đóng camera"
+  },
+  "Comm.": {
+    "zh-hant": "佣金",
+    "zh-hans": "佣金",
+    "ja": "手数料",
+    "th": "ค่าคอม",
+    "vi": "Hoa hồng"
+  },
+  "Commission": {
+    "zh-hant": "佣金",
+    "zh-hans": "佣金",
+    "ja": "手数料",
+    "th": "ค่าคอมมิชชัน",
+    "vi": "Hoa hồng"
+  },
+  "Conversations with sellers live in your account, so you can pick them up on any device.": {
+    "zh-hant": "與賣家的對話儲存在您的帳戶中，任何裝置都能接續查看。",
+    "zh-hans": "与卖家的对话保存在您的账户中，任何设备都能继续查看。",
+    "ja": "出品者とのやり取りはアカウントに保存されるため、どの端末からでも続けられます。",
+    "th": "บทสนทนากับผู้ขายจะเก็บไว้ในบัญชีของคุณ จึงดูต่อได้จากทุกอุปกรณ์",
+    "vi": "Cuộc trò chuyện với người bán được lưu trong tài khoản của bạn, nên bạn có thể tiếp tục trên mọi thiết bị."
+  },
+  "Create an account to sell": {
+    "zh-hant": "建立帳戶即可出售",
+    "zh-hans": "创建账户即可出售",
+    "ja": "出品するにはアカウント登録",
+    "th": "สร้างบัญชีเพื่อขาย",
+    "vi": "Tạo tài khoản để bán"
+  },
+  "Created": {
+    "zh-hant": "建立時間",
+    "zh-hans": "创建时间",
+    "ja": "作成日",
+    "th": "สร้างเมื่อ",
+    "vi": "Ngày tạo"
+  },
+  "Deinstalled": {
+    "zh-hant": "已拆機",
+    "zh-hans": "已拆机",
+    "ja": "撤去済み",
+    "th": "ถอดออกแล้ว",
+    "vi": "Đã tháo dỡ"
+  },
+  "Demolition / Removal": {
+    "zh-hant": "拆除／搬遷",
+    "zh-hans": "拆除／搬迁",
+    "ja": "解体・撤去",
+    "th": "รื้อถอน / ขนย้าย",
+    "vi": "Tháo dỡ / Di dời"
+  },
+  "Describe my need": {
+    "zh-hant": "描述我的需求",
+    "zh-hans": "描述我的需求",
+    "ja": "要望を入力",
+    "th": "อธิบายความต้องการ",
+    "vi": "Mô tả nhu cầu"
+  },
+  "Describe your equipment — brand, model, condition, city": {
+    "zh-hant": "描述您的設備——品牌、型號、狀況、所在城市",
+    "zh-hans": "描述您的设备——品牌、型号、状况、所在城市",
+    "ja": "機器の情報を入力 — ブランド、型番、状態、都市",
+    "th": "อธิบายเครื่องจักรของคุณ — ยี่ห้อ รุ่น สภาพ เมือง",
+    "vi": "Mô tả thiết bị của bạn — thương hiệu, model, tình trạng, thành phố"
+  },
+  "Destination": {
+    "zh-hant": "送達地",
+    "zh-hans": "送达地",
+    "ja": "お届け先",
+    "th": "ปลายทาง",
+    "vi": "Điểm đến"
+  },
+  "Details": {
+    "zh-hant": "詳細資料",
+    "zh-hans": "详细信息",
+    "ja": "詳細",
+    "th": "รายละเอียด",
+    "vi": "Chi tiết"
+  },
+  "Development": {
+    "zh-hant": "開發",
+    "zh-hans": "开发",
+    "ja": "開発",
+    "th": "การพัฒนา",
+    "vi": "Phát triển"
+  },
+  "End": {
+    "zh-hant": "結束",
+    "zh-hans": "结束",
+    "ja": "終了",
+    "th": "สิ้นสุด",
+    "vi": "Kết thúc"
+  },
+  "Equipment listing": {
+    "zh-hant": "設備商品",
+    "zh-hans": "设备商品",
+    "ja": "機器の出品",
+    "th": "ประกาศขายเครื่องจักร",
+    "vi": "Tin đăng thiết bị"
+  },
+  "Everything we need is on file. Your account is fully verified.": {
+    "zh-hant": "所需資料皆已齊全，您的帳戶已完成驗證。",
+    "zh-hans": "所需资料均已齐全，您的账户已完成验证。",
+    "ja": "必要な情報はすべて揃っています。アカウントの認証は完了しました。",
+    "th": "ข้อมูลที่จำเป็นครบถ้วนแล้ว บัญชีของคุณผ่านการยืนยันเรียบร้อย",
+    "vi": "Chúng tôi đã có đủ thông tin. Tài khoản của bạn đã được xác minh."
+  },
+  "Everything you are buying and selling.": {
+    "zh-hant": "您買進與賣出的所有項目。",
+    "zh-hans": "您买进与卖出的所有项目。",
+    "ja": "購入・販売のすべてをここに。",
+    "th": "ทุกอย่างที่คุณกำลังซื้อและขาย",
+    "vi": "Tất cả những gì bạn đang mua và bán."
+  },
+  "FOR SALE · WTS": {
+    "zh-hant": "出售 · WTS",
+    "zh-hans": "出售 · WTS",
+    "ja": "売ります · WTS",
+    "th": "ขาย · WTS",
+    "vi": "Cần bán · WTS"
+  },
+  "For Parts": {
+    "zh-hant": "零件用",
+    "zh-hans": "零件用",
+    "ja": "部品取り",
+    "th": "สำหรับอะไหล่",
+    "vi": "Lấy phụ tùng"
+  },
+  "Frame the nameplate": {
+    "zh-hant": "將銘牌對準框內",
+    "zh-hans": "将铭牌对准框内",
+    "ja": "銘板を枠に合わせてください",
+    "th": "จัดป้ายข้อมูลให้อยู่ในกรอบ",
+    "vi": "Đưa nhãn máy vào khung"
+  },
+  "Help centre": {
+    "zh-hant": "說明中心",
+    "zh-hans": "帮助中心",
+    "ja": "ヘルプセンター",
+    "th": "ศูนย์ช่วยเหลือ",
+    "vi": "Trung tâm trợ giúp"
+  },
+  "How pricing works": {
+    "zh-hant": "定價方式說明",
+    "zh-hans": "定价方式说明",
+    "ja": "価格の決まり方",
+    "th": "ราคากำหนดอย่างไร",
+    "vi": "Cách định giá"
+  },
+  "Inspection": {
+    "zh-hant": "驗機",
+    "zh-hans": "验机",
+    "ja": "検査",
+    "th": "การตรวจสอบเครื่อง",
+    "vi": "Kiểm định"
+  },
+  "Inspections": {
+    "zh-hant": "驗機",
+    "zh-hans": "验机",
+    "ja": "点検",
+    "th": "การตรวจสอบ",
+    "vi": "Kiểm định"
+  },
+  "Installed": {
+    "zh-hant": "已安裝",
+    "zh-hans": "已安装",
+    "ja": "設置済み",
+    "th": "ติดตั้งอยู่",
+    "vi": "Đã lắp đặt"
+  },
+  "Items": {
+    "zh-hant": "品項",
+    "zh-hans": "品项",
+    "ja": "アイテム",
+    "th": "รายการ",
+    "vi": "Mục"
+  },
+  "Just describe it": {
+    "zh-hant": "直接文字描述",
+    "zh-hans": "直接文字描述",
+    "ja": "文章で説明する",
+    "th": "พิมพ์อธิบายเลย",
+    "vi": "Chỉ cần mô tả"
+  },
+  "Keep a draft listing and pick it up later on any device. Needs an account to save it to.": {
+    "zh-hant": "把商品存成草稿，日後可在任何裝置繼續編輯。需要帳戶才能儲存。",
+    "zh-hans": "把商品存为草稿，日后可在任何设备继续编辑。需要账户才能保存。",
+    "ja": "出品を下書きとして保存し、どの端末からでも後で続けられます。保存先としてアカウントが必要です。",
+    "th": "บันทึกประกาศเป็นฉบับร่างแล้วกลับมาทำต่อได้จากทุกอุปกรณ์ ต้องมีบัญชีไว้สำหรับจัดเก็บ",
+    "vi": "Lưu tin đăng dưới dạng bản nháp và tiếp tục sau trên mọi thiết bị. Cần có tài khoản để lưu."
+  },
+  "Keep using the app — we will notify you when it is ready.": {
+    "zh-hant": "您可以繼續使用 App — 完成後我們會通知您。",
+    "zh-hans": "您可以继续使用 App — 完成后我们会通知您。",
+    "ja": "そのままアプリをお使いください — 完了したらお知らせします。",
+    "th": "ใช้งานแอปต่อได้เลย — เราจะแจ้งเตือนเมื่อเสร็จ",
+    "vi": "Bạn cứ tiếp tục dùng ứng dụng — chúng tôi sẽ báo khi xong."
+  },
+  "Language and currency": {
+    "zh-hant": "語言與貨幣",
+    "zh-hans": "语言与货币",
+    "ja": "言語と通貨",
+    "th": "ภาษาและสกุลเงิน",
+    "vi": "Ngôn ngữ và tiền tệ"
+  },
+  "Loading your conversations with sellers…": {
+    "zh-hant": "正在載入您與賣家的對話…",
+    "zh-hans": "正在加载您与卖家的对话…",
+    "ja": "出品者とのやり取りを読み込んでいます…",
+    "th": "กำลังโหลดบทสนทนากับผู้ขาย…",
+    "vi": "Đang tải cuộc trò chuyện với người bán…"
+  },
+  "Looking for matches…": {
+    "zh-hant": "正在尋找符合的商品…",
+    "zh-hans": "正在查找符合的商品…",
+    "ja": "条件に合う出品を探しています…",
+    "th": "กำลังค้นหารายการที่ตรงกัน…",
+    "vi": "Đang tìm tin phù hợp…"
+  },
+  "Looking for the wants you have saved…": {
+    "zh-hant": "正在尋找您儲存的需求…",
+    "zh-hans": "正在查找您保存的需求…",
+    "ja": "保存した条件を探しています…",
+    "th": "กำลังค้นหาสิ่งที่คุณบันทึกไว้…",
+    "vi": "Đang tìm các nhu cầu bạn đã lưu…"
+  },
+  "Make an offer": {
+    "zh-hant": "提出出價",
+    "zh-hans": "提出出价",
+    "ja": "オファーを出す",
+    "th": "เสนอราคา",
+    "vi": "Gửi đề nghị giá"
+  },
+  "Matched for you": {
+    "zh-hant": "為您配對",
+    "zh-hans": "为您匹配",
+    "ja": "あなたへのおすすめ",
+    "th": "จับคู่ให้คุณแล้ว",
+    "vi": "Phù hợp với bạn"
+  },
+  "Model": {
+    "zh-hant": "型號",
+    "zh-hans": "型号",
+    "ja": "型式",
+    "th": "รุ่น",
+    "vi": "Model"
+  },
+  "More details": {
+    "zh-hant": "更多細節",
+    "zh-hans": "更多细节",
+    "ja": "詳細情報",
+    "th": "รายละเอียดเพิ่มเติม",
+    "vi": "Thêm chi tiết"
+  },
+  "My wants": {
+    "zh-hant": "我的需求",
+    "zh-hans": "我的需求",
+    "ja": "探している機器",
+    "th": "สิ่งที่ฉันต้องการ",
+    "vi": "Nhu cầu của tôi"
+  },
+  "New": {
+    "zh-hant": "全新",
+    "zh-hans": "全新",
+    "ja": "新品",
+    "th": "ใหม่",
+    "vi": "Mới"
+  },
+  "New UI (in progress)": {
+    "zh-hant": "新介面（開發中）",
+    "zh-hans": "新界面（开发中）",
+    "ja": "新UI（開発中）",
+    "th": "UI ใหม่ (กำลังพัฒนา)",
+    "vi": "Giao diện mới (đang phát triển)"
+  },
+  "No bids yet": {
+    "zh-hant": "尚無出價",
+    "zh-hans": "尚无出价",
+    "ja": "入札はまだありません",
+    "th": "ยังไม่มีการเสนอราคา",
+    "vi": "Chưa có lượt trả giá"
+  },
+  "No items are attached to this batch.": {
+    "zh-hant": "這一批次尚未附加任何項目。",
+    "zh-hans": "该批次尚未附加任何项目。",
+    "ja": "このバッチにはアイテムが登録されていません。",
+    "th": "ยังไม่มีรายการใดอยู่ในชุดนี้",
+    "vi": "Lô này chưa có mục nào."
+  },
+  "No marketplace yet": {
+    "zh-hant": "尚未選擇市集",
+    "zh-hans": "尚未选择市场",
+    "ja": "マーケットプレイス未選択",
+    "th": "ยังไม่ได้เลือกตลาด",
+    "vi": "Chưa chọn sàn"
+  },
+  "No matches yet. We'll tell you the moment one arrives.": {
+    "zh-hant": "目前還沒有符合的商品。一有符合我們就通知您。",
+    "zh-hans": "目前还没有符合的商品。一有符合我们就通知您。",
+    "ja": "条件に合う出品はまだありません。見つかり次第すぐにお知らせします。",
+    "th": "ยังไม่มีรายการที่ตรงกัน เราจะแจ้งคุณทันทีที่มีรายการเข้ามา",
+    "vi": "Chưa có tin nào phù hợp. Chúng tôi sẽ báo bạn ngay khi có."
+  },
+  "No offers received yet": {
+    "zh-hant": "尚未收到任何出價",
+    "zh-hans": "尚未收到任何出价",
+    "ja": "まだオファーはありません",
+    "th": "ยังไม่ได้รับข้อเสนอ",
+    "vi": "Chưa nhận được đề nghị nào"
+  },
+  "No orders yet": {
+    "zh-hant": "尚無訂單",
+    "zh-hans": "尚无订单",
+    "ja": "注文はまだありません",
+    "th": "ยังไม่มีคำสั่งซื้อ",
+    "vi": "Chưa có đơn hàng"
+  },
+  "No photo": {
+    "zh-hant": "沒有照片",
+    "zh-hans": "没有照片",
+    "ja": "写真なし",
+    "th": "ไม่มีรูปภาพ",
+    "vi": "Không có ảnh"
+  },
+  "No scan running": {
+    "zh-hant": "目前沒有進行中的掃描",
+    "zh-hans": "目前没有进行中的扫描",
+    "ja": "実行中のスキャンはありません",
+    "th": "ไม่มีการสแกนที่กำลังทำงาน",
+    "vi": "Không có phiên quét nào đang chạy"
+  },
+  "Not set yet": {
+    "zh-hant": "尚未設定",
+    "zh-hans": "尚未设置",
+    "ja": "未設定",
+    "th": "ยังไม่ได้ตั้งค่า",
+    "vi": "Chưa thiết lập"
+  },
+  "Nothing live yet. Anything you publish shows up here with its offers.": {
+    "zh-hant": "目前沒有上架中的商品。您刊登的商品與收到的出價都會顯示在這裡。",
+    "zh-hans": "目前没有上架中的商品。您发布的商品与收到的出价都会显示在这里。",
+    "ja": "公開中の出品はまだありません。公開した出品とそのオファーがここに表示されます。",
+    "th": "ยังไม่มีประกาศที่เผยแพร่อยู่ สิ่งที่คุณลงประกาศและข้อเสนอที่ได้รับจะแสดงที่นี่",
+    "vi": "Chưa có tin nào đang hiển thị. Mọi tin bạn đăng cùng các đề nghị sẽ xuất hiện ở đây."
+  },
+  "Nothing matched that yet. Describe it in the box below and we can watch the market for it.": {
+    "zh-hant": "目前還沒有符合的結果。請在下方描述，我們會替您留意市場。",
+    "zh-hans": "目前还没有符合的结果。请在下方描述，我们会替您留意市场。",
+    "ja": "一致するものはまだありません。下の欄で内容をお知らせいただければ、市場を見張ります。",
+    "th": "ยังไม่พบรายการที่ตรงกัน อธิบายในช่องด้านล่างแล้วเราจะคอยหาให้",
+    "vi": "Chưa có kết quả nào khớp. Hãy mô tả ở ô bên dưới và chúng tôi sẽ theo dõi thị trường giúp bạn."
+  },
+  "Nothing saved yet": {
+    "zh-hant": "尚未儲存任何項目",
+    "zh-hans": "尚未保存任何项目",
+    "ja": "まだ保存されていません",
+    "th": "ยังไม่มีรายการที่บันทึกไว้",
+    "vi": "Chưa lưu mục nào"
+  },
+  "Nothing to review yet": {
+    "zh-hant": "目前沒有待確認的項目",
+    "zh-hans": "目前没有待确认的项目",
+    "ja": "確認する項目はまだありません",
+    "th": "ยังไม่มีรายการให้ตรวจสอบ",
+    "vi": "Chưa có gì để xem lại"
+  },
+  "Offers go to the seller under your name, so they know who they are dealing with.": {
+    "zh-hant": "出價會以您的名義送交賣家，讓對方知道交易對象是誰。",
+    "zh-hans": "出价会以您的名义发送给卖家，让对方知道交易对象是谁。",
+    "ja": "オファーはお客様の名義で出品者に届くため、取引相手が明確になります。",
+    "th": "ข้อเสนอจะถูกส่งถึงผู้ขายในชื่อของคุณ เพื่อให้เขารู้ว่ากำลังติดต่อกับใคร",
+    "vi": "Đề nghị được gửi tới người bán dưới tên của bạn, để họ biết đang giao dịch với ai."
+  },
+  "Offers received": {
+    "zh-hant": "收到的出價",
+    "zh-hans": "收到的出价",
+    "ja": "受け取ったオファー",
+    "th": "ข้อเสนอที่ได้รับ",
+    "vi": "Đề nghị đã nhận"
+  },
+  "Once buyers start bidding on your listings, they will show up here.": {
+    "zh-hant": "買家開始對您的商品出價後，就會顯示在這裡。",
+    "zh-hans": "买家开始对您的商品出价后，就会显示在这里。",
+    "ja": "購入希望者が入札を始めると、ここに表示されます。",
+    "th": "เมื่อผู้ซื้อเริ่มเสนอราคาสินค้าของคุณ รายการจะแสดงที่นี่",
+    "vi": "Khi người mua bắt đầu trả giá tin của bạn, chúng sẽ xuất hiện ở đây."
+  },
+  "Opening this listing…": {
+    "zh-hant": "正在開啟這筆商品…",
+    "zh-hans": "正在打开该商品…",
+    "ja": "この出品を開いています…",
+    "th": "กำลังเปิดประกาศนี้…",
+    "vi": "Đang mở tin này…"
+  },
+  "Optional · weight, size, CO₂, documents": {
+    "zh-hant": "選填 · 重量、尺寸、CO₂、文件",
+    "zh-hans": "选填 · 重量、尺寸、CO₂、文件",
+    "ja": "任意 · 重量、サイズ、CO₂、書類",
+    "th": "ไม่บังคับ · น้ำหนัก ขนาด CO₂ เอกสาร",
+    "vi": "Không bắt buộc · khối lượng, kích thước, CO₂, tài liệu"
+  },
+  "Order detail": {
+    "zh-hant": "訂單明細",
+    "zh-hans": "订单明细",
+    "ja": "注文の詳細",
+    "th": "รายละเอียดคำสั่งซื้อ",
+    "vi": "Chi tiết đơn hàng"
+  },
+  "Order status": {
+    "zh-hant": "訂單狀態",
+    "zh-hans": "订单状态",
+    "ja": "注文ステータス",
+    "th": "สถานะคำสั่งซื้อ",
+    "vi": "Trạng thái đơn hàng"
+  },
+  "Orders & requests": {
+    "zh-hant": "訂單與需求",
+    "zh-hans": "订单与需求",
+    "ja": "注文とリクエスト",
+    "th": "คำสั่งซื้อและคำขอ",
+    "vi": "Đơn hàng và yêu cầu"
+  },
+  "Photos": {
+    "zh-hant": "照片",
+    "zh-hans": "照片",
+    "ja": "写真",
+    "th": "รูปภาพ",
+    "vi": "Ảnh"
+  },
+  "Pick one or several you already have": {
+    "zh-hant": "可從現有照片選擇一張或多張",
+    "zh-hans": "可从现有照片选择一张或多张",
+    "ja": "お持ちの写真から 1 枚でも複数枚でも選べます",
+    "th": "เลือกได้ทีละรูปหรือหลายรูปจากที่มีอยู่",
+    "vi": "Chọn một hoặc nhiều ảnh bạn đã có"
+  },
+  "Placed": {
+    "zh-hant": "已下單",
+    "zh-hans": "已下单",
+    "ja": "注文済み",
+    "th": "สั่งซื้อแล้ว",
+    "vi": "Đã đặt"
+  },
+  "Point at the nameplate and we read it": {
+    "zh-hant": "對準銘牌，我們來讀取",
+    "zh-hans": "对准铭牌，我们来读取",
+    "ja": "銘板に向けるだけで読み取ります",
+    "th": "เล็งไปที่ป้ายข้อมูล แล้วเราจะอ่านให้",
+    "vi": "Hướng vào nhãn máy và chúng tôi sẽ đọc giúp bạn"
+  },
+  "Posting your request…": {
+    "zh-hant": "正在發布您的需求…",
+    "zh-hans": "正在发布您的需求…",
+    "ja": "リクエストを投稿しています…",
+    "th": "กำลังโพสต์คำขอของคุณ…",
+    "vi": "Đang đăng yêu cầu của bạn…"
+  },
+  "Pricing": {
+    "zh-hant": "定價",
+    "zh-hans": "定价",
+    "ja": "価格設定",
+    "th": "การตั้งราคา",
+    "vi": "Định giá"
+  },
+  "Products": {
+    "zh-hant": "商品",
+    "zh-hans": "商品",
+    "ja": "商品",
+    "th": "สินค้า",
+    "vi": "Sản phẩm"
+  },
+  "Profile information": {
+    "zh-hant": "個人資料",
+    "zh-hans": "个人资料",
+    "ja": "プロフィール情報",
+    "th": "ข้อมูลโปรไฟล์",
+    "vi": "Thông tin hồ sơ"
+  },
+  "Reading your equipment…": {
+    "zh-hant": "正在辨識您的設備…",
+    "zh-hans": "正在识别您的设备…",
+    "ja": "機器を読み取っています…",
+    "th": "กำลังอ่านข้อมูลเครื่องของคุณ…",
+    "vi": "Đang đọc thiết bị của bạn…"
+  },
+  "Rearrange": {
+    "zh-hant": "重新排序",
+    "zh-hans": "重新排序",
+    "ja": "並べ替え",
+    "th": "จัดเรียงใหม่",
+    "vi": "Sắp xếp lại"
+  },
+  "Register with us to list equipment, save drafts and message buyers.": {
+    "zh-hant": "註冊後即可刊登設備、儲存草稿並與買家聯絡。",
+    "zh-hans": "注册后即可发布设备、保存草稿并与买家联系。",
+    "ja": "登録すると、機器の出品、下書きの保存、購入希望者とのやり取りができます。",
+    "th": "ลงทะเบียนกับเราเพื่อลงขายเครื่องจักร บันทึกฉบับร่าง และส่งข้อความถึงผู้ซื้อ",
+    "vi": "Đăng ký với chúng tôi để đăng bán thiết bị, lưu bản nháp và nhắn tin cho người mua."
+  },
+  "Registered Companies": {
+    "zh-hant": "已註冊公司",
+    "zh-hans": "已注册公司",
+    "ja": "登録企業",
+    "th": "บริษัทที่ลงทะเบียน",
+    "vi": "Công ty đã đăng ký"
+  },
+  "Request posted — matches found.": {
+    "zh-hant": "需求已發布，已找到配對。",
+    "zh-hans": "需求已发布，已找到匹配。",
+    "ja": "リクエストを投稿しました。マッチが見つかりました。",
+    "th": "โพสต์คำขอแล้ว — พบรายการที่ตรงกัน",
+    "vi": "Đã đăng yêu cầu — đã tìm thấy kết quả phù hợp."
+  },
+  "Review your item": {
+    "zh-hant": "確認您的商品",
+    "zh-hans": "确认您的商品",
+    "ja": "内容を確認する",
+    "th": "ตรวจสอบรายการของคุณ",
+    "vi": "Xem lại mục của bạn"
+  },
+  "Save the machine you need and we will check every new listing against it — the model, the budget, the country. You only need an account so we know who to tell.": {
+    "zh-hant": "儲存您需要的機器，我們會以型號、預算與國家比對每一筆新商品。只需要一個帳戶，我們才知道該通知誰。",
+    "zh-hans": "保存您需要的机器，我们会以型号、预算与国家比对每一笔新商品。只需要一个账户，我们才知道该通知谁。",
+    "ja": "必要な機器を保存すると、機種・予算・国で新着をすべて照合します。お知らせ先が分かるようアカウントだけご用意ください。",
+    "th": "บันทึกเครื่องที่คุณต้องการ แล้วเราจะเทียบประกาศใหม่ทุกรายการ ทั้งรุ่น งบประมาณ และประเทศ คุณเพียงต้องมีบัญชีเพื่อให้เรารู้ว่าจะแจ้งใคร",
+    "vi": "Lưu loại máy bạn cần và chúng tôi sẽ đối chiếu mọi tin mới — theo model, ngân sách và quốc gia. Bạn chỉ cần một tài khoản để chúng tôi biết báo cho ai."
+  },
+  "Save what you're looking for and we'll match it against equipment as it arrives. Needs an account so we know who to notify.": {
+    "zh-hant": "儲存您要找的設備，新品上架時我們會為您配對。需要帳戶，我們才知道要通知誰。",
+    "zh-hans": "保存您要找的设备，新品上架时我们会为您匹配。需要账户，我们才知道通知谁。",
+    "ja": "お探しの条件を保存しておくと、新しく入荷した機器と自動でマッチングします。通知先を把握するためアカウントが必要です。",
+    "th": "บันทึกสิ่งที่คุณกำลังมองหา แล้วเราจะจับคู่กับเครื่องจักรที่เข้ามาใหม่ ต้องมีบัญชีเพื่อให้เรารู้ว่าจะแจ้งเตือนใคร",
+    "vi": "Lưu thiết bị bạn đang tìm và chúng tôi sẽ đối chiếu với hàng mới về. Cần có tài khoản để chúng tôi biết thông báo cho ai."
+  },
+  "Saved wants and their matches are not available in this build. Everything else — browsing, search and the assistant — still works.": {
+    "zh-hant": "此版本暫不提供儲存需求與配對。其他功能 — 瀏覽、搜尋與助理 — 都可正常使用。",
+    "zh-hans": "此版本暂不提供保存需求与匹配。其他功能 — 浏览、搜索与助理 — 都可正常使用。",
+    "ja": "このビルドでは保存した条件とそのマッチングはご利用いただけません。閲覧・検索・アシスタントは通常どおり使えます。",
+    "th": "เวอร์ชันนี้ยังไม่รองรับการบันทึกสิ่งที่ต้องการและการจับคู่ ส่วนอื่น ๆ — การเรียกดู ค้นหา และผู้ช่วย — ยังใช้งานได้ตามปกติ",
+    "vi": "Bản dựng này chưa hỗ trợ lưu nhu cầu và ghép tin. Mọi thứ khác — duyệt, tìm kiếm và trợ lý — vẫn hoạt động."
+  },
+  "Saving…": {
+    "zh-hant": "儲存中…",
+    "zh-hans": "保存中…",
+    "ja": "保存中…",
+    "th": "กำลังบันทึก…",
+    "vi": "Đang lưu…"
+  },
+  "Selling": {
+    "zh-hant": "出售",
+    "zh-hans": "出售",
+    "ja": "売る",
+    "th": "ขาย",
+    "vi": "Bán"
+  },
+  "Ship to": {
+    "zh-hant": "送達地點",
+    "zh-hans": "送达地点",
+    "ja": "配送先",
+    "th": "จัดส่งไปที่",
+    "vi": "Giao đến"
+  },
+  "Shipment": {
+    "zh-hant": "運送",
+    "zh-hans": "运送",
+    "ja": "配送",
+    "th": "การจัดส่ง",
+    "vi": "Vận chuyển"
+  },
+  "Sign in to manage your listings, saved searches and messages. You can keep browsing equipment without an account.": {
+    "zh-hant": "登入即可管理您的商品、已儲存的搜尋和訊息。未註冊也能繼續瀏覽設備。",
+    "zh-hans": "登录即可管理您的商品、已保存的搜索和消息。未注册也能继续浏览设备。",
+    "ja": "ログインすると、出品・保存した検索条件・メッセージを管理できます。アカウントがなくても機器の閲覧は続けられます。",
+    "th": "ลงชื่อเข้าใช้เพื่อจัดการสินค้า การค้นหาที่บันทึกไว้ และข้อความของคุณ คุณยังดูเครื่องจักรต่อได้โดยไม่ต้องมีบัญชี",
+    "vi": "Đăng nhập để quản lý tin đăng, tìm kiếm đã lưu và tin nhắn của bạn. Bạn vẫn có thể xem thiết bị mà không cần tài khoản."
+  },
+  "Sign in to message sellers": {
+    "zh-hant": "登入以聯絡賣家",
+    "zh-hans": "登录以联系卖家",
+    "ja": "ログインして出品者に連絡",
+    "th": "เข้าสู่ระบบเพื่อส่งข้อความถึงผู้ขาย",
+    "vi": "Đăng nhập để nhắn tin cho người bán"
+  },
+  "Sign in to save a want": {
+    "zh-hant": "登入以儲存需求",
+    "zh-hans": "登录以保存需求",
+    "ja": "ログインして条件を保存",
+    "th": "เข้าสู่ระบบเพื่อบันทึกสิ่งที่ต้องการ",
+    "vi": "Đăng nhập để lưu nhu cầu"
+  },
+  "Sign in to sell, save and message": {
+    "zh-hant": "登入即可刊登、收藏與聯絡",
+    "zh-hans": "登录即可发布、收藏与联系",
+    "ja": "ログインすると出品・保存・メッセージができます",
+    "th": "เข้าสู่ระบบเพื่อขาย บันทึก และส่งข้อความ",
+    "vi": "Đăng nhập để bán, lưu và nhắn tin"
+  },
+  "Snap a photo": {
+    "zh-hant": "拍照",
+    "zh-hans": "拍照",
+    "ja": "写真を撮る",
+    "th": "ถ่ายรูป",
+    "vi": "Chụp ảnh"
+  },
+  "Snap a photo of your equipment": {
+    "zh-hant": "拍一張設備照片",
+    "zh-hans": "拍一张设备照片",
+    "ja": "機器の写真を撮る",
+    "th": "ถ่ายรูปเครื่องจักรของคุณ",
+    "vi": "Chụp ảnh thiết bị của bạn"
+  },
+  "Start": {
+    "zh-hant": "開始",
+    "zh-hans": "开始",
+    "ja": "開始",
+    "th": "เริ่ม",
+    "vi": "Bắt đầu"
+  },
+  "Start a scan and this screen follows it live — each item appears as the AI reads it.": {
+    "zh-hant": "開始掃描後，這個畫面會即時跟著跑 — AI 每讀出一項就會出現一項。",
+    "zh-hans": "开始扫描后，这个画面会实时跟着更新 — AI 每读出一项就会出现一项。",
+    "ja": "スキャンを開始すると、この画面がリアルタイムで追従します — AI が読み取るたびに項目が増えていきます。",
+    "th": "เริ่มสแกนแล้วหน้านี้จะอัปเดตแบบเรียลไทม์ — แต่ละรายการจะปรากฏทันทีที่ AI อ่านได้",
+    "vi": "Bắt đầu quét và màn hình này sẽ cập nhật trực tiếp — mỗi mục hiện ra ngay khi AI đọc được."
+  },
+  "Status": {
+    "zh-hant": "狀態",
+    "zh-hans": "状态",
+    "ja": "ステータス",
+    "th": "สถานะ",
+    "vi": "Trạng thái"
+  },
+  "Step": {
+    "zh-hant": "級距",
+    "zh-hans": "加价幅度",
+    "ja": "刻み幅",
+    "th": "ขั้นราคา",
+    "vi": "Bước giá"
+  },
+  "Street, district, city": {
+    "zh-hant": "街道、區、城市",
+    "zh-hans": "街道、区、城市",
+    "ja": "番地・地区・市区町村",
+    "th": "ถนน เขต/อำเภอ จังหวัด",
+    "vi": "Đường, quận/huyện, thành phố"
+  },
+  "Tap the bookmark on any lot to keep an eye on it. Saved items show up here.": {
+    "zh-hant": "在任一商品上點書籤即可追蹤，儲存的項目會顯示在這裡。",
+    "zh-hans": "在任一商品上点书签即可关注，保存的项目会显示在这里。",
+    "ja": "気になる出品のブックマークを押すと保存され、ここに表示されます。",
+    "th": "แตะที่สัญลักษณ์บุ๊กมาร์กบนรายการใดก็ได้เพื่อติดตาม รายการที่บันทึกไว้จะแสดงที่นี่",
+    "vi": "Nhấn dấu trang trên bất kỳ lô nào để theo dõi. Các mục đã lưu sẽ hiện ở đây."
+  },
+  "Target Price": {
+    "zh-hant": "目標價",
+    "zh-hans": "目标价",
+    "ja": "目標価格",
+    "th": "ราคาเป้าหมาย",
+    "vi": "Giá mục tiêu"
+  },
+  "Tell us the machine you are after — the model, a budget, where you would take it — and we will watch every new listing for you.": {
+    "zh-hant": "告訴我們您要找的機器 — 型號、預算、運送地點 — 之後每一筆新商品我們都會替您留意。",
+    "zh-hans": "告诉我们您要找的机器 — 型号、预算、运送地点 — 之后每一笔新商品我们都会替您留意。",
+    "ja": "お探しの機器を教えてください — 機種、ご予算、搬入先 — 新しい出品はすべてこちらで確認します。",
+    "th": "บอกเราว่าคุณต้องการเครื่องแบบไหน — รุ่น งบประมาณ และปลายทาง — แล้วเราจะคอยดูประกาศใหม่ทุกรายการให้คุณ",
+    "vi": "Hãy cho chúng tôi biết bạn cần máy nào — model, ngân sách, nơi nhận hàng — và chúng tôi sẽ theo dõi mọi tin mới giúp bạn."
+  },
+  "Tell us what you are looking for": {
+    "zh-hant": "告訴我們您在找什麼",
+    "zh-hans": "告诉我们您在找什么",
+    "ja": "お探しのものを教えてください",
+    "th": "บอกเราว่าคุณกำลังมองหาอะไร",
+    "vi": "Cho chúng tôi biết bạn đang tìm gì"
+  },
+  "Tell us what you need": {
+    "zh-hant": "告訴我們您的需求",
+    "zh-hans": "告诉我们您的需求",
+    "ja": "ご希望の機器をお知らせください",
+    "th": "บอกเราว่าคุณต้องการอะไร",
+    "vi": "Cho chúng tôi biết bạn cần gì"
+  },
+  "That listing did not load. Go back to your listings and open it again.": {
+    "zh-hant": "這筆商品未能載入。請回到我的商品再開啟一次。",
+    "zh-hans": "该商品未能加载。请回到我的商品再打开一次。",
+    "ja": "この出品を読み込めませんでした。出品一覧に戻ってもう一度開いてください。",
+    "th": "โหลดประกาศนี้ไม่สำเร็จ กลับไปที่รายการสินค้าของคุณแล้วเปิดใหม่อีกครั้ง",
+    "vi": "Không tải được tin này. Hãy quay lại danh sách tin của bạn và mở lại."
+  },
+  "That one came back empty. Ask again in the box below — nothing you typed was lost.": {
+    "zh-hant": "這次沒有得到回覆。請在下方再問一次 — 您輸入的內容都還在。",
+    "zh-hans": "这次没有得到回复。请在下方再问一次 — 您输入的内容都还在。",
+    "ja": "回答が空のまま返ってきました。下の入力欄からもう一度お尋ねください。入力内容は残っています。",
+    "th": "ครั้งนี้ไม่มีคำตอบกลับมา ลองถามอีกครั้งในช่องด้านล่าง — ข้อความที่คุณพิมพ์ยังอยู่ครบ",
+    "vi": "Lần này không có phản hồi. Hãy hỏi lại ở ô bên dưới — nội dung bạn nhập vẫn còn."
+  },
+  "That order did not load. Go back to Orders & requests and open it again.": {
+    "zh-hant": "這筆訂單未能載入。請回到「訂單與需求」再開啟一次。",
+    "zh-hans": "该订单未能加载。请回到「订单与需求」再打开一次。",
+    "ja": "この注文を読み込めませんでした。「注文とリクエスト」に戻ってもう一度開いてください。",
+    "th": "โหลดคำสั่งซื้อนี้ไม่สำเร็จ กลับไปที่ คำสั่งซื้อและคำขอ แล้วเปิดใหม่อีกครั้ง",
+    "vi": "Không tải được đơn hàng này. Hãy quay lại Đơn hàng và yêu cầu rồi mở lại."
+  },
+  "The connection dropped on the way. Nothing is lost — your conversations are on the server; this is only the list of them.": {
+    "zh-hant": "連線中斷了。沒有任何內容遺失 — 對話都在伺服器上，無法顯示的只是清單。",
+    "zh-hans": "连接中断了。没有任何内容丢失 — 对话都在服务器上，无法显示的只是列表。",
+    "ja": "通信が途切れました。失われたものはありません — やり取りはサーバーに残っており、読み込めなかったのは一覧だけです。",
+    "th": "การเชื่อมต่อหลุดระหว่างทาง ไม่มีอะไรหายไป — บทสนทนาอยู่บนเซิร์ฟเวอร์ ที่โหลดไม่ได้คือรายการแสดงผลเท่านั้น",
+    "vi": "Kết nối bị gián đoạn. Không mất gì cả — cuộc trò chuyện vẫn nằm trên máy chủ; chỉ danh sách hiển thị chưa tải được."
+  },
+  "The connection dropped on the way. Your saved wants are safe — this is only the list of them.": {
+    "zh-hant": "連線中斷了。您儲存的需求都還在 — 無法顯示的只是清單。",
+    "zh-hans": "连接中断了。您保存的需求都还在 — 无法显示的只是列表。",
+    "ja": "通信が途切れました。保存した条件は失われていません — 読み込めなかったのは一覧だけです。",
+    "th": "การเชื่อมต่อหลุดระหว่างทาง สิ่งที่คุณบันทึกไว้ยังอยู่ครบ — ที่โหลดไม่ได้คือรายการแสดงผลเท่านั้น",
+    "vi": "Kết nối bị gián đoạn. Nhu cầu bạn đã lưu vẫn an toàn — chỉ danh sách hiển thị chưa tải được."
+  },
+  "The scan reads the nameplate off a photo, so it needs the camera. Nothing is uploaded until you review what it found.": {
+    "zh-hant": "掃描是從照片讀取銘牌，因此需要相機權限。在您確認結果之前，不會上傳任何內容。",
+    "zh-hans": "扫描是从照片读取铭牌，因此需要相机权限。在您确认结果之前，不会上传任何内容。",
+    "ja": "スキャンは写真から銘板を読み取るため、カメラが必要です。結果をご確認いただくまで何もアップロードされません。",
+    "th": "การสแกนอ่านป้ายข้อมูลจากรูปถ่าย จึงต้องใช้กล้อง จะยังไม่มีการอัปโหลดใด ๆ จนกว่าคุณจะตรวจผลลัพธ์",
+    "vi": "Quá trình quét đọc nhãn máy từ ảnh nên cần quyền camera. Không có gì được tải lên cho đến khi bạn xem lại kết quả."
+  },
+  "This is where a scan lands once the AI has read it. Scan an item and the four review steps open with it.": {
+    "zh-hant": "AI 讀取完成後，掃描結果會出現在這裡。掃描一項商品，四個確認步驟就會隨之展開。",
+    "zh-hans": "AI 读取完成后，扫描结果会出现在这里。扫描一项商品，四个确认步骤就会随之展开。",
+    "ja": "AI の読み取りが終わると、スキャン結果はここに届きます。1 件スキャンすると、4 つの確認ステップが開きます。",
+    "th": "ผลการสแกนจะมาอยู่ที่นี่เมื่อ AI อ่านเสร็จ สแกนสินค้าหนึ่งรายการแล้วขั้นตอนตรวจสอบทั้งสี่จะเปิดขึ้นพร้อมกัน",
+    "vi": "Kết quả quét sẽ xuất hiện ở đây sau khi AI đọc xong. Quét một món và bốn bước kiểm tra sẽ mở ra cùng nó."
+  },
+  "This order was cancelled.": {
+    "zh-hant": "這筆訂單已取消。",
+    "zh-hans": "该订单已取消。",
+    "ja": "この注文はキャンセルされました。",
+    "th": "คำสั่งซื้อนี้ถูกยกเลิกแล้ว",
+    "vi": "Đơn hàng này đã bị hủy."
+  },
+  "Total": {
+    "zh-hant": "合計",
+    "zh-hans": "合计",
+    "ja": "合計",
+    "th": "รวม",
+    "vi": "Tổng"
+  },
+  "Total Bids": {
+    "zh-hant": "出價總數",
+    "zh-hans": "出价总数",
+    "ja": "入札総数",
+    "th": "จำนวนการประมูลทั้งหมด",
+    "vi": "Tổng lượt trả giá"
+  },
+  "Try asking": {
+    "zh-hant": "試著問",
+    "zh-hans": "试着问",
+    "ja": "こう聞いてみる",
+    "th": "ลองถามว่า",
+    "vi": "Thử hỏi"
+  },
+  "Type": {
+    "zh-hant": "類型",
+    "zh-hans": "类型",
+    "ja": "種類",
+    "th": "ประเภท",
+    "vi": "Loại"
+  },
+  "Type the spec and we watch the market for it.": {
+    "zh-hant": "輸入規格，我們就替您留意市場。",
+    "zh-hans": "输入规格，我们就替您留意市场。",
+    "ja": "仕様を入力いただければ、市場を見張ります。",
+    "th": "พิมพ์สเปกที่ต้องการ แล้วเราจะคอยติดตามตลาดให้",
+    "vi": "Nhập thông số và chúng tôi sẽ theo dõi thị trường giúp bạn."
+  },
+  "Upload a spec sheet": {
+    "zh-hant": "上傳規格表",
+    "zh-hans": "上传规格表",
+    "ja": "仕様書をアップロード",
+    "th": "อัปโหลดเอกสารสเปก",
+    "vi": "Tải lên bảng thông số"
+  },
+  "Upload a spec sheet or invoice (PDF)": {
+    "zh-hant": "上傳規格表或發票（PDF）",
+    "zh-hans": "上传规格表或发票（PDF）",
+    "ja": "仕様書または請求書をアップロード（PDF）",
+    "th": "อัปโหลดเอกสารสเปกหรือใบแจ้งหนี้ (PDF)",
+    "vi": "Tải lên bảng thông số hoặc hóa đơn (PDF)"
+  },
+  "Uploading & detecting": {
+    "zh-hant": "上傳並辨識中",
+    "zh-hans": "上传并识别中",
+    "ja": "アップロード・解析中",
+    "th": "กำลังอัปโหลดและวิเคราะห์",
+    "vi": "Đang tải lên và nhận diện"
+  },
+  "Uploading and detecting": {
+    "zh-hant": "上傳並辨識中",
+    "zh-hans": "上传并识别中",
+    "ja": "アップロードと解析中",
+    "th": "กำลังอัปโหลดและตรวจจับ",
+    "vi": "Đang tải lên và nhận dạng"
+  },
+  "Used (Functional)": {
+    "zh-hant": "二手（功能正常）",
+    "zh-hans": "二手（功能正常）",
+    "ja": "中古（稼働可）",
+    "th": "มือสอง (ใช้งานได้)",
+    "vi": "Đã qua sử dụng (hoạt động tốt)"
+  },
+  "Verification": {
+    "zh-hant": "身分驗證",
+    "zh-hans": "身份验证",
+    "ja": "本人確認",
+    "th": "การยืนยันตัวตน",
+    "vi": "Xác minh"
+  },
+  "Verification progress": {
+    "zh-hant": "驗證進度",
+    "zh-hans": "验证进度",
+    "ja": "認証の進捗",
+    "th": "ความคืบหน้าการยืนยัน",
+    "vi": "Tiến trình xác minh"
+  },
+  "View on the web": {
+    "zh-hant": "在網頁上檢視",
+    "zh-hans": "在网页上查看",
+    "ja": "ウェブで表示",
+    "th": "ดูบนเว็บ",
+    "vi": "Xem trên web"
+  },
+  "WANTED · WTB": {
+    "zh-hant": "徵求 · WTB",
+    "zh-hans": "求购 · WTB",
+    "ja": "買います · WTB",
+    "th": "ต้องการซื้อ · WTB",
+    "vi": "Cần mua · WTB"
+  },
+  "Wants are switched off": {
+    "zh-hant": "需求功能已關閉",
+    "zh-hans": "需求功能已关闭",
+    "ja": "この機能は現在オフです",
+    "th": "ฟีเจอร์สิ่งที่ต้องการถูกปิดอยู่",
+    "vi": "Tính năng nhu cầu đang tắt"
+  },
+  "Waste Disposal": {
+    "zh-hant": "廢棄處理",
+    "zh-hans": "废弃处理",
+    "ja": "廃棄処分",
+    "th": "กำจัดของเสีย",
+    "vi": "Xử lý phế thải"
+  },
+  "We could not load your messages": {
+    "zh-hant": "無法載入您的訊息",
+    "zh-hans": "无法加载您的消息",
+    "ja": "メッセージを読み込めませんでした",
+    "th": "ไม่สามารถโหลดข้อความของคุณได้",
+    "vi": "Không tải được tin nhắn của bạn"
+  },
+  "We could not load your verification status just now.": {
+    "zh-hant": "目前無法載入您的驗證狀態。",
+    "zh-hans": "目前无法加载您的验证状态。",
+    "ja": "現在、認証ステータスを読み込めませんでした。",
+    "th": "ขณะนี้ไม่สามารถโหลดสถานะการยืนยันของคุณได้",
+    "vi": "Hiện chưa tải được trạng thái xác minh của bạn."
+  },
+  "We could not load your wants": {
+    "zh-hant": "無法載入您的需求",
+    "zh-hans": "无法加载您的需求",
+    "ja": "探している機器を読み込めませんでした",
+    "th": "ไม่สามารถโหลดสิ่งที่คุณต้องการได้",
+    "vi": "Không tải được nhu cầu của bạn"
+  },
+  "We could not place this one — a listing needs a category.": {
+    "zh-hant": "無法為這一項歸類 — 刊登商品必須有分類。",
+    "zh-hans": "无法为这一项归类 — 发布商品必须有分类。",
+    "ja": "この品目を分類できませんでした — 出品にはカテゴリーが必要です。",
+    "th": "ยังจัดหมวดหมู่รายการนี้ไม่ได้ — การลงประกาศต้องมีหมวดหมู่",
+    "vi": "Chưa phân loại được mục này — tin đăng cần có danh mục."
+  },
+  "We did not get a resale range for this item. Set your own price below.": {
+    "zh-hant": "這一項沒有取得轉售價格區間。請在下方自行設定價格。",
+    "zh-hans": "这一项没有取得转售价格区间。请在下方自行设置价格。",
+    "ja": "この品目の再販価格レンジを取得できませんでした。下で価格をご自身で設定してください。",
+    "th": "ไม่ได้ช่วงราคาขายต่อสำหรับรายการนี้ กรุณาตั้งราคาเองด้านล่าง",
+    "vi": "Chưa có khoảng giá bán lại cho mục này. Hãy tự đặt giá bên dưới."
+  },
+  "We watch new listings and tell you the moment one fits.": {
+    "zh-hant": "我們會持續留意新上架的商品，一有符合就通知您。",
+    "zh-hans": "我们会持续留意新上架的商品，一有符合就通知您。",
+    "ja": "新しい出品を見張り、条件に合うものが出たらすぐにお知らせします。",
+    "th": "เราจะคอยดูประกาศใหม่ และแจ้งคุณทันทีที่มีรายการตรงกับที่ต้องการ",
+    "vi": "Chúng tôi theo dõi tin mới và báo bạn ngay khi có tin phù hợp."
+  },
+  "What it is, what condition it is in, what is included.": {
+    "zh-hant": "這是什麼、狀況如何、包含哪些配件。",
+    "zh-hans": "这是什么、状况如何、包含哪些配件。",
+    "ja": "何か、状態はどうか、何が付属するか。",
+    "th": "คืออะไร สภาพเป็นอย่างไร มีอะไรมาด้วยบ้าง",
+    "vi": "Đây là gì, tình trạng ra sao, gồm những gì."
+  },
+  "When a buyer makes an offer on one of your listings, it will show up here.": {
+    "zh-hant": "當買家對您的某筆商品出價時，就會顯示在這裡。",
+    "zh-hans": "当买家对您的某笔商品出价时，就会显示在这里。",
+    "ja": "購入希望者があなたの出品にオファーを出すと、ここに表示されます。",
+    "th": "เมื่อมีผู้ซื้อเสนอราคาสินค้าของคุณ รายการจะแสดงที่นี่",
+    "vi": "Khi người mua đưa ra đề nghị cho tin của bạn, nó sẽ xuất hiện ở đây."
+  },
+  "When you ask a seller about a lot — shipping, condition, what it comes with — the thread appears here and stays here.": {
+    "zh-hant": "當您向賣家詢問商品 — 運送、狀況、配件 — 對話會出現在這裡並保留下來。",
+    "zh-hans": "当您向卖家询问商品 — 运送、状况、配件 — 对话会出现在这里并保留下来。",
+    "ja": "出品者に配送・状態・付属品などを質問すると、そのスレッドがここに表示され、残り続けます。",
+    "th": "เมื่อคุณสอบถามผู้ขายเกี่ยวกับสินค้า — การจัดส่ง สภาพ อุปกรณ์ที่มาด้วย — บทสนทนาจะปรากฏและเก็บไว้ที่นี่",
+    "vi": "Khi bạn hỏi người bán về một lô hàng — vận chuyển, tình trạng, phụ kiện kèm theo — cuộc trò chuyện sẽ xuất hiện và được lưu tại đây."
+  },
+  "You&rsquo;re all caught up — nothing needs action right now.": {
+    "zh-hant": "目前都處理完了 — 沒有待辦事項。",
+    "zh-hans": "目前都处理完了 — 没有待办事项。",
+    "ja": "対応が必要なものはありません。",
+    "th": "จัดการครบแล้ว — ตอนนี้ยังไม่มีอะไรต้องทำ",
+    "vi": "Bạn đã xử lý hết — hiện chưa có việc nào cần làm."
+  },
+  "You're live — and already matched.": {
+    "zh-hant": "已上架，而且已經配對成功。",
+    "zh-hans": "已上架，而且已经匹配成功。",
+    "ja": "公開しました。さっそくマッチが見つかりました。",
+    "th": "ประกาศขึ้นแล้ว — และพบคู่ที่ตรงกันแล้ว",
+    "vi": "Đã đăng — và đã có kết quả phù hợp."
+  },
+  "Your account": {
+    "zh-hant": "您的帳戶",
+    "zh-hans": "您的账户",
+    "ja": "アカウント",
+    "th": "บัญชีของคุณ",
+    "vi": "Tài khoản của bạn"
+  },
+  "Your alerts": {
+    "zh-hant": "您的通知",
+    "zh-hans": "您的通知",
+    "ja": "通知",
+    "th": "การแจ้งเตือนของคุณ",
+    "vi": "Thông báo của bạn"
+  },
+  "Your bids did not load.": {
+    "zh-hant": "無法載入您的出價。",
+    "zh-hans": "无法加载您的出价。",
+    "ja": "入札を読み込めませんでした。",
+    "th": "โหลดการเสนอราคาของคุณไม่สำเร็จ",
+    "vi": "Không tải được lượt trả giá của bạn."
+  },
+  "Your bids did not load. Pull to try again.": {
+    "zh-hant": "無法載入您的出價。下拉可重試。",
+    "zh-hans": "无法加载您的出价。下拉可重试。",
+    "ja": "入札を読み込めませんでした。引っ張って再試行してください。",
+    "th": "โหลดการเสนอราคาไม่สำเร็จ ดึงลงเพื่อลองใหม่",
+    "vi": "Không tải được lượt trả giá. Kéo xuống để thử lại."
+  },
+  "Your conversations live here": {
+    "zh-hant": "您的對話都在這裡",
+    "zh-hans": "您的对话都在这里",
+    "ja": "やり取りはここに表示されます",
+    "th": "บทสนทนาของคุณอยู่ที่นี่",
+    "vi": "Cuộc trò chuyện của bạn ở đây"
+  },
+  "Your drafts": {
+    "zh-hant": "您的草稿",
+    "zh-hans": "您的草稿",
+    "ja": "下書き",
+    "th": "ฉบับร่างของคุณ",
+    "vi": "Bản nháp của bạn"
+  },
+  "Your inspections did not load.": {
+    "zh-hant": "無法載入您的驗機紀錄。",
+    "zh-hans": "无法加载您的验机记录。",
+    "ja": "点検の記録を読み込めませんでした。",
+    "th": "โหลดรายการตรวจสอบของคุณไม่สำเร็จ",
+    "vi": "Không tải được các lần kiểm định của bạn."
+  },
+  "Your listings, drafts, offers and messages live behind an account. Browsing and search stay open either way.": {
+    "zh-hant": "您的商品、草稿、出價與訊息需登入後才能使用；瀏覽與搜尋則隨時開放。",
+    "zh-hans": "您的商品、草稿、出价与消息需登录后才能使用；浏览与搜索则随时开放。",
+    "ja": "出品・下書き・オファー・メッセージはアカウントが必要です。閲覧と検索はログインなしでもご利用いただけます。",
+    "th": "ประกาศ ฉบับร่าง ข้อเสนอ และข้อความของคุณต้องเข้าสู่ระบบจึงจะใช้ได้ ส่วนการเรียกดูและค้นหาเปิดให้ใช้เสมอ",
+    "vi": "Tin đăng, bản nháp, đề nghị và tin nhắn của bạn cần có tài khoản. Duyệt và tìm kiếm luôn mở cho mọi người."
+  },
+  "Your messages": {
+    "zh-hant": "您的訊息",
+    "zh-hans": "您的消息",
+    "ja": "メッセージ",
+    "th": "ข้อความของคุณ",
+    "vi": "Tin nhắn của bạn"
+  },
+  "Your offers did not load. Pull to try again.": {
+    "zh-hant": "無法載入您收到的出價。下拉可重試。",
+    "zh-hans": "无法加载您收到的出价。下拉可重试。",
+    "ja": "オファーを読み込めませんでした。引っ張って再試行してください。",
+    "th": "โหลดข้อเสนอไม่สำเร็จ ดึงลงเพื่อลองใหม่",
+    "vi": "Không tải được đề nghị. Kéo xuống để thử lại."
+  },
+  "Your orders did not load. Pull to try again.": {
+    "zh-hant": "無法載入您的訂單。下拉可重試。",
+    "zh-hans": "无法加载您的订单。下拉可重试。",
+    "ja": "注文を読み込めませんでした。引っ張って再試行してください。",
+    "th": "โหลดคำสั่งซื้อไม่สำเร็จ ดึงลงเพื่อลองใหม่",
+    "vi": "Không tải được đơn hàng. Kéo xuống để thử lại."
+  },
+  "Your turn — payment due": {
+    "zh-hant": "輪到您了 — 待付款",
+    "zh-hans": "轮到您了 — 待付款",
+    "ja": "お客様の番です — お支払いをお願いします",
+    "th": "ถึงคิวคุณ — รอการชำระเงิน",
+    "vi": "Đến lượt bạn — cần thanh toán"
+  },
+  "Your wants did not load. Tap Try again — nothing you saved has been lost.": {
+    "zh-hant": "無法載入您的需求。請點「再試一次」— 您儲存的內容都還在。",
+    "zh-hans": "无法加载您的需求。请点「再试一次」— 您保存的内容都还在。",
+    "ja": "条件を読み込めませんでした。「もう一度試す」を押してください — 保存した内容は失われていません。",
+    "th": "โหลดสิ่งที่คุณต้องการไม่สำเร็จ แตะ ลองอีกครั้ง — ข้อมูลที่บันทึกไว้ยังอยู่ครบ",
+    "vi": "Không tải được nhu cầu của bạn. Hãy nhấn Thử lại — không có gì bị mất."
+  },
+  "Your watchlist did not load.": {
+    "zh-hant": "無法載入您的追蹤清單。",
+    "zh-hans": "无法加载您的关注列表。",
+    "ja": "ウォッチリストを読み込めませんでした。",
+    "th": "โหลดรายการที่ติดตามไม่สำเร็จ",
+    "vi": "Không tải được danh sách theo dõi."
+  },
+  "You’re all caught up — nothing needs action right now.": {
+    "zh-hant": "目前都處理完了 — 沒有待辦事項。",
+    "zh-hans": "目前都处理完了 — 没有待办事项。",
+    "ja": "対応が必要なものはありません。",
+    "th": "จัดการครบแล้ว — ตอนนี้ยังไม่มีอะไรต้องทำ",
+    "vi": "Bạn đã xử lý hết — hiện chưa có việc nào cần làm."
+  },
+  "e.g. 120 × 60 × 90 cm": {
+    "zh-hant": "例如：120 × 60 × 90 公分",
+    "zh-hans": "例如：120 × 60 × 90 厘米",
+    "ja": "例：120 × 60 × 90 cm",
+    "th": "เช่น 120 × 60 × 90 ซม.",
+    "vi": "Ví dụ: 120 × 60 × 90 cm"
+  },
+  "e.g. Laboratory centrifuge": {
+    "zh-hant": "例如：實驗室離心機",
+    "zh-hans": "例如：实验室离心机",
+    "ja": "例：実験用遠心分離機",
+    "th": "เช่น เครื่องปั่นเหวี่ยงในห้องปฏิบัติการ",
+    "vi": "Ví dụ: Máy ly tâm phòng thí nghiệm"
+  },
+  "e.g. Need an Agilent 1260 HPLC with DAD, budget $18k…": {
+    "zh-hant": "例如：需要一台 Agilent 1260 HPLC（含 DAD），預算 $18k…",
+    "zh-hans": "例如：需要一台 Agilent 1260 HPLC（含 DAD），预算 $18k…",
+    "ja": "例：DAD付きのAgilent 1260 HPLCが必要、予算$18k…",
+    "th": "เช่น ต้องการ Agilent 1260 HPLC พร้อม DAD งบ $18k…",
+    "vi": "Ví dụ: Cần Agilent 1260 HPLC có DAD, ngân sách $18k…"
+  },
+  "or browse the open lots": {
+    "zh-hant": "或瀏覽目前開放的商品",
+    "zh-hans": "或浏览目前开放的商品",
+    "ja": "または公開中の出品を見る",
+    "th": "หรือดูรายการที่เปิดอยู่",
+    "vi": "hoặc duyệt các lô đang mở"
+  },
+  "−80°C Ultra-Low Freezer (upright)": {
+    "zh-hant": "−80°C 超低溫冷凍櫃（直立式）",
+    "zh-hans": "−80°C 超低温冰箱（立式）",
+    "ja": "−80°C 超低温フリーザー（縦型）",
+    "th": "ตู้แช่แข็งอุณหภูมิต่ำพิเศษ −80°C (แบบตั้ง)",
+    "vi": "Tủ đông siêu lạnh −80°C (dạng đứng)"
+  },
+  "−80°C freezer": {
+    "zh-hant": "−80°C 冷凍櫃",
+    "zh-hans": "−80°C 冰箱",
+    "ja": "−80°C フリーザー",
+    "th": "ตู้แช่แข็ง −80°C",
+    "vi": "Tủ đông −80°C"
+  },
+  "−80°C ultra-low freezer, upright": {
+    "zh-hant": "−80°C 超低溫冷凍櫃，直立式",
+    "zh-hans": "−80°C 超低温冰箱，立式",
+    "ja": "−80°C 超低温フリーザー、縦型",
+    "th": "ตู้แช่แข็งอุณหภูมิต่ำพิเศษ −80°C แบบตั้ง",
+    "vi": "Tủ đông siêu lạnh −80°C, dạng đứng"
+  }
+}

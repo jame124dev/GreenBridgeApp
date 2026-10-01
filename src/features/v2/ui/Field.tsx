@@ -52,6 +52,8 @@ import {
   type TypeToken,
 } from '@/theme/v2';
 
+import { useV2Copy } from '@/i18n/v2Auto';
+
 import { MaterialFill } from './Surface';
 import { Text } from './Text';
 
@@ -112,6 +114,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field({
   ...input
 }: FieldProps, ref) {
   const c = useV2Colors();
+  const tr = useV2Copy();
 
   return (
     <View style={style}>
@@ -163,6 +166,9 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field({
           {...input}
           multiline={multiline}
           accessibilityLabel={accessibilityLabel ?? label}
+          /* A placeholder is a native string prop, not a `Text` child, so the
+             kit's translation interception never sees it — see `useV2Copy`. */
+          placeholder={input.placeholder ? tr(input.placeholder) : input.placeholder}
           placeholderTextColor={c.inkDisabled}
           style={[
             styles.input,

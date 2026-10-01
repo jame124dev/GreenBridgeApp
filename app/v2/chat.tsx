@@ -163,6 +163,7 @@ import {
 import { AttachSheet, type AttachSheetRef, type AttachSource } from '@/features/v2/chat/AttachSheet';
 import { LanguageSheet } from '@/components/ui';
 import { languageBadge } from '@/i18n';
+import { useV2Copy } from '@/i18n/v2Auto';
 import { router } from 'expo-router';
 
 import { haptics } from '@/lib/haptics';
@@ -828,6 +829,7 @@ const HIT = { top: space.xl, bottom: space.xl, left: space.xl, right: space.xl }
 function ChatScreen({ onNewChat }: { onNewChat: () => void }) {
   const c = useV2Colors();
   const { i18n } = useTranslation();
+  const tr = useV2Copy();
   const { unreadCount } = useLabNotifications();
   const picker = useAttachmentPicker();
   const staged = useComposer((s) => s.attachments);
@@ -1255,10 +1257,22 @@ function ChatScreen({ onNewChat }: { onNewChat: () => void }) {
                     title={prompt}
                     titleVariant="row"
                     titleLines={2}
-                    onPress={() => onStarter(prompt)}
+                    /*
+                      ⚠️ SEND WHAT THE ROW SHOWS, NOT THE SOURCE STRING.
+
+                      `Row` translates its `title` on the way to the screen, so
+                      this chip reads 我有一台二手 CNC 工具機要賣 — but
+                      `prompt` is still the English literal, and passing it
+                      straight through put English in the composer the moment a
+                      Chinese chip was tapped. Observed on device 2026-10-01.
+                      It also meant the assistant was asked in English by
+                      someone using the app in Chinese, so it answered in
+                      English.
+                    */
+                    onPress={() => onStarter(tr(prompt))}
                     // KIT GAP: `Row` takes no `accessibilityHint`, so "puts
                     // this in the message box" has to ride in the label.
-                    accessibilityLabel={`${prompt}. Fills the message box.`}
+                    accessibilityLabel={`${tr(prompt)}. Fills the message box.`}
                     testID={`v2-chat-starter-${i}`}
                   />
                 </React.Fragment>
@@ -1389,10 +1403,13 @@ function ChatScreen({ onNewChat }: { onNewChat: () => void }) {
                 ref={inputRef}
                 value={chat.input}
                 onChangeText={chat.setInput}
-                placeholder={PLACEHOLDER[mode]}
+                /* Not a `Text` child, so the kit's translation interception
+                   never sees it — see `useV2Copy`. The composer was the one
+                   English string left on this screen. */
+                placeholder={tr(PLACEHOLDER[mode])}
                 placeholderTextColor={c.inkDisabled}
                 multiline
-                accessibilityLabel={PLACEHOLDER[mode]}
+                accessibilityLabel={tr(PLACEHOLDER[mode])}
                 style={[styles.input, typeScale.body, { color: c.ink }]}
                 testID="v2-chat-input"
               />

@@ -160,21 +160,31 @@ function IdentityHeader({
   initials,
   name,
   detail,
-  language,
   unread,
   onBell,
 }: {
   initials: string;
   name: string;
   detail: string;
-  language: string;
   unread: number;
   onBell: () => void;
 }) {
   const c = useV2Colors();
   return (
     <View>
-      <BrandBar language={language} unread={unread > 0} onNotifications={onBell} />
+      {/*
+        ⚠️ NO `language` PROP. The bar reads the LIVE app language itself.
+
+        This used to pass `language` — the language on the SERVER PROFILE —
+        and the chip is the control that opens the language picker, so it
+        showed `EN` while the app was in 繁體中文 and the screen around it was
+        fully Chinese. A guest has no profile at all, so it was always `EN`.
+        Measured on device 2026-10-01.
+
+        The profile's stored language still has a home on this screen: the
+        "Language and currency" row below, where it belongs.
+      */}
+      <BrandBar unread={unread > 0} onNotifications={onBell} />
 
       {/* flat: an identity tile, not a control — nothing here is pressable. */}
       <View style={[styles.avatar, { backgroundColor: c.accent }]}>
@@ -370,7 +380,6 @@ export function AccountScreen() {
           initials={isGuest ? '' : initialsFor(name, email)}
           name={isGuest ? 'Browsing as a guest' : name}
           detail={detail}
-          language={language}
           unread={unreadCount}
           onBell={() =>
             go(() => requireAuth('notifications', () => router.push('/notifications')))

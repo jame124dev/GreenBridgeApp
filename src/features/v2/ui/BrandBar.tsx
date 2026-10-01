@@ -20,7 +20,9 @@ import { Pressable } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Bell } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
+import { languageBadge } from '@/i18n';
 import { getBranding } from '@/theme/branding';
 
 import {
@@ -40,7 +42,7 @@ import { Text } from './Text';
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function BrandBar({
-  language = 'EN',
+  language,
   unread = false,
   notifications = true,
   onNotifications,
@@ -80,7 +82,16 @@ export function BrandBar({
    * that has a title under the bar is untouched.
    */
   flush?: boolean;
-  /** Display label only — the real switch lives on Account › Language. */
+  /**
+   * Display label only — the real switch lives on Account › Language.
+   *
+   * ⚠️ LEAVE IT UNSET. It defaults to the badge for the CURRENT language, and
+   * that is the only correct value. It used to default to the literal `'EN'`,
+   * so Home (which passed `languageBadge(i18n.language)`) showed 繁 while
+   * Account, Browse and the rest showed EN **in the same session** — the bar
+   * contradicted itself screen to screen. The prop is kept only for a bar that
+   * genuinely is not showing the app language.
+   */
   language?: string;
   /**
    * `true` for "there is something", or a count. Pass the count where you have
@@ -93,6 +104,11 @@ export function BrandBar({
 }) {
   const c = useV2Colors();
   const { scheme } = useV2Theme();
+  // The bar reads the language itself rather than trusting each screen to pass
+  // it — see the `language` prop note. `useTranslation` also subscribes the bar
+  // to `languageChanged`, so the badge flips the moment the picker is used.
+  const { i18n } = useTranslation();
+  const languageLabel = language ?? languageBadge(i18n.language);
   // One per control: `usePressFeedback` owns a shared value, so two controls
   // cannot share one instance without pressing together.
   const lang = usePressFeedback({ scale: false });
@@ -152,16 +168,16 @@ export function BrandBar({
             onPressIn={lang.onPressIn}
             onPressOut={lang.onPressOut}
             accessibilityRole="button"
-            accessibilityLabel={`Language, ${language}`}
+            accessibilityLabel={`Language, ${languageLabel}`}
             style={[styles.tapBox, lang.animatedStyle]}
           >
             <Text variant="captionMedium" color="inkMuted">
-              {language}
+              {languageLabel}
             </Text>
           </AnimatedPressable>
         ) : (
           <Text variant="captionMedium" color="inkMuted">
-            {language}
+            {languageLabel}
           </Text>
         )}
 

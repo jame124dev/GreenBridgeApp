@@ -1,0 +1,113 @@
+# Translation status
+
+34 pages · 328 dictionary strings × 5 languages · 314 of 321 distinct hardcoded literals resolved (98%)
+
+Split: 207/209 on the route files, 107/112 across 193 files in `src/features`.
+
+> The **Copy** column below counts a page's own literals plus those of
+> every component it imports, so a shared component is counted once per
+> page. Those rows do not sum to the total above, and are not meant to —
+> they answer "how much English is on THIS screen".
+
+- 🟢 DONE — 34 pages
+- 🟡 PARTIAL — 0 pages
+- 🔴 NOT STARTED — 0 pages
+- ⚡ server-worded — 2 pages, which no client-side dictionary can reach
+
+[**Miscellaneous**](MISCELLANEOUS.md) — the mechanism, the feature areas, the
+layouts, the shared chrome, the known limits, and how to add a translation.
+
+## `(auth)`
+
+| Page | Status | Copy | Resolved | `t()` | Server-worded |
+|---|---|---:|---:|---:|---|
+| [`/forgot-password`](pages/forgot-password.md) | 🟢 DONE | 2 | 0 | 29 | — |
+| [`/login`](pages/login.md) | 🟢 DONE | 0 | 0 | 14 | — |
+| [`/pending`](pages/pending.md) | 🟢 DONE | 1 | 0 | 36 | — |
+| [`/register`](pages/register.md) | 🟢 DONE | 1 | 0 | 34 | — |
+
+## `v2`
+
+| Page | Status | Copy | Resolved | `t()` | Server-worded |
+|---|---|---:|---:|---:|---|
+| [`/v2`](pages/v2.md) | 🟢 DONE | 0 | 0 | 0 | — |
+| [`/v2/account`](pages/v2-account.md) | 🟢 DONE | 22 | 21 | 0 | — |
+| [`/v2/browse`](pages/v2-browse.md) | 🟢 DONE | 1 | 0 | 4 | — |
+| [`/v2/buying`](pages/v2-buying.md) | 🟢 DONE | 0 | 0 | 0 | — |
+| [`/v2/chat`](pages/v2-chat.md) | 🟢 DONE | 16 | 14 | 1 | ⚡ sse, chat-stream |
+| [`/v2/dashboard`](pages/v2-dashboard.md) | 🟢 DONE | 8 | 8 | 0 | — |
+| [`/v2/dashboard/bids`](pages/v2-dashboard-bids.md) | 🟢 DONE | 4 | 4 | 0 | — |
+| [`/v2/dashboard/inspections`](pages/v2-dashboard-inspections.md) | 🟢 DONE | 4 | 4 | 0 | — |
+| [`/v2/dashboard/orders/[id]`](pages/v2-dashboard-orders-id.md) | 🟢 DONE | 11 | 11 | 0 | — |
+| [`/v2/dashboard/requests`](pages/v2-dashboard-requests.md) | 🟢 DONE | 4 | 4 | 0 | — |
+| [`/v2/dashboard/seller-bids`](pages/v2-dashboard-seller-bids.md) | 🟢 DONE | 5 | 5 | 0 | — |
+| [`/v2/dashboard/seller-offers`](pages/v2-dashboard-seller-offers.md) | 🟢 DONE | 5 | 5 | 0 | — |
+| [`/v2/dashboard/seller-orders`](pages/v2-dashboard-seller-orders.md) | 🟢 DONE | 5 | 5 | 0 | — |
+| [`/v2/dashboard/watchlist`](pages/v2-dashboard-watchlist.md) | 🟢 DONE | 6 | 6 | 0 | — |
+| [`/v2/drafts`](pages/v2-drafts.md) | 🟢 DONE | 2 | 1 | 13 | — |
+| [`/v2/listing/[id]`](pages/v2-listing-id.md) | 🟢 DONE | 13 | 12 | 0 | — |
+| [`/v2/listings`](pages/v2-listings.md) | 🟢 DONE | 2 | 1 | 10 | — |
+| [`/v2/matches`](pages/v2-matches.md) | 🟢 DONE | 18 | 17 | 3 | — |
+| [`/v2/messages`](pages/v2-messages.md) | 🟢 DONE | 16 | 14 | 0 | — |
+| [`/v2/scan/analyzing`](pages/v2-scan-analyzing.md) | 🟢 DONE | 16 | 14 | 0 | ⚡ sse |
+| [`/v2/scan/camera`](pages/v2-scan-camera.md) | 🟢 DONE | 8 | 6 | 12 | — |
+| [`/v2/scan/intake`](pages/v2-scan-intake.md) | 🟢 DONE | 2 | 0 | 41 | — |
+| [`/v2/scan/items`](pages/v2-scan-items.md) | 🟢 DONE | 20 | 15 | 0 | — |
+| [`/v2/scan/published`](pages/v2-scan-published.md) | 🟢 DONE | 1 | 0 | 9 | — |
+| [`/v2/scan/review/details`](pages/v2-scan-review-details.md) | 🟢 DONE | 32 | 26 | 11 | — |
+| [`/v2/scan/review/location`](pages/v2-scan-review-location.md) | 🟢 DONE | 25 | 19 | 7 | — |
+| [`/v2/scan/review/photos`](pages/v2-scan-review-photos.md) | 🟢 DONE | 25 | 19 | 2 | — |
+| [`/v2/scan/review/pricing`](pages/v2-scan-review-pricing.md) | 🟢 DONE | 39 | 29 | 2 | — |
+| [`/v2/scan/submit`](pages/v2-scan-submit.md) | 🟢 DONE | 7 | 5 | 12 | — |
+| [`/v2/scan/valuation`](pages/v2-scan-valuation.md) | 🟢 DONE | 9 | 3 | 21 | — |
+
+## Out of scope — the pre-v2 screens
+
+32 screens are deliberately NOT translated: `(lab)`, the old
+`scan` flow, `listing/[id]` and `activity`. The product is moving to v2 and
+the effort does not pay back. They are listed so their absence is a decision
+on the record rather than a gap someone rediscovers.
+
+Most already carry `t()` from the old i18n pass, so they are not English —
+they simply are not covered by the v2 dictionary or by the device sweep.
+
+| Page | `t()` calls |
+|---|---:|
+| `/` | 0 |
+| `/account` | 14 |
+| `/account/delete` | 21 |
+| `/activity/history` | 0 |
+| `/browse` | 4 |
+| `/chat` | 134 |
+| `/deal/[id]` | 57 |
+| `/deals` | 31 |
+| `/draft` | 16 |
+| `/home` | 6 |
+| `/listing-edit` | 81 |
+| `/listing/[id]` | 5 |
+| `/listings` | 17 |
+| `/match/[id]` | 19 |
+| `/matches` | 45 |
+| `/notifications` | 12 |
+| `/processing` | 8 |
+| `/product/[id]` | 7 |
+| `/published` | 6 |
+| `/scan/camera` | 24 |
+| `/scan/detail` | 8 |
+| `/scan/detection` | 53 |
+| `/scan/drafts` | 16 |
+| `/scan/grouped-edit` | 16 |
+| `/scan/grouped-review` | 44 |
+| `/scan/listing-method` | 7 |
+| `/scan/processing` | 16 |
+| `/scan/processing-v2` | 26 |
+| `/scan/reorder-photos` | 8 |
+| `/scan/success` | 18 |
+| `/sell/apply` | 35 |
+| `/want/[id]` | 52 |
+
+---
+
+Generated by `scripts/write-translation-docs.js` from
+`scripts/out/screen-inventory.json`. Do not hand-edit — re-run the pipeline
+in [MISCELLANEOUS.md](MISCELLANEOUS.md#adding-a-translation).

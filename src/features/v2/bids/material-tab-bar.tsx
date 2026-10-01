@@ -75,6 +75,7 @@ import {
 } from '@/theme/v2';
 
 import type { TabItem } from '@/features/v2/ui';
+import { useV2Copy } from '@/i18n/v2Auto';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -265,7 +266,24 @@ function MaterialTabItem<T extends string>({
 }) {
   const c = useV2Colors();
   const { animatedStyle, onPressIn, onPressOut } = usePressFeedback({ scale: false });
-  const label = item.count === undefined ? item.label : `${item.label} ${item.count}`;
+  /*
+    ⚠️ TRANSLATED HERE, BECAUSE THIS TAB CANNOT USE THE KIT'S `Text`.
+
+    The label is rendered by `Animated.Text` below — the opacity/colour fade
+    is driven by a worklet reading `indexDecimal`, which the kit's `Text` does
+    not accept. So the interception in `Text.tsx` never sees these strings,
+    and on device this bar read "All / Pending / Won / Lost" in English while
+    the bid card's `Chip` two rows below rendered the SAME word as 待處理.
+    That contradiction is what located this line.
+
+    Translate the label BEFORE the count is appended: `${label} ${count}` is a
+    different string every time the count changes and could never be matched
+    by a dictionary keyed on sentences, which is also why the bar showed
+    "All 11" and "Active 5". Composing after the lookup leaves "全部 11".
+  */
+  const tr = useV2Copy();
+  const base = tr(item.label);
+  const label = item.count === undefined ? base : `${base} ${item.count}`;
 
   /**
    * Theirs, verbatim apart from the palette roles. The `< 0.5` colour switch is

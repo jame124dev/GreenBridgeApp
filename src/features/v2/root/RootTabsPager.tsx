@@ -30,17 +30,20 @@
  * keep-alive, never remounted), so a query fetched once is not re-fetched on
  * every visit and the WebView is not reloaded on every visit either.
  *
- * ── The one unverified risk: Browse's WebView ──
+ * ── Browse's WebView: the risk landed, and how it is handled ──
  *
  * Every other pane is a native ScrollView/RTVFlatList, which `TabView`'s
  * outer pan gesture already knows how to negotiate with (10px activation
  * offset — a tap or a vertical drag is never stolen). A WebView owns its OWN
- * native gesture recognizer, underneath RNGH's, and the two have never been
- * combined in this app before. Flagged to the owner before building this
- * (2026-09-25) and the answer was to include it and verify the actual gesture
- * on-device rather than exclude it — so this is the one pane that MUST be
- * pinch/scroll/swipe-tested on the real device before this is called done,
- * not just tsc-clean.
+ * native gesture recognizer, underneath RNGH's, and the two had never been
+ * combined in this app before. That was flagged here as the one pane needing
+ * a real on-device gesture test before this was called done.
+ *
+ * It was not tested, and it was broken: reported 2026-10-01 — scrolling the
+ * marketplace flung the user sideways into the next tab. The fix is
+ * `swipeEnabled` turned OFF for this pane only; see the prop below for why
+ * tuning the activation offset cannot work. Browse is now left by tapping a
+ * tab, which is the trade this pane pays for keeping its own gestures.
  *
  * ── Each pane keeps its OWN header/scroll/chrome ──
  *
@@ -156,6 +159,29 @@ export function RootTabsPager() {
         // The kit's own bar renders once, below, not per-scene.
         tabBarConfig={{ renderTabBar: () => null }}
         renderMode="lazy"
+        /*
+          ⚠️ THE PAGER STOPS SWIPING WHILE BROWSE IS THE OPEN PANE.
+
+          This is the risk the header above flagged as unverified, now
+          confirmed on device (2026-10-01): a WebView owns a NATIVE scroll
+          recognizer that sits underneath RNGH, so it never negotiates with
+          the carousel's pan the way the other four panes' RTVFlatLists do.
+          Dragging the marketplace page — including an ordinary vertical
+          scroll that starts a few degrees off-axis — was being claimed by the
+          carousel and flinging the user into the next tab mid-scroll.
+
+          Raising `activationOffsetX` would not fix it: the conflict is not
+          that the pan activates too eagerly, it is that the WebView's own
+          recognizer cannot tell RNGH it has already taken the gesture.
+
+          So on this one pane the carousel yields the horizontal axis
+          entirely, and the marketplace keeps every gesture it needs — its own
+          horizontal carousels, pinch-zoom and scroll. The cost is that Browse
+          is left by TAPPING a tab rather than swiping; the shared `TabBar`
+          below is always visible and is the obvious way out, and a tab bar is
+          how most apps leave an embedded web page anyway.
+        */
+        swipeEnabled={ROUTES[index].key !== 'browse'}
         style={styles.fill}
         sceneContainerStyle={styles.fill}
         // `tabBar.height: 0` and `tabView.height` — both load-bearing for the
