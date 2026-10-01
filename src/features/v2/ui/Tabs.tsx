@@ -50,6 +50,8 @@ import {
   useV2Colors,
 } from '@/theme/v2';
 
+import { useV2Copy } from '@/i18n/v2Auto';
+
 import { Text } from './Text';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -130,7 +132,20 @@ function Tab<T extends string>({
 }) {
   const c = useV2Colors();
   const { animatedStyle, onPressIn, onPressOut } = usePressFeedback({ scale: false });
-  const label = item.count === undefined ? item.label : `${item.label} ${item.count}`;
+  /*
+    ⚠️ TRANSLATE THE LABEL BEFORE APPENDING THE COUNT.
+
+    `Text` looks a literal up by its English sentence, so composing first
+    hands it "All 12" — a string that changes with the data and can never
+    match a dictionary key. Matches and Messages showed "All 12 / Active 5 /
+    Paused 7" in English on a fully Chinese screen because of this one line.
+    Translating first leaves "全部 12".
+
+    The identical bug lived in `bids/material-tab-bar.tsx`; fixed there too.
+  */
+  const tr = useV2Copy();
+  const base = tr(item.label);
+  const label = item.count === undefined ? base : `${base} ${item.count}`;
 
   return (
     <AnimatedPressable

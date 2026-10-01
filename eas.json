@@ -68,6 +68,11 @@
         "EXPO_PUBLIC_ONESIGNAL_APP_ID": "a9a5c723-9a00-438f-a522-2bd9178ff99f",
         "EXPO_PUBLIC_V2_UI": "1"
       }
+    },
+    "production-apk": {
+      "extends": "production",
+      "android": { "buildType": "apk" },
+      "autoIncrement": false
     }
   },
   "submit": {
