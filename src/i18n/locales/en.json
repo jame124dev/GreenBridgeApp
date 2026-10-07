@@ -4175,7 +4175,13 @@
         "noMatchTitle": "No match",
         "noMatchBody": "Nothing here matches \"{{query}}\".",
         "noMatchPartial": "Nothing matches in the items loaded so far. Scroll down to load more, then search again.",
-        "clearSearch": "Clear search"
+        "clearSearch": "Clear search",
+        "submitForListing": "Submit for listing",
+        "finishAndSubmit": "Finish & submit",
+        "openToSubmitLabel": "Open to submit",
+        "openToSubmit": "Open this one to submit it.",
+        "submitNeeds": "Needs {{needs}} before it can be submitted.",
+        "submitFailed": "Couldn't submit. Nothing was sent."
       },
       "listings": {
         "title": "My listings",

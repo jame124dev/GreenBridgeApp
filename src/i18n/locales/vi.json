@@ -4177,7 +4177,13 @@
         "noMatchTitle": "Không có kết quả",
         "noMatchBody": "Không có mục nào khớp với \"{{query}}\".",
         "noMatchPartial": "Không có kết quả trong các mục đã tải. Hãy cuộn xuống để tải thêm rồi tìm lại.",
-        "clearSearch": "Xóa tìm kiếm"
+        "clearSearch": "Xóa tìm kiếm",
+        "submitForListing": "Gửi để đăng bán",
+        "finishAndSubmit": "Hoàn tất & gửi",
+        "openToSubmitLabel": "Mở để gửi",
+        "openToSubmit": "Hãy mở mục này để gửi.",
+        "submitNeeds": "Cần {{needs}} trước khi có thể gửi.",
+        "submitFailed": "Không gửi được. Chưa có gì được gửi đi."
       },
       "listings": {
         "title": "Tin đăng của tôi",

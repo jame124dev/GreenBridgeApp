@@ -4092,7 +4092,13 @@
         "noMatchTitle": "該当なし",
         "noMatchBody": "「{{query}}」に一致するアイテムはありません。",
         "noMatchPartial": "読み込み済みのアイテムには一致がありません。下にスクロールして続きを読み込んでから、もう一度検索してください。",
-        "clearSearch": "検索をクリア"
+        "clearSearch": "検索をクリア",
+        "submitForListing": "出品を申請",
+        "finishAndSubmit": "入力して申請",
+        "openToSubmitLabel": "開いて申請",
+        "openToSubmit": "このアイテムを開いてから申請してください。",
+        "submitNeeds": "申請するには{{needs}}が必要です。",
+        "submitFailed": "申請できませんでした。送信されていません。"
       },
       "listings": {
         "title": "自分の出品",

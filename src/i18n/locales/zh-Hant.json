@@ -4115,7 +4115,13 @@
         "noMatchTitle": "沒有相符項目",
         "noMatchBody": "沒有與「{{query}}」相符的物品。",
         "noMatchPartial": "已載入的物品中沒有相符項目。向下捲動載入更多後再搜尋。",
-        "clearSearch": "清除搜尋"
+        "clearSearch": "清除搜尋",
+        "submitForListing": "提交上架",
+        "finishAndSubmit": "補齊並提交",
+        "openToSubmitLabel": "開啟以提交",
+        "openToSubmit": "請開啟這件物品後再提交。",
+        "submitNeeds": "提交前需要{{needs}}。",
+        "submitFailed": "提交失敗，尚未送出任何內容。"
       },
       "listings": {
         "title": "我的商品",

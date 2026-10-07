@@ -4157,7 +4157,13 @@
         "noMatchTitle": "没有匹配项",
         "noMatchBody": "没有与“{{query}}”匹配的物品。",
         "noMatchPartial": "已加载的物品中没有匹配项。向下滚动加载更多后再搜索。",
-        "clearSearch": "清除搜索"
+        "clearSearch": "清除搜索",
+        "submitForListing": "提交上架",
+        "finishAndSubmit": "补全并提交",
+        "openToSubmitLabel": "打开以提交",
+        "openToSubmit": "请打开这件物品后再提交。",
+        "submitNeeds": "提交前需要{{needs}}。",
+        "submitFailed": "提交失败，尚未发送任何内容。"
       },
       "listings": {
         "title": "我的商品",
