@@ -26,7 +26,7 @@ import {
   listAllDraftItems,
   type DraftItem,
 } from '@/services/drafts/draftItemsApi';
-import { usePublishDraft } from '@/features/v2/scan/review/usePublishDraft';
+import { useInventoryEnding } from '@/features/v2/scan/review/useInventoryEnding';
 import { reviewStepLabel, type ReviewStep } from '@/features/v2/scan/review/wizardState';
 import { openDetectedItem } from '@/features/v2/scan/openDetectedItem';
 import { haptics } from '@/lib/haptics';
@@ -73,7 +73,11 @@ export default function V2Submit() {
     retry: retryUnlessClientError,
   });
 
-  const publish = usePublishDraft();
+  // The flow ends in the inventory for everyone; publishing is the second,
+  // gated action — work order §4.1. See `useInventoryEnding`.
+  const ending = useInventoryEnding();
+  const { publish } = ending;
+  const busy = ending.isSaving || publish.isPending;
   const [openingId, setOpeningId] = useState<number | null>(null);
 
   const handlePressItem = useCallback(async (itemId: number) => {
@@ -112,8 +116,8 @@ export default function V2Submit() {
 
   const handleSubmit = useCallback(() => {
     haptics.tap();
-    publish.publish();
-  }, [publish]);
+    ending.submitForListing();
+  }, [ending]);
 
   const handleGoToStep = useCallback(
     async (itemIndex: number, step: ReviewStep) => {
@@ -145,24 +149,51 @@ export default function V2Submit() {
       footer={
         rows.length > 0 ? (
           <View style={styles.footer}>
+            {/* The one green pill: saving always succeeds, so it is the ending for everyone. */}
             <PrimaryAction
-              label={publish.isPending ? 'Submitting…' : t('mobile.scanv2.submit.publishButton', { count: rows.length, defaultValue: 'Publish {{count}} Listing(s)' })}
-              onPress={handleSubmit}
-              disabled={publish.isPending}
+              label={
+                ending.isSaving
+                  ? t('mobile.scanv2.inventory.saving', { defaultValue: 'Saving…' })
+                  : t('mobile.scanv2.inventory.saveButton', { defaultValue: 'Save to my inventory' })
+              }
+              onPress={ending.saveToInventory}
+              disabled={busy}
               icon={<Check size={icon.xl} color={c.onAccent} strokeWidth={2} />}
+              testID="v2-submit-save"
             />
+            {/*
+              Only for a seller who can publish (§4.1) — hidden, not disabled, for
+              everyone else, because the lede already says nothing goes live
+              until they submit. "Submit for listing", never "for approval": an
+              active auto-approval rule sends it live with no review (§4.4).
+            */}
+            {ending.canSubmit ? (
+              <PrimaryAction
+                variant="tinted"
+                label={
+                  publish.isPending
+                    ? t('mobile.scanv2.inventory.submitting', { defaultValue: 'Submitting…' })
+                    : t('mobile.scanv2.inventory.submitButton', { defaultValue: 'Submit for listing' })
+                }
+                onPress={handleSubmit}
+                disabled={busy}
+                testID="v2-submit-publish"
+              />
+            ) : null}
             <QuietAction
               label={t('mobile.scanv2.submit.backToValuation', { defaultValue: 'Back to Valuation' })}
               onPress={() => router.push({ pathname: '/v2/scan/valuation', params: { draftId } } as never)}
-              disabled={publish.isPending}
+              disabled={busy}
             />
           </View>
         ) : undefined
       }
     >
-      <SectionHeader title={t('mobile.scanv2.submit.title', { defaultValue: 'Review & Submit' })} />
+      <SectionHeader title={t('mobile.scanv2.inventory.reviewTitle', { defaultValue: 'Review your items' })} />
       <Text variant="body" color="inkMuted" style={styles.lede}>
-        {t('mobile.scanv2.submit.lede', { defaultValue: 'These listings are ready to publish. Please review and confirm their destinations before publishing.' })}
+        {t('mobile.scanv2.inventory.lede', {
+          defaultValue: 'Saved items stay private in your inventory. Nothing goes live until you submit it for listing.',
+        })}
       </Text>
 
       {/* Blocked or Error notices */}

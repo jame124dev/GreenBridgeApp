@@ -63,6 +63,13 @@ export const useServerDraft = create<ServerDraftState>((set) => ({
 export interface SaveDraftState {
   /** Runs the save. Signs the person in first if they are a guest. */
   save: () => void;
+  /**
+   * The same write with no sign-in sheet and no toast, resolving to whether it
+   * landed. For a caller that has already passed `requireAuth` and owns what
+   * happens next — the submit screen's "Save to my inventory", which lands on
+   * the inventory instead of staying put.
+   */
+  persist: () => Promise<boolean>;
   isSaving: boolean;
   /** False when the drafts feature is off — the control should not be drawn. */
   available: boolean;
@@ -73,6 +80,50 @@ export function useSaveDraft(): SaveDraftState {
   const createDraft = useCreateDraft();
   const updateDraft = useUpdateDraft();
   const [isSaving, setSaving] = useState(false);
+
+  /** The write itself — one copy, shared by `save` and `persist`. Throws on failure. */
+  const write = useCallback(async () => {
+    const snapshot = useScanDraft.getState().snapshotForServer();
+
+    // The GCS map is keyed by photo URI; the payload wants pairs. Same
+    // transform as the shipped screen — kept identical so a draft saved
+    // from v2 resumes through exactly the same reader.
+    const gcs = snapshot.gcs;
+    const imagesOrdered = gcs
+      ? Object.entries(gcs.objectNameByPhotoUri).map(([url, objectName]) => ({
+          url,
+          objectName,
+        }))
+      : [];
+    const built = buildScanDraftPayload(snapshot, imagesOrdered);
+
+    const { id, updatedAt } = useServerDraft.getState();
+
+    if (id && updatedAt) {
+      const res = await updateDraft.mutateAsync({
+        id,
+        expectedUpdatedAt: updatedAt,
+        patch: {
+          title: built.title,
+          product_count: built.product_count,
+          payload: built.payload,
+        },
+      });
+      useServerDraft.getState().mark(id, res.updated_at);
+    } else {
+      const res = await createDraft.mutateAsync({
+        session_uuid:
+          snapshot.current?.id ?? `temp-${snapshot.mode}-${Date.now()}`,
+        flow: 'ai',
+        mode: built.mode,
+        title: built.title,
+        site_type: getSiteType(),
+        product_count: built.product_count,
+        payload: built.payload,
+      });
+      useServerDraft.getState().mark(res.id, res.updated_at);
+    }
+  }, [createDraft, updateDraft]);
 
   const save = useCallback(() => {
     if (isSaving) return;
@@ -87,47 +138,7 @@ export function useSaveDraft(): SaveDraftState {
       void (async () => {
         setSaving(true);
         try {
-          const snapshot = useScanDraft.getState().snapshotForServer();
-
-          // The GCS map is keyed by photo URI; the payload wants pairs. Same
-          // transform as the shipped screen — kept identical so a draft saved
-          // from v2 resumes through exactly the same reader.
-          const gcs = snapshot.gcs;
-          const imagesOrdered = gcs
-            ? Object.entries(gcs.objectNameByPhotoUri).map(([url, objectName]) => ({
-                url,
-                objectName,
-              }))
-            : [];
-          const built = buildScanDraftPayload(snapshot, imagesOrdered);
-
-          const { id, updatedAt } = useServerDraft.getState();
-
-          if (id && updatedAt) {
-            const res = await updateDraft.mutateAsync({
-              id,
-              expectedUpdatedAt: updatedAt,
-              patch: {
-                title: built.title,
-                product_count: built.product_count,
-                payload: built.payload,
-              },
-            });
-            useServerDraft.getState().mark(id, res.updated_at);
-          } else {
-            const res = await createDraft.mutateAsync({
-              session_uuid:
-                snapshot.current?.id ?? `temp-${snapshot.mode}-${Date.now()}`,
-              flow: 'ai',
-              mode: built.mode,
-              title: built.title,
-              site_type: getSiteType(),
-              product_count: built.product_count,
-              payload: built.payload,
-            });
-            useServerDraft.getState().mark(res.id, res.updated_at);
-          }
-
+          await write();
           toast.success(t('mobile.drafts.saved', { defaultValue: 'Draft saved' }));
         } catch {
           // Says what did NOT happen. The device copy is still there either
@@ -140,7 +151,19 @@ export function useSaveDraft(): SaveDraftState {
         }
       })();
     });
-  }, [isSaving, createDraft, updateDraft, t]);
+  }, [isSaving, write, t]);
 
-  return { save, isSaving, available: draftsEnabled() };
+  const persist = useCallback(async () => {
+    setSaving(true);
+    try {
+      await write();
+      return true;
+    } catch {
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [write]);
+
+  return { save, persist, isSaving, available: draftsEnabled() };
 }

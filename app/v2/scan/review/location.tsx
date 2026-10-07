@@ -22,8 +22,14 @@
  *   │     You can submit whenever you are ready.              │
  *   └─────────────────────────────────────────────────────────┘
  *   ┌ footer ─────────────────────────────────────────────────┐
- *   │  ( Save as draft )  (  Submit listing  →  )             │
+ *   │  (       Save to my inventory       →       )           │
+ *   │  (        Submit for listing                )  ← only  │
+ *   │                                  when canSubmitListing() │
  *   └─────────────────────────────────────────────────────────┘
+ *
+ *   ⚠️ The canvas drew "Save as draft | Submit listing". Changed 2026-10-06 by
+ *   `todo/PRIVATE_INVENTORY_WORKORDER.md` §4.1: the flow ends in the inventory
+ *   for everyone; submitting is the second, gated action.
  *
  * ── THE BANNER IS A VERDICT, SO IT HAS TO BE ABLE TO SAY NO ──────────────
  *
@@ -62,6 +68,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowRight,
   ChevronDown,
@@ -118,8 +125,7 @@ import {
   useReviewItem,
   type ReviewStep,
 } from '@/features/v2/scan/review/wizardState';
-import { usePublishDraft } from '@/features/v2/scan/review/usePublishDraft';
-import { useSaveDraft } from '@/features/v2/scan/review/useSaveDraft';
+import { useInventoryEnding } from '@/features/v2/scan/review/useInventoryEnding';
 
 const THIS_STEP = 'location' as const;
 const STEP_INDEX = reviewStepIndex(THIS_STEP);
@@ -206,13 +212,13 @@ export default function V2ReviewLocation() {
   const [countryRow, setCountryRow] = useState<number | null>(null);
   const [locate, setLocate] = useState<LocateState>({ busy: false, error: null });
   /**
-   * The real publish. Both submit endpoints, both gates and the readiness
-   * sweep live in the hook — see `usePublishDraft`, which exists because the
-   * queue and the single draft POST to different places and v2 has one review
-   * flow serving both.
+   * The ending: "Save to my inventory" for everyone, "Submit for listing" for a
+   * seller who may publish (work order §4.1). Both submit endpoints, both gates
+   * and the readiness sweep still live in `usePublishDraft`, underneath.
    */
-  const publish = usePublishDraft();
-  const saveDraft = useSaveDraft();
+  const { t } = useTranslation();
+  const ending = useInventoryEnding();
+  const { publish } = ending;
 
   const countries = useMemo(
     () => padTo(item?.locationCountries ?? [], addresses.length),
@@ -318,11 +324,14 @@ export default function V2ReviewLocation() {
     router.push(reviewStepHref(step, index));
   };
 
-  /** WIRED 2026-09-17 — see the note on 7b's handler. */
-  const onSaveDraft = () => {
+  /**
+   * Not gated on `ready`: an incomplete item belongs in the inventory too —
+   * that is where the seller finishes it later. Commit first, for the same
+   * reason as Submit below: the save reads the STORE.
+   */
+  const onSaveToInventory = () => {
     commitAddresses();
-    haptics.tap();
-    saveDraft.save();
+    ending.saveToInventory();
   };
 
   const onSubmit = () => {
@@ -331,7 +340,7 @@ export default function V2ReviewLocation() {
     // address and taps Submit without blurring the field is told the listing
     // "needs a pickup address" they can see on screen.
     commitAddresses();
-    publish.publish();
+    ending.submitForListing();
   };
 
   const header = (
@@ -381,31 +390,42 @@ export default function V2ReviewLocation() {
       testID="v2-review-location"
       footer={
         <View style={styles.footer}>
+          {/*
+            The one green pill on the last step, and the ending for everyone —
+            saving needs no approval, so it cannot refuse anyone (§4.1).
+          */}
           <PrimaryAction
-            label={saveDraft.isSaving ? 'Saving…' : 'Save as draft'}
-            onPress={onSaveDraft}
-            disabled={saveDraft.isSaving}
-            variant="tinted"
-            style={styles.footerQuiet}
+            label={
+              ending.isSaving
+                ? t('mobile.scanv2.inventory.saving', { defaultValue: 'Saving…' })
+                : t('mobile.scanv2.inventory.saveButton', { defaultValue: 'Save to my inventory' })
+            }
+            onPress={onSaveToInventory}
+            disabled={ending.isSaving || publish.isPending}
+            icon={<ArrowRight size={icon.md} color={c.onAccent} strokeWidth={2} />}
+            style={styles.footerAction}
             testID="v2-review-location-save"
           />
           {/*
-            The one green pill on the last step. Disabled while anything
-            required is missing — the panel above says which step and offers the
-            trip back, so the disabled state is never a mystery.
+            The second action, beneath — only for a seller who may publish.
+            Disabled while anything required is missing (the panel above names
+            the step), and while the POST is in flight: a second tap would
+            publish the same draft twice. The hook guards it too.
           */}
-          <PrimaryAction
-            label={publish.isPending ? 'Submitting…' : 'Submit listing'}
-            onPress={onSubmit}
-            // Also while the POST is in flight: this button now spends real
-            // money on the seller's behalf, and a second tap would publish the
-            // same draft twice. The hook guards it too — belt and braces,
-            // because only one of the two is visible to the person.
-            disabled={!ready || publish.isPending}
-            icon={<ArrowRight size={icon.md} color={c.onAccent} strokeWidth={2} />}
-            style={styles.footerPrimary}
-            testID="v2-review-location-submit"
-          />
+          {ending.canSubmit ? (
+            <PrimaryAction
+              variant="tinted"
+              label={
+                publish.isPending
+                  ? t('mobile.scanv2.inventory.submitting', { defaultValue: 'Submitting…' })
+                  : t('mobile.scanv2.inventory.submitButton', { defaultValue: 'Submit for listing' })
+              }
+              onPress={onSubmit}
+              disabled={!ready || ending.isSaving || publish.isPending}
+              style={styles.footerAction}
+              testID="v2-review-location-submit"
+            />
+          ) : null}
         </View>
       }
     >
@@ -552,7 +572,13 @@ export default function V2ReviewLocation() {
               </Text>
               <Text variant="caption" color="inkMuted" style={styles.verdictSub}>
                 {ready
-                  ? 'You can submit whenever you are ready.'
+                  ? ending.canSubmit
+                    ? t('mobile.scanv2.inventory.verdictCanSubmit', {
+                        defaultValue: 'Submit it for listing now, or keep it in your inventory.',
+                      })
+                    : t('mobile.scanv2.inventory.verdictSaveOnly', {
+                        defaultValue: "Save it to your inventory. You choose what to list once you're approved.",
+                      })
                   : (stepNeeds(liveItem, blocking ?? THIS_STEP) ??
                     'Open the step to see what is missing.')}
               </Text>
@@ -652,7 +678,8 @@ const styles = StyleSheet.create({
   submitNotice: { paddingTop: space.md },
 
   // ── footer ──
-  footer: { flexDirection: 'row', alignItems: 'center', gap: space.xl },
-  footerQuiet: { flexShrink: 0, paddingHorizontal: space['5xl'] },
-  footerPrimary: { flex: 1, minWidth: 0, borderRadius: radius.pill },
+  // A column, not a row: "Save to my inventory" and "Submit for listing" are
+  // both too long to share a 390pt line without truncating.
+  footer: { gap: space.sm },
+  footerAction: { borderRadius: radius.pill },
 });
