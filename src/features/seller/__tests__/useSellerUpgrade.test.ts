@@ -139,7 +139,48 @@ describe('getSellerUpgradeStatus', () => {
       company_name: 'Acme',
       admin_notes: null,
       reviewed_at: '2026-08-11',
+      // A reviewed row carries no `source`; the parser normalises that to null
+      // so the sell gate can tell it apart from a derived approval.
+      source: null,
     });
+  });
+
+  /**
+   * ⚠️ The sell gate's only way to tell an inference from an admin's decision.
+   * The gate's own tests seed the cache directly, so they would keep passing if
+   * this parser dropped the field — which is exactly how it got dropped the
+   * first time. This test is the one that notices.
+   */
+  it('carries `source: existing_seller` through from the server', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        success: true,
+        data: {
+          status: 'approved',
+          company_name: 'Legacy Co',
+          admin_notes: null,
+          reviewed_at: null,
+          source: 'existing_seller',
+        },
+      },
+    });
+    await expect(getSellerUpgradeStatus()).resolves.toEqual({
+      status: 'approved',
+      company_name: 'Legacy Co',
+      admin_notes: null,
+      reviewed_at: null,
+      source: 'existing_seller',
+    });
+  });
+
+  it('does not accept an unrecognised `source` as derived', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        success: true,
+        data: { status: 'approved', company_name: null, admin_notes: null, reviewed_at: null, source: 'something_else' },
+      },
+    });
+    await expect(getSellerUpgradeStatus()).resolves.toMatchObject({ source: null });
   });
 
   it('keeps only the four fields the UI reads, and normalises missing ones to null', async () => {
@@ -154,6 +195,7 @@ describe('getSellerUpgradeStatus', () => {
       company_name: null,
       admin_notes: 'Tax id unreadable',
       reviewed_at: null,
+      source: null,
     });
   });
 

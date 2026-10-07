@@ -53,6 +53,23 @@ export type SellerUpgradeStatus = {
   company_name: string | null;
   admin_notes: string | null;
   reviewed_at: string | null;
+  /**
+   * `'existing_seller'` when the server SYNTHESISED this row instead of reading
+   * a reviewed one — see `getUserUpgradeStatus` in
+   * `services/sellerUpgradeService.js` (origin/dev:382-412): with no
+   * `SellerUpgradeRequest` row it answers a hardcoded `approved` for anyone
+   * whose `greenbidz_user_type` meta is `seller`, never consulting
+   * `pw_user_status`.
+   *
+   * ⚠️ LOAD-BEARING, do not drop it again. `signup-with-link-v2` writes
+   * `greenbidz_user_type = role` and `pw_user_status = 'pending'` in the SAME
+   * insert (origin/dev `controller/authV3.controller.js:1157-1158`), so a seller
+   * created by the v2 onboarding is derived-`approved` here from the moment the
+   * account exists. Without this field the sell gate cannot tell that apart from
+   * a genuinely approved legacy seller, and an unreviewed account can publish.
+   * `undefined` = a real, reviewed request row.
+   */
+  source: 'existing_seller' | null;
 };
 
 export type SellerUpgradeErrorCode =
@@ -200,5 +217,9 @@ export async function getSellerUpgradeStatus(): Promise<SellerUpgradeStatus | nu
     company_name: str(row.company_name),
     admin_notes: str(row.admin_notes),
     reviewed_at: str(row.reviewed_at),
+    // Only the one value the server actually sends is honoured. Anything else
+    // (including a missing field, which is what a real reviewed row looks like)
+    // reads as "not derived" — see the field's note on the type.
+    source: row.source === 'existing_seller' ? 'existing_seller' : null,
   };
 }

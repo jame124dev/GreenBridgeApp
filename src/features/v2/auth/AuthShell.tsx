@@ -80,6 +80,7 @@ export function AuthShell({
   subtitle,
   eyebrow,
   segmented = true,
+  compactOnKeyboard = false,
   email,
   leading,
   footer,
@@ -96,6 +97,27 @@ export function AuthShell({
   eyebrow?: string;
   /** Hide the segment on a step that is mid-flow (the code step, the outcome). */
   segmented?: boolean;
+  /**
+   * Collapse the header HARD while the keyboard is open — brand bar, title and
+   * `leading` all go, leaving only the sheet cap.
+   *
+   * ⚠️ The existing collapse (eyebrow + subtitle) is not enough on a long form.
+   * Measured on the onboarding business step, 2026-10-05 (SM-G781B, 411×914dp):
+   * the header kept **256dp** with the keyboard open against a **158dp** visible
+   * form slot — the chrome 1.6× taller than the form, holding one label-less
+   * field and a sliver of the next. `FORM_INPUT_RULES.md` §4 asks for a slot
+   * that holds at least two field rows.
+   *
+   * It also fixes the label problem: the slot was so short that the scroller
+   * pinned the focused input to the top of the window and pushed its own label
+   * out of view — the §4 item "the focused field's own LABEL scrolls out of
+   * view", which is a logged repeat.
+   *
+   * OPT-IN, default off: sign-in, sign-up and reset share this shell and are
+   * short enough that losing the title mid-type would be a downgrade. Turn it
+   * on per screen once that has been looked at on a device.
+   */
+  compactOnKeyboard?: boolean;
   /** Carried across the switch so a typed address survives changing your mind. */
   email?: string;
   /** Between the brand bar and the title — a back chevron, a progress rail. */
@@ -170,21 +192,26 @@ export function AuthShell({
     });
   };
 
+  /** Hard collapse: everything above the sheet cap goes while typing. */
+  const hardCollapsed = compactOnKeyboard && keyboardOpen;
+
   const header = (
     <View>
       {/*
         No bell: nobody is signed in, and its only destination is the old UI's
         notifications screen — arriving at sign-in would be an exit out of v2.
       */}
-      <BrandBar
-        language={languageBadge(i18n.language)}
-        notifications={false}
-        onLanguage={() => setLangSheetOpen(true)}
-      />
+      {hardCollapsed ? null : (
+        <BrandBar
+          language={languageBadge(i18n.language)}
+          notifications={false}
+          onLanguage={() => setLangSheetOpen(true)}
+        />
+      )}
 
-      {leading}
+      {hardCollapsed ? null : leading}
 
-      {title || subtitle ? (
+      {!hardCollapsed && (title || subtitle) ? (
         <View style={[styles.titles, keyboardOpen && styles.titlesTyping]}>
           {eyebrow && !keyboardOpen ? (
             <Text variant="eyebrow" color="accentInk" style={styles.eyebrow}>
@@ -215,7 +242,15 @@ export function AuthShell({
           continuous surface and draw the join it exists to hide. `Screen.tsx`
           is exempt for the same reason. */}
       {/* flat: page ground, not a control. */}
-      <View style={[styles.cap, keyboardOpen && styles.capTyping, { backgroundColor: c.base }]}>
+      <View
+        style={[
+          styles.cap,
+          keyboardOpen && styles.capTyping,
+          hardCollapsed && styles.capCollapsed,
+          // flat: page ground, not a control — see the note above.
+          { backgroundColor: c.base },
+        ]}
+      >
         {segmented ? (
           <SegmentedControl
             items={items}
@@ -273,6 +308,8 @@ const styles = StyleSheet.create({
     paddingBottom: space.md,
   },
   capTyping: { marginTop: space['5xl'], paddingTop: space['3xl'] },
+  /** Nothing above it any more, so the cap starts at the safe-area edge. */
+  capCollapsed: { marginTop: 0, paddingTop: space.lg },
   /** Pill, then the quiet way out. The gap goes with the row it separates. */
   footerStack: { gap: space['2xl'] },
   /** The body is inside the sheet, so it carries the sheet's gutter. */

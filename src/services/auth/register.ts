@@ -120,6 +120,33 @@ export async function resendVerificationCode(email: string): Promise<void> {
   }
 }
 
+/**
+ * Resend the verification LINK — a different endpoint from the one above, and
+ * picking the wrong one silently sends the wrong kind of email.
+ *
+ * ⚠️ TWO VERIFICATION FLOWS EXIST SIDE BY SIDE.
+ *   · `/user/resend-verification-code` — the 6-digit CODE, used by the app's
+ *     own `register.ts` triad above.
+ *   · `/user/resend-verification-link` — a 24h tokenised LINK, which is what
+ *     `signup-with-link-v2` sends. The v2 onboarding uses that signup, so a
+ *     seller created there has a LINK pending and no code to type.
+ *
+ * ⚠️ The server returns **500 when the mail itself fails to send** — the only
+ * awaited call in its handler is `sendMail` (origin/dev
+ * `authV3.controller.js:1567-1575`). So a 500 here is not necessarily a bug on
+ * our side, and the caller must not report success on anything but a 2xx.
+ * Observed 2026-10-06: a 500 for an `@example.com` test address, which SMTP
+ * will not accept — consistent with that, though not proof on its own.
+ */
+export async function resendVerificationLink(email: string): Promise<void> {
+  assertConfigured();
+  try {
+    await greenbidz.post('/user/resend-verification-link', { email });
+  } catch (err) {
+    throw toRegisterError(err, 'Could not resend the email');
+  }
+}
+
 export type CompleteSignupPayload = {
   email: string;
   first_name: string;

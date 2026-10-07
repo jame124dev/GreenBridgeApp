@@ -284,10 +284,29 @@ export function Screen({
         <Scroller
           ref={keyboard ? scrollRef : undefined}
           style={styles.flex}
-          // With a footer the reserve belongs to the footer, not the scroll
-          // content — the footer is a sibling and already occupies that space.
+          /*
+            ⚠️ THE FOOTER IS AN OVERLAY, NOT A SIBLING THAT TAKES SPACE.
+            The previous comment here said "the footer is a sibling and already
+            occupies that space" and reserved a flat `space['6xl']`. It does
+            not: the footer is absolutely positioned over the scroller, so the
+            content runs on underneath it and the LAST item is drawn behind the
+            footer — with the keyboard CLOSED, which `bottomOffset` does not
+            cover because that only applies while a field is focused.
+
+            Measured on the onboarding business step, 2026-10-05 (SM-G781B):
+            footer top at y=2044, the final field's label at y≈2004 and its
+            input starting y≈2070 — the whole last field underneath the footer,
+            with no scroll hint that anything was there.
+
+            So the reserve follows the MEASURED footer, the same `footerH` that
+            `bottomOffset` already uses two props below. A fixed number was
+            standing in for a measurement, which is the exact failure the
+            `footerH` note above this component was written about.
+          */
           contentContainerStyle={{
-            paddingBottom: footer ? space['6xl'] : bottomReserve + space['6xl'],
+            paddingBottom: footer
+              ? footerH + space['3xl']
+              : bottomReserve + space['6xl'],
           }}
           showsVerticalScrollIndicator={false}
           // Momentum that matches the design's calm: no bounce-heavy feel on

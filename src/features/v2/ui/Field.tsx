@@ -150,7 +150,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field({
       <View
         style={[
           styles.field,
-          { backgroundColor: c.surface, borderWidth: 1, borderColor: c.hairlineStrong },
+          { backgroundColor: c.surface, borderWidth: 1, borderColor: c.fieldBorder },
           invalid && { borderColor: c.danger },
         ]}
       >
@@ -169,7 +169,14 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field({
           /* A placeholder is a native string prop, not a `Text` child, so the
              kit's translation interception never sees it — see `useV2Copy`. */
           placeholder={input.placeholder ? tr(input.placeholder) : input.placeholder}
-          placeholderTextColor={c.inkDisabled}
+          /*
+            `inkSubtle`, not `inkDisabled`. Measured 2026-10-05: `inkDisabled`
+            (#B4C0B9) is 1.77:1 on the field fill against the 4.5:1 §7 asks of
+            text — and on an empty form the placeholder is the ONLY content in
+            the box, so five fields read as five blank pills. `inkSubtle` is
+            4.69:1 light / 4.77:1 dark and is already in the palette.
+          */
+          placeholderTextColor={c.inkSubtle}
           style={[
             styles.input,
             typeScale[variant],

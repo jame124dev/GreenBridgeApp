@@ -200,6 +200,45 @@ export async function recheckApproval(): Promise<LoginSuccess> {
   return finalizeAuthSuccess(res.data?.data);
 }
 
+/**
+ * Establish a session for an account that was just CREATED, not signed in.
+ *
+ * The mobile counterpart of the web's `establishSession`
+ * (`SellerOnboarding.tsx:618`). Same job — the new account becomes the signed-in
+ * session — but deliberately NOT the same mechanism: web writes nine
+ * `localStorage` keys including both tokens, while here the tokens go to secure
+ * storage via `persist()` and only `userId` touches MMKV. Reusing `persist`
+ * also means the socket reset below it still happens, which a hand-rolled
+ * version in the onboarding feature would have missed.
+ *
+ * `setPending(true)` because a freshly created seller is `pw_user_status
+ * "pending"` — the same state `login()` handles via ACCOUNT_PENDING. The
+ * account exists and is authenticated; it is simply not approved yet.
+ */
+export async function establishSessionAfterSignup(args: {
+  token: string;
+  refreshToken: string;
+  userId: number;
+  email: string;
+  name: string;
+  role: 'seller' | 'buyer';
+  company?: string | null;
+}): Promise<void> {
+  await persist({
+    token: args.token,
+    refreshToken: args.refreshToken,
+    userId: args.userId,
+  });
+  useAuth.getState().setProfile({
+    id: args.userId,
+    email: args.email,
+    name: args.name,
+    role: args.role,
+    company: args.company ?? null,
+  });
+  useAuth.getState().setPending(true);
+}
+
 async function persist({
   token,
   refreshToken,
