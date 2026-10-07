@@ -74,6 +74,7 @@ import {
 import { PaneShell } from './PaneShell';
 import { GUTTER, SECTION_GAP, icon, space, useV2Colors } from '@/theme/v2';
 import { requireAuth, useIsGuest } from '@/features/auth/requireAuth';
+import { SellerStatusCards } from '@/features/v2/seller/SellerStatusCards';
 import { useScanDraft } from '@/stores/scanDraftStore';
 import { useResumeDraft } from '@/features/scanner/useResumeDraft';
 import { openMultiItemDraft } from '@/features/v2/scan/openMultiItemDraft';
@@ -351,7 +352,17 @@ function SellingPaneInner() {
 
   return (
     <PaneShell sheet={sheet} testID="v2-home-selling">
-      
+          {/*
+            ⚠️ ABOVE the assistant row and the drafts, because this is the only
+            place a seller is told their account is waiting, their email is
+            unverified, or their profile is unfinished. Everything below is
+            things to DO; this is the reason some of them will not work.
+
+            It renders nothing for guests and for a settled seller, so the
+            common case is unchanged — see `SellerStatusCards`.
+          */}
+          <SellerStatusCards />
+
           <View style={styles.blockGap} />
           <TintedRow
             title={t('mobile.scanv2.home.askAssistant')}

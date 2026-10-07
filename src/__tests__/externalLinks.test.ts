@@ -61,7 +61,15 @@ const BANNED = [
  * Screens that App Review reached and rejected. They must contain NO outbound
  * web navigation at all — not a fixed URL, not one built at runtime.
  */
-const MUST_NOT_NAVIGATE = ['app/(auth)/login.tsx', 'app/(auth)/pending.tsx'];
+const MUST_NOT_NAVIGATE = [
+  'app/(auth)/login.tsx',
+  'app/(auth)/pending.tsx',
+  // The v2 account-status screen. Same reasoning as `pending.tsx` and the same
+  // rejection behind it (build 14, Guideline 3.1.1, an "Open website" button):
+  // this is a screen an UNAPPROVED reviewer can reach, so nothing on it may
+  // leave the app. Its "Ask us about it" goes to the in-app assistant.
+  'app/v2/account-status.tsx',
+];
 
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 

@@ -54,8 +54,42 @@ export type PaletteRoles = {
   hairline: string;
   /** Hairline with weight — section breaks that must read as a break. */
   hairlineStrong: string;
+  /**
+   * The resting border of a TEXT INPUT. Separate from `hairlineStrong` because
+   * the two have different jobs and different thresholds: a divider only has to
+   * be seen, an input border has to meet the 3:1 non-text contrast floor
+   * `FORM_INPUT_RULES.md` §7 sets, on BOTH the card and the field fill.
+   *
+   * ⚠️ `hairlineStrong` does not meet it. Measured 2026-10-05: `#DCE7E1` is
+   * **1.27:1** on white and 1.19:1 on `surface` — less than half the floor, so
+   * every input in the app was a ghost. The rule itself says to use
+   * `hairlineStrong` "because `hairline` does not reach 3:1"; neither does
+   * `hairlineStrong`, which is why this token exists rather than a sweep of the
+   * 21 places `hairlineStrong` is legitimately used for dividers.
+   */
+  fieldBorder: string;
   /** Destructive. The only warm colour in the entire design. */
   danger: string;
+  /**
+   * CAUTION — "something is pending or needs your attention", not an error.
+   *
+   * Added 2026-10-06 for the seller's waiting-for-approval and verify-your-email
+   * states. Those needed a tone the palette genuinely did not have: `accent`
+   * reads as success, which is wrong for a blocked account, and `danger` reads
+   * as a failure the seller caused, which is wrong for "an admin has not got to
+   * you yet". The web uses amber for exactly this state.
+   *
+   * Contrast, computed 2026-10-06 (relative luminance, not estimated):
+   *   · `cautionInk` #7A5B16 on `cautionWash` #FDF6E3 = **5.84:1** — clears the
+   *     4.5:1 text floor.
+   * `cautionLine` is decorative: the card is told apart from the page by its
+   * FILL (`cautionWash` against `wash` #EDF6F1), not by its border, so the
+   * border is not carrying meaning and is not held to the 3:1 non-text floor.
+   * Do not start using it as the only boundary of a control.
+   */
+  cautionWash: string;
+  cautionInk: string;
+  cautionLine: string;
   /**
    * Scrims over photography (banner captions) — a FOUR-stop ramp, not two.
    *
@@ -200,7 +234,13 @@ export const lightPalette: PaletteRoles = {
   inkDisabled: '#B4C0B9',
   hairline: '#F2F5F3',
   hairlineStrong: '#DCE7E1',
+  /** 3.41:1 on `base`, 3.21:1 on `surface` — clears §7's 3:1 on both grounds. */
+  fieldBorder: '#7E8F86',
   danger: '#A8452F',
+  /** 5.84:1 ink-on-wash, computed. See the type's note. */
+  cautionWash: '#FDF6E3',
+  cautionInk: '#7A5B16',
+  cautionLine: '#E8C87A',
   scrimSoft: 'rgba(6,28,20,0.18)',
   scrim: 'rgba(6,28,20,0.34)',
   scrimMid: 'rgba(6,28,20,0.62)',
@@ -272,7 +312,17 @@ export const darkPalette: PaletteRoles = {
   inkDisabled: '#4A6459',
   hairline: '#243830',
   hairlineStrong: '#31483E',
+  /** 3.98:1 on `base`, 3.36:1 on `surface`. Same derivation as light. */
+  fieldBorder: '#5E7A6C',
   danger: '#E08A70',
+  /**
+   * Inverted like the rest of dark: the amber becomes the INK and the wash
+   * becomes a dark warm ground, rather than tinting a light card darker.
+   * `#E8C87A` on `#2E2716` = **9.15:1**, computed the same way as light.
+   */
+  cautionWash: '#2E2716',
+  cautionInk: '#E8C87A',
+  cautionLine: '#5C4D22',
   // Same four-stop ramp as light, scaled by the same factor the existing two
   // already carry (0.34→0.42, 0.82→0.88). Derived, like the rest of dark.
   scrimSoft: 'rgba(3,14,10,0.22)',

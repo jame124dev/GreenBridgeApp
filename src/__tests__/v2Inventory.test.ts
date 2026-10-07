@@ -97,6 +97,11 @@ describe('v2 route inventory', () => {
 
     expect(routes).toEqual([
       'account',
+      // Seller approval / email / review status. Opened from the status card
+      // on the Selling home, never routed to automatically — it reports, it
+      // does not gate. See its header for the two invariants it carries over
+      // from `app/(auth)/pending.tsx`.
+      'account-status',
       'browse',
       'buying',
       'chat',

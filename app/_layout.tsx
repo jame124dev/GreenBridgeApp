@@ -180,6 +180,26 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
     const inAuthGroup = segments[0] === '(auth)';
 
+    /**
+     * The seller onboarding places the person itself, so this effect must not.
+     *
+     * ⚠️ WHY. The v2 onboarding creates the account at the END OF ITS FIRST
+     * SCREEN and establishes the session right there, deliberately — holding the
+     * token in memory until the wizard finishes (what web does) loses it to a
+     * background kill on a phone. But the route lives under `(auth)`, so the
+     * instant `createAccount` sets `profile` the condition below fired and
+     * replaced the route with the home screen — ejecting the seller from step 1
+     * of 6 before they answered a single question, and skipping every
+     * `saveStep` write. The account existed; the onboarding it was created for
+     * never ran.
+     *
+     * Seen on a device 2026-10-06, the first time the write path was ever live:
+     * pressing "Agree and continue" landed on "What are you selling today?".
+     * It was invisible until then, because with the path inert no profile was
+     * ever set and the wizard advanced normally.
+     */
+    const inSellerOnboarding = inAuthGroup && segments[1] === 'onboarding-mock';
+
     // ⚠️ DO NOT re-add a redirect here. `isPending` means "not approved in the main
     // users queue", which is the state EVERY new app signup starts in. Bouncing
     // those users to /(auth)/pending is what made a fresh install a dead end.
@@ -208,7 +228,7 @@ function AuthGuard({ children }: { children: ReactNode }) {
     //
     // When a v2 landing is owed, stand down and let the auth screen place the
     // person — `postAuthLanding()` is the single decision point.
-    if (profile && inAuthGroup && !hasPendingV2Return()) {
+    if (profile && inAuthGroup && !hasPendingV2Return() && !inSellerOnboarding) {
       // `homeRoute()`, not the local HOME_ROUTE constant — with the v2 flag on,
       // "home" is `/v2`, and bouncing to the legacy home here would undo the
       // front-door fix for anyone who signed in.

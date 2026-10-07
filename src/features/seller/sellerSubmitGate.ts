@@ -42,6 +42,9 @@ import { IS_CUSTOMER } from '@/lib/flags';
 import { queryClient } from '@/lib/queryClient';
 import { routes } from '@/lib/routes';
 import type { SellerUpgradeStatus } from '@/services/seller/sellerUpgrade';
+import type { OnboardingDetails } from '@/services/onboarding/sellerOnboarding';
+import { ONBOARDING_DETAILS_KEY } from '@/features/seller/useSellerStatus';
+import { useAuth } from '@/stores/authStore';
 
 /**
  * True when the user may submit a listing for review.
@@ -57,7 +60,64 @@ export function canSubmitListing(): boolean {
   // Seller fork: listing IS the product, and there is no upgrade row to read.
   if (!IS_CUSTOMER) return true;
   const status = queryClient.getQueryData<SellerUpgradeStatus | null>(SELLER_UPGRADE_KEY);
-  return status?.status === 'approved';
+  if (status?.status !== 'approved') return false;
+
+  /*
+   * A DERIVED approval is not a decision — re-check the account itself.
+   *
+   * `source === 'existing_seller'` means no human approved anything: the server
+   * synthesised `approved` purely because `greenbidz_user_type` meta says
+   * "seller" (origin/dev `services/sellerUpgradeService.js:391-412`). That was
+   * safe while the only way to hold that meta was to be a seller from the old
+   * platform. The v2 onboarding broke the assumption — `signup-with-link-v2`
+   * writes `greenbidz_user_type = role` alongside `pw_user_status = 'pending'`
+   * in one insert (origin/dev `controller/authV3.controller.js:1157-1158`) — so
+   * a brand-new, unreviewed seller arrives here already derived-`approved` and
+   * could publish straight past admin review. The web never had this hole
+   * because its gate reads `pw_user_status` directly.
+   *
+   * So: an explicit reviewed row still wins on its own (an admin said yes, and
+   * that approval does not necessarily flip `pw_user_status` — making this
+   * unconditional would lock out every properly approved upgrade). A derived
+   * one additionally requires the account not to be awaiting approval.
+   *
+   * Fails CLOSED, like the rest of this predicate: `isPending` defaults to true
+   * only where the session says so, and an unknown session is not pending, so
+   * the stricter half applies exactly to the accounts the v2 flow creates —
+   * `establishSessionAfterSignup` sets pending at the moment the account is made.
+   */
+  if (status.source === 'existing_seller' && useAuth.getState().isPending) return false;
+
+  /*
+   * An APPROVED seller who never finished the wizard must not publish an empty
+   * profile — no company, no tax id, no address. The web prevents this with
+   * `SellerOnboardingGuard`, which sends them back to `/auth2?resume=1` before
+   * the dashboard; mobile had no equivalent.
+   *
+   * ⚠️ KEYED ON `sellerType`, NOT ON `onboardingCompleted` ALONE — and that is
+   * the whole point of this block.
+   *
+   * `GET /user/onboarding-details` returns a FULL DEFAULT OBJECT when the row
+   * does not exist: `{sellerType: null, …, onboardingCompleted: false}`
+   * (origin/dev `controller/authV3.controller.js:1520`). So every seller who
+   * predates the v2 wizard — i.e. every existing approved seller on the
+   * platform — is indistinguishable from someone who abandoned it, if you read
+   * the flag by itself. Gating on `!onboardingCompleted` would have blocked
+   * all of them from publishing. `sellerType` is non-null only once the wizard
+   * actually recorded an answer, so it is the one field that says "this
+   * account entered the v2 flow" rather than "this account has no row".
+   *
+   * ⚠️ AND THIS HALF FAILS **OPEN**, against the rest of this predicate.
+   * Everything above fails closed because an unknown approval must not open
+   * the gate. Here the unknown is inverted: a cold or failed cache means we do
+   * not know whether a row exists, and refusing on that would again block the
+   * legacy population — the larger group, and the one with nothing to fix.
+   * `SellerGatePrewarm` warms this on (lab) entry so "unknown" is rare.
+   */
+  const ob = queryClient.getQueryData<OnboardingDetails>(ONBOARDING_DETAILS_KEY);
+  if (ob && ob.sellerType !== null && !ob.onboardingCompleted) return false;
+
+  return true;
 }
 
 /**
@@ -76,6 +136,22 @@ export function canSubmitListing(): boolean {
  */
 export function redirectToSellerApplication(): void {
   void queryClient.invalidateQueries({ queryKey: SELLER_UPGRADE_KEY });
+
+  /*
+   * TWO REASONS TO BE HERE, TWO DOORS.
+   *
+   * The application screen answers "you are not an approved seller". It does
+   * not answer "your seller profile is half-filled" — that person already
+   * applied, and sending them to a form about applying is a dead end wearing
+   * the wrong label. When the onboarding row says the wizard was started and
+   * not finished, the fix is the wizard, which now reopens at the first
+   * unanswered step (`features/v2/onboarding/resume.ts`).
+   *
+   * Same cache read as the gate, so the two cannot disagree about why.
+   */
+  const ob = queryClient.getQueryData<OnboardingDetails>(ONBOARDING_DETAILS_KEY);
+  const unfinishedOnboarding = !!ob && ob.sellerType !== null && !ob.onboardingCompleted;
+
   // push (not replace): back returns to the review screen with the draft intact.
-  router.push(routes.labSellApply);
+  router.push(unfinishedOnboarding ? '/(auth)/onboarding-mock' : routes.labSellApply);
 }
