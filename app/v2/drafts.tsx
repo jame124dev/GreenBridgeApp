@@ -38,6 +38,12 @@ import { GUTTER, icon, space, useV2Colors } from '@/theme/v2';
  * field stays regardless, or clearing a search would remove the box mid-use.
  */
 const SEARCH_FROM = 6;
+
+/**
+ * A stable empty array for `useDraftReadiness` when the tab asks for nothing.
+ * A fresh `[]` each render would change the query list's identity every pass.
+ */
+const EMPTY_DRAFTS: DraftSummary[] = [];
 import { requireAuth, useIsGuest } from '@/features/auth/requireAuth';
 import { useDeleteDraft, useListDrafts } from '@/services/drafts/draftHooks';
 import { useResumeDraft } from '@/features/scanner/useResumeDraft';
@@ -49,6 +55,11 @@ import { startV2Scan, startV2TypeDetails } from '@/features/v2/scan/startV2Scan'
 import { routes } from '@/lib/routes';
 import { haptics } from '@/lib/haptics';
 import { DraftCard } from '@/features/v2/drafts/draft-card';
+import { useSubmitFromInventory } from '@/features/v2/drafts/useSubmitFromInventory';
+import { useDraftReadiness } from '@/features/v2/drafts/useDraftReadiness';
+import { canSubmitListing } from '@/features/seller/sellerSubmitGate';
+import { useSellerStatus } from '@/features/seller/useSellerStatus';
+import { useSellerUpgradeStatus } from '@/features/seller/useSellerUpgrade';
 import { toast } from 'sonner-native';
 import { draftTitle } from '@/features/v2/listings/presentation';
 
@@ -83,6 +94,37 @@ export default function V2Drafts() {
   const drafts = byStatus[status];
 
   const { resume, resumingId } = useResumeDraft(v2ResumeRoute, openMultiItemDraft);
+
+  /*
+   * SUBMIT FOR LISTING — the web list has it per row; mobile could only submit
+   * at the end of a scan, so anything saved to the inventory had no way out.
+   *
+   * `canSubmitListing()` decides whether the control is DRAWN at all, read
+   * through `useSellerStatus` so the screen re-renders when the answer
+   * arrives. The gate runs again inside `publish()` on every press — this is
+   * the display half only, and the two must not become separate opinions.
+   */
+  /*
+   * ⚠️ BOTH hooks, exactly as `useInventoryEnding` does — and the second one
+   * is why the control first failed to appear at all.
+   *
+   * `canSubmitListing()` reads the seller-upgrade row out of the query cache
+   * with `getQueryData`, which returns undefined when nothing has FETCHED it,
+   * and the predicate fails closed. `SellerGatePrewarm` warms it, but it is
+   * mounted in `app/(lab)/_layout.tsx` only — this screen lives under `/v2`,
+   * so on a cold open of the inventory the row was never requested and an
+   * approved seller saw no Submit control. Subscribing here is what fetches
+   * it; `useSellerStatus` alone covers only the other half.
+   */
+  /*
+   * READINESS per row — only for the tab that can submit, and only for the
+   * rows actually on screen, because it is one request per draft.
+   */
+  const upgrade = useSellerUpgradeStatus();
+  const sellerStatus = useSellerStatus();
+  const gateReady = !sellerStatus.loading && !upgrade.isLoading;
+  const canSubmit = !isGuest && gateReady && canSubmitListing();
+  const submitter = useSubmitFromInventory((id) => resume(id));
 
   // Kept as a guard rather than trusted to the server: a row of the wrong status
   // here would offer "Tap to resume" on a listed draft.
@@ -136,6 +178,16 @@ export default function V2Drafts() {
     : allItems;
   const showSearch = allItems.length >= SEARCH_FROM || q.length > 0;
 
+  /*
+   * One request per row, so this is asked only where it is acted on: the
+   * active tab, for a seller who may submit, over the rows left after the
+   * search filter. Listed and Discarded rows have no submit control, so their
+   * readiness would be a wasted fetch.
+   */
+  const readiness = useDraftReadiness(
+    status === 'active' && canSubmit ? items : EMPTY_DRAFTS,
+  );
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -144,6 +196,43 @@ export default function V2Drafts() {
       setRefreshing(false);
     }
   }, [drafts]);
+
+  /**
+   * The row's submit affordance, decided by what the draft actually needs.
+   *
+   *   ready       → "Submit for listing", which publishes on the spot.
+   *   incomplete  → "Finish & submit" plus the missing piece on the third
+   *                 line. The press opens the draft at the step that fixes it,
+   *                 and the scan flow's own ending offers Submit there — so
+   *                 the seller never has to come back here to finish the job.
+   *   open        → "Open to submit", the web list's own wording for a draft
+   *                 it cannot publish from the row. A background-recognition
+   *                 draft has no items until it is opened, so there is nothing
+   *                 truthful to say about what it needs yet.
+   *   unsupported → no submit control; the card still resumes on tap. Offering
+   *                 Submit on a draft this screen cannot publish was the
+   *                 bounce this whole change exists to remove.
+   *   loading     → no control yet. Drawing "Submit for listing" and then
+   *                 changing it to "Finish & submit" a moment later moves a
+   *                 control under the seller's thumb.
+   */
+  const rowSubmitProps = (d: DraftSummary) => {
+    if (status !== 'active' || !canSubmit) return {};
+    const r = readiness[d.id];
+    if (!r || r.state === 'loading' || r.state === 'unsupported') return {};
+    const label =
+      r.state === 'incomplete'
+        ? 'mobile.scanv2.inventory.finishAndSubmit'
+        : r.state === 'open'
+          ? 'mobile.scanv2.inventory.openToSubmitLabel'
+          : 'mobile.scanv2.inventory.submitForListing';
+    return {
+      onSubmit: () => void submitter.submit(d),
+      submitLabel: t(label),
+      isSubmitting: submitter.submittingId === d.id,
+      needs: r.state === 'incomplete' ? r.block.needs : undefined,
+    };
+  };
 
   const onDraft = (d: DraftSummary) => {
     if (resumingId) return;
@@ -373,6 +462,9 @@ export default function V2Drafts() {
             // LISTED one would leave its equipment live with no row for it.
             onDiscard={status === 'active' ? () => requestDiscard(item) : undefined}
             discardLabel={t('mobile.scanv2.inventory.discard')}
+            // Active only, and only for a seller who may publish — drawing it
+            // for a pending account would offer a control that bounces them.
+            {...rowSubmitProps(item)}
           />
         )}
         contentContainerStyle={{

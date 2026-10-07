@@ -31,6 +31,10 @@ export function DraftCard({
   statusLabel,
   onDiscard,
   discardLabel,
+  onSubmit,
+  submitLabel,
+  isSubmitting,
+  needs,
 }: {
   draft: DraftSummary;
   isResuming?: boolean;
@@ -53,11 +57,30 @@ export function DraftCard({
   onDiscard?: () => void;
   /** Required with `onDiscard` — an icon-only button has no visible text. */
   discardLabel?: string;
+  /**
+   * Omitted → no submit affordance. The screen passes this only on the active
+   * tab AND only when the seller may publish at all, so an unapproved account
+   * is never shown a control that would bounce it.
+   *
+   * It is LABELLED, unlike discard: submitting is the consequential act on
+   * this row, and an icon alone would not say what it does.
+   */
+  onSubmit?: () => void;
+  submitLabel?: string;
+  isSubmitting?: boolean;
+  /**
+   * What this draft still needs, e.g. "Needs a photo". Replaces the third
+   * line's "Tap to resume" when present. Omitted when the draft is ready, or
+   * while readiness is still being worked out — an empty line is better than
+   * one that says "ready" and then refuses.
+   */
+  needs?: string;
 }) {
   const c = useV2Colors();
   const { animatedStyle, onPressIn, onPressOut } = usePressFeedback();
   const [failed, setFailed] = useState(false);
   const [discardPressed, setDiscardPressed] = useState(false);
+  const [submitPressed, setSubmitPressed] = useState(false);
 
   const cover = photoUri(draft.thumbnail_object);
   const showImage = Boolean(cover) && !failed;
@@ -67,7 +90,15 @@ export function DraftCard({
   const ago = compactAgo(draft.updated_at);
   const title = draftTitle(draft);
   const modeLabel = draft.flow === 'ai' ? 'AI Draft' : 'Manual Draft';
-  const tail = onPress ? 'Tap to resume' : (statusLabel ?? '');
+  /*
+   * The third line answers "what happens if I press this?".
+   *
+   * `needs` wins over "Tap to resume" when the draft is short of the publish
+   * bar: a seller scanning the list wants to know WHICH item is holding them
+   * up without opening each one. It is the same sentence the publish would
+   * have shown after refusing — said before the press instead of after.
+   */
+  const tail = needs ?? (onPress ? 'Tap to resume' : (statusLabel ?? ''));
   const stats = count > 1 ? `${plural(count, 'item', 'items')}  ·  ${tail}` : tail;
 
   return (
@@ -161,9 +192,47 @@ export function DraftCard({
           {title}
         </Text>
 
-        <Text variant="caption" color="inkSubtle" numberOfLines={1}>
-          {stats}
-        </Text>
+        <View style={styles.footRow}>
+          <Text variant="caption" color="inkSubtle" numberOfLines={1} style={styles.stats}>
+            {stats}
+          </Text>
+          {/*
+            A nested Pressable inside the card's own Pressable. The inner one
+            wins the responder, so pressing Submit does not also resume — but
+            it must NOT be the RNGH Pressable here: this card deliberately uses
+            RN's, and mixing the two inside one row gives the gesture-handler
+            child priority over the RN parent in a way that swallows the card
+            tap on Android.
+          */}
+          {onSubmit ? (
+            <Pressable
+              onPress={onSubmit}
+              disabled={isSubmitting}
+              hitSlop={space.sm}
+              onPressIn={() => setSubmitPressed(true)}
+              onPressOut={() => setSubmitPressed(false)}
+              accessibilityRole="button"
+              accessibilityLabel={submitLabel}
+              accessibilityState={{ disabled: !!isSubmitting, busy: !!isSubmitting }}
+              testID={`v2-drafts-submit-${draft.id}`}
+              // Array of objects — never the callback form. See the note on the
+              // discard control above.
+              style={[
+                styles.submit,
+                { borderColor: c.accent },
+                submitPressed && styles.submitPressed,
+              ]}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color={c.accent} />
+              ) : (
+                <Text variant="micro" style={{ color: c.accent }} numberOfLines={1}>
+                  {submitLabel}
+                </Text>
+              )}
+            </Pressable>
+          ) : null}
+        </View>
       </View>
     </AnimatedPressable>
   );
@@ -209,5 +278,20 @@ const styles = StyleSheet.create({
   ref: { flex: 1, minWidth: 0 },
   discard: { padding: space.xxs },
   discardPressed: { opacity: press.opacity },
+  footRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  stats: { flex: 1, minWidth: 0 },
+  /**
+   * Outlined, not filled. `PrimaryAction` is the one green pill a screen is
+   * allowed, and a list of these would put N of them on one screen — so this
+   * reads as the row's action without competing with the screen's.
+   */
+  submit: {
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs,
+    flexShrink: 0,
+  },
+  submitPressed: { opacity: press.opacity },
   title: { minWidth: 0, marginBottom: space.xs },
 });
