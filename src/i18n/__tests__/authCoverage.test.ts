@@ -31,6 +31,26 @@ const INTENTIONALLY_SAME = new Set([
   'emailLabel', // ditto — Vietnamese uses "Email" verbatim (register step 1)
 ]);
 
+/**
+ * FULL PATHS that are intentionally identical, where the leaf name is too
+ * generic to exempt.
+ *
+ * ⚠️ Deliberately a path list and not `'placeholder'` in the set above:
+ * exempting that leaf would stop policing every real placeholder in the app
+ * ("Your business name", "Select your country"), which is most of them.
+ *
+ * The onboarding phone examples are NOT here for ja/th/vi/zh-Hans — those are
+ * localised to a real local dialling format, because a Thai seller being shown
+ * a Taiwan number is a bug the first version of this shipped with. zh-Hant is
+ * listed because Taiwan's format genuinely is the English default.
+ */
+const INTENTIONALLY_SAME_PATHS = new Set([
+  'onboarding.account.email.placeholder', // name@company.com — an address format
+  'onboarding.fields.website.placeholder', // www.example.com — a URL format
+  'onboarding.account.phone.placeholder', // +886 … — zh-Hant is Taiwan, same as en
+  'onboarding.fields.bizPhone.placeholder',
+]);
+
 /** Flatten to `a.b.c` -> string, skipping i18next plural siblings. */
 function flatten(obj: unknown, prefix = '', out: Record<string, string> = {}) {
   if (obj && typeof obj === 'object') {
@@ -66,6 +86,7 @@ describe('mobile.auth translation coverage', () => {
       const untranslated = Object.keys(EN_AUTH).filter(
         (k) =>
           !INTENTIONALLY_SAME.has(k.split('.').pop() as string) &&
+          !INTENTIONALLY_SAME_PATHS.has(k) &&
           localeAuth[k] === EN_AUTH[k],
       );
       expect(untranslated).toEqual([]);

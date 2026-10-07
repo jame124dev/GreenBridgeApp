@@ -1714,7 +1714,7 @@
     "qa": "问与答",
     "askQuestions": "询问问题",
     "answerQuestions": "回答问题",
-    "loading": "加载中...",
+    "loading": "加载中…",
     "noMessages": "还没有消息",
     "beFirst": "成为第一个提问的人！",
     "typeMessage": "输入消息...",
@@ -3340,7 +3340,7 @@
     "signInTitle": "登录以查看您的收藏",
     "signInDesc": "追踪您喜爱的拍卖。",
     "signIn": "登录",
-    "emptyTitle": "没有已保存的拍卖",
+    "emptyTitle": "这里还没有内容",
     "emptyDesc": "点击任何拍卖上的爱心图标以保存至此。",
     "browse": "浏览拍卖",
     "loadError": "加载收藏失败"
@@ -3410,7 +3410,7 @@
     "addressLabel": "地址 / 城市",
     "quantityLabel": "数量",
     "estimatedValueLabel": "估计价值",
-    "saveButton": "保存",
+    "saveButton": "保存到库存",
     "saving": "保存中...",
     "notSellerTitle": "您尚未成为卖家",
     "notSellerDesc": "要发布产品，您需要卖家帐户。请从仪表板申请成为卖家。",
@@ -3980,7 +3980,7 @@
         "done": "完成",
         "doneHint": "保存修改并返回物品列表",
         "staleWrite": "该物品已在别处被修改。请重新打开以获取最新内容。",
-        "saveFailed": "无法保存该修改",
+        "saveFailed": "保存失败，请重试。",
         "acceptFailed": "无法接受该物品"
       },
       "required": {
@@ -4040,7 +4040,7 @@
       "intake": {
         "eyebrow": "接收",
         "title": "上传你的库存",
-        "lede": "任何格式、任何语言。照片、表格、拍卖 PDF — 我们全部读取并为你生成刊登信息。",
+        "lede": "提交发布前都是私密的。",
         "dropTitle": "添加照片、文档或库存清单",
         "dropBody": "一台设备或整个厂区都可以。",
         "addMore": "添加更多文件",
@@ -4118,12 +4118,46 @@
       },
       "drafts": {
         "title": "您的草稿",
-        "subtitle": "中途停下的内容都会保存在这里。",
+        "subtitle": "提交发布前都是私密的。",
         "loading": "正在查找未完成的扫描…",
         "sessionEndedBody": "重新登录后草稿仍会在这里，没有丢失任何内容。",
         "loadError": "草稿加载失败。下拉可重试，没有丢失任何内容。",
         "emptyTitle": "没有未完成的内容",
-        "emptyBody": "中途停下的扫描会保存在这里，方便您改天继续。"
+        "emptyBody": "扫描的商品会保存在这里。"
+      },
+      "inventory": {
+        "saveButton": "保存到我的库存",
+        "saving": "正在保存…",
+        "submitButton": "提交上架",
+        "submitting": "正在提交…",
+        "saved": "已保存到您的库存",
+        "savedPending": "已保存，通过审核后即可提交发布。",
+        "saveFailed": "无法保存到库存。您的商品仍在这里——请重试。",
+        "reviewTitle": "检查您的商品",
+        "lede": "已保存的商品会私密地留在您的库存中。在您提交上架之前，不会公开任何内容。",
+        "verdictCanSubmit": "立即提交发布，或先留在这里。",
+        "verdictSaveOnly": "通过审核后即可提交发布。",
+        "title": "我的库存",
+        "subtitle": "提交发布前都是私密的。",
+        "filterActive": "库存中",
+        "filterPublished": "已上架",
+        "filterDiscarded": "已丢弃",
+        "emptyPublishedTitle": "还没有上架的商品",
+        "emptyPublishedBody": "您提交的商品会显示在这里。",
+        "emptyDiscardedTitle": "没有已丢弃的商品",
+        "emptyDiscardedBody": "已保留，未删除。",
+        "openInventory": "查看我的物品",
+        "discard": "丢弃",
+        "discardConfirmTitle": "要丢弃这件物品吗？",
+        "discardConfirmBody": "“{{title}}”将移至“已丢弃”。物品会保留，不会删除，但无法移回。",
+        "discardFailed": "无法丢弃，请重试。",
+        "searchPlaceholder": "搜索我的物品",
+        "searchCount_one": "{{count}} 个匹配",
+        "searchCount_other": "{{count}} 个匹配",
+        "noMatchTitle": "没有匹配项",
+        "noMatchBody": "没有与“{{query}}”匹配的物品。",
+        "noMatchPartial": "已加载的物品中没有匹配项。向下滚动加载更多后再搜索。",
+        "clearSearch": "清除搜索"
       },
       "listings": {
         "title": "我的商品",
@@ -4382,6 +4416,253 @@
       "sustainabilityFirst": "可持续优先",
       "tagline": "以负责任的工业贸易推动循环经济。",
       "contactOpenFailed": "请改用浏览器打开该链接。",
+      "onboarding": {
+        "role": {
+          "eyebrow": "开始使用",
+          "title": "您想如何使用 {{brand}}？",
+          "subtitle": "另一种身份以后也可以加入同一个账号。",
+          "buyerTitle": "我是买家",
+          "buyerDescription": "浏览并选购经校准的检测与实验室设备。",
+          "sellerTitle": "我是卖家",
+          "sellerDescription": "发布闲置设备，触达重视校准记录的买家。"
+        },
+        "cta": {
+          "continue": "继续",
+          "submitForReview": "提交审核",
+          "tryAgain": "重试",
+          "help": "帮助",
+          "saveExit": "保存并退出"
+        },
+        "resume": {
+          "loading": "正在接着您上次的进度…"
+        },
+        "sellerStatus": {
+          "summary": {
+            "title": "完成账户设置",
+            "titleWaiting": "您的账户审核中",
+            "waiting": "等待审核中",
+            "needsYou_one": "{{count}} 项待您处理",
+            "needsYou_other": "{{count}} 项待您处理",
+            "progress": "已完成 {{done}}/{{total}}"
+          },
+          "pending": {
+            "title": "等待审核中",
+            "body": "等待期间您仍可浏览、保存草稿并发送消息。通过审核后即可发布，通常在 24 小时内完成。",
+            "cta": "查看当前进度"
+          },
+          "verify": {
+            "title": "确认您的邮箱",
+            "body": "我们已发送链接，确认后可保护您的账户安全。",
+            "resend": "重新发送",
+            "sending": "发送中…",
+            "sent": "已发送，请查看您的收件箱。",
+            "failed": "发送失败，请稍后再试。"
+          },
+          "finish": {
+            "title": "完善卖家资料",
+            "subtitle": "从上次中断的地方继续"
+          }
+        },
+        "accountStatus": {
+          "title": "您的卖家资料正在审核中。",
+          "subtitle": "通过后我们会立即邮件通知您，通常在 24 小时内。",
+          "browseCta": "浏览设备",
+          "askCta": "向我们咨询",
+          "steps": {
+            "account": { "title": "账户已创建", "body": "您的邮箱与登录信息。" },
+            "email": {
+              "title": "确认您的邮箱",
+              "body": "确认后可保护您的账户安全。",
+              "sentTo": "我们已将链接发送至 {{email}}。"
+            },
+            "profile": { "title": "完善卖家资料", "body": "您的营业信息、地点、类别与数量。", "cta": "从上次中断的地方继续" },
+            "documents": {
+              "title": "营业文件",
+              "body": "您的公司登记证明。"
+            },
+            "review": { "title": "我们的审核", "body": "通常在 24 小时内完成。" }
+          },
+          "canDo": {
+            "title": "您现在可以做的事",
+            "browse": "浏览和搜索设备",
+            "wants": "保存您正在寻找的商品",
+            "drafts": "准备好发布的草稿",
+            "locked": "通过审核后即可发布",
+            "unlocked": "已可发布"
+          }
+        },
+        "account": {
+          "eyebrowSeller": "卖家账号",
+          "eyebrowBuyer": "买家账号",
+          "title": "欢迎使用 {{brand}}！",
+          "subtitle": "我们开始吧。",
+          "ctaSeller": "同意并继续",
+          "ctaBuyer": "同意并开始选购",
+          "legal": "继续即表示您同意 {{brand}} 的使用条款与隐私政策。",
+          "email": { "label": "电子邮箱地址", "placeholder": "name@company.com" },
+          "fullName": { "label": "姓名", "placeholder": "您的姓名" },
+          "phone": { "label": "电话号码", "placeholder": "+86 138 0013 8000" },
+          "password": {
+            "placeholder": "设置密码",
+            "help": "至少 8 个字符，并包含英文字母与数字。"
+          },
+          "confirmPassword": { "label": "确认密码", "placeholder": "再次输入密码" }
+        },
+        "sellerType": {
+          "title": "您是经销商，还是为自己的公司销售？",
+          "subtitle": "这会影响接下来询问的内容。",
+          "resellerTitle": "经销商",
+          "resellerDescription": "我经常销售设备",
+          "companyTitle": "公司",
+          "companyDescription": "为自己的公司销售"
+        },
+        "business": {
+          "titleReseller": "请介绍您的商号",
+          "titleCompany": "请介绍您的公司",
+          "subtitle": "这些信息会显示在您的卖家资料上。"
+        },
+        "location": {
+          "title": "您的设备位于哪里？",
+          "subtitle": "买家只会看到城市与国家。"
+        },
+        "categories": {
+          "title": "您销售哪些类型的设备？",
+          "subtitle": "可多选。"
+        },
+        "volume": {
+          "titleReseller": "您通常有多少件商品待售？",
+          "titleCompany": "您要销售多少设备？",
+          "reseller": {
+            "aTitle": "少于 25 件",
+            "aDescription": "少量且周转快的库存",
+            "bTitle": "25–100 件",
+            "bDescription": "稳定的商品目录",
+            "cTitle": "100 件以上",
+            "cDescription": "大量销售——我们可以协助批量上传"
+          },
+          "company": {
+            "aTitle": "只有少数几件",
+            "aDescription": "一次性的闲置设备",
+            "bTitle": "实验室清理",
+            "bDescription": "一次约 10–50 件",
+            "cTitle": "持续淘汰",
+            "cDescription": "我们会定期淘汰设备"
+          }
+        },
+        "calibration": {
+          "title": "您的商品附有校准记录吗？",
+          "subtitle": "之后可以在每条发布中附上证书。",
+          "mostTitle": "是，大部分都有",
+          "mostDescription": "最近 12 个月内校准",
+          "someTitle": "部分商品有",
+          "someDescription": "校准品与现状品混合",
+          "noneTitle": "否，按现状出售",
+          "noneDescription": "发布时不含校准记录"
+        },
+        "gate": {
+          "categories": "请至少选择一种设备类别才能继续。",
+          "calibrationAndTerms": "请选择一个答案并同意卖家平台条款后才能提交。",
+          "terms": "请同意卖家平台条款后才能提交。"
+        },
+        "fields": {
+          "optionalSuffix": "{{label}}（选填）",
+          "bizName": {
+            "labelReseller": "商号名称",
+            "labelCompany": "公司名称",
+            "placeholderReseller": "您的商号名称",
+            "placeholderCompany": "您的公司名称"
+          },
+          "website": { "label": "网站", "placeholder": "www.example.com" },
+          "taxId": { "label": "增值税／税号", "placeholder": "纳税识别号" },
+          "bizRole": {
+            "labelReseller": "经营年数",
+            "placeholderReseller": "例如 5",
+            "labelCompany": "您的职位",
+            "placeholderCompany": "例如：实验室主管"
+          },
+          "bizPhone": { "label": "公司电话", "placeholder": "+86 138 0013 8000" },
+          "street": { "label": "街道地址", "placeholder": "楼宇、街道、单元" },
+          "city": { "label": "城市", "placeholder": "城市" },
+          "postal": { "label": "邮政编码", "placeholder": "邮政编码" },
+          "region": { "label": "省／地区", "placeholder": "省或地区" },
+          "country": { "label": "国家", "placeholder": "请选择国家" }
+        },
+        "submit": {
+          "title": "正在创建您的账号",
+          "cta": "提交中…",
+          "phaseSaved": "已保存您的回答",
+          "phaseChecked": "已核对您的资料",
+          "phaseCreating": "正在创建您的卖家资料",
+          "phaseCreatingDetail": "这需要几秒钟",
+          "phaseSending": "正在提交审核",
+          "phaseStatus": "第 {{current}} 步，共 {{total}} 步：{{label}}"
+        },
+        "done": {
+          "titleSeller": "您的卖家资料正在审核中。",
+          "titleBuyer": "您已经可以开始选购了。",
+          "bodySeller": "通过审核后我们会通过邮件通知您。您现在就可以开始草拟发布内容。",
+          "bodyBuyer": "我们已将确认链接发送到您的邮箱。",
+          "timelineReview": "我们审核您的资料",
+          "timelineEmail": "通过审核后您会收到邮件",
+          "timelineLive": "您发布的商品将对买家公开",
+          "ctaSeller": "草拟第一条发布",
+          "ctaBuyer": "浏览设备",
+          "quietCta": "前往仪表板"
+        },
+        "terms": {
+          "consent": "我已阅读并同意{{title}}，并确认我有权代表公司签署。",
+          "readA11y": "阅读{{title}}",
+          "agreeCta": "我同意"
+        },
+        "validation": {
+          "bizNameRequiredReseller": "请输入商号名称",
+          "bizNameRequiredCompany": "请输入公司名称",
+          "minChars": "至少需要 {{min}} 个字符",
+          "maxChars": "不得超过 {{max}} 个字符",
+          "nameInvalid": "请输入有效的名称",
+          "websiteInvalid": "请输入有效的网址，例如 www.example.com",
+          "taxIdRequired": "请输入增值税／税号",
+          "taxIdFormat": "请使用 3–30 个字母、数字、空格、句点、连字符或斜杠",
+          "yearsInvalid": "请输入整数年数，例如 5",
+          "jobTitleInvalid": "请输入有效的职位名称",
+          "streetRequired": "请输入街道地址",
+          "streetTooShort": "请输入完整的街道地址",
+          "streetInvalid": "请输入有效的街道地址",
+          "cityRequired": "请输入城市",
+          "cityLength": "城市请输入 {{min}} 至 {{max}} 个字符",
+          "cityInvalid": "城市只能包含文字",
+          "postalRequired": "请输入邮政编码",
+          "postalFormat": "请输入有效的邮政编码（3–10 个字母、数字、空格或连字符）",
+          "regionRequired": "请输入省／地区",
+          "regionLength": "省／地区请输入 {{min}} 至 {{max}} 个字符",
+          "regionInvalid": "省／地区只能包含文字",
+          "countryRequired": "请选择国家",
+          "emailRequired": "请输入电子邮箱地址",
+          "emailInvalid": "请输入有效的电子邮箱地址，例如 name@company.com",
+          "fullNameRequired": "请输入姓名",
+          "fullNameTooShort": "请输入完整姓名",
+          "fullNameInvalid": "姓名只能包含文字、空格、撇号与连字符",
+          "phoneRequired": "请输入电话号码",
+          "phoneInvalid": "请输入有效的电话号码",
+          "passwordRequired": "请输入密码",
+          "passwordTooShort": "密码至少需要 {{min}} 个字符",
+          "passwordTooLong": "密码不得超过 {{max}} 个字符",
+          "passwordWeak": "请至少包含一个英文字母和一个数字",
+          "confirmRequired": "请再次输入密码以确认",
+          "confirmMismatch": "两次输入的密码不一致"
+        },
+        "errors": {
+          "createAccount": "无法创建您的账号",
+          "sessionLost": "登录状态已失效，请重新登录后继续。",
+          "saveStep": "保存失败，请再试一次。",
+          "completeFailed": "无法将您的资料标记为完成，请重试。",
+          "network": "网络错误——请检查您的网络连接",
+          "noUserId": "无法完成账号创建，请再试一次。",
+          "saveAnswers": "无法保存您的回答",
+          "loadProgress": "无法加载您的进度",
+          "completeNotPersisted": "已保存您的回答，但无法将您的资料标记为完成，请重试。"
+        }
+      },
       "welcomeSubtitle": "登录以买卖二手实验室与工业设备。",
       "requestAccount": "申请账户"
     },
@@ -4450,7 +4731,7 @@
       "firstNamePlaceholder": "您的姓名",
       "email": "邮箱",
       "phone": "电话",
-      "phonePlaceholder": "+886 912 345 678",
+      "phonePlaceholder": "+86 138 0013 8000",
       "company": "公司",
       "companyPlaceholder": "公司名称",
       "companyTaxId": "公司统一编号",

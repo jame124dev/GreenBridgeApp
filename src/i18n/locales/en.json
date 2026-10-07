@@ -4136,12 +4136,46 @@
       },
       "drafts": {
         "title": "Your drafts",
-        "subtitle": "Anything you stopped part-way is saved here.",
-        "loading": "Looking for scans you have not finished…",
+        "subtitle": "Private until you submit for listing.",
+        "loading": "Loading…",
         "sessionEndedBody": "Sign in again and your drafts will be here — nothing has been lost.",
         "loadError": "Your drafts did not load. Pull down to try again — nothing has been lost.",
-        "emptyTitle": "Nothing unfinished",
-        "emptyBody": "A scan you stop part-way is saved here, so you can pick it up on another day."
+        "emptyTitle": "Nothing here yet",
+        "emptyBody": "Scanned items are saved here."
+      },
+      "inventory": {
+        "saveButton": "Save to inventory",
+        "saving": "Saving…",
+        "submitButton": "Submit for listing",
+        "submitting": "Submitting…",
+        "saved": "Saved",
+        "savedPending": "Saved. Submit for listing once approved.",
+        "saveFailed": "Couldn't save. Try again.",
+        "reviewTitle": "Review your items",
+        "lede": "Private until you submit for listing.",
+        "verdictCanSubmit": "Submit now, or keep it here.",
+        "verdictSaveOnly": "Submit for listing once approved.",
+        "title": "My inventory",
+        "subtitle": "Private until you submit for listing.",
+        "filterActive": "In my inventory",
+        "filterPublished": "Listed",
+        "filterDiscarded": "Discarded",
+        "emptyPublishedTitle": "Nothing listed yet",
+        "emptyPublishedBody": "Items you submit appear here.",
+        "emptyDiscardedTitle": "Nothing discarded",
+        "emptyDiscardedBody": "Kept, not deleted.",
+        "openInventory": "Show my items",
+        "discard": "Discard",
+        "discardConfirmTitle": "Discard this item?",
+        "discardConfirmBody": "\"{{title}}\" moves to Discarded. It is kept, not deleted — but you cannot move it back.",
+        "discardFailed": "Couldn't discard. Try again.",
+        "searchPlaceholder": "Search your items",
+        "searchCount_one": "{{count}} match",
+        "searchCount_other": "{{count}} matches",
+        "noMatchTitle": "No match",
+        "noMatchBody": "Nothing here matches \"{{query}}\".",
+        "noMatchPartial": "Nothing matches in the items loaded so far. Scroll down to load more, then search again.",
+        "clearSearch": "Clear search"
       },
       "listings": {
         "title": "My listings",
@@ -4401,7 +4435,254 @@
       "noAccount": "Don't have an account?",
       "sustainabilityFirst": "Sustainability first",
       "tagline": "Empowering the circular economy through responsible industrial trade.",
-      "contactOpenFailed": "Open the link from your browser instead."
+      "contactOpenFailed": "Open the link from your browser instead.",
+      "onboarding": {
+        "role": {
+          "eyebrow": "GET STARTED",
+          "title": "How would you like to use {{brand}}?",
+          "subtitle": "You can add the other one to your account later.",
+          "buyerTitle": "I'm a buyer",
+          "buyerDescription": "Browse and buy calibrated test and lab equipment.",
+          "sellerTitle": "I'm a seller",
+          "sellerDescription": "List your surplus equipment and reach buyers who value calibration."
+        },
+        "cta": {
+          "continue": "Continue",
+          "submitForReview": "Submit for review",
+          "tryAgain": "Try again",
+          "help": "Help",
+          "saveExit": "Save & exit"
+        },
+        "resume": {
+          "loading": "Picking up where you left off…"
+        },
+        "sellerStatus": {
+          "summary": {
+            "title": "Finish setting up your account",
+            "titleWaiting": "Your account is being reviewed",
+            "waiting": "Waiting for approval",
+            "needsYou_one": "{{count}} thing needs you",
+            "needsYou_other": "{{count}} things need you",
+            "progress": "{{done}} of {{total}} done"
+          },
+          "pending": {
+            "title": "Waiting for approval",
+            "body": "You can browse, save drafts and send messages while you wait. Publishing unlocks once we approve you — usually within 24 hours.",
+            "cta": "See where it's got to"
+          },
+          "verify": {
+            "title": "Confirm your email",
+            "body": "We sent you a link. Confirming it secures your account.",
+            "resend": "Send it again",
+            "sending": "Sending…",
+            "sent": "Sent — check your inbox.",
+            "failed": "That didn't send. Try again in a moment."
+          },
+          "finish": {
+            "title": "Finish your seller profile",
+            "subtitle": "Pick up where you left off"
+          }
+        },
+        "accountStatus": {
+          "title": "Your seller profile is with our team.",
+          "subtitle": "We'll email you the moment it's approved — usually within 24 hours.",
+          "browseCta": "Browse equipment",
+          "askCta": "Ask us about it",
+          "steps": {
+            "account": { "title": "Account created", "body": "Your email and sign-in details." },
+            "email": {
+              "title": "Confirm your email",
+              "body": "Confirming secures your account.",
+              "sentTo": "We sent a link to {{email}}."
+            },
+            "profile": { "title": "Finish your seller profile", "body": "Your business, location, categories and volume.", "cta": "Pick up where you left off" },
+            "documents": {
+              "title": "Business documents",
+              "body": "Your registration certificate."
+            },
+            "review": { "title": "Our review", "body": "Usually within 24 hours." }
+          },
+          "canDo": {
+            "title": "What you can do now",
+            "browse": "Browse and search equipment",
+            "wants": "Save what you're looking for",
+            "drafts": "Draft listings ready to publish",
+            "locked": "Publishing unlocks after approval",
+            "unlocked": "Publishing is open"
+          }
+        },
+        "account": {
+          "eyebrowSeller": "SELLER ACCOUNT",
+          "eyebrowBuyer": "BUYER ACCOUNT",
+          "title": "Welcome to {{brand}}!",
+          "subtitle": "Let's get started.",
+          "ctaSeller": "Agree and continue",
+          "ctaBuyer": "Agree and start buying",
+          "legal": "By continuing you agree to the {{brand}} Terms of Use and Privacy Policy.",
+          "email": { "label": "Email address", "placeholder": "name@company.com" },
+          "fullName": { "label": "Full name", "placeholder": "Your name" },
+          "phone": { "label": "Phone number", "placeholder": "+886 912 345 678" },
+          "password": {
+            "placeholder": "Choose a password",
+            "help": "At least 8 characters, with a letter and a number."
+          },
+          "confirmPassword": { "label": "Confirm password", "placeholder": "Re-enter password" }
+        },
+        "sellerType": {
+          "title": "Are you a reseller, or selling for your own company?",
+          "subtitle": "This changes what we ask next.",
+          "resellerTitle": "Reseller",
+          "resellerDescription": "I sell on a regular basis",
+          "companyTitle": "Company",
+          "companyDescription": "Selling for my own company"
+        },
+        "business": {
+          "titleReseller": "Tell us about your business",
+          "titleCompany": "Tell us about your company",
+          "subtitle": "This appears on your seller profile."
+        },
+        "location": {
+          "title": "Where is your equipment located?",
+          "subtitle": "Buyers only see the city and country."
+        },
+        "categories": {
+          "title": "What kind of equipment do you sell?",
+          "subtitle": "Pick all that apply."
+        },
+        "volume": {
+          "titleReseller": "How many items do you usually have for sale?",
+          "titleCompany": "How much equipment are you selling?",
+          "reseller": {
+            "aTitle": "Under 25 items",
+            "aDescription": "A small, rotating inventory",
+            "bTitle": "25–100 items",
+            "bDescription": "A steady catalogue",
+            "cTitle": "100+ items",
+            "cDescription": "High-volume — we can help with bulk upload"
+          },
+          "company": {
+            "aTitle": "Just a few items",
+            "aDescription": "One-off surplus",
+            "bTitle": "A lab clear-out",
+            "bDescription": "Roughly 10–50 items at once",
+            "cTitle": "Ongoing surplus",
+            "cDescription": "We regularly retire equipment"
+          }
+        },
+        "calibration": {
+          "title": "Do your items come with calibration records?",
+          "subtitle": "You can attach certificates to each listing later.",
+          "mostTitle": "Yes, most items",
+          "mostDescription": "Calibrated within the last 12 months",
+          "someTitle": "Some items",
+          "someDescription": "A mix of calibrated and as-is",
+          "noneTitle": "No, sold as-is",
+          "noneDescription": "Listed without calibration"
+        },
+        "gate": {
+          "categories": "Pick at least one equipment category to continue.",
+          "calibrationAndTerms": "Choose an answer, and accept the Seller Platform Terms, to submit.",
+          "terms": "Please accept the Seller Platform Terms to submit."
+        },
+        "fields": {
+          "optionalSuffix": "{{label}} (optional)",
+          "bizName": {
+            "labelReseller": "Business name",
+            "labelCompany": "Company name",
+            "placeholderReseller": "Your business name",
+            "placeholderCompany": "Your company name"
+          },
+          "website": { "label": "Website", "placeholder": "www.example.com" },
+          "taxId": { "label": "VAT / tax ID", "placeholder": "Tax identification number" },
+          "bizRole": {
+            "labelReseller": "Years in business",
+            "placeholderReseller": "e.g. 5",
+            "labelCompany": "Your job title",
+            "placeholderCompany": "e.g. Lab Manager"
+          },
+          "bizPhone": { "label": "Business phone", "placeholder": "+886 912 345 678" },
+          "street": { "label": "Street address", "placeholder": "Building, street, unit" },
+          "city": { "label": "City", "placeholder": "City" },
+          "postal": { "label": "Postal code", "placeholder": "Postal code" },
+          "region": { "label": "State / region", "placeholder": "State or region" },
+          "country": { "label": "Country", "placeholder": "Select your country" }
+        },
+        "submit": {
+          "title": "Setting up your account",
+          "cta": "Submitting…",
+          "phaseSaved": "Saved your answers",
+          "phaseChecked": "Checked your details",
+          "phaseCreating": "Creating your seller profile",
+          "phaseCreatingDetail": "This takes a few seconds",
+          "phaseSending": "Sending it for review",
+          "phaseStatus": "Step {{current}} of {{total}}: {{label}}"
+        },
+        "done": {
+          "titleSeller": "Your seller profile is in review.",
+          "titleBuyer": "You're all set to buy.",
+          "bodySeller": "We'll email you once it's approved. You can start drafting listings now.",
+          "bodyBuyer": "We've sent a confirmation link to your email.",
+          "timelineReview": "We review your details",
+          "timelineEmail": "You get an email when approved",
+          "timelineLive": "Your listings go live to buyers",
+          "ctaSeller": "Draft your first listing",
+          "ctaBuyer": "Browse equipment",
+          "quietCta": "Go to dashboard"
+        },
+        "terms": {
+          "consent": "I have read and agree to the {{title}}, and I confirm I have authority to bind my company.",
+          "readA11y": "Read the {{title}}",
+          "agreeCta": "I agree"
+        },
+        "validation": {
+          "bizNameRequiredReseller": "Business name is required",
+          "bizNameRequiredCompany": "Company name is required",
+          "minChars": "Must be at least {{min}} characters",
+          "maxChars": "Must be {{max}} characters or fewer",
+          "nameInvalid": "Enter a valid name",
+          "websiteInvalid": "Enter a valid website, e.g. www.example.com",
+          "taxIdRequired": "VAT / tax ID is required",
+          "taxIdFormat": "Use 3–30 letters, numbers, spaces, dots, dashes or slashes",
+          "yearsInvalid": "Enter whole years, e.g. 5",
+          "jobTitleInvalid": "Enter a valid job title",
+          "streetRequired": "Street address is required",
+          "streetTooShort": "Enter the full street address",
+          "streetInvalid": "Enter a valid street address",
+          "cityRequired": "City is required",
+          "cityLength": "Enter a city between {{min}} and {{max}} characters",
+          "cityInvalid": "City can only contain letters",
+          "postalRequired": "Postal code is required",
+          "postalFormat": "Enter a valid postal code (3–10 letters, numbers, spaces or dashes)",
+          "regionRequired": "State / region is required",
+          "regionLength": "Enter a state / region between {{min}} and {{max}} characters",
+          "regionInvalid": "State / region can only contain letters",
+          "countryRequired": "Select your country",
+          "emailRequired": "Email address is required",
+          "emailInvalid": "Enter a valid email address, e.g. name@company.com",
+          "fullNameRequired": "Full name is required",
+          "fullNameTooShort": "Enter your full name",
+          "fullNameInvalid": "Name can only contain letters, spaces, apostrophes and hyphens",
+          "phoneRequired": "Phone number is required",
+          "phoneInvalid": "Enter a valid phone number",
+          "passwordRequired": "Password is required",
+          "passwordTooShort": "Password must be at least {{min}} characters",
+          "passwordTooLong": "Password must be {{max}} characters or fewer",
+          "passwordWeak": "Use at least one letter and one number",
+          "confirmRequired": "Please confirm your password",
+          "confirmMismatch": "Passwords do not match"
+        },
+        "errors": {
+          "createAccount": "Could not create your account",
+          "sessionLost": "Your session was lost. Please sign in and resume.",
+          "saveStep": "Could not save. Please try again.",
+          "completeFailed": "We could not mark your profile complete. Please retry.",
+          "network": "Network error — check your connection",
+          "noUserId": "We could not finish creating your account. Please try again.",
+          "saveAnswers": "Could not save your answers",
+          "loadProgress": "Could not load your progress",
+          "completeNotPersisted": "We saved your answers but could not mark your profile complete. Please retry."
+        }
+      }
     },
     "profile": {
       "aboutAction": "About",

@@ -1714,7 +1714,7 @@
     "qa": "問與答",
     "askQuestions": "詢問問題",
     "answerQuestions": "回答問題",
-    "loading": "載入中...",
+    "loading": "載入中…",
     "noMessages": "還沒有訊息",
     "beFirst": "成為第一個提問的人！",
     "typeMessage": "輸入訊息...",
@@ -3340,7 +3340,7 @@
     "signInTitle": "登入以檢視您的收藏",
     "signInDesc": "追蹤您喜愛的拍賣。",
     "signIn": "登入",
-    "emptyTitle": "沒有已儲存的拍賣",
+    "emptyTitle": "這裡還沒有東西",
     "emptyDesc": "點選任何拍賣上的愛心圖示以儲存至此。",
     "browse": "瀏覽拍賣",
     "loadError": "載入收藏失敗"
@@ -3410,7 +3410,7 @@
     "addressLabel": "地址 / 城市",
     "quantityLabel": "數量",
     "estimatedValueLabel": "估計價值",
-    "saveButton": "儲存",
+    "saveButton": "儲存至庫存",
     "saving": "儲存中...",
     "notSellerTitle": "您尚未成為賣家",
     "notSellerDesc": "要發布產品，您需要賣家帳戶。請從儀錶板申請成為賣家。",
@@ -3998,7 +3998,7 @@
       "intake": {
         "eyebrow": "接收",
         "title": "上傳你的庫存",
-        "lede": "任何格式、任何語言。照片、試算表、拍賣 PDF — 我們全部讀取並為你產生刊登資訊。",
+        "lede": "提交刊登前都是私人的。",
         "dropTitle": "新增照片、文件或庫存清單",
         "dropBody": "一台設備或整個廠區都可以。",
         "addMore": "新增更多檔案",
@@ -4076,12 +4076,46 @@
       },
       "drafts": {
         "title": "您的草稿",
-        "subtitle": "中途停下的內容都會儲存在這裡。",
+        "subtitle": "提交刊登前都是私人的。",
         "loading": "正在尋找未完成的掃描…",
         "sessionEndedBody": "重新登入後草稿仍會在這裡，沒有遺失任何內容。",
         "loadError": "草稿載入失敗。下拉可重試，沒有遺失任何內容。",
         "emptyTitle": "沒有未完成的內容",
-        "emptyBody": "中途停下的掃描會儲存在這裡，方便您改天繼續。"
+        "emptyBody": "掃描的商品會存放在這裡。"
+      },
+      "inventory": {
+        "saveButton": "儲存到我的庫存",
+        "saving": "正在儲存…",
+        "submitButton": "提交上架",
+        "submitting": "正在提交…",
+        "saved": "已儲存到您的庫存",
+        "savedPending": "已儲存，通過審核後即可提交刊登。",
+        "saveFailed": "儲存失敗，請重試。",
+        "reviewTitle": "檢查您的商品",
+        "lede": "已儲存的商品會私密地留在您的庫存中。在您提交上架之前，不會公開任何內容。",
+        "verdictCanSubmit": "立即提交刊登，或先留在這裡。",
+        "verdictSaveOnly": "通過審核後即可提交刊登。",
+        "title": "我的庫存",
+        "subtitle": "提交刊登前都是私人的。",
+        "filterActive": "庫存中",
+        "filterPublished": "已上架",
+        "filterDiscarded": "已捨棄",
+        "emptyPublishedTitle": "還沒有上架的商品",
+        "emptyPublishedBody": "您提交的商品會顯示在這裡。",
+        "emptyDiscardedTitle": "沒有已捨棄的商品",
+        "emptyDiscardedBody": "已保留，未刪除。",
+        "openInventory": "查看我的物品",
+        "discard": "丟棄",
+        "discardConfirmTitle": "要丟棄這件物品嗎？",
+        "discardConfirmBody": "「{{title}}」將移至「已丟棄」。物品會保留，不會刪除，但無法移回。",
+        "discardFailed": "無法丟棄，請重試。",
+        "searchPlaceholder": "搜尋我的物品",
+        "searchCount_one": "{{count}} 個相符",
+        "searchCount_other": "{{count}} 個相符",
+        "noMatchTitle": "沒有相符項目",
+        "noMatchBody": "沒有與「{{query}}」相符的物品。",
+        "noMatchPartial": "已載入的物品中沒有相符項目。向下捲動載入更多後再搜尋。",
+        "clearSearch": "清除搜尋"
       },
       "listings": {
         "title": "我的商品",
@@ -4340,6 +4374,253 @@
       "sustainabilityFirst": "永續優先",
       "tagline": "以負責任的工業貿易推動循環經濟。",
       "contactOpenFailed": "請改用瀏覽器開啟該連結。",
+      "onboarding": {
+        "role": {
+          "eyebrow": "開始使用",
+          "title": "您想如何使用 {{brand}}？",
+          "subtitle": "另一種身分日後也可以加入同一個帳號。",
+          "buyerTitle": "我是買家",
+          "buyerDescription": "瀏覽並選購經校正的檢測與實驗室設備。",
+          "sellerTitle": "我是賣家",
+          "sellerDescription": "刊登閒置設備，接觸重視校正紀錄的買家。"
+        },
+        "cta": {
+          "continue": "繼續",
+          "submitForReview": "送出審核",
+          "tryAgain": "重試",
+          "help": "說明",
+          "saveExit": "儲存並離開"
+        },
+        "resume": {
+          "loading": "正在接續您上次的進度…"
+        },
+        "sellerStatus": {
+          "summary": {
+            "title": "完成帳戶設定",
+            "titleWaiting": "您的帳戶審核中",
+            "waiting": "等待審核中",
+            "needsYou_one": "{{count}} 項待您處理",
+            "needsYou_other": "{{count}} 項待您處理",
+            "progress": "已完成 {{done}}/{{total}}"
+          },
+          "pending": {
+            "title": "等待審核中",
+            "body": "等待期間您仍可瀏覽、儲存草稿並傳送訊息。通過審核後即可刊登，通常在 24 小時內完成。",
+            "cta": "查看目前進度"
+          },
+          "verify": {
+            "title": "確認您的電子郵件",
+            "body": "我們已寄出連結，確認後可保護您的帳戶安全。",
+            "resend": "重新寄送",
+            "sending": "寄送中…",
+            "sent": "已寄出，請查看您的收件匣。",
+            "failed": "寄送失敗，請稍後再試。"
+          },
+          "finish": {
+            "title": "完成賣家資料",
+            "subtitle": "從上次中斷的地方繼續"
+          }
+        },
+        "accountStatus": {
+          "title": "您的賣家資料正在審核中。",
+          "subtitle": "通過後我們會立即以電子郵件通知您，通常在 24 小時內。",
+          "browseCta": "瀏覽設備",
+          "askCta": "向我們詢問",
+          "steps": {
+            "account": { "title": "帳戶已建立", "body": "您的電子郵件與登入資訊。" },
+            "email": {
+              "title": "確認您的電子郵件",
+              "body": "確認後可保護您的帳戶安全。",
+              "sentTo": "我們已將連結寄至 {{email}}。"
+            },
+            "profile": { "title": "完成賣家資料", "body": "您的營業資訊、地點、類別與數量。", "cta": "從上次中斷的地方繼續" },
+            "documents": {
+              "title": "營業文件",
+              "body": "您的公司登記證明。"
+            },
+            "review": { "title": "我們的審核", "body": "通常在 24 小時內完成。" }
+          },
+          "canDo": {
+            "title": "您現在可以做的事",
+            "browse": "瀏覽與搜尋設備",
+            "wants": "儲存您正在尋找的商品",
+            "drafts": "準備好刊登的草稿",
+            "locked": "通過審核後即可刊登",
+            "unlocked": "已可刊登"
+          }
+        },
+        "account": {
+          "eyebrowSeller": "賣家帳號",
+          "eyebrowBuyer": "買家帳號",
+          "title": "歡迎使用 {{brand}}！",
+          "subtitle": "我們開始吧。",
+          "ctaSeller": "同意並繼續",
+          "ctaBuyer": "同意並開始選購",
+          "legal": "繼續即表示您同意 {{brand}} 的使用條款與隱私權政策。",
+          "email": { "label": "電子郵件地址", "placeholder": "name@company.com" },
+          "fullName": { "label": "姓名", "placeholder": "您的姓名" },
+          "phone": { "label": "電話號碼", "placeholder": "+886 912 345 678" },
+          "password": {
+            "placeholder": "設定密碼",
+            "help": "至少 8 個字元，並包含英文字母與數字。"
+          },
+          "confirmPassword": { "label": "確認密碼", "placeholder": "再次輸入密碼" }
+        },
+        "sellerType": {
+          "title": "您是經銷商，還是為自己的公司銷售？",
+          "subtitle": "這會影響接下來詢問的內容。",
+          "resellerTitle": "經銷商",
+          "resellerDescription": "我經常銷售設備",
+          "companyTitle": "公司",
+          "companyDescription": "為自己的公司銷售"
+        },
+        "business": {
+          "titleReseller": "請介紹您的商號",
+          "titleCompany": "請介紹您的公司",
+          "subtitle": "這些資訊會顯示在您的賣家檔案上。"
+        },
+        "location": {
+          "title": "您的設備放在哪裡？",
+          "subtitle": "買家只會看到城市與國家。"
+        },
+        "categories": {
+          "title": "您銷售哪些類型的設備？",
+          "subtitle": "可複選。"
+        },
+        "volume": {
+          "titleReseller": "您通常有多少件商品待售？",
+          "titleCompany": "您要銷售多少設備？",
+          "reseller": {
+            "aTitle": "少於 25 件",
+            "aDescription": "少量且週轉快的庫存",
+            "bTitle": "25–100 件",
+            "bDescription": "穩定的商品目錄",
+            "cTitle": "100 件以上",
+            "cDescription": "大量銷售——我們可以協助批次上傳"
+          },
+          "company": {
+            "aTitle": "只有少數幾件",
+            "aDescription": "一次性的閒置設備",
+            "bTitle": "實驗室汰換",
+            "bDescription": "一次約 10–50 件",
+            "cTitle": "持續汰換",
+            "cDescription": "我們會定期汰換設備"
+          }
+        },
+        "calibration": {
+          "title": "您的商品附有校正紀錄嗎？",
+          "subtitle": "之後可以在每則刊登附上證書。",
+          "mostTitle": "是，大部分都有",
+          "mostDescription": "最近 12 個月內校正",
+          "someTitle": "部分商品有",
+          "someDescription": "校正品與現況品混合",
+          "noneTitle": "否，以現況出售",
+          "noneDescription": "刊登時不含校正紀錄"
+        },
+        "gate": {
+          "categories": "請至少選擇一種設備類別才能繼續。",
+          "calibrationAndTerms": "請選擇一個答案並同意賣家平台條款後才能送出。",
+          "terms": "請同意賣家平台條款後才能送出。"
+        },
+        "fields": {
+          "optionalSuffix": "{{label}}（選填）",
+          "bizName": {
+            "labelReseller": "商號名稱",
+            "labelCompany": "公司名稱",
+            "placeholderReseller": "您的商號名稱",
+            "placeholderCompany": "您的公司名稱"
+          },
+          "website": { "label": "網站", "placeholder": "www.example.com" },
+          "taxId": { "label": "統一編號／稅籍編號", "placeholder": "稅務識別號碼" },
+          "bizRole": {
+            "labelReseller": "營業年數",
+            "placeholderReseller": "例如 5",
+            "labelCompany": "您的職稱",
+            "placeholderCompany": "例如：實驗室主管"
+          },
+          "bizPhone": { "label": "公司電話", "placeholder": "+886 912 345 678" },
+          "street": { "label": "街道地址", "placeholder": "大樓、街道、樓層" },
+          "city": { "label": "城市", "placeholder": "城市" },
+          "postal": { "label": "郵遞區號", "placeholder": "郵遞區號" },
+          "region": { "label": "州／地區", "placeholder": "州或地區" },
+          "country": { "label": "國家", "placeholder": "請選擇國家" }
+        },
+        "submit": {
+          "title": "正在建立您的帳號",
+          "cta": "送出中…",
+          "phaseSaved": "已儲存您的回答",
+          "phaseChecked": "已檢查您的資料",
+          "phaseCreating": "正在建立您的賣家檔案",
+          "phaseCreatingDetail": "這需要幾秒鐘",
+          "phaseSending": "正在送出審核",
+          "phaseStatus": "第 {{current}} 步，共 {{total}} 步：{{label}}"
+        },
+        "done": {
+          "titleSeller": "您的賣家檔案正在審核中。",
+          "titleBuyer": "您已經可以開始選購了。",
+          "bodySeller": "通過審核後我們會以電子郵件通知您。您現在就可以開始草擬刊登。",
+          "bodyBuyer": "我們已將確認連結寄到您的電子郵件。",
+          "timelineReview": "我們審核您的資料",
+          "timelineEmail": "通過審核後您會收到電子郵件",
+          "timelineLive": "您的刊登將對買家公開",
+          "ctaSeller": "草擬第一則刊登",
+          "ctaBuyer": "瀏覽設備",
+          "quietCta": "前往儀表板"
+        },
+        "terms": {
+          "consent": "我已閱讀並同意{{title}}，並確認我有權代表公司簽署。",
+          "readA11y": "閱讀{{title}}",
+          "agreeCta": "我同意"
+        },
+        "validation": {
+          "bizNameRequiredReseller": "請輸入商號名稱",
+          "bizNameRequiredCompany": "請輸入公司名稱",
+          "minChars": "至少需要 {{min}} 個字元",
+          "maxChars": "不得超過 {{max}} 個字元",
+          "nameInvalid": "請輸入有效的名稱",
+          "websiteInvalid": "請輸入有效的網址，例如 www.example.com",
+          "taxIdRequired": "請輸入統一編號／稅籍編號",
+          "taxIdFormat": "請使用 3–30 個字母、數字、空格、句點、連字號或斜線",
+          "yearsInvalid": "請輸入整數年數，例如 5",
+          "jobTitleInvalid": "請輸入有效的職稱",
+          "streetRequired": "請輸入街道地址",
+          "streetTooShort": "請輸入完整的街道地址",
+          "streetInvalid": "請輸入有效的街道地址",
+          "cityRequired": "請輸入城市",
+          "cityLength": "城市請輸入 {{min}} 至 {{max}} 個字元",
+          "cityInvalid": "城市只能包含文字",
+          "postalRequired": "請輸入郵遞區號",
+          "postalFormat": "請輸入有效的郵遞區號（3–10 個字母、數字、空格或連字號）",
+          "regionRequired": "請輸入州／地區",
+          "regionLength": "州／地區請輸入 {{min}} 至 {{max}} 個字元",
+          "regionInvalid": "州／地區只能包含文字",
+          "countryRequired": "請選擇國家",
+          "emailRequired": "請輸入電子郵件地址",
+          "emailInvalid": "請輸入有效的電子郵件地址，例如 name@company.com",
+          "fullNameRequired": "請輸入姓名",
+          "fullNameTooShort": "請輸入完整姓名",
+          "fullNameInvalid": "姓名只能包含文字、空格、撇號與連字號",
+          "phoneRequired": "請輸入電話號碼",
+          "phoneInvalid": "請輸入有效的電話號碼",
+          "passwordRequired": "請輸入密碼",
+          "passwordTooShort": "密碼至少需要 {{min}} 個字元",
+          "passwordTooLong": "密碼不得超過 {{max}} 個字元",
+          "passwordWeak": "請至少包含一個英文字母和一個數字",
+          "confirmRequired": "請再次輸入密碼以確認",
+          "confirmMismatch": "兩次輸入的密碼不一致"
+        },
+        "errors": {
+          "createAccount": "無法建立您的帳號",
+          "sessionLost": "登入狀態已失效，請重新登入後繼續。",
+          "saveStep": "儲存失敗，請再試一次。",
+          "completeFailed": "無法將您的檔案標記為完成，請重試。",
+          "network": "網路錯誤——請檢查您的連線",
+          "noUserId": "無法完成帳號建立，請再試一次。",
+          "saveAnswers": "無法儲存您的回答",
+          "loadProgress": "無法載入您的進度",
+          "completeNotPersisted": "已儲存您的回答，但無法將您的檔案標記為完成，請重試。"
+        }
+      },
       "welcomeSubtitle": "登入以買賣二手實驗室與工業設備。",
       "requestAccount": "申請帳戶"
     },

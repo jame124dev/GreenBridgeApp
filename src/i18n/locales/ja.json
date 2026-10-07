@@ -1713,7 +1713,7 @@
     "qa": "Q&A",
     "askQuestions": "Ask questions",
     "answerQuestions": "Answer questions",
-    "loading": "Loading...",
+    "loading": "読み込み中…",
     "noMessages": "No messages yet",
     "beFirst": "Be the first to ask!",
     "typeMessage": "Type...",
@@ -1903,7 +1903,7 @@
     "buyNow": "Buy Now",
     "makeAnOffer": "Make an Offer",
     "contactSeller": "Contact Seller",
-    "saved": "Saved",
+    "saved": "保存しました",
     "save": "Save",
     "share": "Share",
     "inspectionRequired": "Inspection required before bidding",
@@ -3275,7 +3275,7 @@
     "signInTitle": "お気に入りを見るにはログインしてください",
     "signInDesc": "気に入ったリストをチェックしましょう。",
     "signIn": "ログイン",
-    "emptyTitle": "保存済みのリストがありません",
+    "emptyTitle": "まだ何もありません",
     "emptyDesc": "リストのハートアイコンをクリックして保存できます。",
     "browse": "リストを見る",
     "loadError": "お気に入りの読み込みに失敗しました"
@@ -3371,7 +3371,7 @@
     "addressLabel": "住所・市区町村",
     "quantityLabel": "数量",
     "estimatedValueLabel": "推定価値",
-    "saveButton": "保存",
+    "saveButton": "在庫に保存",
     "saving": "保存中...",
     "notSellerTitle": "まだセラーではありません",
     "notSellerDesc": "商品を掲載するには、セラーアカウントが必要です。ダッシュボードからセラー申請を行ってください。",
@@ -3915,7 +3915,7 @@
         "done": "完了",
         "doneHint": "変更を保存してアイテム一覧に戻ります",
         "staleWrite": "このアイテムは別の場所で変更されました。開き直して最新の内容を取得してください。",
-        "saveFailed": "変更を保存できませんでした",
+        "saveFailed": "保存できませんでした。再試行してください。",
         "acceptFailed": "このアイテムを承認できませんでした"
       },
       "required": {
@@ -3975,7 +3975,7 @@
       "intake": {
         "eyebrow": "受け取り",
         "title": "在庫をアップロード",
-        "lede": "形式も言語も問いません。写真、表計算ファイル、オークションのPDF — すべて読み取って出品情報を作成します。",
+        "lede": "出品するまで非公開です。",
         "dropTitle": "写真・書類・在庫リストを追加",
         "dropBody": "1台でも、工場まるごとでも。",
         "addMore": "ファイルを追加",
@@ -4053,12 +4053,46 @@
       },
       "drafts": {
         "title": "下書き",
-        "subtitle": "途中でやめたスキャンはここに保存されます。",
+        "subtitle": "出品するまで非公開です。",
         "loading": "未完了のスキャンを探しています…",
         "sessionEndedBody": "もう一度サインインすると下書きが表示されます。データは失われていません。",
         "loadError": "下書きを読み込めませんでした。下に引いて再試行してください。データは失われていません。",
         "emptyTitle": "未完了のものはありません",
-        "emptyBody": "途中でやめたスキャンはここに保存されるので、別の日に続きから再開できます。"
+        "emptyBody": "スキャンした商品はここに保存されます。"
+      },
+      "inventory": {
+        "saveButton": "在庫に保存",
+        "saving": "保存中…",
+        "submitButton": "出品として送信",
+        "submitting": "送信中…",
+        "saved": "在庫に保存しました",
+        "savedPending": "保存しました。承認後に出品できます。",
+        "saveFailed": "在庫に保存できませんでした。アイテムはここに残っています。もう一度お試しください。",
+        "reviewTitle": "アイテムを確認",
+        "lede": "保存したアイテムは在庫に非公開で保管されます。出品として送信するまで公開されません。",
+        "verdictCanSubmit": "今すぐ出品するか、ここに残します。",
+        "verdictSaveOnly": "承認後に出品できます。",
+        "title": "自分の在庫",
+        "subtitle": "出品するまで非公開です。",
+        "filterActive": "在庫",
+        "filterPublished": "出品済み",
+        "filterDiscarded": "破棄済み",
+        "emptyPublishedTitle": "出品済みのものはまだありません",
+        "emptyPublishedBody": "出品した商品はここに表示されます。",
+        "emptyDiscardedTitle": "破棄したものはありません",
+        "emptyDiscardedBody": "削除せず保管しています。",
+        "openInventory": "アイテムを表示",
+        "discard": "破棄",
+        "discardConfirmTitle": "このアイテムを破棄しますか？",
+        "discardConfirmBody": "「{{title}}」は「破棄済み」に移動します。削除はされませんが、元に戻すことはできません。",
+        "discardFailed": "破棄できませんでした。もう一度お試しください。",
+        "searchPlaceholder": "アイテムを検索",
+        "searchCount_one": "{{count}} 件",
+        "searchCount_other": "{{count}} 件",
+        "noMatchTitle": "該当なし",
+        "noMatchBody": "「{{query}}」に一致するアイテムはありません。",
+        "noMatchPartial": "読み込み済みのアイテムには一致がありません。下にスクロールして続きを読み込んでから、もう一度検索してください。",
+        "clearSearch": "検索をクリア"
       },
       "listings": {
         "title": "自分の出品",
@@ -4289,6 +4323,253 @@
         "sustainabilityFirst": "サステナビリティ第一",
         "tagline": "責任ある産業取引を通じて循環型経済を推進します。",
         "contactOpenFailed": "ブラウザからリンクを開いてください。",
+        "onboarding": {
+          "role": {
+            "eyebrow": "はじめに",
+            "title": "{{brand}} をどのようにご利用になりますか？",
+            "subtitle": "もう一方の役割は、あとから同じアカウントに追加できます。",
+            "buyerTitle": "購入する",
+            "buyerDescription": "校正済みの計測機器・ラボ機器を探して購入できます。",
+            "sellerTitle": "出品する",
+            "sellerDescription": "余剰機器を出品し、校正を重視する買い手に届けます。"
+          },
+          "cta": {
+            "continue": "次へ",
+            "submitForReview": "審査に提出",
+            "tryAgain": "再試行",
+            "help": "ヘルプ",
+            "saveExit": "保存して終了"
+          },
+          "resume": {
+            "loading": "前回の続きから再開しています…"
+          },
+          "sellerStatus": {
+            "summary": {
+              "title": "アカウント設定を完了しましょう",
+              "titleWaiting": "アカウントを確認しています",
+              "waiting": "承認待ちです",
+              "needsYou_one": "対応が必要な項目：{{count}}件",
+              "needsYou_other": "対応が必要な項目：{{count}}件",
+              "progress": "{{total}}件中{{done}}件完了"
+            },
+            "pending": {
+              "title": "承認待ちです",
+              "body": "お待ちの間も閲覧・下書きの保存・メッセージの送信はご利用いただけます。出品は承認後に可能になり、通常24時間以内です。",
+              "cta": "進捗を確認する"
+            },
+            "verify": {
+              "title": "メールアドレスの確認",
+              "body": "確認リンクをお送りしました。確認するとアカウントが保護されます。",
+              "resend": "再送する",
+              "sending": "送信中…",
+              "sent": "送信しました。受信トレイをご確認ください。",
+              "failed": "送信できませんでした。しばらくしてからお試しください。"
+            },
+            "finish": {
+              "title": "出品者プロフィールを完成させる",
+              "subtitle": "前回の続きから再開"
+            }
+          },
+          "accountStatus": {
+            "title": "出品者プロフィールを確認しています。",
+            "subtitle": "承認され次第メールでお知らせします。通常24時間以内です。",
+            "browseCta": "機器を見る",
+            "askCta": "問い合わせる",
+            "steps": {
+              "account": { "title": "アカウント作成済み", "body": "メールアドレスとログイン情報。" },
+              "email": {
+                "title": "メールアドレスの確認",
+                "body": "確認するとアカウントが保護されます。",
+                "sentTo": "{{email}} にリンクをお送りしました。"
+              },
+              "profile": { "title": "出品者プロフィールを完成させる", "body": "事業情報・所在地・カテゴリー・取扱量。", "cta": "前回の続きから再開" },
+              "documents": {
+                "title": "事業書類",
+                "body": "登記事項証明書。"
+              },
+              "review": { "title": "当社による確認", "body": "通常24時間以内です。" }
+            },
+            "canDo": {
+              "title": "今できること",
+              "browse": "機器の閲覧と検索",
+              "wants": "探している機器の保存",
+              "drafts": "出品前の下書き作成",
+              "locked": "出品は承認後に可能になります",
+              "unlocked": "出品が可能です"
+            }
+          },
+          "account": {
+            "eyebrowSeller": "出品者アカウント",
+            "eyebrowBuyer": "購入者アカウント",
+            "title": "{{brand}} へようこそ！",
+            "subtitle": "さっそく始めましょう。",
+            "ctaSeller": "同意して次へ",
+            "ctaBuyer": "同意して購入を始める",
+            "legal": "続行すると、{{brand}} の利用規約およびプライバシーポリシーに同意したものとみなされます。",
+            "email": { "label": "メールアドレス", "placeholder": "name@company.com" },
+            "fullName": { "label": "氏名", "placeholder": "お名前" },
+            "phone": { "label": "電話番号", "placeholder": "+81 90 1234 5678" },
+            "password": {
+              "placeholder": "パスワードを設定",
+              "help": "8文字以上で、英字と数字を各1文字以上含めてください。"
+            },
+            "confirmPassword": { "label": "パスワードの確認", "placeholder": "パスワードを再入力" }
+          },
+          "sellerType": {
+            "title": "再販業者ですか、それとも自社の機器を販売しますか？",
+            "subtitle": "ご回答によって次の質問が変わります。",
+            "resellerTitle": "再販業者",
+            "resellerDescription": "日常的に販売しています",
+            "companyTitle": "自社",
+            "companyDescription": "自社の機器を販売します"
+          },
+          "business": {
+            "titleReseller": "事業について教えてください",
+            "titleCompany": "会社について教えてください",
+            "subtitle": "出品者プロフィールに表示されます。"
+          },
+          "location": {
+            "title": "機器はどこにありますか？",
+            "subtitle": "買い手に表示されるのは市区町村と国のみです。"
+          },
+          "categories": {
+            "title": "どのような機器を販売していますか？",
+            "subtitle": "当てはまるものをすべて選択してください。"
+          },
+          "volume": {
+            "titleReseller": "通常、何点ほど在庫がありますか？",
+            "titleCompany": "どのくらいの量の機器を販売しますか？",
+            "reseller": {
+              "aTitle": "25点未満",
+              "aDescription": "少量で回転の速い在庫",
+              "bTitle": "25〜100点",
+              "bDescription": "安定したカタログ",
+              "cTitle": "100点以上",
+              "cDescription": "大量出品 — 一括アップロードをお手伝いします"
+            },
+            "company": {
+              "aTitle": "数点のみ",
+              "aDescription": "一度限りの余剰機器",
+              "bTitle": "ラボの整理",
+              "bDescription": "一度に10〜50点程度",
+              "cTitle": "継続的な余剰",
+              "cDescription": "定期的に機器を入れ替えています"
+            }
+          },
+          "calibration": {
+            "title": "校正記録は付いていますか？",
+            "subtitle": "証明書は後から各出品に添付できます。",
+            "mostTitle": "はい、ほとんどの機器に",
+            "mostDescription": "直近12か月以内に校正済み",
+            "someTitle": "一部の機器に",
+            "someDescription": "校正済みと現状品が混在",
+            "noneTitle": "いいえ、現状渡しです",
+            "noneDescription": "校正記録なしで出品"
+          },
+          "gate": {
+            "categories": "続けるには機器カテゴリーを1つ以上選択してください。",
+            "calibrationAndTerms": "提出するには、回答を選択し、出品者プラットフォーム規約に同意してください。",
+            "terms": "提出するには出品者プラットフォーム規約に同意してください。"
+          },
+          "fields": {
+            "optionalSuffix": "{{label}}（任意）",
+            "bizName": {
+              "labelReseller": "屋号",
+              "labelCompany": "会社名",
+              "placeholderReseller": "屋号を入力",
+              "placeholderCompany": "会社名を入力"
+            },
+            "website": { "label": "ウェブサイト", "placeholder": "www.example.com" },
+            "taxId": { "label": "VAT／納税者番号", "placeholder": "納税者識別番号" },
+            "bizRole": {
+              "labelReseller": "事業年数",
+              "placeholderReseller": "例：5",
+              "labelCompany": "役職",
+              "placeholderCompany": "例：ラボマネージャー"
+            },
+            "bizPhone": { "label": "会社の電話番号", "placeholder": "+81 90 1234 5678" },
+            "street": { "label": "番地・町名", "placeholder": "建物名、通り、部屋番号" },
+            "city": { "label": "市区町村", "placeholder": "市区町村" },
+            "postal": { "label": "郵便番号", "placeholder": "郵便番号" },
+            "region": { "label": "都道府県・州", "placeholder": "都道府県または州" },
+            "country": { "label": "国", "placeholder": "国を選択してください" }
+          },
+          "submit": {
+            "title": "アカウントを設定しています",
+            "cta": "送信中…",
+            "phaseSaved": "回答を保存しました",
+            "phaseChecked": "内容を確認しました",
+            "phaseCreating": "出品者プロフィールを作成しています",
+            "phaseCreatingDetail": "数秒かかります",
+            "phaseSending": "審査に送信しています",
+            "phaseStatus": "ステップ {{current}}／{{total}}：{{label}}"
+          },
+          "done": {
+            "titleSeller": "出品者プロフィールを審査中です。",
+            "titleBuyer": "購入の準備が整いました。",
+            "bodySeller": "承認され次第メールでお知らせします。今すぐ出品の下書きを始められます。",
+            "bodyBuyer": "確認用リンクをメールでお送りしました。",
+            "timelineReview": "当社が内容を審査します",
+            "timelineEmail": "承認されるとメールが届きます",
+            "timelineLive": "出品が買い手に公開されます",
+            "ctaSeller": "最初の出品を下書きする",
+            "ctaBuyer": "機器を見る",
+            "quietCta": "ダッシュボードへ"
+          },
+          "terms": {
+            "consent": "{{title}}を読み、内容に同意します。また、会社を代表して契約する権限があることを確認します。",
+            "readA11y": "{{title}}を読む",
+            "agreeCta": "同意する"
+          },
+          "validation": {
+            "bizNameRequiredReseller": "屋号を入力してください",
+            "bizNameRequiredCompany": "会社名を入力してください",
+            "minChars": "{{min}}文字以上で入力してください",
+            "maxChars": "{{max}}文字以内で入力してください",
+            "nameInvalid": "有効な名称を入力してください",
+            "websiteInvalid": "有効なURLを入力してください（例：www.example.com）",
+            "taxIdRequired": "VAT／納税者番号を入力してください",
+            "taxIdFormat": "英数字、スペース、ピリオド、ハイフン、スラッシュで3〜30文字で入力してください",
+            "yearsInvalid": "年数を整数で入力してください（例：5）",
+            "jobTitleInvalid": "有効な役職名を入力してください",
+            "streetRequired": "番地・町名を入力してください",
+            "streetTooShort": "住所を最後まで入力してください",
+            "streetInvalid": "有効な住所を入力してください",
+            "cityRequired": "市区町村を入力してください",
+            "cityLength": "市区町村は{{min}}〜{{max}}文字で入力してください",
+            "cityInvalid": "市区町村には文字のみ使用できます",
+            "postalRequired": "郵便番号を入力してください",
+            "postalFormat": "有効な郵便番号を入力してください（英数字、スペース、ハイフンで3〜10文字）",
+            "regionRequired": "都道府県・州を入力してください",
+            "regionLength": "都道府県・州は{{min}}〜{{max}}文字で入力してください",
+            "regionInvalid": "都道府県・州には文字のみ使用できます",
+            "countryRequired": "国を選択してください",
+            "emailRequired": "メールアドレスを入力してください",
+            "emailInvalid": "有効なメールアドレスを入力してください（例：name@company.com）",
+            "fullNameRequired": "氏名を入力してください",
+            "fullNameTooShort": "氏名を最後まで入力してください",
+            "fullNameInvalid": "氏名には文字、スペース、アポストロフィ、ハイフンのみ使用できます",
+            "phoneRequired": "電話番号を入力してください",
+            "phoneInvalid": "有効な電話番号を入力してください",
+            "passwordRequired": "パスワードを入力してください",
+            "passwordTooShort": "パスワードは{{min}}文字以上にしてください",
+            "passwordTooLong": "パスワードは{{max}}文字以内にしてください",
+            "passwordWeak": "英字と数字を各1文字以上含めてください",
+            "confirmRequired": "確認のためパスワードを再入力してください",
+            "confirmMismatch": "パスワードが一致しません"
+          },
+          "errors": {
+            "createAccount": "アカウントを作成できませんでした",
+            "sessionLost": "セッションが切れました。サインインしてから続けてください。",
+            "saveStep": "保存できませんでした。もう一度お試しください。",
+            "completeFailed": "プロフィールを完了にできませんでした。再試行してください。",
+            "network": "ネットワークエラー — 接続を確認してください",
+            "noUserId": "アカウントの作成を完了できませんでした。もう一度お試しください。",
+            "saveAnswers": "回答を保存できませんでした",
+            "loadProgress": "進捗を読み込めませんでした",
+            "completeNotPersisted": "回答は保存しましたが、プロフィールを完了にできませんでした。再試行してください。"
+          }
+        },
         "welcomeSubtitle": "ログインして中古のラボ・産業機器を売買しましょう。",
         "requestAccount": "アカウントを申請",
         "accountsIssuedByTeam": "アカウントは GreenBidz チームが発行します。",

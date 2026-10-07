@@ -1748,7 +1748,7 @@
     "qa": "Hỏi & Đáp",
     "askQuestions": "Đặt câu hỏi",
     "answerQuestions": "Trả lời câu hỏi",
-    "loading": "Đang tải...",
+    "loading": "Đang tải…",
     "noMessages": "Chưa có tin nhắn",
     "beFirst": "Hãy là người đầu tiên hỏi!",
     "typeMessage": "Nhập...",
@@ -3356,7 +3356,7 @@
     "signInTitle": "Đăng nhập để xem mục yêu thích của bạn",
     "signInDesc": "Theo dõi những tin đăng bạn yêu thích.",
     "signIn": "Đăng nhập",
-    "emptyTitle": "Không có tin đã lưu",
+    "emptyTitle": "Chưa có gì ở đây",
     "emptyDesc": "Nhấn biểu tượng trái tim trên bất kỳ tin đăng nào để lưu tại đây.",
     "browse": "Xem tin đăng",
     "loadError": "Không tải được mục yêu thích"
@@ -3452,7 +3452,7 @@
     "addressLabel": "Địa chỉ / Thành phố",
     "quantityLabel": "Số lượng",
     "estimatedValueLabel": "Giá trị ước tính",
-    "saveButton": "Lưu",
+    "saveButton": "Lưu vào kho",
     "saving": "Đang lưu...",
     "notSellerTitle": "Bạn chưa phải là người bán",
     "notSellerDesc": "Để đăng sản phẩm, bạn cần có tài khoản người bán. Đăng ký trở thành người bán từ bảng điều khiển của bạn.",
@@ -4000,7 +4000,7 @@
         "done": "Xong",
         "doneHint": "Lưu thay đổi và quay lại danh sách món hàng",
         "staleWrite": "Món hàng này đã thay đổi ở nơi khác. Hãy mở lại để lấy bản mới nhất.",
-        "saveFailed": "Không lưu được thay đổi đó",
+        "saveFailed": "Chưa lưu được. Thử lại.",
         "acceptFailed": "Không chấp nhận được món hàng này"
       },
       "required": {
@@ -4060,7 +4060,7 @@
       "intake": {
         "eyebrow": "TIẾP NHẬN",
         "title": "Tải lên danh mục của bạn",
-        "lede": "Mọi định dạng, mọi ngôn ngữ. Ảnh, bảng tính, PDF đấu giá — chúng tôi đọc tất cả và tạo tin đăng cho bạn.",
+        "lede": "Riêng tư cho đến khi bạn gửi đăng tin.",
         "dropTitle": "Thêm ảnh, tài liệu hoặc danh sách hàng",
         "dropBody": "Một máy hay cả nhà xưởng đều được.",
         "addMore": "Thêm tệp",
@@ -4138,12 +4138,46 @@
       },
       "drafts": {
         "title": "Bản nháp của bạn",
-        "subtitle": "Mọi thứ bạn dừng giữa chừng đều được lưu ở đây.",
+        "subtitle": "Riêng tư cho đến khi bạn gửi đăng tin.",
         "loading": "Đang tìm các lần quét bạn chưa hoàn tất…",
         "sessionEndedBody": "Đăng nhập lại và bản nháp của bạn sẽ ở đây — không mất gì cả.",
         "loadError": "Không tải được bản nháp. Kéo xuống để thử lại — không mất gì cả.",
         "emptyTitle": "Không có gì dang dở",
-        "emptyBody": "Lần quét bạn dừng giữa chừng được lưu ở đây, để hôm khác tiếp tục."
+        "emptyBody": "Các món đã quét được lưu ở đây."
+      },
+      "inventory": {
+        "saveButton": "Lưu vào kho của tôi",
+        "saving": "Đang lưu…",
+        "submitButton": "Gửi để đăng bán",
+        "submitting": "Đang gửi…",
+        "saved": "Đã lưu vào kho của bạn",
+        "savedPending": "Đã lưu. Gửi đăng tin sau khi được duyệt.",
+        "saveFailed": "Không lưu được vào kho. Các món của bạn vẫn còn ở đây — hãy thử lại.",
+        "reviewTitle": "Xem lại các món",
+        "lede": "Các món đã lưu được giữ riêng tư trong kho. Không có gì được đăng cho đến khi bạn gửi để đăng bán.",
+        "verdictCanSubmit": "Gửi đăng tin ngay, hoặc giữ ở đây.",
+        "verdictSaveOnly": "Gửi đăng tin sau khi được duyệt.",
+        "title": "Kho của tôi",
+        "subtitle": "Riêng tư cho đến khi bạn gửi đăng tin.",
+        "filterActive": "Trong kho",
+        "filterPublished": "Đã đăng",
+        "filterDiscarded": "Đã bỏ",
+        "emptyPublishedTitle": "Chưa có món nào được đăng",
+        "emptyPublishedBody": "Các món bạn gửi sẽ hiện ở đây.",
+        "emptyDiscardedTitle": "Không có món nào bị bỏ",
+        "emptyDiscardedBody": "Được giữ lại, không xoá.",
+        "openInventory": "Xem mục của tôi",
+        "discard": "Loại bỏ",
+        "discardConfirmTitle": "Loại bỏ mục này?",
+        "discardConfirmBody": "\"{{title}}\" sẽ chuyển sang Đã loại bỏ. Mục vẫn được giữ, không bị xóa, nhưng bạn không thể chuyển lại.",
+        "discardFailed": "Không loại bỏ được. Hãy thử lại.",
+        "searchPlaceholder": "Tìm trong mục của bạn",
+        "searchCount_one": "{{count}} kết quả",
+        "searchCount_other": "{{count}} kết quả",
+        "noMatchTitle": "Không có kết quả",
+        "noMatchBody": "Không có mục nào khớp với \"{{query}}\".",
+        "noMatchPartial": "Không có kết quả trong các mục đã tải. Hãy cuộn xuống để tải thêm rồi tìm lại.",
+        "clearSearch": "Xóa tìm kiếm"
       },
       "listings": {
         "title": "Tin đăng của tôi",
@@ -4374,6 +4408,253 @@
         "sustainabilityFirst": "Ưu tiên phát triển bền vững",
         "tagline": "Thúc đẩy kinh tế tuần hoàn thông qua thương mại công nghiệp có trách nhiệm.",
         "contactOpenFailed": "Hãy mở liên kết bằng trình duyệt.",
+        "onboarding": {
+          "role": {
+            "eyebrow": "BẮT ĐẦU",
+            "title": "Bạn muốn dùng {{brand}} như thế nào?",
+            "subtitle": "Bạn có thể bổ sung vai trò còn lại vào tài khoản sau.",
+            "buyerTitle": "Tôi là người mua",
+            "buyerDescription": "Xem và mua thiết bị đo kiểm và thiết bị phòng thí nghiệm đã hiệu chuẩn.",
+            "sellerTitle": "Tôi là người bán",
+            "sellerDescription": "Đăng bán thiết bị dư thừa và tiếp cận người mua coi trọng hiệu chuẩn."
+          },
+          "cta": {
+            "continue": "Tiếp tục",
+            "submitForReview": "Gửi để duyệt",
+            "tryAgain": "Thử lại",
+            "help": "Trợ giúp",
+            "saveExit": "Lưu và thoát"
+          },
+          "resume": {
+            "loading": "Đang tiếp tục từ chỗ bạn dừng lại…"
+          },
+          "sellerStatus": {
+            "summary": {
+              "title": "Hoàn tất thiết lập tài khoản",
+              "titleWaiting": "Tài khoản của bạn đang được xét duyệt",
+              "waiting": "Đang chờ duyệt",
+              "needsYou_one": "{{count}} việc cần bạn xử lý",
+              "needsYou_other": "{{count}} việc cần bạn xử lý",
+              "progress": "Đã xong {{done}}/{{total}}"
+            },
+            "pending": {
+              "title": "Đang chờ duyệt",
+              "body": "Trong lúc chờ, bạn vẫn có thể xem, lưu bản nháp và gửi tin nhắn. Bạn sẽ đăng được tin khi chúng tôi duyệt xong, thường trong vòng 24 giờ.",
+              "cta": "Xem tiến độ"
+            },
+            "verify": {
+              "title": "Xác nhận email của bạn",
+              "body": "Chúng tôi đã gửi cho bạn một liên kết. Xác nhận để bảo vệ tài khoản.",
+              "resend": "Gửi lại",
+              "sending": "Đang gửi…",
+              "sent": "Đã gửi — hãy kiểm tra hộp thư của bạn.",
+              "failed": "Chưa gửi được. Vui lòng thử lại sau giây lát."
+            },
+            "finish": {
+              "title": "Hoàn tất hồ sơ người bán",
+              "subtitle": "Tiếp tục từ chỗ bạn dừng lại"
+            }
+          },
+          "accountStatus": {
+            "title": "Hồ sơ người bán của bạn đang được xét duyệt.",
+            "subtitle": "Chúng tôi sẽ gửi email ngay khi duyệt xong, thường trong vòng 24 giờ.",
+            "browseCta": "Xem thiết bị",
+            "askCta": "Hỏi chúng tôi",
+            "steps": {
+              "account": { "title": "Đã tạo tài khoản", "body": "Email và thông tin đăng nhập của bạn." },
+              "email": {
+                "title": "Xác nhận email của bạn",
+                "body": "Xác nhận giúp bảo vệ tài khoản của bạn.",
+                "sentTo": "Chúng tôi đã gửi liên kết tới {{email}}."
+              },
+              "profile": { "title": "Hoàn tất hồ sơ người bán", "body": "Thông tin doanh nghiệp, địa điểm, danh mục và số lượng.", "cta": "Tiếp tục từ chỗ bạn dừng lại" },
+              "documents": {
+                "title": "Giấy tờ doanh nghiệp",
+                "body": "Giấy chứng nhận đăng ký của bạn."
+              },
+              "review": { "title": "Chúng tôi xét duyệt", "body": "Thường trong vòng 24 giờ." }
+            },
+            "canDo": {
+              "title": "Bạn có thể làm gì lúc này",
+              "browse": "Xem và tìm kiếm thiết bị",
+              "wants": "Lưu những gì bạn đang tìm",
+              "drafts": "Chuẩn bị bản nháp sẵn để đăng",
+              "locked": "Đăng tin sẽ mở sau khi được duyệt",
+              "unlocked": "Đã có thể đăng tin"
+            }
+          },
+          "account": {
+            "eyebrowSeller": "TÀI KHOẢN NGƯỜI BÁN",
+            "eyebrowBuyer": "TÀI KHOẢN NGƯỜI MUA",
+            "title": "Chào mừng đến với {{brand}}!",
+            "subtitle": "Cùng bắt đầu nhé.",
+            "ctaSeller": "Đồng ý và tiếp tục",
+            "ctaBuyer": "Đồng ý và bắt đầu mua",
+            "legal": "Khi tiếp tục, bạn đồng ý với Điều khoản sử dụng và Chính sách bảo mật của {{brand}}.",
+            "email": { "label": "Địa chỉ email", "placeholder": "name@company.com" },
+            "fullName": { "label": "Họ và tên", "placeholder": "Tên của bạn" },
+            "phone": { "label": "Số điện thoại", "placeholder": "+84 91 234 5678" },
+            "password": {
+              "placeholder": "Tạo mật khẩu",
+              "help": "Tối thiểu 8 ký tự, gồm cả chữ và số."
+            },
+            "confirmPassword": { "label": "Xác nhận mật khẩu", "placeholder": "Nhập lại mật khẩu" }
+          },
+          "sellerType": {
+            "title": "Bạn là nhà bán lại hay bán cho chính công ty mình?",
+            "subtitle": "Câu trả lời này quyết định các câu hỏi tiếp theo.",
+            "resellerTitle": "Nhà bán lại",
+            "resellerDescription": "Tôi bán hàng thường xuyên",
+            "companyTitle": "Công ty",
+            "companyDescription": "Bán cho chính công ty của tôi"
+          },
+          "business": {
+            "titleReseller": "Cho chúng tôi biết về cơ sở kinh doanh của bạn",
+            "titleCompany": "Cho chúng tôi biết về công ty của bạn",
+            "subtitle": "Thông tin này hiển thị trên hồ sơ người bán của bạn."
+          },
+          "location": {
+            "title": "Thiết bị của bạn đang ở đâu?",
+            "subtitle": "Người mua chỉ thấy thành phố và quốc gia."
+          },
+          "categories": {
+            "title": "Bạn bán loại thiết bị nào?",
+            "subtitle": "Chọn tất cả mục phù hợp."
+          },
+          "volume": {
+            "titleReseller": "Bạn thường có bao nhiêu sản phẩm để bán?",
+            "titleCompany": "Bạn muốn bán bao nhiêu thiết bị?",
+            "reseller": {
+              "aTitle": "Dưới 25 sản phẩm",
+              "aDescription": "Tồn kho nhỏ, luân chuyển nhanh",
+              "bTitle": "25–100 sản phẩm",
+              "bDescription": "Danh mục ổn định",
+              "cTitle": "Trên 100 sản phẩm",
+              "cDescription": "Khối lượng lớn — chúng tôi có thể hỗ trợ tải lên hàng loạt"
+            },
+            "company": {
+              "aTitle": "Chỉ một vài sản phẩm",
+              "aDescription": "Thiết bị dư thừa một lần",
+              "bTitle": "Thanh lý phòng thí nghiệm",
+              "bDescription": "Khoảng 10–50 sản phẩm cùng lúc",
+              "cTitle": "Dư thừa thường xuyên",
+              "cDescription": "Chúng tôi thanh lý thiết bị định kỳ"
+            }
+          },
+          "calibration": {
+            "title": "Sản phẩm của bạn có hồ sơ hiệu chuẩn không?",
+            "subtitle": "Bạn có thể đính kèm chứng nhận cho từng tin đăng sau.",
+            "mostTitle": "Có, hầu hết sản phẩm",
+            "mostDescription": "Đã hiệu chuẩn trong 12 tháng qua",
+            "someTitle": "Một số sản phẩm",
+            "someDescription": "Có cả hàng đã hiệu chuẩn và hàng nguyên trạng",
+            "noneTitle": "Không, bán nguyên trạng",
+            "noneDescription": "Đăng bán không kèm hiệu chuẩn"
+          },
+          "gate": {
+            "categories": "Chọn ít nhất một danh mục thiết bị để tiếp tục.",
+            "calibrationAndTerms": "Hãy chọn một câu trả lời và chấp nhận Điều khoản nền tảng dành cho người bán để gửi.",
+            "terms": "Vui lòng chấp nhận Điều khoản nền tảng dành cho người bán để gửi."
+          },
+          "fields": {
+            "optionalSuffix": "{{label}} (không bắt buộc)",
+            "bizName": {
+              "labelReseller": "Tên cơ sở kinh doanh",
+              "labelCompany": "Tên công ty",
+              "placeholderReseller": "Tên cơ sở kinh doanh của bạn",
+              "placeholderCompany": "Tên công ty của bạn"
+            },
+            "website": { "label": "Trang web", "placeholder": "www.example.com" },
+            "taxId": { "label": "Mã số thuế / VAT", "placeholder": "Mã số định danh thuế" },
+            "bizRole": {
+              "labelReseller": "Số năm hoạt động",
+              "placeholderReseller": "ví dụ: 5",
+              "labelCompany": "Chức danh của bạn",
+              "placeholderCompany": "ví dụ: Quản lý phòng thí nghiệm"
+            },
+            "bizPhone": { "label": "Điện thoại công ty", "placeholder": "+84 91 234 5678" },
+            "street": { "label": "Địa chỉ", "placeholder": "Tòa nhà, đường, số phòng" },
+            "city": { "label": "Thành phố", "placeholder": "Thành phố" },
+            "postal": { "label": "Mã bưu chính", "placeholder": "Mã bưu chính" },
+            "region": { "label": "Tỉnh / khu vực", "placeholder": "Tỉnh hoặc khu vực" },
+            "country": { "label": "Quốc gia", "placeholder": "Chọn quốc gia của bạn" }
+          },
+          "submit": {
+            "title": "Đang thiết lập tài khoản của bạn",
+            "cta": "Đang gửi…",
+            "phaseSaved": "Đã lưu câu trả lời của bạn",
+            "phaseChecked": "Đã kiểm tra thông tin của bạn",
+            "phaseCreating": "Đang tạo hồ sơ người bán của bạn",
+            "phaseCreatingDetail": "Việc này mất vài giây",
+            "phaseSending": "Đang gửi đi để duyệt",
+            "phaseStatus": "Bước {{current}} trên {{total}}: {{label}}"
+          },
+          "done": {
+            "titleSeller": "Hồ sơ người bán của bạn đang được duyệt.",
+            "titleBuyer": "Bạn đã sẵn sàng mua hàng.",
+            "bodySeller": "Chúng tôi sẽ gửi email khi hồ sơ được duyệt. Bạn có thể bắt đầu soạn tin đăng ngay bây giờ.",
+            "bodyBuyer": "Chúng tôi đã gửi liên kết xác nhận tới email của bạn.",
+            "timelineReview": "Chúng tôi xem xét thông tin của bạn",
+            "timelineEmail": "Bạn nhận email khi được duyệt",
+            "timelineLive": "Tin đăng của bạn hiển thị với người mua",
+            "ctaSeller": "Soạn tin đăng đầu tiên",
+            "ctaBuyer": "Xem thiết bị",
+            "quietCta": "Tới bảng điều khiển"
+          },
+          "terms": {
+            "consent": "Tôi đã đọc và đồng ý với {{title}}, và xác nhận tôi có thẩm quyền đại diện cho công ty mình.",
+            "readA11y": "Đọc {{title}}",
+            "agreeCta": "Tôi đồng ý"
+          },
+          "validation": {
+            "bizNameRequiredReseller": "Vui lòng nhập tên cơ sở kinh doanh",
+            "bizNameRequiredCompany": "Vui lòng nhập tên công ty",
+            "minChars": "Phải có ít nhất {{min}} ký tự",
+            "maxChars": "Không được quá {{max}} ký tự",
+            "nameInvalid": "Vui lòng nhập tên hợp lệ",
+            "websiteInvalid": "Vui lòng nhập trang web hợp lệ, ví dụ: www.example.com",
+            "taxIdRequired": "Vui lòng nhập mã số thuế / VAT",
+            "taxIdFormat": "Dùng 3–30 chữ cái, chữ số, dấu cách, dấu chấm, gạch ngang hoặc gạch chéo",
+            "yearsInvalid": "Nhập số năm nguyên, ví dụ: 5",
+            "jobTitleInvalid": "Vui lòng nhập chức danh hợp lệ",
+            "streetRequired": "Vui lòng nhập địa chỉ",
+            "streetTooShort": "Vui lòng nhập địa chỉ đầy đủ",
+            "streetInvalid": "Vui lòng nhập địa chỉ hợp lệ",
+            "cityRequired": "Vui lòng nhập thành phố",
+            "cityLength": "Tên thành phố phải có từ {{min}} đến {{max}} ký tự",
+            "cityInvalid": "Thành phố chỉ được chứa chữ cái",
+            "postalRequired": "Vui lòng nhập mã bưu chính",
+            "postalFormat": "Nhập mã bưu chính hợp lệ (3–10 chữ cái, chữ số, dấu cách hoặc gạch ngang)",
+            "regionRequired": "Vui lòng nhập tỉnh / khu vực",
+            "regionLength": "Tỉnh / khu vực phải có từ {{min}} đến {{max}} ký tự",
+            "regionInvalid": "Tỉnh / khu vực chỉ được chứa chữ cái",
+            "countryRequired": "Vui lòng chọn quốc gia",
+            "emailRequired": "Vui lòng nhập địa chỉ email",
+            "emailInvalid": "Nhập địa chỉ email hợp lệ, ví dụ: name@company.com",
+            "fullNameRequired": "Vui lòng nhập họ và tên",
+            "fullNameTooShort": "Vui lòng nhập đầy đủ họ và tên",
+            "fullNameInvalid": "Tên chỉ được chứa chữ cái, dấu cách, dấu nháy đơn và gạch ngang",
+            "phoneRequired": "Vui lòng nhập số điện thoại",
+            "phoneInvalid": "Vui lòng nhập số điện thoại hợp lệ",
+            "passwordRequired": "Vui lòng nhập mật khẩu",
+            "passwordTooShort": "Mật khẩu phải có ít nhất {{min}} ký tự",
+            "passwordTooLong": "Mật khẩu không được quá {{max}} ký tự",
+            "passwordWeak": "Dùng ít nhất một chữ cái và một chữ số",
+            "confirmRequired": "Vui lòng xác nhận mật khẩu của bạn",
+            "confirmMismatch": "Mật khẩu không khớp"
+          },
+          "errors": {
+            "createAccount": "Không thể tạo tài khoản của bạn",
+            "sessionLost": "Phiên đăng nhập đã mất. Vui lòng đăng nhập và tiếp tục.",
+            "saveStep": "Không lưu được. Vui lòng thử lại.",
+            "completeFailed": "Chúng tôi không thể đánh dấu hồ sơ của bạn là hoàn tất. Vui lòng thử lại.",
+            "network": "Lỗi mạng — hãy kiểm tra kết nối của bạn",
+            "noUserId": "Chúng tôi chưa tạo xong tài khoản của bạn. Vui lòng thử lại.",
+            "saveAnswers": "Không thể lưu câu trả lời của bạn",
+            "loadProgress": "Không thể tải tiến trình của bạn",
+            "completeNotPersisted": "Chúng tôi đã lưu câu trả lời của bạn nhưng không thể đánh dấu hồ sơ là hoàn tất. Vui lòng thử lại."
+          }
+        },
         "welcomeSubtitle": "Đăng nhập để mua và bán thiết bị phòng thí nghiệm và công nghiệp đã qua sử dụng.",
         "requestAccount": "Yêu cầu tài khoản",
         "accountsIssuedByTeam": "Tài khoản do đội ngũ GreenBidz cấp.",
