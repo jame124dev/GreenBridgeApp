@@ -41,6 +41,8 @@ export interface DraftSummary {
   updated_at: string;
 }
 export type DraftDetail = DraftSummary & { payload: DraftPayload };
+/** The lifecycle a draft row moves through. `discarded` is a soft delete — the row stays. */
+export type DraftStatus = DraftSummary['status'];
 
 export interface CreateDraftReq {
   session_uuid: string;
@@ -58,11 +60,19 @@ export async function createDraft(req: CreateDraftReq): Promise<DraftDetail> {
   return res.data.data as DraftDetail;
 }
 
+/**
+ * `status` is sent only when asked for. The backend defaults a missing one to
+ * `active` (`draftController.js:414`), so leaving it off keeps every existing
+ * caller's request byte-identical.
+ */
 export async function listDrafts(
   cursor?: string,
+  status?: DraftStatus,
 ): Promise<{ drafts: DraftSummary[]; next_cursor: string | null }> {
   try {
-    const res = await greenbidz.get('/drafts', { params: { cursor } });
+    const res = await greenbidz.get('/drafts', {
+      params: status ? { cursor, status } : { cursor },
+    });
     const body = res.data ?? {};
     const drafts = Array.isArray(body.data) ? (body.data as DraftSummary[]) : [];
     const next_cursor = body.next_cursor == null ? null : String(body.next_cursor);

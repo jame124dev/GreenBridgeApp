@@ -6,14 +6,22 @@ import * as api from './draftApi';
 
 export const draftKeys = {
   all: ['drafts'] as const,
-  list: () => [...draftKeys.all, 'list'] as const,
+  // The status is part of the key, so switching filter is a fresh first page —
+  // a cursor from one status is never sent with another. Every mutation below
+  // invalidates `all`, which is a prefix of every status.
+  list: (status: api.DraftStatus = 'active') => [...draftKeys.all, 'list', status] as const,
   detail: (id: string) => [...draftKeys.all, 'detail', id] as const,
 };
 
-export function useListDrafts(options?: { enabled?: boolean; retry?: number | boolean }) {
+export function useListDrafts(options?: {
+  enabled?: boolean;
+  retry?: number | boolean;
+  /** Omitted → `active`, which is also what the backend assumes. */
+  status?: api.DraftStatus;
+}) {
   return useQuery({
-    queryKey: draftKeys.list(),
-    queryFn: () => api.listDrafts(),
+    queryKey: draftKeys.list(options?.status),
+    queryFn: () => api.listDrafts(undefined, options?.status),
     staleTime: 15_000,
     // Callers (e.g. the Home "Your items" section) gate on the drafts flag +
     // sign-in so the list isn't fetched when it can't be used / would 401.
