@@ -180,8 +180,14 @@ function itemsToPublish(): DraftItem[] {
 /**
  * The same bar Submit has always enforced — photos, the schema, and a resolved
  * marketplace — asked per item so the caller can say WHICH one is short.
+ *
+ * ⚠️ EXPORTED so the inventory row can say what a draft still needs BEFORE the
+ * seller presses Submit (`useDraftReadiness`). It must stay the single
+ * definition of "ready": a row that advertises readiness by one rule and a
+ * publish that enforces another is a button that lies, and the row's whole
+ * purpose is to predict what the press will do.
  */
-function firstIncompleteItem(items: readonly DraftItem[]): PublishBlock | null {
+export function firstIncompleteItem(items: readonly DraftItem[]): PublishBlock | null {
   for (let i = 0; i < items.length; i += 1) {
     const it = items[i];
     if (!it) continue;
