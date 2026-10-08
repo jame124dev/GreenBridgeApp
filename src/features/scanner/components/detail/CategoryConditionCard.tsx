@@ -1,7 +1,7 @@
 // `useEffect` STAYS — the hydrate/bridge effect below uses it. Only the
 // `selectedParentId` sync effect was deleted with the parent pill row.
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -20,11 +20,14 @@ import {
 } from '@/features/scanner/useLabCategories';
 import { bridgeCategoryId, flattenCategoryOptions } from '@/services/scanner/fetchCategories';
 import type { ItemGrade } from '@/stores/scanDraftStore';
-import { haptics } from '@/lib/haptics';
 import { brand } from '@/constants/theme';
 
 import { CategoryPickerSheet, type CategoryPick } from './CategoryPickerSheet';
+import { FieldGroup } from './SectionBand';
 import { FieldLabel } from './FieldLabel';
+import { OptionSheet } from './OptionSheet';
+import { PickerRow } from './PickerRow';
+import { ICON } from './metrics';
 
 const GRADES: ItemGrade[] = ['A', 'B', 'C', 'D'];
 
@@ -175,14 +178,38 @@ export function CategoryConditionCard() {
   // here via a watch-effect wrongly fired during initial hydration (the form's
   // default marketplace flips to the AI's), wiping the auto-filled category.
 
-  const toggleCondition = (key: ConditionKey) => {
-    const next = selectedConditions.includes(key)
-      ? selectedConditions.filter((c) => c !== key)
-      : [...selectedConditions, key];
-    setValue('condition', next, { shouldValidate: true });
+  /*
+    Condition is still an ARRAY and still multi-select — only where it is chosen
+    moved. The five wrapping pills were four lines of the scroll for one answer,
+    expressed in a sixth idiom nothing else on the form used, and selection was
+    carried by fill colour with no check glyph and no radiogroup
+    (FORM_UX_PANEL.md §A, B6). `OptionSheet` buffers the toggles and hands back
+    the whole next array here, so this write is the same shape it always was.
+  */
+  const commitConditions = (next: string[]) => {
+    setValue('condition', next as ConditionKey[], { shouldValidate: true });
   };
 
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [conditionSheetOpen, setConditionSheetOpen] = useState(false);
+
+  const conditionOptions = useMemo(
+    () =>
+      VALID_CONDITION_KEYS.map((key) => ({
+        value: key,
+        label: t(`mobile.detail.condition.${key}`, { defaultValue: CONDITION_LABELS[key] }),
+      })),
+    [t],
+  );
+  /** What the collapsed row shows: every chosen condition, comma-joined. */
+  const conditionLabel = useMemo(
+    () =>
+      conditionOptions
+        .filter((o) => selectedConditions.includes(o.value))
+        .map((o) => o.label)
+        .join(', '),
+    [conditionOptions, selectedConditions],
+  );
   const options = useMemo(() => flattenCategoryOptions(parents), [parents]);
   const selectedParent = parents.find((c) => String(c.id) === derivedParentId);
   const marketplaceLabel =
@@ -286,47 +313,30 @@ export function CategoryConditionCard() {
   };
 
   return (
-    <View className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl gap-sm">
+    <FieldGroup>
+      {/* Category, its "Other" brand input and its sheet are ONE child of the
+          group: the brand input only exists BECAUSE of the pick above it, and a
+          sheet is a portal with no row of its own — left as a sibling it would
+          leave a hairline ruling off empty space. */}
+      <View className="gap-sm">
+      {/* The row this card already had, now the shared one — see `PickerRow`.
+          Same strings, same a11y label, same two states (Choose / Change). */}
       <Controller
         control={control}
         name="categoryId"
         render={({ fieldState }) => (
-          <View className="gap-1.5">
-            <FieldLabel text={t('mobile.detail.sectionCategory')} required ai />
-            <Pressable
-              className="flex-row items-center gap-sm border border-brand-border-strong rounded-xs px-md py-2.5"
-              onPress={() => {
-                haptics.tap();
-                setSheetOpen(true);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${t('mobile.detail.sectionCategory')}: ${
-                selectedLabel ||
-                t('mobile.detail.categoryNotSet', { defaultValue: 'Not set — pick a category' })
-              }`}
-            >
-              <Text
-                className={`flex-1 font-label-medium text-lg ${
-                  selectedLabel ? 'text-brand-foreground' : 'text-brand-placeholder'
-                }`}
-                numberOfLines={2}
-              >
-                {selectedLabel ||
-                  t('mobile.detail.categoryNotSet', {
-                    defaultValue: 'Not set — pick a category',
-                  })}
-              </Text>
-              <Text className="font-label text-md text-brand-primary">
-                {selectedLabel
-                  ? t('mobile.detail.change', { defaultValue: 'Change' })
-                  : t('mobile.detail.choose', { defaultValue: 'Choose' })}
-              </Text>
-              <MaterialIcons name="chevron-right" size={20} color={brand.placeholder} />
-            </Pressable>
-            {fieldState.error ? (
-              <Text className="text-brand-destructive text-md">{fieldState.error.message}</Text>
-            ) : null}
-          </View>
+          <PickerRow
+            label={t('mobile.detail.sectionCategory')}
+            required
+            ai
+            value={selectedLabel}
+            placeholder={t('mobile.detail.categoryNotSet', {
+              defaultValue: 'Not set — pick a category',
+            })}
+            error={fieldState.error?.message}
+            testID="picker-row-category"
+            onPress={() => setSheetOpen(true)}
+          />
         )}
       />
 
@@ -376,39 +386,31 @@ export function CategoryConditionCard() {
         onSelect={applyPick}
         onClose={() => setSheetOpen(false)}
       />
+      </View>
 
-      <View className="gap-1.5">
-        <FieldLabel text={t('mobile.detail.sectionCondition')} required />
-        <View className="flex-row flex-wrap gap-1.5">
-          {VALID_CONDITION_KEYS.map((key) => {
-            const active = selectedConditions.includes(key);
-            return (
-              <Pressable
-                key={key}
-                className={`flex-row items-center gap-xs px-md py-sm rounded-pill border ${
-                  active
-                    ? 'bg-brand-primary border-brand-primary'
-                    : 'bg-brand-surface border-brand-border-strong'
-                }`}
-                onPress={() => toggleCondition(key)}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: active }}
-                accessibilityLabel={t(`mobile.detail.condition.${key}`, {
-                  defaultValue: CONDITION_LABELS[key],
-                })}
-              >
-                {active ? (
-                  <MaterialIcons name="check" size={16} color={brand.primaryForeground} />
-                ) : null}
-                <Text
-                  className={`font-label-medium text-lg ${active ? 'text-brand-primary-foreground' : 'text-brand-foreground'}`}
-                >
-                  {t(`mobile.detail.condition.${key}`, { defaultValue: CONDITION_LABELS[key] })}
-                </Text>
-              </Pressable>
-            );
+      <View>
+        <PickerRow
+          label={t('mobile.detail.sectionCondition')}
+          required
+          value={conditionLabel}
+          placeholder={t('mobile.detail.conditionNotSet', {
+            defaultValue: 'Not set — pick a condition',
           })}
-        </View>
+          testID="picker-row-condition"
+          onPress={() => setConditionSheetOpen(true)}
+        />
+        <OptionSheet
+          multi
+          visible={conditionSheetOpen}
+          title={t('mobile.detail.selectConditionTitle', { defaultValue: 'Select condition' })}
+          subtitle={t('mobile.detail.selectConditionSubtitle', {
+            defaultValue: 'Pick every one that applies',
+          })}
+          options={conditionOptions}
+          selected={selectedConditions}
+          onCommit={commitConditions}
+          onClose={() => setConditionSheetOpen(false)}
+        />
       </View>
 
       {/* W7 (scan_v3) — W3 grade-gate: Grade is a 101IT-only field per web's
@@ -424,23 +426,32 @@ export function CategoryConditionCard() {
           render={({ field: { value, onChange } }) => (
             <View className="gap-1.5">
               <FieldLabel text={t('mobile.detail.sectionGrade', { defaultValue: 'GRADE' })} ai />
-              <View className="flex-row gap-1.5">
+              {/* Four values is few enough to stay a segment rather than become
+                  a sheet, but then the a11y debt has to be paid in place: a
+                  check so the pick is not fill-colour alone, and real radiogroup
+                  semantics so a screen reader can say which of four is chosen
+                  (FORM_UX_PANEL.md B6). */}
+              <View className="flex-row gap-1.5" accessibilityRole="radiogroup">
                 {GRADES.map((g) => {
                   const active = value === g;
                   return (
                     <Pressable
                       key={g}
-                      className={`flex-1 py-2.5 rounded-xs border items-center ${
+                      className={`flex-1 flex-row items-center justify-center gap-xs py-2.5 rounded-xs border ${
                         active ? 'bg-brand-primary border-brand-primary' : 'border-brand-border-strong'
                       }`}
+                      style={styles.segment}
                       onPress={() => onChange(g)}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: active }}
+                      role="radio"
+                      accessibilityState={{ checked: active }}
                       accessibilityLabel={t('mobile.detail.gradeOption', {
                         defaultValue: 'Grade {{g}}',
                         g,
                       })}
                     >
+                      {active ? (
+                        <MaterialIcons name="check" size={ICON.adornment} color={brand.primaryForeground} />
+                      ) : null}
                       <Text
                         className={`font-bold text-xl ${active ? 'text-brand-primary-foreground' : 'text-brand-foreground'}`}
                       >
@@ -454,6 +465,11 @@ export function CategoryConditionCard() {
           )}
         />
       ) : null}
-    </View>
+    </FieldGroup>
   );
 }
+
+const styles = StyleSheet.create({
+  // 44pt, reached without changing the segment's visual padding.
+  segment: { minHeight: 44 },
+});

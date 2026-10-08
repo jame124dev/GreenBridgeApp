@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next';
 import type { DetailFormInput } from '@/features/scanner/schema';
 import { brand } from '@/constants/theme';
 
+import { FieldGroup } from './SectionBand';
 import { FieldLabel } from './FieldLabel';
+import { useAiFilled } from './aiProvenance';
 
 const inputCls =
   'bg-brand-surface border border-brand-border-strong rounded-xs px-md py-2.5 font-sans text-xl text-brand-foreground';
@@ -41,6 +43,9 @@ export function IdentityCard({
   const isEdit = variant === 'edit';
   const { t } = useTranslation();
   const { control } = useFormContext<DetailFormInput>();
+  // The AI badge now states a fact rather than decorating the label — see
+  // `aiProvenance.ts`. It shows only while the value is still what the AI wrote.
+  const aiFilled = useAiFilled();
 
   // Watched, not read once: the hint must vanish the moment the seller answers.
   const brandValue = useWatch({ control, name: 'brand' });
@@ -53,14 +58,23 @@ export function IdentityCard({
     : !filled(brandValue) || !filled(modelValue);
   const showNameplateHint = needsClearerPhoto === true && identityIncomplete;
 
+  /*
+    THREE children, not five. `FieldGroup` rules a hairline between each DIRECT
+    child, so brand, model and the nameplate hint are wrapped together: they are
+    one statement about one photo (see the FIX 1b note below), and a divider
+    between the pair and the sentence explaining them would cut it in half.
+  */
   return (
-    <View className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl gap-sm">
+    <FieldGroup>
       <Controller
         control={control}
         name="title"
         render={({ field: { value, onChange, onBlur }, fieldState }) => (
           <View className="gap-1.5">
-            <FieldLabel text={t('mobile.detail.sectionTitle')} ai />
+            {/* `required` — title is in `REQUIRED_ROWS` alongside category,
+                condition, price and location, which all carry the marker.
+                Title and description were the two that did not. */}
+            <FieldLabel text={t('mobile.detail.sectionTitle')} ai={aiFilled('name', value)} required />
             {/* MULTILINE ON PURPOSE. Titles run to 80 chars and a single-line
                 TextInput on Android scrolls to the caret, so a long AI-written
                 title opened showing its MIDDLE — "…solutions Stream In-Situ TEM"
@@ -92,13 +106,14 @@ export function IdentityCard({
         )}
       />
 
+      <View className="gap-sm">
       <View className="flex-row gap-sm">
         <Controller
           control={control}
           name="brand"
           render={({ field: { value, onChange, onBlur } }) => (
             <View className="flex-1 gap-1.5">
-              <FieldLabel text={t('mobile.detail.sectionBrand', { defaultValue: 'BRAND' })} ai />
+              <FieldLabel text={t('mobile.detail.sectionBrand', { defaultValue: 'BRAND' })} ai={aiFilled('brand', value)} />
               <TextInput
                 className={inputCls}
                 value={value ?? ''}
@@ -116,7 +131,7 @@ export function IdentityCard({
           name="model"
           render={({ field: { value, onChange, onBlur } }) => (
             <View className="flex-1 gap-1.5">
-              <FieldLabel text={t('mobile.detail.sectionModel', { defaultValue: 'MODEL' })} ai />
+              <FieldLabel text={t('mobile.detail.sectionModel', { defaultValue: 'MODEL' })} ai={aiFilled('model', value)} />
               <TextInput
                 className={inputCls}
                 value={value ?? ''}
@@ -146,6 +161,7 @@ export function IdentityCard({
           })}
         </Text>
       ) : null}
+      </View>
 
       {isEdit ? null : (
       <Controller
@@ -153,7 +169,10 @@ export function IdentityCard({
         name="year"
         render={({ field: { value, onChange, onBlur } }) => (
           <View className="gap-1.5">
-            <FieldLabel text={t('mobile.detail.sectionYear', { defaultValue: 'YEAR' })} ai />
+            <FieldLabel
+              text={t('mobile.detail.sectionYear', { defaultValue: 'YEAR' })}
+              ai={aiFilled('year', value)}
+            />
             <TextInput
               className={inputCls}
               value={value ?? ''}
@@ -168,6 +187,6 @@ export function IdentityCard({
         )}
       />
       )}
-    </View>
+    </FieldGroup>
   );
 }

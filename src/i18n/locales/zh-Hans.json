@@ -3728,10 +3728,9 @@
         "conditionDetail_empty": "请选择",
         "priceDetail_offer": "出价模式",
         "priceDetail_empty": "输入金额或选择出价",
-        "locationDetail_empty": "添加地址",
-        "liveBadge": "上架中"
+        "locationDetail_empty": "添加地址"
       },
-      "submitListing": "提交刊登 →",
+      "submitListing": "提交刊登",
       "addAnother": "保存并扫描下一件",
       "reviewGroup_one": "查看群组（{{count}} 件）",
       "reviewGroup_other": "查看群组（{{count}} 件）",
@@ -3845,7 +3844,10 @@
       "potentialProfit": "潜在获利",
       "profitInsight": "在 {{marketplace}} 上架可比直接卖废料多赚 {{percent}}%。",
       "aiBadge": "AI",
-      "saveDraft": "保存为草稿",
+      "saveDraft": "保存草稿",
+      "descriptionPlaceholder": "使用时长、校准状态、随附物品（线缆、探头、说明书）以及任何故障。",
+      "offerExplainerShort": "不显示价格 — 买家会向你出价。",
+      "profitNoEstimateShort": "暂无价格参考 — 请在下方自行定价。",
       "installOption": {
         "installed": {
           "label": "已安装",
@@ -3853,7 +3855,7 @@
         },
         "deinstalled": {
           "label": "已拆卸",
-          "hint": "今日即可发货"
+          "hint": "可立即发货"
         }
       }
     },

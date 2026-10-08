@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useUserProfile } from '@/features/auth/useUserProfile';
 import { readCachedLocation } from '@/features/location/pickupStore';
 import { INSTALLATION_OPTIONS } from '@/features/scanner/constants';
+import { countryFlagEmoji } from '@/features/scanner/countryFlag';
 import type { DetailFormInput } from '@/features/scanner/schema';
 import { haptics } from '@/lib/haptics';
 import {
@@ -17,7 +18,12 @@ import { useScanDraft } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
 
 import { CountryPicker } from './CountryPicker';
+import { FieldGroup } from './SectionBand';
 import { FieldLabel } from './FieldLabel';
+import { OptionSheet } from './OptionSheet';
+import { PickerRow } from './PickerRow';
+import { ICON } from './metrics';
+import { locationErrorAt } from './locationErrors';
 
 const iconInputCls =
   'flex-row items-center gap-sm bg-brand-surface border border-brand-border-strong rounded-xs px-md';
@@ -45,7 +51,25 @@ const iconInputFieldCls = 'flex-1 py-2.5 font-sans text-xl text-brand-foreground
 export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit' } = {}) {
   const isEdit = variant === 'edit';
   const { t } = useTranslation();
-  const { control, setValue, watch } = useFormContext<DetailFormInput>();
+  const { control, setValue, watch, formState } = useFormContext<DetailFormInput>();
+
+  /*
+    E.3 — the address row is the ONE required field on this form that rendered
+    no error of its own. Title, description, category, condition and price each
+    show their message inline; location showed nothing, so a seller whose
+    address failed validation got a red LOCATION chip in the footer and an alert
+    listing field names, and then landed on a field that looked perfectly fine.
+
+    It is a plain `TextInput` rather than a `Controller` (it writes through
+    `updateRow`, which keeps the address and country arrays the same length), so
+    there is no `fieldState` to read — the issue has to be pulled off
+    `formState.errors` by index. That mapping lives in `locationErrors.ts`
+    rather than here, because rendering this card needs the device-location
+    service, the user profile and the draft store, and the mapping needs none of
+    them: extracted, it is covered by `__tests__/locationErrors.test.ts` against
+    the real schema and resolver.
+  */
+  const errorForRow = (index: number) => locationErrorAt(formState.errors, index);
   const [locating, setLocating] = useState(false);
   // W4 (scan_v3): which row's country picker is open. `null` = closed.
   const [countryPickerRow, setCountryPickerRow] = useState<number | null>(null);
@@ -172,8 +196,26 @@ export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
 
   const rowCount = isEdit ? 1 : Math.max(locations.length, locationCountries.length, 1);
 
+  const [installSheetOpen, setInstallSheetOpen] = useState(false);
+  const installOptions = INSTALLATION_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: t(`mobile.detail.installOption.${opt.value}.label`, opt.label),
+    // The buyer-facing promise, shown in the sheet AS WELL as under the row.
+    // "Ready to ship today" is a commitment published to buyers (see the note
+    // below), so it has to be readable at the moment of choosing, not only
+    // afterwards.
+    description: t(`mobile.detail.installOption.${opt.value}.hint`, opt.hint),
+  }));
+  const installLabel = installation
+    ? installOptions.find((o) => o.value === installation)?.label ?? ''
+    : '';
+
   return (
-    <View className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl gap-sm">
+    <FieldGroup>
+      {/* The address rows, "Use my location" and "Add another location" are ONE
+          group: they are all the same answer, repeated. Installation is the
+          second child, so the hairline falls where the question changes. */}
+      <View className="gap-sm">
       <View className="flex-row items-center justify-between">
         <FieldLabel text={t('mobile.detail.sectionLocation')} required />
         <Pressable
@@ -187,7 +229,7 @@ export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
           {locating ? (
             <ActivityIndicator size="small" color={brand.primary} />
           ) : (
-            <MaterialIcons name="my-location" size={16} color={brand.primary} />
+            <MaterialIcons name="my-location" size={ICON.adornment} color={brand.primary} />
           )}
           <Text className="font-semi text-sm text-brand-primary">
             {t('mobile.detail.useMyLocation', { defaultValue: 'Use my location' })}
@@ -208,8 +250,13 @@ export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
               })}
             </Text>
           ) : null}
-          <View className={iconInputCls}>
-            <MaterialIcons name="location-on" size={20} color={brand.placeholder} />
+          <View
+            className={iconInputCls}
+            /* 1.4.1 — the message below carries the meaning; the red rim is a
+               second, redundant cue, never the only one. */
+            style={errorForRow(index) ? { borderColor: brand.destructive } : undefined}
+          >
+            <MaterialIcons name="location-on" size={ICON.field} color={brand.placeholder} />
             {/* MULTILINE for the same reason the title is: a geocoded address
                 ("Ashiyana … ganj, Lucknow, Uttar Pradesh, 226022") overflows a
                 single line, and Android scrolls a single-line TextInput to the
@@ -226,6 +273,12 @@ export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
               numberOfLines={2}
               submitBehavior="blurAndSubmit"
               textAlignVertical="top"
+              /* Programmatic invalid state, so a screen reader is told the
+                 field is wrong rather than only shown it. `aria-invalid` is
+                 the prop React Native actually supports — there is no
+                 `accessibilityInvalid`. */
+              aria-invalid={errorForRow(index) !== undefined}
+              accessibilityLabel={t('mobile.detail.addressPlaceholder')}
             />
             {index > 0 ? (
               <Pressable
@@ -237,10 +290,18 @@ export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
                 })}
                 className="px-xs"
               >
-                <MaterialIcons name="close" size={18} color={brand.placeholder} />
+                <MaterialIcons name="close" size={ICON.adornment} color={brand.placeholder} />
               </Pressable>
             ) : null}
           </View>
+          {/* Directly under the field it is about — not in the footer, not in
+              an alert. Both of those already exist and neither tells the
+              seller WHICH of several address rows is the problem. */}
+          {errorForRow(index) ? (
+            <Text className="font-sans text-md text-brand-destructive" style={{ marginTop: 2 }}>
+              {errorForRow(index)}
+            </Text>
+          ) : null}
           {/* W4 (scan_v3): country is now a sheet-picker, not free-text.
               The Pressable mimics the existing iconInput shell so the visual
               rhythm with the address row above stays intact.
@@ -261,7 +322,26 @@ export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
                 : undefined
             }
           >
-            <MaterialIcons name="public" size={20} color={brand.placeholder} />
+            {/*
+              The REAL national flag, as every address / phone-number picker
+              does it — not the generic `MaterialIcons "public"` globe that used
+              to sit here. That glyph is a filled circle with the meridians
+              knocked OUT, so at 20px the knockouts fall under a pixel and it
+              renders as a grey smudge beside the crisp pin above it.
+
+              `lineHeight` is not optional: Android clips the top of an emoji
+              laid out at its own font size. The fixed `width` keeps "India"
+              aligned with the address text above whichever branch renders.
+            */}
+            {countryFlagEmoji(locationCountries[index]) ? (
+              <Text style={{ fontSize: 18, lineHeight: 23, width: 20 }}>
+                {countryFlagEmoji(locationCountries[index])}
+              </Text>
+            ) : (
+              /* Unresolvable name (or nothing chosen yet) has no flag — a
+                 monochrome stand-in, never a blank gutter. */
+              <MaterialIcons name="flag" size={ICON.field} color={brand.placeholder} />
+            )}
             <View className={iconInputFieldCls} style={{ justifyContent: 'center' }}>
               <Text
                 className={
@@ -275,7 +355,15 @@ export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
                   t('mobile.detail.countryPlaceholder')}
               </Text>
             </View>
-            <MaterialIcons name="expand-more" size={20} color={brand.placeholder} />
+            {/*
+              `chevron-right`, NOT `expand-more`. A down-chevron is a promise
+              that the thing below it expands in place; this row opens a bottom
+              sheet, which is exactly what Category, Condition and Installation
+              do — and all three show a right-chevron (`PickerRow`). Two glyphs
+              for one behaviour on one screen made the country row read as a
+              different KIND of control than it is.
+            */}
+            <MaterialIcons name="chevron-right" size={ICON.field} color={brand.placeholder} />
           </Pressable>
           )}
         </View>
@@ -284,63 +372,28 @@ export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
       {isEdit ? null : (
       <Pressable
         onPress={addRow}
-        className="flex-row items-center justify-center gap-1.5 border border-brand-border-strong border-dashed rounded-xs py-2.5"
+        /*
+          SOLID border, not dashed. A dashed box is the convention for a DROP
+          TARGET — somewhere you put a file — which is exactly how `PhotosCard`
+          and `DocumentsCard` use it on this same form. Adding a second address
+          is an ordinary action, so it gets an ordinary button.
+        */
+        className="flex-row items-center justify-center gap-1.5 border border-brand-border-strong rounded-xs py-2.5"
         accessibilityRole="button"
         accessibilityLabel={t('mobile.detail.addLocation', { defaultValue: 'Add another location' })}
       >
-        <MaterialIcons name="add" size={18} color={brand.primary} />
+        <MaterialIcons name="add" size={ICON.adornment} color={brand.primary} />
         <Text className="font-label text-lg text-brand-primary">
           {t('mobile.detail.addLocation', { defaultValue: 'Add another location' })}
         </Text>
       </Pressable>
       )}
 
-      <Controller
-        control={control}
-        name="installation"
-        render={({ field: { onChange } }) => (
-          <View className="gap-1.5">
-            <FieldLabel text={t('mobile.detail.sectionInstallation', { defaultValue: 'INSTALLATION' })} />
-            <View className="flex-row gap-1.5">
-              {INSTALLATION_OPTIONS.map((opt) => {
-                const active = installation === opt.value;
-                return (
-                  <Pressable
-                    key={opt.value}
-                    className={`flex-1 py-2.5 rounded-xs border items-center ${
-                      active ? 'bg-brand-primary border-brand-primary' : 'border-brand-border-strong'
-                    }`}
-                    onPress={() => {
-                      haptics.tap();
-                      onChange(opt.value);
-                    }}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={t(`mobile.detail.installOption.${opt.value}.label`, opt.label)}
-                  >
-                    <Text
-                      className={`font-label-medium text-lg ${active ? 'text-brand-primary-foreground' : 'text-brand-text-muted'}`}
-                    >
-                      {t(`mobile.detail.installOption.${opt.value}.label`, opt.label)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            {installation ? (
-              <Text className="font-sans text-sm text-brand-text-muted mt-xs">
-                {t(
-                  `mobile.detail.installOption.${installation}.hint`,
-                  INSTALLATION_OPTIONS.find((o) => o.value === installation)?.hint ?? '',
-                )}
-              </Text>
-            ) : null}
-          </View>
-        )}
-      />
-
       {/* W4 (scan_v3): country sheet-picker, opened from the per-row country
-          row. Single instance — the active row index lives in component state. */}
+          row. Single instance — the active row index lives in component state.
+          Inside the address group rather than beside it: a portal has no row of
+          its own, and as a sibling of the groups it would leave `FieldGroup`
+          ruling a hairline off empty space. */}
       <CountryPicker
         visible={countryPickerRow !== null}
         value={
@@ -355,6 +408,72 @@ export function LocationCard({ variant = 'draft' }: { variant?: 'draft' | 'edit'
         }}
         onClose={() => setCountryPickerRow(null)}
       />
-    </View>
+      </View>
+
+      <Controller
+        control={control}
+        name="installation"
+        render={({ field: { onChange } }) => (
+          <View>
+            <PickerRow
+              label={t('mobile.detail.sectionInstallation', { defaultValue: 'INSTALLATION' })}
+              value={installLabel}
+              placeholder={t('mobile.detail.installationNotSet', {
+                defaultValue: 'Not set — is it still installed?',
+              })}
+              valueLines={1}
+              testID="picker-row-installation"
+              onPress={() => setInstallSheetOpen(true)}
+            >
+            {installation ? (
+              /*
+                ⚠️ SAID TO BE A PROMISE, NOT A HINT.
+
+                "Ready to ship today" was rendered as plain muted helper text,
+                indistinguishable from the placeholder guidance elsewhere on
+                this form — but it is a commitment published to buyers, derived
+                from a toggle labelled "Deinstalled", which does not obviously
+                mean "ships today". A seller could make that promise without
+                ever registering that they had.
+
+                The attribution is one line and fixes it: the sentence is
+                unchanged, but the seller now knows who reads it.
+              */
+              <View className="flex-row items-center gap-xs mt-xs">
+                {/* The eye carries "this is what buyers are told" without
+                    spending words on it — the screen is already text-heavy.
+
+                    MaterialIcons `visibility`, not lucide's `Eye`: lucide draws
+                    STROKES and MaterialIcons draws FILLS, so a lucide glyph
+                    among thirty filled ones reads thinner and lighter than its
+                    neighbours no matter what size it is given. It was also the
+                    smallest mark on the form at 13px. */}
+                <MaterialIcons name="visibility" size={ICON.inline} color={brand.textMuted} />
+                <Text className="flex-1 font-sans text-sm text-brand-text-muted">
+                  {t(
+                    `mobile.detail.installOption.${installation}.hint`,
+                    INSTALLATION_OPTIONS.find((o) => o.value === installation)?.hint ?? '',
+                  )}
+                </Text>
+              </View>
+            ) : null}
+            </PickerRow>
+            <OptionSheet
+              visible={installSheetOpen}
+              title={t('mobile.detail.selectInstallationTitle', {
+                defaultValue: 'Installation',
+              })}
+              options={installOptions}
+              selected={installation ?? ''}
+              onSelect={(v) => {
+                haptics.tap();
+                onChange(v);
+              }}
+              onClose={() => setInstallSheetOpen(false)}
+            />
+          </View>
+        )}
+      />
+    </FieldGroup>
   );
 }

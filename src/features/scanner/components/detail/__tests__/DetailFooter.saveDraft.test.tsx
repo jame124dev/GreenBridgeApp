@@ -18,7 +18,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { V2ThemeProvider } from '@/theme/v2';
 import { DetailFooter } from '@/features/scanner/components/detail/DetailFooter';
 
-describe('DetailFooter — Save as draft', () => {
+describe('DetailFooter — Save draft', () => {
   it('fires onSaveDraft when the save button is pressed', () => {
     const onSaveDraft = jest.fn();
     // `V2ThemeProvider` is required — the footer's buttons are the kit's
@@ -50,7 +50,9 @@ describe('DetailFooter — Save as draft', () => {
       </V2ThemeProvider>
       </SafeAreaProvider>,
     );
-    fireEvent.press(getByText(/save as draft/i));
+    // "Save draft" since 2026-10-07 — the longer "Save as draft" wrapped to two
+    // lines inside the flex={1} pill beside Submit.
+    fireEvent.press(getByText(/save draft/i));
     expect(onSaveDraft).toHaveBeenCalled();
   });
 });

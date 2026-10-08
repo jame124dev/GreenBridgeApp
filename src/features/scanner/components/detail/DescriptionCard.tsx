@@ -2,10 +2,13 @@ import { Text, TextInput, View } from 'react-native';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+import { brand } from '@/constants/theme';
 import { DESCRIPTION_MAX } from '@/features/scanner/descriptionLimit';
 import type { DetailFormInput } from '@/features/scanner/schema';
 
+import { FieldGroup } from './SectionBand';
 import { FieldLabel } from './FieldLabel';
+import { useAiFilled } from './aiProvenance';
 
 const inputCls =
   'bg-brand-surface border border-brand-border-strong rounded-xs px-md py-2.5 font-sans text-xl text-brand-foreground';
@@ -13,9 +16,12 @@ const inputCls =
 export function DescriptionCard() {
   const { t } = useTranslation();
   const { control } = useFormContext<DetailFormInput>();
+  // Badge states a fact, not a decoration — see `aiProvenance.ts`. It used to
+  // sit beside this field while the field was empty.
+  const aiFilled = useAiFilled();
 
   return (
-    <View className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl gap-sm">
+    <FieldGroup>
       <Controller
         control={control}
         name="description"
@@ -40,13 +46,39 @@ export function DescriptionCard() {
 
           return (
             <View className="gap-1.5">
-              <FieldLabel text={t('mobile.detail.sectionDescription')} ai />
+              {/* `required` — description IS one of the seven rows in
+                  `REQUIRED_ROWS`, and the checklist and the footer chip both
+                  say so. Without the marker this card was the only required
+                  field on the page that looked optional, so a seller read it
+                  as skippable and met the block at Submit instead. */}
+              <FieldLabel
+                text={t('mobile.detail.sectionDescription')}
+                ai={aiFilled('description', value)}
+                required
+              />
               <TextInput
                 className={inputCls}
                 style={{ minHeight: 110 }}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
+                /*
+                  The biggest input on the screen had NO placeholder — a blank
+                  110pt rectangle, required, while the AI filled in the easy
+                  fields around it. That is the point sellers abandon.
+
+                  The examples are deliberately industrial rather than generic
+                  "describe your item": hours, calibration and what is in the
+                  box are the questions a buyer of used lab equipment asks
+                  first, so prompting for them raises the odds the listing can
+                  be answered without a back-and-forth. Vinted does the same
+                  thing with "e.g. only worn a few times, true to size".
+                */
+                placeholder={t('mobile.detail.descriptionPlaceholder', {
+                  defaultValue:
+                    'Hours used, calibration status, what is included (cables, probes, manuals), any faults.',
+                })}
+                placeholderTextColor={brand.placeholder}
                 multiline
                 numberOfLines={5}
                 maxLength={DESCRIPTION_MAX}
@@ -100,6 +132,6 @@ export function DescriptionCard() {
           );
         }}
       />
-    </View>
+    </FieldGroup>
   );
 }

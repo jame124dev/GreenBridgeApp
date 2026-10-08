@@ -1,6 +1,6 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import React from 'react';
-import { act, render, fireEvent } from '@testing-library/react-native';
+import { act, render, fireEvent, within } from '@testing-library/react-native';
 import { FormProvider, useForm, type UseFormReturn } from 'react-hook-form';
 
 // MMKV is a native module with no jest binary; `@/api/greenbidzClient` (reached
@@ -92,10 +92,13 @@ const NOT_SET = 'Not set — pick a category';
 const SEARCH = 'Search categories…';
 
 describe('the collapsed category row says what is currently picked', () => {
+  // SCOPED TO THE CATEGORY ROW. Condition is now the same `PickerRow` idiom, so
+  // "Choose" appears on every unanswered row and no longer names a field on its
+  // own; `testID` is what distinguishes them.
   it('prompts when nothing is set, and offers Choose rather than Change', () => {
-    const { getByText } = renderCard();
+    const { getByText, getByTestId } = renderCard();
     expect(getByText(NOT_SET)).toBeTruthy();
-    expect(getByText('Choose')).toBeTruthy();
+    expect(within(getByTestId('picker-row-category')).getByText('Choose')).toBeTruthy();
   });
 
   it('shows the flattened `Parent › Sub` label for a nested leaf', () => {

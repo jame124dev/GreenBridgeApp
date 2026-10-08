@@ -62,8 +62,21 @@ export const INSTALLATION_OPTIONS: {
   label: string;
   hint: string;
 }[] = [
-  { value: 'installed',   label: 'Installed',   hint: 'Buyer needs to deinstall + ship' },
-  { value: 'deinstalled', label: 'Deinstalled', hint: 'Ready to ship today' },
+  /*
+    ⚠️ The `value`s are a BACKEND CONTRACT — `operation_status` stores
+    `needDeinstall` / `deinstalled` (see `installationFromOperationStatus`).
+    Only the LABELS changed (2026-10-07).
+
+    "Deinstalled" is not standard English — it is uninstalled, de-installed,
+    or simply removed. Checked against the other five locales and ENGLISH IS
+    THE ONLY ONE THAT GOT IT WRONG: ja 撤去済み, th ถอดแล้ว, vi Đã tháo dỡ and
+    zh 已拆卸 all already say "removed"/"dismantled". So the translations are
+    left alone and only the source string changes — stating it as a fact about
+    the item ("Still installed" / "Already removed") also answers the question
+    a bare past participle leaves open, which is who does the removing.
+  */
+  { value: 'installed',   label: 'Still installed', hint: 'Buyer needs to deinstall + ship' },
+  { value: 'deinstalled', label: 'Already removed', hint: 'Ready to ship today' },
 ];
 
 /**

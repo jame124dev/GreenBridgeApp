@@ -10,6 +10,8 @@ import type { AiPriceTier, AiPrices } from '@/features/scanner/smartDetectionTyp
 import type { SupportedCurrency } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
 
+import { ICON } from './metrics';
+
 const ECO_TEAL = '#00B289';
 const ECO_TEAL_SURFACE = '#E6F7F1';
 const MONO_FONT = 'JetBrainsMono_400Regular';
@@ -116,12 +118,41 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
     ? formatTier(figures.profitUsd, priceCurrency, { signed: true })
     : '';
 
+  /*
+    NO FIGURES → NO CARD.
+
+    M-5 removed a fabricated $12,500 / $4,200 / 33% and put an honest empty
+    state in its place, which was right: the fix for an invented number is to
+    stop inventing it. But the honest alternative to a made-up figure is
+    SILENCE, not a card announcing that there is nothing to say — and this one
+    sat on an already text-dense form telling the seller "set your own price
+    below" directly above the Price card, which is where they were going
+    anyway and which asks for the number itself.
+
+    The anti-fabrication rule is untouched: when the AI returns both a scrap
+    and a used tier the card renders exactly as before, badge and all. It only
+    disappears in the case where it had nothing to contribute.
+  */
+  if (figures === null) return null;
+
   return (
     <View
       className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl"
       style={{ gap: 16 }}
     >
-      {/* Header row: trend icon + mono caps title + optional AI badge */}
+      {/*
+        THE HEADER IS FOR A RESULT, SO IT ONLY RENDERS WITH ONE.
+
+        "PROFIT INTELLIGENCE" in mono caps, with a teal badge, above the words
+        "No price estimate", spent a branded three-line header announcing that
+        there was nothing to announce. On a form that already stacks eight
+        bordered cards of caps labels and hint text, the emptiest card was
+        drawing the most chrome.
+
+        With no figures the card is now one line. Nothing is lost: "No price
+        estimate — set your own below" needs no heading to be understood.
+      */}
+      {figures === null ? null : (
       <View className="flex-row items-center" style={{ gap: 8 }}>
         <View
           style={{
@@ -133,7 +164,7 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
             justifyContent: 'center',
           }}
         >
-          <TrendingUp size={16} color={ECO_TEAL} strokeWidth={2.5} />
+          <TrendingUp size={ICON.adornment} color={ECO_TEAL} strokeWidth={2.5} />
         </View>
         <Text
           style={{
@@ -154,27 +185,45 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
             className="flex-row items-center bg-brand-primary-accent px-1.5 rounded-xs"
             style={{ gap: 2, paddingVertical: 1 }}
           >
-            <MaterialIcons name="auto-awesome" size={11} color={brand.primary} />
+            <MaterialIcons name="auto-awesome" size={ICON.inline} color={brand.primary} />
             <Text className="font-label text-brand-primary" style={{ fontSize: 10 }}>
               {t('mobile.detail.aiBadge', { defaultValue: 'AI' })}
             </Text>
           </View>
         ) : null}
       </View>
+      )}
 
       {figures === null ? (
-        /* Honest empty state (UX_DESIGN_RULES "Empty states": never a blank or a
-           fabricated panel — say what happened and where to go next). The AI
-           returned no scrap/used pair for this item, so there is nothing to show
-           and PricingCard directly below is where the seller sets the number. */
-        <View style={{ gap: 4 }}>
-          <Text className="font-semi text-2xl text-brand-foreground">
-            {t('mobile.detail.profitNoEstimate', { defaultValue: 'No price estimate' })}
-          </Text>
-          <Text className="font-sans text-base text-brand-text-muted" style={{ lineHeight: 18 }}>
-            {t('mobile.detail.profitNoEstimateHint', {
-              defaultValue:
-                'The AI did not return a resale range for this item. Set your own price below.',
+        /*
+          Honest empty state (UX_DESIGN_RULES "Empty states": never a blank or a
+          fabricated panel — say what happened and where to go next). The AI
+          returned no scrap/used pair for this item, so there is nothing to show
+          and PricingCard directly below is where the seller sets the number.
+
+          ── SHAPE TAKEN FROM react-native-reusables (MIT, 2025 Founded Labs) ──
+          `ui_git_repo/rnr`, registry file
+          `@rnr/registry/src/nativewind/components/ui/alert.tsx` — its Alert:
+          icon absolutely positioned top-left, title and description indented
+          past it (`pl-6`), tight asymmetric padding (`pt-3.5 pb-2`), title at
+          normal weight with `leading-none`, description at `text-sm` muted.
+
+          The FILE was not copied: it renders through `@/registry/...` `Icon`,
+          `Text`, `TextClassContext` and `cn`, so vendoring it means four more
+          modules to replace what is a ten-line block here. The GEOMETRY is what
+          was worth having, and that is what is applied.
+
+          Why it changed at all: at `text-2xl` the headline announced "No price
+          estimate" at the same visual weight the card uses for a real figure —
+          the loudest thing in the card was the absence of information, and it
+          pushed PricingCard, the thing the seller actually needs, further down
+          a long form. Now it reads as a note, not a result.
+        */
+        <View className="flex-row items-center" style={{ gap: 8 }}>
+          <Info size={ICON.adornment} color={brand.textMuted} strokeWidth={2} />
+          <Text className="flex-1 font-sans text-base text-brand-text-muted">
+            {t('mobile.detail.profitNoEstimateShort', {
+              defaultValue: 'No price estimate — set your own below.',
             })}
           </Text>
         </View>
@@ -237,7 +286,7 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
               })}
             </Text>
             <View className="flex-row items-center" style={{ gap: 6 }}>
-              <TrendingUp size={20} color={ECO_TEAL} strokeWidth={2.5} />
+              <TrendingUp size={ICON.field} color={ECO_TEAL} strokeWidth={2.5} />
               <Text
                 className="font-bold flex-1"
                 style={{
@@ -280,7 +329,7 @@ export function ProfitIntelligenceCard({ aiPrices }: Props) {
             padding: 12,
           }}
         >
-          <Info size={16} color={ECO_TEAL} strokeWidth={2.5} style={{ marginTop: 1 }} />
+          <Info size={ICON.adornment} color={ECO_TEAL} strokeWidth={2.5} style={{ marginTop: 1 }} />
           <Text
             className="flex-1"
             style={{

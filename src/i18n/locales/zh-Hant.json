@@ -3728,10 +3728,9 @@
         "conditionDetail_empty": "請選擇",
         "priceDetail_offer": "出價模式",
         "priceDetail_empty": "輸入金額或選擇出價",
-        "locationDetail_empty": "新增地址",
-        "liveBadge": "上架中"
+        "locationDetail_empty": "新增地址"
       },
-      "submitListing": "提交刊登 →",
+      "submitListing": "提交刊登",
       "addAnother": "儲存並掃描下一件",
       "reviewGroup_one": "檢視群組（{{count}} 件）",
       "reviewGroup_other": "檢視群組（{{count}} 件）",
@@ -3845,7 +3844,10 @@
       "potentialProfit": "潛在獲利",
       "profitInsight": "在 {{marketplace}} 上架可比直接賣廢料多賺 {{percent}}%。",
       "aiBadge": "AI",
-      "saveDraft": "儲存為草稿",
+      "saveDraft": "儲存草稿",
+      "descriptionPlaceholder": "使用時數、校正狀態、隨附物品（線材、探棒、說明書）以及任何故障。",
+      "offerExplainerShort": "不顯示價格 — 買家會向你出價。",
+      "profitNoEstimateShort": "暫無價格參考 — 請在下方自行定價。",
       "installOption": {
         "installed": {
           "label": "已安裝",
@@ -3853,7 +3855,7 @@
         },
         "deinstalled": {
           "label": "已拆卸",
-          "hint": "今日即可出貨"
+          "hint": "可立即出貨"
         }
       }
     },

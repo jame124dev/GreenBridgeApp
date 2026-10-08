@@ -12,6 +12,8 @@ import { useLabCategories } from '@/features/scanner/useLabCategories';
 import type { DraftItem } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
 
+import { ICON } from './metrics';
+
 const STEP_DONE = brand.primaryDim;
 const STEP_PENDING = brand.tertiaryDim;
 
@@ -45,7 +47,7 @@ export function RequiredChecklist({ draft }: Props) {
   if (allRequired) {
     return (
       <View className="flex-row items-center gap-sm rounded-sm border bg-brand-success-bg border-brand-success-border px-md py-2.5">
-        <MaterialIcons name="check-circle" size={20} color={STEP_DONE} />
+        <MaterialIcons name="check-circle" size={ICON.field} color={STEP_DONE} />
         <Text className="flex-1 font-label text-md text-brand-tertiary-foreground" style={{ letterSpacing: 0.8 }}>
           {t('mobile.detail.required.header_complete')}
         </Text>
@@ -65,12 +67,20 @@ export function RequiredChecklist({ draft }: Props) {
             total: required.total,
           })}
         </Text>
-        <View className="flex-row items-center gap-xs">
-          <View className="rounded-full bg-brand-primary" style={{ width: 8, height: 8 }} />
-          <Text className="font-label text-brand-tertiary-foreground" style={{ fontSize: 10 }}>
-            {t('mobile.detail.required.liveBadge', { defaultValue: 'LIVE' })}
-          </Text>
-        </View>
+        {/*
+          ⛔ THE "LIVE" BADGE WAS REMOVED (2026-10-07), and not for tidiness.
+
+          It meant "this checklist updates as you type". On a screen whose
+          whole purpose is to publish a listing, "LIVE" beside a green dot
+          reads as "your item is live" — and the translations said exactly
+          that: ja `公開中` ("currently published"), th `กำลังขาย`
+          ("currently on sale"), vi `TRỰC TIẾP`. A Japanese or Thai seller was
+          being told their unsubmitted draft was already on sale.
+
+          Nothing replaces it: the header beside it already counts
+          "REQUIRED: n OF 7 DONE" and visibly changes as fields are filled, so
+          the liveness is demonstrated rather than asserted.
+        */}
       </View>
 
       <ChecklistRow
@@ -171,7 +181,7 @@ function ChecklistRow({
     >
       <MaterialIcons
         name={done ? 'check-circle' : 'error'}
-        size={22}
+        size={ICON.control}
         color={done ? STEP_DONE : STEP_PENDING}
       />
       <View className="flex-1">

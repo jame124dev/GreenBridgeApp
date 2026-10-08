@@ -7,6 +7,7 @@ import type { BatchVisibility } from '@/types/batch';
 import { brand } from '@/constants/theme';
 
 import { FieldLabel } from './FieldLabel';
+import { ICON } from './metrics';
 
 const VISIBILITY_OPTIONS: {
   key: BatchVisibility;
@@ -91,11 +92,11 @@ export function VisibilityCard() {
               <View className="flex-row justify-between items-start">
                 <MaterialIcons
                   name={opt.icon}
-                  size={22}
+                  size={ICON.control}
                   color={active ? brand.primary : brand.textMuted}
                 />
                 {active ? (
-                  <MaterialIcons name="check-circle" size={18} color={brand.primary} />
+                  <MaterialIcons name="check-circle" size={ICON.adornment} color={brand.primary} />
                 ) : null}
               </View>
               <Text

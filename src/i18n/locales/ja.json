@@ -3663,10 +3663,9 @@
         "conditionDetail_empty": "選択してください",
         "priceDetail_offer": "オファー",
         "priceDetail_empty": "金額を入力またはオファー",
-        "locationDetail_empty": "住所を追加",
-        "liveBadge": "公開中"
+        "locationDetail_empty": "住所を追加"
       },
-      "submitListing": "出品を送信 →",
+      "submitListing": "出品を送信",
       "addAnother": "保存して次をスキャン",
       "reviewGroup_one": "グループを確認（{{count}} 件）",
       "reviewGroup_other": "グループを確認（{{count}} 件）",
@@ -3780,7 +3779,10 @@
       "potentialProfit": "潜在的な利益",
       "profitInsight": "{{marketplace}} で出品すれば、廃材として売るより {{percent}}% 多く稼げます。",
       "aiBadge": "AI",
-      "saveDraft": "下書きとして保存",
+      "saveDraft": "下書き保存",
+      "descriptionPlaceholder": "使用時間、校正の状況、付属品（ケーブル・プローブ・マニュアルなど）、不具合の有無。",
+      "offerExplainerShort": "価格は非表示。買い手がオファーを送ります。",
+      "profitNoEstimateShort": "価格の目安なし — 下で金額を設定してください。",
       "installOption": {
         "installed": {
           "label": "設置済み",
@@ -3788,7 +3790,7 @@
         },
         "deinstalled": {
           "label": "撤去済み",
-          "hint": "本日発送可能"
+          "hint": "発送可能"
         }
       }
     },

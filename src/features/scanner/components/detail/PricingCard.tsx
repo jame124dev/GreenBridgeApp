@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import CurrencyInput from 'react-native-currency-input';
 import { Controller, useFormContext } from 'react-hook-form';
@@ -10,13 +10,28 @@ import type { DetailFormInput } from '@/features/scanner/schema';
 import type { SupportedCurrency } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
 
+import { FieldGroup } from './SectionBand';
 import { FieldLabel } from './FieldLabel';
+import { CONTROL_HEIGHT, ICON } from './metrics';
 
 /**
  * Pricing + quantity. Buy-now / make-offer toggle drives whether the price
- * input renders. Currency picker pills sit above the amount input so the
- * prefix and the chosen currency stay visually linked.
+ * input renders. The currency row sits above the amount input so the prefix and
+ * the chosen currency stay visually linked.
+ *
+ * Currency was a pill row — the fourth way this form asked a choose-one
+ * question. It is now a `PickerRow` over an `OptionSheet`, the same idiom as
+ * Category and Condition (FORM_UX_PANEL.md §E.2). The price-FORMAT segment
+ * stays a segment: two mutually exclusive modes that change what the rest of the
+ * card renders should be visible without a tap, so it keeps its pills and pays
+ * the a11y debt in place instead (check glyph + radiogroup, B6).
  */
+/** Declared once so the two pills cannot drift apart as they had begun to. */
+const PRICE_FORMATS = [
+  { value: 'buyNow', key: 'mobile.detail.priceBuyNow' },
+  { value: 'offer', key: 'mobile.detail.priceMakeOffer' },
+] as const;
+
 export function PricingCard() {
   const { t } = useTranslation();
   const { control, watch, setValue, getValues } = useFormContext<DetailFormInput>();
@@ -40,49 +55,49 @@ export function PricingCard() {
   };
 
   return (
-    <View className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl gap-sm">
+    <FieldGroup>
+      {/* Price MODE + quantity + the sentence explaining the empty Make-offer
+          branch are ONE group. `FieldGroup` rules a hairline between its direct
+          children, and a rule between a control and the line that explains it
+          would read as two unrelated facts. */}
+      <View className="gap-sm">
       <View className="flex-row gap-sm items-start">
         <View className="flex-1 gap-1.5">
           <FieldLabel text={t('mobile.detail.sectionPrice')} required />
-          <View className="flex-row gap-1.5">
-            <Pressable
-              className={`flex-1 py-2.5 rounded-xs border items-center ${
-                priceFormat === 'buyNow'
-                  ? 'bg-brand-primary border-brand-primary'
-                  : 'border-brand-border-strong'
-              }`}
-              onPress={() => setValue('priceFormat', 'buyNow')}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: priceFormat === 'buyNow' }}
-              accessibilityLabel={t('mobile.detail.priceBuyNow')}
-            >
-              <Text
-                className={`font-label-medium text-lg ${
-                  priceFormat === 'buyNow' ? 'text-brand-primary-foreground' : 'text-brand-text-muted'
-                }`}
-              >
-                {t('mobile.detail.priceBuyNow')}
-              </Text>
-            </Pressable>
-            <Pressable
-              className={`flex-1 py-2.5 rounded-xs border items-center ${
-                priceFormat === 'offer'
-                  ? 'bg-brand-primary border-brand-primary'
-                  : 'border-brand-border-strong'
-              }`}
-              onPress={() => setValue('priceFormat', 'offer')}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: priceFormat === 'offer' }}
-              accessibilityLabel={t('mobile.detail.priceMakeOffer')}
-            >
-              <Text
-                className={`font-label-medium text-lg ${
-                  priceFormat === 'offer' ? 'text-brand-primary-foreground' : 'text-brand-text-muted'
-                }`}
-              >
-                {t('mobile.detail.priceMakeOffer')}
-              </Text>
-            </Pressable>
+          <View className="flex-row gap-1.5" accessibilityRole="radiogroup">
+            {PRICE_FORMATS.map((fmt) => {
+              const active = priceFormat === fmt.value;
+              const label = t(fmt.key);
+              return (
+                <Pressable
+                  key={fmt.value}
+                  /* No vertical padding: `styles.segment` fixes the height so
+                     this pill and the quantity stepper beside it cannot drift
+                     apart. Content is centred, so padding adds nothing. */
+                  className={`flex-1 flex-row items-center justify-center gap-xs rounded-xs border ${
+                    active
+                      ? 'bg-brand-primary border-brand-primary'
+                      : 'border-brand-border-strong'
+                  }`}
+                  style={styles.segment}
+                  onPress={() => setValue('priceFormat', fmt.value)}
+                  role="radio"
+                  accessibilityState={{ checked: active }}
+                  accessibilityLabel={label}
+                >
+                  {active ? (
+                    <MaterialIcons name="check" size={ICON.adornment} color={brand.primaryForeground} />
+                  ) : null}
+                  <Text
+                    className={`font-label-medium text-lg ${
+                      active ? 'text-brand-primary-foreground' : 'text-brand-text-muted'
+                    }`}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
         <View className="gap-1.5">
@@ -92,7 +107,11 @@ export function PricingCard() {
             name="quantity"
             render={({ field: { value, onChange } }) => (
               <View
-                className="flex-row items-center border border-brand-border-strong rounded-xs overflow-hidden h-12"
+                /* Same `CONTROL_HEIGHT` as the price pills to its left — this
+                   used to be `h-12` while they were padding-driven, which is
+                   what made the row's bottom edge step. */
+                className="flex-row items-center border border-brand-border-strong rounded-xs overflow-hidden"
+                style={styles.segment}
               >
                 <Pressable
                   onPress={() => onChange(Math.max(1, value - 1))}
@@ -103,7 +122,7 @@ export function PricingCard() {
                     defaultValue: 'Decrease quantity',
                   })}
                 >
-                  <MaterialIcons name="remove" size={20} color={brand.foreground} />
+                  <MaterialIcons name="remove" size={ICON.field} color={brand.foreground} />
                 </Pressable>
                 <Text
                   className="text-center font-bold text-xl text-brand-foreground"
@@ -120,7 +139,7 @@ export function PricingCard() {
                     defaultValue: 'Increase quantity',
                   })}
                 >
-                  <MaterialIcons name="add" size={20} color={brand.foreground} />
+                  <MaterialIcons name="add" size={ICON.field} color={brand.foreground} />
                 </Pressable>
               </View>
             )}
@@ -128,27 +147,78 @@ export function PricingCard() {
         </View>
       </View>
 
+      {/*
+        WHY "Make offer" NEEDS A SENTENCE AND "Buy now" DOES NOT.
+
+        Choosing Make offer removes the amount and currency fields entirely —
+        correctly, there is no number to ask for — but the screen said nothing
+        about it, so the listing ends up with no figure anywhere and the seller
+        is left unsure whether they forgot something or the form lost it. The
+        checklist adds to the doubt by ticking Price as done with no price on
+        screen.
+
+        One line, shown only in the branch that has no fields, saying what the
+        empty space means and what will happen instead.
+      */}
+      {priceFormat === 'offer' ? (
+        <Text className="font-sans text-sm text-brand-text-muted">
+          {/* One short line, not two: this screen is already dense with caps
+              labels and hints, and the point fits in six words. */}
+          {t('mobile.detail.offerExplainerShort', {
+            defaultValue: 'No price shown — buyers send offers.',
+          })}
+        </Text>
+      ) : null}
+      </View>
+
+      {/* Currency and the amount it prefixes are ONE group for the same reason:
+          the row answers "in what" and the input answers "how much", and
+          `currencyPrefix` means the input literally renders the row's answer. */}
       {priceFormat === 'buyNow' ? (
+        <View className="gap-sm">
+        {/*
+          ⚠️ CURRENCY STAYS PILLS — the one choose-one field NOT converted to a
+          PickerRow, and the exception is deliberate.
+
+          The convergence on one idiom exists to stop the seller re-learning
+          the grammar at every card, and it pays for itself where a sheet
+          replaces five wrapped chips (Condition) or a long taxonomy
+          (Category). Currency has TWO options. Putting them behind a row plus
+          a sheet turns a one-tap answer into three taps and a modal, to save
+          one line of vertical space — the idiom costing more than it saves.
+
+          It keeps everything the conversion was actually for: the same check
+          glyph, `radiogroup` + `role="radio"` + `checked`, and a 44pt target,
+          exactly as the Buy-now / Make-offer segment above.
+        */}
         <View className="gap-1.5">
           <FieldLabel text={t('mobile.detail.sectionCurrency', { defaultValue: 'CURRENCY' })} />
-          <View className="flex-row flex-wrap gap-1.5">
+          <View className="flex-row gap-1.5" accessibilityRole="radiogroup">
             {CURRENCY_OPTIONS.map((opt) => {
               const active = priceCurrency === opt.value;
               return (
                 <Pressable
                   key={opt.value}
-                  className={`flex-row items-center gap-xs px-md py-sm rounded-pill border ${
+                  className={`flex-row items-center justify-center gap-xs px-md rounded-xs border ${
                     active
                       ? 'bg-brand-primary border-brand-primary'
-                      : 'bg-brand-surface border-brand-border-strong'
+                      : 'border-brand-border-strong'
                   }`}
+                  style={styles.segment}
+                  /* `handleCurrencyChange` CONVERTS an amount already typed —
+                     the one piece of logic this control must never lose. */
                   onPress={() => handleCurrencyChange(opt.value)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
+                  role="radio"
+                  accessibilityState={{ checked: active }}
                   accessibilityLabel={opt.label}
                 >
+                  {active ? (
+                    <MaterialIcons name="check" size={ICON.adornment} color={brand.primaryForeground} />
+                  ) : null}
                   <Text
-                    className={`font-label-medium text-md ${active ? 'text-brand-primary-foreground' : 'text-brand-foreground'}`}
+                    className={`font-label-medium text-lg ${
+                      active ? 'text-brand-primary-foreground' : 'text-brand-text-muted'
+                    }`}
                   >
                     {opt.label}
                   </Text>
@@ -157,9 +227,7 @@ export function PricingCard() {
             })}
           </View>
         </View>
-      ) : null}
 
-      {priceFormat === 'buyNow' ? (
         <Controller
           control={control}
           name="pricePerUnit"
@@ -197,7 +265,18 @@ export function PricingCard() {
             </View>
           )}
         />
+        </View>
       ) : null}
-    </View>
+    </FieldGroup>
   );
 }
+
+const styles = StyleSheet.create({
+  /*
+    A FIXED height, not a minimum. Every boxed control that can share a row with
+    another one uses it, so their bottom edges line up by construction rather
+    than by two padding models happening to agree. Clears WCAG 2.5.8 (24pt) and
+    the 44pt platform target with room over.
+  */
+  segment: { height: CONTROL_HEIGHT },
+});

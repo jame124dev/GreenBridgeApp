@@ -3742,10 +3742,9 @@
         "conditionDetail_empty": "pick one",
         "priceDetail_offer": "make offer",
         "priceDetail_empty": "enter amount or make offer",
-        "locationDetail_empty": "add an address",
-        "liveBadge": "LIVE"
+        "locationDetail_empty": "add an address"
       },
-      "submitListing": "Submit listing →",
+      "submitListing": "Submit listing",
       "addAnother": "Save & scan another item",
       "reviewGroup_one": "Review group ({{count}} item)",
       "reviewGroup_other": "Review group ({{count}} items)",
@@ -3859,15 +3858,18 @@
       "potentialProfit": "Potential profit",
       "profitInsight": "Selling on {{marketplace}} could earn you {{percent}}% more than scrap value alone.",
       "aiBadge": "AI",
-      "saveDraft": "Save as draft",
+      "saveDraft": "Save draft",
+      "descriptionPlaceholder": "Hours used, calibration status, what is included (cables, probes, manuals), any faults.",
+      "offerExplainerShort": "No price shown — buyers send offers.",
+      "profitNoEstimateShort": "No price estimate — set your own below.",
       "installOption": {
         "installed": {
-          "label": "Installed",
-          "hint": "Buyer needs to deinstall + ship"
+          "label": "Still installed",
+          "hint": "Buyer needs to remove and ship it"
         },
         "deinstalled": {
-          "label": "Deinstalled",
-          "hint": "Ready to ship today"
+          "label": "Already removed",
+          "hint": "Ready to ship"
         }
       }
     },

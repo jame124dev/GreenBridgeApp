@@ -3744,10 +3744,9 @@
         "conditionDetail_empty": "chọn một mục",
         "priceDetail_offer": "đưa ra đề nghị giá",
         "priceDetail_empty": "nhập số tiền hoặc đưa ra đề nghị giá",
-        "locationDetail_empty": "thêm địa chỉ",
-        "liveBadge": "TRỰC TIẾP"
+        "locationDetail_empty": "thêm địa chỉ"
       },
-      "submitListing": "Đăng tin →",
+      "submitListing": "Đăng tin",
       "addAnother": "Lưu & quét sản phẩm khác",
       "reviewGroup_one": "Xem lại nhóm ({{count}} sản phẩm)",
       "reviewGroup_other": "Xem lại nhóm ({{count}} sản phẩm)",
@@ -3861,7 +3860,10 @@
       "potentialProfit": "Lợi nhuận tiềm năng",
       "profitInsight": "Bán trên {{marketplace}} có thể giúp bạn kiếm thêm {{percent}}% so với chỉ bán phế liệu.",
       "aiBadge": "AI",
-      "saveDraft": "Lưu dưới dạng bản nháp",
+      "saveDraft": "Lưu nháp",
+      "descriptionPlaceholder": "Số giờ đã sử dụng, tình trạng hiệu chuẩn, những gì đi kèm (cáp, đầu dò, tài liệu) và các lỗi nếu có.",
+      "offerExplainerShort": "Không hiển thị giá — người mua sẽ gửi đề nghị.",
+      "profitNoEstimateShort": "Chưa có giá tham khảo — hãy tự đặt giá bên dưới.",
       "installOption": {
         "installed": {
           "label": "Đã lắp đặt",
@@ -3869,7 +3871,7 @@
         },
         "deinstalled": {
           "label": "Đã tháo dỡ",
-          "hint": "Sẵn sàng giao ngay hôm nay"
+          "hint": "Sẵn sàng giao"
         }
       }
     },

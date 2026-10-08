@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { brand } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 
+import { ICON } from './metrics';
+
 /**
  * Progressive disclosure for the review screen's OPTIONAL fields.
  *
@@ -62,7 +64,7 @@ export function OptionalDetailsSection({
       >
         <MaterialIcons
           name="tune"
-          size={18}
+          size={ICON.adornment}
           color={brand.textMuted}
           style={styles.leadingIcon}
         />
@@ -83,7 +85,7 @@ export function OptionalDetailsSection({
         </View>
         <MaterialIcons
           name={open ? 'expand-less' : 'expand-more'}
-          size={22}
+          size={ICON.control}
           color={brand.textMuted}
         />
       </Pressable>

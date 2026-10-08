@@ -34,14 +34,21 @@ const L1: AiPrices = {
 };
 
 describe('ProfitIntelligenceCard — honesty (M-5)', () => {
-  it('renders no fabricated figures when the AI returned no tiers', () => {
-    const { queryByText, getByText } = render(<Harness aiPrices={null} />);
+  it('renders nothing at all when the AI returned no tiers', () => {
+    const { queryByText } = render(<Harness aiPrices={null} />);
     // The deleted static stub: 12,500 / 4,200 / 33.
     expect(queryByText(/12,500/)).toBeNull();
     expect(queryByText(/4,200/)).toBeNull();
     expect(queryByText(/33%/)).toBeNull();
-    // An honest empty state instead of a half-empty card.
-    expect(getByText(/No price estimate/i)).toBeTruthy();
+    /*
+      2026-10-07: this used to assert an "No price estimate" empty state. The
+      card now renders NULL instead — the anti-fabrication rule this test
+      guards is satisfied more strongly by silence than by a card announcing
+      it has nothing, and on a dense form that empty card sat directly above
+      the Price card that asks for the number anyway.
+    */
+    expect(queryByText(/No price estimate/i)).toBeNull();
+    expect(queryByText(/PROFIT INTELLIGENCE/i)).toBeNull();
     // ...and no AI badge on content the AI never produced.
     expect(queryByText('AI')).toBeNull();
     // ...and no disclaimer about an estimate that does not exist. The

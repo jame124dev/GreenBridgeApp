@@ -3647,10 +3647,9 @@
         "conditionDetail_empty": "เลือกหนึ่ง",
         "priceDetail_offer": "เสนอราคา",
         "priceDetail_empty": "ใส่จำนวนหรือเลือกเสนอราคา",
-        "locationDetail_empty": "เพิ่มที่อยู่",
-        "liveBadge": "กำลังขาย"
+        "locationDetail_empty": "เพิ่มที่อยู่"
       },
-      "submitListing": "ส่งประกาศ →",
+      "submitListing": "ส่งประกาศ",
       "addAnother": "บันทึกและสแกนรายการถัดไป",
       "reviewGroup_one": "ตรวจสอบกลุ่ม ({{count}} รายการ)",
       "reviewGroup_other": "ตรวจสอบกลุ่ม ({{count}} รายการ)",
@@ -3764,7 +3763,10 @@
       "potentialProfit": "กำไรที่อาจได้รับ",
       "profitInsight": "การขายบน {{marketplace}} อาจทำให้คุณได้กำไรมากกว่าการขายเป็นเศษวัสดุ {{percent}}%",
       "aiBadge": "AI",
-      "saveDraft": "บันทึกเป็นฉบับร่าง",
+      "saveDraft": "บันทึกร่าง",
+      "descriptionPlaceholder": "ชั่วโมงการใช้งาน สถานะการสอบเทียบ อุปกรณ์ที่ให้มา (สายเคเบิล โพรบ คู่มือ) และข้อบกพร่องต่าง ๆ",
+      "offerExplainerShort": "ไม่แสดงราคา — ผู้ซื้อจะส่งข้อเสนอมา",
+      "profitNoEstimateShort": "ไม่มีราคาประเมิน — ตั้งราคาเองด้านล่าง",
       "installOption": {
         "installed": {
           "label": "ติดตั้งแล้ว",
@@ -3772,7 +3774,7 @@
         },
         "deinstalled": {
           "label": "ถอดแล้ว",
-          "hint": "พร้อมจัดส่งวันนี้"
+          "hint": "พร้อมจัดส่ง"
         }
       }
     },

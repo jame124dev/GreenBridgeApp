@@ -13,6 +13,8 @@ import { OTHER_SUBCATEGORY_ID } from '@/features/scanner/constants';
 import { flattenCategoryOptions, type LabCategory } from '@/services/scanner/fetchCategories';
 import { brand } from '@/constants/theme';
 
+import { ICON } from './metrics';
+
 /** Everything a pick has to write back onto the form, in one object. */
 export type CategoryPick = {
   /** The leaf id, or `OTHER_SUBCATEGORY_ID`. Goes to `categoryId`. */
@@ -172,7 +174,7 @@ export function CategoryPickerSheet({
           accessibilityRole="button"
           className="flex-row items-center gap-sm rounded-xs border border-brand-destructive px-md py-2.5"
         >
-          <MaterialIcons name="error-outline" size={18} color={brand.destructive} />
+          <MaterialIcons name="error-outline" size={ICON.adornment} color={brand.destructive} />
           <Text variant="bodySm" tone="tertiary">
             {t('mobile.detail.categoriesRetry', {
               defaultValue: "Couldn't load categories — tap to retry",
@@ -269,7 +271,7 @@ export function CategoryPickerSheet({
                 rightAdornment={
                   <MaterialIcons
                     name={open ? 'expand-less' : 'expand-more'}
-                    size={20}
+                    size={ICON.field}
                     color={brand.placeholder}
                   />
                 }

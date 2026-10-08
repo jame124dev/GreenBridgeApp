@@ -8,6 +8,7 @@ import { useScanDraft, type DraftItem } from '@/stores/scanDraftStore';
 import { brand } from '@/constants/theme';
 
 import { FieldLabel } from './FieldLabel';
+import { ICON } from './metrics';
 
 interface Props {
   draft: DraftItem;
@@ -67,7 +68,7 @@ export function DocumentsCard({ draft, onPatch }: Props) {
           key={`${doc.uri}-${i}`}
           className="flex-row items-center gap-sm bg-brand-surface-muted rounded-xs px-md py-2.5"
         >
-          <MaterialIcons name="description" size={18} color={brand.textMuted} />
+          <MaterialIcons name="description" size={ICON.adornment} color={brand.textMuted} />
           <Text className="flex-1 font-sans text-lg text-brand-foreground" numberOfLines={1}>
             {doc.name}
           </Text>
@@ -92,7 +93,7 @@ export function DocumentsCard({ draft, onPatch }: Props) {
         accessibilityRole="button"
         accessibilityLabel={t('mobile.detail.addDocument')}
       >
-        <MaterialIcons name="add" size={18} color={brand.primary} />
+        <MaterialIcons name="add" size={ICON.adornment} color={brand.primary} />
         <Text className="font-label text-lg text-brand-primary">
           {t('mobile.detail.addDocument')}
         </Text>

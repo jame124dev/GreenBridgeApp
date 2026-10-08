@@ -134,7 +134,11 @@ export function DetailFooter({
             full width instead. */}
         {draftsEnabled() && onSaveDraft ? (
           <FooterButton
-            label={t('mobile.detail.saveDraft', { defaultValue: 'Save as draft' })}
+            /* "Save draft", not "Save as draft": at `flex={1}` beside the
+               `flex={2}` Submit there is not room for the longer label, and
+               `PrimaryAction` does not cap its label to one line — so it WRAPPED
+               to two lines inside the pill. Seen on a device, SM-G781B. */
+            label={t('mobile.detail.saveDraft', { defaultValue: 'Save draft' })}
             onPress={onSaveDraft}
             loading={!!savingDraft}
             disabled={!!submitting}

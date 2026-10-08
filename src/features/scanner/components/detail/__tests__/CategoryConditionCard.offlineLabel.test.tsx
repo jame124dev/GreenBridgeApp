@@ -1,6 +1,6 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, within } from '@testing-library/react-native';
 import { FormProvider, useForm } from 'react-hook-form';
 
 jest.mock('@/lib/mmkv', () => ({ mmkv: { getString: () => undefined, set: () => {} } }));
@@ -133,19 +133,24 @@ describe('offline, the collapsed row never claims nothing is set', () => {
     expect(getByText('Lab Infrastructure & Essentials › Other (type brand)')).toBeTruthy();
   });
 
+  // SCOPED TO THE CATEGORY ROW. Condition is now the same `PickerRow` idiom, so
+  // "Choose" and "Change" are no longer unique on this card — a bare
+  // `getByText('Choose')` stopped naming a field the moment the second picker
+  // landed. `testID` is what distinguishes them.
   it('offers Change, not Choose, whenever something IS selected', () => {
-    const { getByText, queryByText } = renderCard({ categoryId: '5578' });
-    expect(getByText('Change')).toBeTruthy();
-    expect(queryByText('Choose')).toBeNull();
+    const { getByTestId } = renderCard({ categoryId: '5578' });
+    const row = within(getByTestId('picker-row-category'));
+    expect(row.getByText('Change')).toBeTruthy();
+    expect(row.queryByText('Choose')).toBeNull();
   });
 
   // ⛔ The prompt must SURVIVE. A fallback that fires on an empty category would
   // replace "pick a category" with "can't load its name", which is a different
   // lie in the opposite direction.
   it('still prompts when the category really is empty', () => {
-    const { getByText, queryByText } = renderCard();
+    const { getByText, getByTestId, queryByText } = renderCard();
     expect(getByText(NOT_SET)).toBeTruthy();
     expect(queryByText(CANT_LOAD)).toBeNull();
-    expect(getByText('Choose')).toBeTruthy();
+    expect(within(getByTestId('picker-row-category')).getByText('Choose')).toBeTruthy();
   });
 });

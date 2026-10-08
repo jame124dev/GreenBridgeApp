@@ -10,6 +10,8 @@ import {
 import { haptics } from '@/lib/haptics';
 import { brand } from '@/constants/theme';
 
+import { ICON } from './metrics';
+
 interface Props {
   rows: RequiredStatus['rows'];
   doneCount: number;
@@ -66,7 +68,7 @@ export function RequiredProgressStrip({ rows, doneCount, total, onPressRow }: Pr
               accessibilityRole="button"
               accessibilityLabel={label}
             >
-              <MaterialIcons name="error-outline" size={13} color={brand.destructive} />
+              <MaterialIcons name="error-outline" size={ICON.inline} color={brand.destructive} />
               <Text
                 className="font-label text-brand-destructive"
                 style={{ fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' }}

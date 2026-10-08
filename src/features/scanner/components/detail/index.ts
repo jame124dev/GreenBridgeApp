@@ -15,12 +15,21 @@ export { IdentityCard } from './IdentityCard';
 export { LocationCard } from './LocationCard';
 export { MarketplaceCard } from './MarketplaceCard';
 export { MarketplaceSheet } from './MarketplaceSheet';
+export { OptionSheet, type SheetOption } from './OptionSheet';
 export { PhotosCard } from './PhotosCard';
+export { PickerRow } from './PickerRow';
 export { PricingCard } from './PricingCard';
 export { ProfitIntelligenceCard } from './ProfitIntelligenceCard';
 export { RequiredChecklist } from './RequiredChecklist';
 export { RequiredProgressStrip } from './RequiredProgressStrip';
 export { RoutingChip } from './RoutingChip';
+export {
+  FieldGroup,
+  FieldGroupSurfaceProvider,
+  SectionBand,
+  useFieldGroupSurface,
+  type FieldGroupSurface,
+} from './SectionBand';
 export { OptionalDetailsSection } from './OptionalDetailsSection';
 export { SpecsCard } from './SpecsCard';
 export { VisibilityCard } from './VisibilityCard';

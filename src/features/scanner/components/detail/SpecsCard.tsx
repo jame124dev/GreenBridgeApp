@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { DetailFormInput } from '@/features/scanner/schema';
 import { brand } from '@/constants/theme';
 
+import { FieldGroup } from './SectionBand';
 import { FieldLabel } from './FieldLabel';
 
 const inputCls =
@@ -21,7 +22,7 @@ export function SpecsCard() {
   const { control } = useFormContext<DetailFormInput>();
 
   return (
-    <View className="bg-brand-surface border border-brand-border-strong rounded-sm p-2xl gap-sm">
+    <FieldGroup>
       <Controller
         control={control}
         name="weight"
@@ -94,6 +95,6 @@ export function SpecsCard() {
           </View>
         )}
       />
-    </View>
+    </FieldGroup>
   );
 }

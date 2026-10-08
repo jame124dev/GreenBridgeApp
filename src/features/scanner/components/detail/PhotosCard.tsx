@@ -7,6 +7,8 @@ import { AppImage } from '@/components/ui';
 import { PhotoZoomViewer } from '@/components/scanner/PhotoZoomViewer';
 import { brand } from '@/constants/theme';
 
+import { ICON } from './metrics';
+
 interface Props {
   photos: { uri: string; sourceLabel?: string }[];
   rearrangeLabel: string;
@@ -80,7 +82,7 @@ export function PhotosCard({ photos, rearrangeLabel, onRearrange, onAddMore }: P
           accessibilityRole="button"
           accessibilityLabel={rearrangeLabel}
         >
-          <MaterialIcons name="photo-library" size={16} color={brand.primary} />
+          <MaterialIcons name="photo-library" size={ICON.adornment} color={brand.primary} />
           <Text className="font-label text-base text-brand-primary" numberOfLines={1}>
             {rearrangeLabel}
           </Text>
@@ -121,7 +123,7 @@ export function PhotosCard({ photos, rearrangeLabel, onRearrange, onAddMore }: P
           accessibilityRole="button"
           accessibilityLabel={t('mobile.detail.addMorePhotos', { defaultValue: 'Add more photos' })}
         >
-          <MaterialIcons name="add-a-photo" size={20} color={brand.textMuted} />
+          <MaterialIcons name="add-a-photo" size={ICON.field} color={brand.textMuted} />
           <Text className="font-label text-brand-text-muted" style={{ fontSize: 9, letterSpacing: 0.5 }}>
             {t('mobile.detail.addMore', { defaultValue: 'ADD MORE' })}
           </Text>

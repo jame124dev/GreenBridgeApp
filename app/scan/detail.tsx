@@ -17,6 +17,7 @@ import {
   DetailAppBar,
   DetailFooter,
   DocumentsCard,
+  FieldGroupSurfaceProvider,
   IdentityCard,
   LocationCard,
   MarketplaceCard,
@@ -24,8 +25,8 @@ import {
   PhotosCard,
   PricingCard,
   ProfitIntelligenceCard,
-  RequiredChecklist,
   RoutingChip,
+  SectionBand,
   SpecsCard,
   useDetailController,
   useRowScroller,
@@ -132,10 +133,18 @@ export default function DetailScreen() {
     }
   }, [serverDraftId, serverUpdatedAt, createDraft, updateDraft, t]);
 
-  if (!draft) return null;
+  /*
+    ⚠️ EVERY HOOK MUST SIT ABOVE `if (!draft) return null;`.
 
-  const formValues = form.watch();
-  const required = getRequiredStatus(formValues, draft.photos?.length ?? 0);
+    These three used to sit BELOW it. `draft` is `useScanDraft(s => s.current)`,
+    which is null before a draft is loaded and non-null after — so the component
+    rendered two hooks on the first pass and five on the next, which is the
+    condition React throws "rendered more hooks than during the previous render"
+    on. It had not bitten yet only because the screen is usually mounted with a
+    draft already in the store. Found 2026-10-08 when adding `footerHeight`
+    tripped `react-hooks/rules-of-hooks` on all three at once; moving them up
+    fixes the two that were already there as well as the new one.
+  */
 
   // Plain RN listeners rather than a keyboard-controller hook: this only needs a
   // boolean, and `didShow`/`didHide` fire after the IME has settled, so the
@@ -150,6 +159,21 @@ export default function DetailScreen() {
     };
   }, []);
 
+  /*
+    Measured height of the sticky footer block, so the scroll can end clear of
+    it. Seeded with the old hardcoded 132 only as a FIRST-FRAME value — the
+    `onLayout` below replaces it before the seller can scroll, and seeding 0
+    would let the last field render under the footer for a frame.
+  */
+  const [footerHeight, setFooterHeight] = useState(132);
+  // Plus one gutter, so the last field clears the footer instead of touching it.
+  const footerInset = footerHeight + GUTTER;
+
+  if (!draft) return null;
+
+  const formValues = form.watch();
+  const required = getRequiredStatus(formValues, draft.photos?.length ?? 0);
+
   return (
     <FormProvider {...form}>
       <Screen scroll={false} tabBar={false} testID="scan-detail">
@@ -161,15 +185,58 @@ export default function DetailScreen() {
           // buttons + the home-indicator inset) and 48 left the last card sitting
           // underneath it, so LOCATION and INSTALLATION were unreachable without
           // fighting the scroll.
-          contentContainerStyle={styles.scrollContent}
+          /*
+            MEASURED, not hardcoded. `FORM_INPUT_RULES.md`: never hardcode an
+            inset that has to clear a sibling — measure it with `onLayout`.
+
+            The footer is not a fixed height. It carries a progress strip whose
+            chips WRAP to a second line as more fields come up short, and a
+            `SellerApprovalNotice` that is present for some sellers and absent
+            for others. The old literal 132 was measured once, against one
+            state, and was wrong in both directions: too small when the chips
+            wrapped (the last field went back under the footer) and too large in
+            the common case, which is the empty band of white below Installation.
+          */
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: footerInset }]}
           keyboardShouldPersistTaps="handled"
           bottomOffset={24}
         >
-          <View onLayout={registerRow('photos')}>
+        {/*
+          GREY BANDS, NOT EIGHT BORDERED CARDS.
+
+          `FORM_UX_PANEL.md` §A: all three reviewers independently found that
+          everything on this screen carried the same visual weight — the four
+          fields that block submission looked exactly like the four the AI had
+          already filled in. Mercari's structure
+          (`Docs/scan/_refs/ref-mercari-list-an-item.jpg`) is the answer: a grey
+          spacer band with a sentence-case heading, then full-bleed white rows
+          separated by a hairline. The frame moves off the cards and onto the
+          page, which is why the provider is here and not in each component —
+          `grouped-edit.tsx` and `listing-edit.tsx` mount the same cards and keep
+          the old frame until they are restructured too (see `SectionBand.tsx`).
+
+          Presentation only. Every row, every value and every registerRow
+          wrapper below is the one that was here before.
+        */}
+        <FieldGroupSurfaceProvider value="flush">
+          <View style={styles.gutterTop} onLayout={registerRow('photos')}>
             <PhotosCard
               photos={draft.photos ?? []}
               rearrangeLabel={t('mobile.review.rearrange')}
-              onRearrange={() => router.push(routes.scanReorderPhotosEdit())}
+              /*
+                Only with something to rearrange. With one photo the control
+                opens a reorder screen that cannot reorder anything — and
+                `PhotosCard`'s own contract says to OMIT a control rather than
+                show one that does nothing (its `onRearrange` docblock, on the
+                Guideline 2.1 "App Completeness" risk). Seen on a device with a
+                single-photo draft, where the overlay still read
+                "Rearrange photos" beside a "1/1" counter.
+              */
+              onRearrange={
+                (draft.photos?.length ?? 0) > 1
+                  ? () => router.push(routes.scanReorderPhotosEdit())
+                  : undefined
+              }
               onAddMore={addMorePhotos}
             />
           </View>
@@ -177,6 +244,7 @@ export default function DetailScreen() {
               identity fields, because it decides which category tree and which
               currency the rest of the form uses. It renders NOTHING when only
               one marketplace is supported, so a fail-closed install is 1.0.3. */}
+          <View style={styles.gutterBlock}>
           <RoutingChip
             draft={draft}
             onConfirm={(marketplace) =>
@@ -204,6 +272,12 @@ export default function DetailScreen() {
               })
             }
           />
+          </View>
+
+          {/* A bare band — a plain grey spacer. Vinted does the same between the
+              photo strip and the first field block: a heading here would name
+              something the title field says better by being the title field. */}
+          <SectionBand />
           <View onLayout={registerRow('title')}>
             {/* FIX 1b — `needs_clearer_photo` says the server could not read a
                 NAMEPLATE, so it is answered here (brand/model) rather than as a
@@ -214,6 +288,7 @@ export default function DetailScreen() {
             <DescriptionCard />
           </View>
           <MarketplaceCard />
+          <SectionBand title={t('mobile.detail.bandDetails', { defaultValue: 'Details' })} />
           {/* Category AND condition both live in this one card, so both rows
               register the SAME wrapper. Do not nest two wrappers: the inner y
               would be 0 relative to the outer and the jump would be a no-op.
@@ -226,15 +301,19 @@ export default function DetailScreen() {
           >
             <CategoryConditionCard />
           </View>
-          <ProfitIntelligenceCard aiPrices={draft.aiPrices} />
-          <View onLayout={registerRow('price')}>
-            <PricingCard />
-          </View>
           {/* Weight / dimensions / CO₂ / serial / documents are ALL optional, and
               stacked flat they were roughly a third of a 7,483px scroll — each
               shouting as loudly as price and location. Folded behind one row per
               the approved design. `filledCount` means a seller never has to open
               the section to find out they already answered something in it. */}
+          {/* The disclosure keeps CARDS inside it, deliberately. A band titles a
+              region of the page the seller is already looking at; this content
+              is behind a tap, and once opened it is two unrelated things
+              (specs, documents) that need their own frames. `DocumentsCard` is
+              a card regardless — it is not one of the six this pass owns — so
+              flushing `SpecsCard` alone would make the pair disagree. */}
+          <View style={styles.gutterBlock}>
+          <FieldGroupSurfaceProvider value="card">
           <OptionalDetailsSection
             filledCount={
               [
@@ -249,13 +328,56 @@ export default function DetailScreen() {
             <SpecsCard />
             <DocumentsCard draft={draft} />
           </OptionalDetailsSection>
+          </FieldGroupSurfaceProvider>
+          </View>
+
+          {/*
+            ⚠️ ORDER: both of these moved on 2026-10-08, and the reason is that a
+            BAND IS A CLAIM ABOUT WHAT FOLLOWS IT.
+
+            "More details — weight, size, CO₂, documents" used to sit AFTER
+            `PricingCard`, which put it under the Pricing heading although not one
+            field in it is about price. It is item detail, so it now closes the
+            Details group.
+
+            `ProfitIntelligenceCard` — the AI's resale range — used to sit ABOVE
+            the Pricing band, i.e. under Details, although its whole job is to
+            inform the number the seller is about to type. It now opens Pricing,
+            directly above the field it exists to help with. It still renders
+            nothing when the AI returned no tiers, and `FieldGroup` drops the
+            null, so an absent estimate leaves no gap behind.
+          */}
+          <SectionBand title={t('mobile.detail.bandPricing', { defaultValue: 'Pricing' })} />
+          <View style={styles.gutterBlock}>
+            <ProfitIntelligenceCard aiPrices={draft.aiPrices} />
+          </View>
+          <View onLayout={registerRow('price')}>
+            <PricingCard />
+          </View>
           {/* VisibilityCard removed for now — all listings ship as PUBLIC
               (the default on emptyDraft + sessionVisibility). Re-mount when
               product calls for it; the underlying store fields stay intact. */}
+          <SectionBand title={t('mobile.detail.bandLocation', { defaultValue: 'Location' })} />
           <View onLayout={registerRow('location')}>
             <LocationCard />
           </View>
-          <RequiredChecklist draft={draft} />
+          {/*
+            ⛔ THE REQUIRED CHECKLIST CARD WAS REMOVED FROM THIS SCREEN.
+
+            It listed all seven required rows with ticks at the very end of a
+            four-screen scroll — a second "what is missing" system competing
+            with `RequiredProgressStrip`, which says the same thing in the
+            sticky footer where it is ALWAYS visible and whose chips scroll you
+            to the offending field. Two trackers for one truth: the buried one
+            is the one to drop, and the orange card was also the single
+            heaviest block on an already text-dense form.
+
+            ⚠️ IT STAYS IN `app/scan/grouped-edit.tsx`. That screen has no
+            `DetailFooter` and therefore no progress strip — the card is its
+            only persistent account of what is still missing, with just an
+            Alert on submit otherwise. Removing it there would leave nothing.
+          */}
+        </FieldGroupSurfaceProvider>
         </KeyboardAwareScrollView>
         {/* M-11 — lift the notice + footer above the keyboard. Wrapped for BOTH
             platforms per the S1 observation (2026-08-18): `KeyboardProvider` is
@@ -275,6 +397,24 @@ export default function DetailScreen() {
             footer. Nobody needs "Save as draft" while editing a field, and it
             comes straight back on blur, so the honest fix is not to draw it. */}
         <KeyboardStickyView offset={{ closed: 0, opened: 0 }} style={keyboardOpen ? styles.hidden : undefined}>
+          <View
+            /*
+              ⚠️ The measurement goes on THIS inner View, not on
+              `KeyboardStickyView`. The sticky view takes `styles.hidden`
+              (`display: 'none'`) while the keyboard is up, and a hidden view
+              lays out at height 0 — measuring there would collapse the scroll's
+              bottom inset on every keystroke and restore it on blur, which is a
+              visible jump in the scroll position. The guard below drops the 0
+              anyway; this just keeps the two concerns apart.
+            */
+            onLayout={(e) => {
+              const h = e.nativeEvent.layout.height;
+              // `> 0` because a `display: 'none'` ancestor reports 0, and
+              // rounding because sub-pixel layout churn would re-render the
+              // whole scroll on every frame of the chip-wrap animation.
+              if (h > 0) setFooterHeight(Math.round(h));
+            }}
+          >
           {/* Only single mode submits from this screen — in grouped mode the footer
               leads to the review hub, which carries its own copy of this notice. */}
           {!isGrouped && <SellerApprovalNotice />}
@@ -306,6 +446,7 @@ export default function DetailScreen() {
             required={required}
             onPressRow={scrollToRow}
           />
+          </View>
         </KeyboardStickyView>
       </Screen>
     </FormProvider>
@@ -315,18 +456,30 @@ export default function DetailScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   /*
-    `paddingBottom: 132` is NOT on the spacing scale and stays a literal on
-    purpose — it is a measurement of the sticky footer (progress strip + two
-    buttons + the home-indicator inset), not a design step. Rounding it to
-    `space['8xl']` would put LOCATION back underneath the footer.
+    ⚠️ NO `paddingBottom` HERE ANY MORE. It is applied at the call site from
+    `footerInset`, which is the MEASURED footer height plus a gutter.
 
-    ⚠️ It is also a hardcoded number that has to clear a sibling whose height
-    this screen owns — the exact shape `FORM_INPUT_RULES.md` says to measure
-    with `onLayout` instead. Left as-is in this pass because changing it is a
-    behaviour change, not a design one, and the footer here is conditionally
-    hidden while typing. Flagged rather than quietly kept.
+    This used to be a hardcoded `132` with a comment admitting it was the exact
+    thing `FORM_INPUT_RULES.md` says to measure. Resolved 2026-10-08: the footer
+    grows when the progress chips wrap to a second line and shrinks when the
+    seller-approval notice is absent, so no single literal is right for every
+    state. Do not reintroduce one.
   */
-  scrollContent: { padding: GUTTER, paddingBottom: 132, gap: space.sm },
+  /*
+    NO HORIZONTAL PADDING AND NO `gap` ANY MORE. Both moved INTO the content:
+    the white field groups and the grey bands draw edge to edge (that is what
+    "full-bleed" means and it is the whole visual difference), so a gutter here
+    would inset them and a `gap` would open a white stripe between a band and
+    the block it titles. Everything that is still an island — photos, the
+    routing chip, the profit panel, the optional disclosure — carries the gutter
+    itself, below.
+  */
+  // `paddingBottom` is supplied at the call site from the measured footer.
+  scrollContent: {},
+  /** The first island: the page gutter plus the top padding the old `padding: GUTTER` gave it. */
+  gutterTop: { paddingHorizontal: GUTTER, paddingTop: GUTTER },
+  /** The same, plus the breathing room the deleted `gap` used to provide. */
+  gutterBlock: { paddingHorizontal: GUTTER, paddingTop: space.lg, gap: space.sm },
   // `display: none` rather than unmounting: unmounting the footer would drop the
   // progress strip's layout registrations and make the row-jump targets stale.
   hidden: { display: 'none' },

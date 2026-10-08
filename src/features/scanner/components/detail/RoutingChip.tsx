@@ -23,6 +23,7 @@ import type { DraftItem, MarketplaceKey } from '@/stores/scanDraftStore';
 
 import { FieldLabel } from './FieldLabel';
 import { MarketplaceSheet } from './MarketplaceSheet';
+import { ICON } from './metrics';
 
 /**
  * The three display bands for `site_type_confidence`.
@@ -253,7 +254,7 @@ export function RoutingChip({ draft, onConfirm }: Props) {
         <View className="flex-row items-center gap-1.5">
           <MaterialIcons
             name={state.needsClearerPhoto ? 'photo-camera' : 'help-outline'}
-            size={16}
+            size={ICON.adornment}
             color={brand.warningText}
           />
           <Text className="font-heading-semi text-3xl text-brand-foreground" style={{ flex: 1 }}>
@@ -330,7 +331,7 @@ export function RoutingChip({ draft, onConfirm }: Props) {
                     {descriptionFor(m)}
                   </Text>
                 </View>
-                <MaterialIcons name="radio-button-unchecked" size={22} color={brand.borderStrong} />
+                <MaterialIcons name="radio-button-unchecked" size={ICON.control} color={brand.borderStrong} />
               </Pressable>
             );
           })}

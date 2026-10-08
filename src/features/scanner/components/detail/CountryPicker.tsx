@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Sheet, Text } from '@/components/ui';
 import { COUNTRY_OPTIONS } from '@/features/scanner/constants/countries';
+import { countryFlagEmoji } from '@/features/scanner/countryFlag';
 import { brand } from '@/constants/theme';
 
 interface Props {
@@ -78,7 +79,12 @@ export function CountryPicker({ visible, value, onSelect, onClose }: Props) {
         filtered.map((country) => (
           <Sheet.Option
             key={country}
-            label={country}
+            /* Flag PREFIXED into the label rather than passed as a slot:
+               `Sheet.Option` takes `label: string` and is shared by ~10 callers,
+               so widening its contract for one picker costs more than the two
+               spaces do. A screen reader announces the emoji's own name before
+               the country, which is the usual behaviour of a flagged list. */
+            label={`${countryFlagEmoji(country) ?? ''}  ${country}`.trim()}
             active={country === value}
             onPress={() => {
               setQuery('');
